@@ -244,7 +244,7 @@ export function ImportPreviewDialog({
         )}
 
         {/* Rows: one native list row per transaction (no table). Tap a probable or duplicate row for its match. */}
-        <div className="flex-1 overflow-auto rounded-lg border divide-y divide-border/50">
+        <div className="flex-1 overflow-auto rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {allRows.slice(0, 100).map((row) => {
             const isDuplicate = duplicateIndices.has(row.rowIndex);
             const isForced = includeDuplicates.has(row.rowIndex);

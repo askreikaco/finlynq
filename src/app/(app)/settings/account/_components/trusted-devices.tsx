@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { SmartphoneIcon, Check } from "lucide-react";
+import { Check, Smartphone, SmartphoneIcon } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
@@ -160,7 +160,7 @@ export function TrustedDevices() {
             <SmartphoneIcon className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={Smartphone} tone="cyan">
               {STRINGS.title}
               <InfoTip label="About trusted devices" text={`${STRINGS.description}. ${STRINGS.deviceNote}`} />
             </CardTitle>

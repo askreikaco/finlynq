@@ -61,7 +61,7 @@ export function LanguageCard() {
             <Languages className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={Languages} tone="cyan">
               Language
               <InfoTip label="About language" text="Number and date formats. Labels are not translated." />
             </CardTitle>

@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Coins, Loader2, SlidersHorizontal, Target } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 
 type Mode = "refuse_orphans" | "synthesize_orphans";
@@ -127,7 +127,7 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1">
+          <CardTitle icon={SlidersHorizontal} tone="indigo">
             1. Mode
             <InfoTip
               label="About mode"
@@ -152,7 +152,7 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1">
+          <CardTitle icon={Target} tone="cyan">
             2. Scope
             <InfoTip label="About scope" text="Narrow which transactions the planner looks at." />
           </CardTitle>
@@ -296,7 +296,7 @@ function CashSleeveSymbolFix() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
+        <CardTitle icon={Coins} tone="amber">
           0. Cash symbols
           <InfoTip label="About cash symbols" text='Sets symbol = currency on cash sleeves with no symbol (a CAD sleeve gets "CAD"). Safe to repeat; only touches missing symbols.' />
         </CardTitle>

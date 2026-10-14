@@ -82,7 +82,7 @@ describe("budgets at 390", () => {
 
   it("category groups are inset SectionCards of ListRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('<SectionCard key={group} label={group} padded={false}');
+    expect(src).toContain('<SectionCard key={group} label={group} icon={Wallet} tone="indigo" padded={false}');
     expect(src).toContain("<ListRow");
     expect(src).not.toContain("<Table");
     expect(src).not.toContain('<Card key={group} className="gap-1">');

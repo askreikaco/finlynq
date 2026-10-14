@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Database } from "lucide-react";
+import { Database, Info, Shield } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 
 export default function AboutSettingsPage() {
@@ -26,7 +26,7 @@ export default function AboutSettingsPage() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={Info} tone="cyan">
                 Finlynq
                 <InfoTip label="About Finlynq" text="Track your money here, analyze it anywhere. All data is stored locally on your machine; nothing is sent to any server." />
               </CardTitle>

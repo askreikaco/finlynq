@@ -7,7 +7,7 @@
  * the allow-listed overview DTO, so the figures and the look match those pages.
  */
 import { useMemo } from "react";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
@@ -60,7 +60,7 @@ function flowLabel(key: string, daily: boolean): string {
 /** A card slot whose data is not available (section not shared / failed): never a 0. */
 export function UnavailableCard({ title, text }: { title: string; text: string }) {
   return (
-    <SectionCard label={title} data-testid="card-unavailable">
+    <SectionCard label={title} icon={Users} tone="indigo" data-testid="card-unavailable">
       <p className="text-3xl font-bold leading-none text-muted-foreground" aria-hidden="true">
         {FAMILY_STRINGS.overview_none}
       </p>
@@ -239,7 +239,7 @@ export function NetWorthOverTimeCard({
   const first = history[0];
   const last = history[history.length - 1];
   return (
-    <SectionCard label={title}>
+    <SectionCard label={title} icon={Users} tone="indigo">
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">
           {currency}{period === "all" ? " · All time" : ""}
@@ -291,7 +291,7 @@ export function IncomeVsExpensesCard({
   const { points, daily } = flowPoints(series, period);
   if (points.length === 0) {
     return (
-      <SectionCard label={FAMILY_STRINGS.overview_card_income_vs_expenses}>
+      <SectionCard label={FAMILY_STRINGS.overview_card_income_vs_expenses} icon={ArrowLeftRight} tone="emerald">
         <p className="text-sm text-muted-foreground py-12 text-center">{FAMILY_STRINGS.overview_card_no_cashflow}</p>
       </SectionCard>
     );
@@ -327,7 +327,7 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
     [performance.series],
   );
   return (
-    <SectionCard label={FAMILY_STRINGS.overview_card_performance}>
+    <SectionCard label={FAMILY_STRINGS.overview_card_performance} icon={TrendingUp} tone="violet">
       <div className="space-y-2">
         {prepared.data.length === 0 ? (
           <p className="text-sm text-muted-foreground">{FAMILY_STRINGS.overview_card_no_snapshots}</p>

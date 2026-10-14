@@ -26,7 +26,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GripVertical, ArrowUp, ArrowDown, X, RefreshCw, Save, RotateCcw } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, List, ListOrdered, Pin, RefreshCw, RotateCcw, Save, X } from "lucide-react";
 import {
   EMPTY_DROPDOWN_ORDER,
   parseDropdownOrder,
@@ -269,7 +269,7 @@ export function DropdownOrderSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1 text-base">
+          <CardTitle icon={ListOrdered} tone="indigo">
             Dropdown
             <InfoTip label="About this dropdown" text={KIND_OPTIONS.find((o) => o.value === kind)?.description} />
           </CardTitle>
@@ -290,7 +290,7 @@ export function DropdownOrderSection() {
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={Pin} tone="amber">
                 Pinned
                 <InfoTip label="About pinned" text="Drag the grip or use the arrows to reorder. Unpinned items stay alphabetical." />
               </CardTitle>
@@ -357,7 +357,7 @@ export function DropdownOrderSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1 text-base">
+          <CardTitle icon={List} tone="muted">
             Unpinned ({unpinnedItems.length})
             <InfoTip label="About unpinned" text="Click an item to pin it to the end of the list above." />
           </CardTitle>

@@ -1,240 +1,478 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useSizeClass } from "@/components/ui/size-class";
 import { PageHeader } from "@/components/mobile/page-header";
 import { SectionCard } from "@/components/mobile/section-card";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
-import { Hash } from "lucide-react";
 import { Amount } from "@/components/mobile/amount";
 import { PillButton } from "@/components/mobile/pill-button";
-import { MetricCard } from "@/components/metric-card";
+import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
+import { DetailSheet } from "@/components/mobile/detail-sheet";
+import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricTone } from "@/components/metric-card";
+import { Sparkline } from "@/components/sparkline";
+import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { TW } from "@/lib/design/tokens";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import {
-  DollarSign,
-  TrendingUp,
-  Wallet,
-  PiggyBank,
-} from "lucide-react";
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DollarSign, Inbox, PiggyBank, Plus, TrendingUp, Wallet } from "lucide-react";
+import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 
-/**
- * Inner component that uses the ref and hook.
- * Mounted only after DevModeGuard confirms dev mode is enabled.
- */
+const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
+const SPARK_LABELS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
+const TONES = Object.keys(METRIC_TONES) as MetricTone[];
+
+/** Section wrapper: anchor id, title, source-file label. */
+function Group({ id, title, file, span, children }: { id: string; title: string; file: string; span?: boolean; children: React.ReactNode }) {
+  return (
+    <section id={id} data-gallery-section={id} className={cn("scroll-mt-16 min-w-0 space-y-3", span && "col-span-full")}>
+      <div>
+        <SectionLabel>{title}</SectionLabel>
+        <p className="px-1 text-[11px] text-muted-foreground">{file}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Small caption + live example. */
+function Item({ name, file, children }: { name: string; file?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <p className="text-xs font-medium">
+        {name} {file && <span className="font-normal text-muted-foreground">· {file}</span>}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function Swatch({ name }: { name: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [val, setVal] = useState("");
+  useEffect(() => {
+    const read = () => {
+      if (ref.current) setVal(getComputedStyle(ref.current).getPropertyValue(`--${name}`).trim());
+    };
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    return () => mo.disconnect();
+  }, [name]);
+  return (
+    <div ref={ref} className="min-w-0">
+      <div className="h-10 rounded-lg border border-border" style={{ background: `var(--${name})` }} />
+      <p className="mt-1 truncate text-[11px] font-medium">--{name}</p>
+      <p className="truncate text-[10px] text-muted-foreground">{val || "n/a"}</p>
+    </div>
+  );
+}
+
 function GalleryContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sizeClass = useSizeClass(containerRef as React.RefObject<HTMLElement>);
-  const [width, setWidth] = React.useState(0);
+  const [width, setWidth] = useState(0);
+  const [dialog, setDialog] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [detail, setDetail] = useState(false);
+  const [select, setSelect] = useState("a");
+  const [combo, setCombo] = useState("");
+  const [on, setOn] = useState(true);
+  const [acc, setAcc] = useState<string | null>("one");
 
-  React.useEffect(() => {
-    if (containerRef.current) {
-      setWidth(containerRef.current.clientWidth);
-    }
+  useEffect(() => {
+    if (containerRef.current) setWidth(containerRef.current.clientWidth);
   }, [sizeClass]);
 
+  const metrics = [
+    { id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", iconTone: "indigo" as const, sub: "+$1,200 vs last month", badgePct: 1.9, sparkData: SPARK, sparkColor: "#6366f1" },
+    { id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", iconTone: "emerald" as const, tone: "pos" as const },
+    { id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", iconTone: "rose" as const, badgePct: 4.2, invertTone: true },
+    { id: "g4", label: "Savings", icon: PiggyBank, value: "32%", iconTone: "amber" as const },
+  ];
+
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 overflow-y-auto bg-background"
-      style={{ minWidth: "100%" }}
-    >
-        <div className="space-y-8 p-4">
-          <PageHeader
-            title="Component Gallery"
-            subtitle={`Current size class: ${sizeClass}`}
-          />
+    <div ref={containerRef} className="flex-1 overflow-y-auto bg-background" style={{ minWidth: "100%" }}>
+      <div className="w-full space-y-6 p-4">
+        <PageHeader title="Component Gallery" subtitle={`Size class: ${sizeClass}`} />
 
-          {/* Mobile Primitives Section */}
-          <section className="space-y-4">
-            <SectionLabel>Mobile Primitives</SectionLabel>
+        <nav
+          aria-label="Gallery index"
+          data-testid="gallery-index"
+          className="glass-bar sticky top-0 z-20 -mx-1 flex flex-wrap gap-1.5 rounded-xl border border-border/50 px-2 py-2"
+        >
+          {GALLERY_SECTIONS.map((s) => (
+            <a key={s.id} href={`#${s.id}`} className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium hover:bg-muted/70">
+              {s.label}
+            </a>
+          ))}
+        </nav>
 
-            {/* ListRow Examples */}
+        <div className={TW.grid3}>
+          <Group id="metric" title="MetricCard" file="components/metric-card.tsx · mobile/metric-grid.tsx" span>
+            <div className={TW.grid3}>
+              <Item name="Default / hero" file="size">
+                <div className="space-y-3">
+                  <MetricCard label="Default" icon={Wallet} tone="indigo" value={25000} sub="Checking" />
+                  <MetricCard label="Hero" icon={Wallet} tone="violet" value={275000} size="hero" sub="As of today" />
+                </div>
+              </Item>
+              <Item name="Sparkline + delta + href" file="sparkData, badgePct, href">
+                <div className="space-y-3">
+                  <MetricCard label="Portfolio" icon={TrendingUp} tone="emerald" value={150000} sub="+$4,000 vs last month" badgePct={8.5} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#10b981" href="/portfolio" />
+                  <MetricCard label="Spent (less is better)" icon={DollarSign} tone="rose" value={3100} badgePct={4.2} invertTone note="Second note line" />
+                </div>
+              </Item>
+              <Item name="Loading / skeleton / progress child">
+                <div className="space-y-3">
+                  <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
+                  <MetricCardSkeleton />
+                  <MetricCard label="Budget" icon={PiggyBank} tone="amber" value={800} sub="of $1,000">
+                    <Progress value={80} className="mt-2" />
+                  </MetricCard>
+                </div>
+              </Item>
+            </div>
+            <Item name="Tones" file="METRIC_TONES">
+              <div className="grid grid-cols-2 gap-3 regular:grid-cols-4 wide:grid-cols-7">
+                {TONES.map((t) => (
+                  <MetricCard key={t} label={t} icon={Wallet} tone={t} value={t} />
+                ))}
+              </div>
+            </Item>
+            <Item name="MetricGrid (4 items)" file="mobile/metric-grid.tsx">
+              <MetricGrid metrics={metrics} />
+            </Item>
+            <Item name="MetricGrid columns=3, 3 items">
+              <MetricGrid metrics={metrics.slice(0, 3)} columns={3} />
+            </Item>
+            <Item name="PctBadge">
+              <div className="flex gap-3">
+                <PctBadge pct={5.2} />
+                <PctBadge pct={-3.1} />
+                <PctBadge pct={5.2} invert />
+              </div>
+            </Item>
+          </Group>
+
+          <Group id="section-card" title="SectionCard / ListRow" file="mobile/section-card.tsx · mobile/list-row.tsx">
+            <SectionCard label="Label inside card">
+              <p className="text-sm">Body content. The label is the card&apos;s first row.</p>
+            </SectionCard>
+            <SectionCard label="With action" action={<Button size="sm" variant="ghost">Edit</Button>}>
+              <p className="text-sm">Action sits right of the label.</p>
+            </SectionCard>
             <SectionCard>
+              <p className="text-sm">No label (padded body only).</p>
+            </SectionCard>
+            <SectionCard label="ListRow (divide-y)" padded={false} className="divide-y divide-border/50 px-4">
+              <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
+              <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
+              <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
+            </SectionCard>
+            <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("divide-y divide-border/50 px-4", CARD_ROW_GRID)}>
+              {["A", "B", "C", "D"].map((n) => (
+                <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
+              ))}
+            </SectionCard>
+            <p className="px-1 text-[11px] text-muted-foreground">
+              Pending (unmerged lab2): CardLabel and --list-divider inset-shadow separators. Rows above use divide-y border/50.
+            </p>
+            <Item name="Amount / PillButton">
+              <div className="flex flex-wrap items-center gap-3">
+                <Amount value={1234.56} />
+                <Amount value={-100.5} />
+                <Amount value={0} />
+                <Amount value={5000000} currency="EUR" />
+                <PillButton>All</PillButton>
+                <PillButton>Income</PillButton>
+              </div>
+            </Item>
+          </Group>
+
+          <Group id="shadow" title="Card shadow token" file="ui/card.tsx · .surface-card · --shadow-card">
+            <Card>
+              <CardHeader><CardTitle>Card</CardTitle></CardHeader>
+              <CardContent className="text-sm">Standard Card: surface-card + var(--shadow-card).</CardContent>
+            </Card>
+            <Card className="bg-muted/50">
+              <CardContent className="pt-4 text-sm">Muted variant</CardContent>
+            </Card>
+            <div className="surface-card rounded-xl border border-border/50 p-4 text-sm">.surface-card utility</div>
+          </Group>
+
+          <Group id="buttons" title="Buttons / Badges" file="ui/button.tsx · ui/badge.tsx">
+            <Item name="Button variants">
+              <div className="flex flex-wrap gap-2">
+                {(["default", "secondary", "outline", "ghost", "destructive", "link"] as const).map((v) => (
+                  <Button key={v} variant={v}>{v}</Button>
+                ))}
+              </div>
+            </Item>
+            <Item name="Button sizes">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="xs">xs</Button><Button size="sm">sm</Button><Button>default</Button><Button size="lg">lg</Button>
+                <Button size="icon" aria-label="Add"><Plus /></Button>
+                <Button disabled>disabled</Button>
+              </div>
+            </Item>
+            <Item name="Badge variants">
+              <div className="flex flex-wrap gap-2">
+                {(["default", "secondary", "destructive", "outline", "ghost", "link"] as const).map((v) => (
+                  <Badge key={v} variant={v}>{v}</Badge>
+                ))}
+              </div>
+            </Item>
+          </Group>
+
+          <Group id="forms" title="Inputs / Select / Combobox" file="ui/input.tsx · select.tsx · combobox.tsx · checkbox.tsx">
+            <div className="space-y-1.5">
+              <Label htmlFor="g-input">Input</Label>
+              <Input id="g-input" placeholder="Placeholder" />
+              <Input aria-label="Disabled" disabled defaultValue="Disabled" />
+              <Input aria-label="Invalid" aria-invalid defaultValue="Invalid" />
+            </div>
+            <Item name="Select">
+              <Select value={select} onValueChange={(v) => setSelect(v as string)}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a">Option A</SelectItem>
+                  <SelectItem value="b">Option B</SelectItem>
+                </SelectContent>
+              </Select>
+            </Item>
+            <Item name="Combobox">
+              <Combobox
+                value={combo}
+                onValueChange={setCombo}
+                items={[{ value: "x", label: "Alpha" }, { value: "y", label: "Beta" }, { value: "z", label: "Gamma" }]}
+                placeholder="Pick one"
+              />
+            </Item>
+            <label className="flex items-center gap-2 text-sm"><Checkbox defaultChecked /> Checkbox</label>
+          </Group>
+
+          <Group id="overlays" title="Dialogs / Sheets" file="ui/dialog.tsx · sheet.tsx · confirm-dialog.tsx · mobile/detail-sheet.tsx">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setDialog(true)}>Dialog</Button>
+              <Button variant="outline" onClick={() => setConfirm(true)}>ConfirmDialog</Button>
+              <Button variant="outline" onClick={() => setSheet(true)}>Sheet</Button>
+              <Button variant="outline" onClick={() => setDetail(true)}>DetailSheet</Button>
+            </div>
+            <Dialog open={dialog} onOpenChange={setDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Dialog title</DialogTitle>
+                  <DialogDescription>Dialog description text.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter><Button onClick={() => setDialog(false)}>Close</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Delete item" description="This cannot be undone." onConfirm={() => setConfirm(false)} />
+            <Sheet open={sheet} onOpenChange={setSheet}>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Sheet title</SheetTitle>
+                  <SheetDescription>Sheet description.</SheetDescription>
+                </SheetHeader>
+              </SheetContent>
+            </Sheet>
+            <DetailSheet
+              open={detail}
+              onOpenChange={setDetail}
+              title="Detail sheet"
+              items={[{ label: "Account", value: "Checking" }, { label: "Balance", value: <Amount value={2500} /> }]}
+            />
+          </Group>
+
+          <Group id="topbar" title="Top bar" file="mobile/page-header.tsx · .glass-bar · .page-header-bleed" span>
+            <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
+              <Item name=".glass-bar">
+                <div className="glass-bar flex h-[60px] items-center justify-between rounded-xl border border-border/50 px-4 text-sm font-semibold">
+                  Title <Button size="sm" variant="outline">Action</Button>
+                </div>
+              </Item>
+              <Item name=".page-header-bleed (full-bleed rail + pad)">
+                <div className="page-header-bleed flex h-[60px] items-center border-y border-border/50 bg-muted/40 text-sm">
+                  Bleeds to the viewport edges
+                </div>
+              </Item>
+            </div>
+            <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page.</p>
+          </Group>
+
+          <Group id="pages" title="Page patterns" file="components/templates/*.tsx">
+            <SectionCard label="Templates">
+              <ul className="space-y-1 text-sm">
+                <li>SectionPage: section-page.tsx (width/stack/grid; TW.grid3 body)</li>
+                <li>FormPage: form-page.tsx (load/save/delete, dirty guard)</li>
+                <li>HubPage: hub-page.tsx (grouped rows)</li>
+                <li>ListPage, DetailPage, ReportPage: templates/</li>
+              </ul>
+              <p className="mt-2 text-[11px] text-muted-foreground">Listed only: they need routing, data and nav context to mount.</p>
+            </SectionCard>
+          </Group>
+
+          <Group id="charts" title="Sparkline / Progress" file="components/sparkline.tsx · ui/progress.tsx">
+            <Item name="Sparkline (hover tooltip)">
+              <Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />
+            </Item>
+            <Item name="Sparkline tall">
+              <Sparkline data={SPARK} color="#10b981" height={80} className="h-[80px] w-full" />
+            </Item>
+            <Progress value={65}><ProgressLabel>Progress</ProgressLabel><ProgressValue /></Progress>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="h-8 flex-1 rounded-md" style={{ background: `var(--chart-${n})` }} />
+              ))}
+            </div>
+          </Group>
+
+          <Group id="states" title="Empty / Error / Alert" file="empty-state.tsx · error-state.tsx · ui/alert.tsx">
+            <SectionCard><EmptyState icon={Inbox} title="Nothing here" description="Add your first item." action={{ label: "Add", onClick: () => {} }} /></SectionCard>
+            <SectionCard><ErrorState onRetry={() => {}} /></SectionCard>
+            <Alert><AlertTitle>Alert</AlertTitle><AlertDescription>Default alert.</AlertDescription></Alert>
+            <Alert variant="destructive"><AlertTitle>Alert</AlertTitle><AlertDescription>Destructive alert.</AlertDescription></Alert>
+          </Group>
+
+          <Group id="controls" title="Tabs / Toggles / Accordion" file="ui/tabs.tsx · switch.tsx · accordion.tsx · separator.tsx">
+            <Tabs defaultValue="one">
+              <TabsList><TabsTrigger value="one">One</TabsTrigger><TabsTrigger value="two">Two</TabsTrigger></TabsList>
+              <TabsContent value="one" className="text-sm">Panel one</TabsContent>
+              <TabsContent value="two" className="text-sm">Panel two</TabsContent>
+            </Tabs>
+            <Tabs defaultValue="one">
+              <TabsList variant="line"><TabsTrigger value="one">Line</TabsTrigger><TabsTrigger value="two">Tabs</TabsTrigger></TabsList>
+            </Tabs>
+            <label className="flex items-center gap-2 text-sm"><Switch checked={on} onCheckedChange={setOn} /> Switch</label>
+            <Separator />
+            <Accordion value={acc} onValueChange={setAcc}>
+              <AccordionItem value="one" title="Accordion item">Content</AccordionItem>
+              <AccordionItem value="two" title="Second item">More content</AccordionItem>
+            </Accordion>
+          </Group>
+
+          <Group id="info-tip" title="InfoTip" file="ui/info-tip.tsx">
+            <SectionCard>
+              <div className="flex items-center gap-1 p-4 text-sm font-semibold">
+                Label
+                <InfoTip label="About label" text="Tap, click or focus the icon to read the help text." />
+              </div>
+            </SectionCard>
+          </Group>
+
+          <Group id="skeleton" title="Skeleton / Shimmer" file="page-skeleton.tsx · .animate-shimmer">
+            <div className="h-6 w-2/3 animate-shimmer rounded-md" />
+            <div className="h-16 w-full animate-shimmer rounded-xl" />
+            <PageSkeleton variant="list" rows={2} />
+          </Group>
+
+          <Group id="colors" title="Color tokens" file="app/globals.css :root / .dark" span>
+            <div className="grid grid-cols-3 gap-3 regular:grid-cols-6 wide:grid-cols-8">
+              {COLOR_TOKENS.map((n) => <Swatch key={n} name={n} />)}
+            </div>
+          </Group>
+
+          <Group id="type" title="Typography" file="Tailwind scale · .hero-number · .tabular-nums">
+            <div className="space-y-1">
+              <p className="hero-number tabular-nums">$1,234.56 hero-number</p>
+              {(["text-3xl", "text-2xl", "text-xl", "text-lg", "text-base", "text-sm", "text-xs"] as const).map((c) => (
+                <p key={c} className={c}>{c} The quick brown fox</p>
+              ))}
+              <p className="text-sm font-semibold">font-semibold</p>
+              <p className="text-sm text-muted-foreground">text-muted-foreground</p>
+              <p className="text-sm text-pos">text-pos</p><p className="text-sm text-neg">text-neg</p>
+              <p className="font-mono text-sm">font-mono 0123456789</p>
+            </div>
+          </Group>
+
+          <Group id="scale" title="Spacing / Radius / Shadow" file="globals.css --radius-* · --spacing-row* · --shadow-card">
+            <Item name="Radius">
+              <div className="flex flex-wrap gap-2">
+                {["rounded-sm", "rounded-md", "rounded-lg", "rounded-xl", "rounded-2xl", "rounded-3xl", "rounded-group"].map((r) => (
+                  <div key={r} className={cn("flex size-16 items-center justify-center border border-border bg-muted text-[9px]", r)}>{r.replace("rounded-", "")}</div>
+                ))}
+              </div>
+            </Item>
+            <Item name="Spacing (1,2,3,4,6,8) and row heights">
               <div className="space-y-1">
-                <h3 className="text-sm font-semibold px-4 pt-3">ListRow</h3>
-                <ListRow
-                  title="Checking Account"
-                  value="$2,500.00"
-                  icon={Wallet}
-                  href="/accounts"
-                />
-                <ListRow
-                  title="Savings Account"
-                  value="$10,000.00"
-                  secondary="Primary"
-                  icon={PiggyBank}
-                  href="/accounts"
-                />
-                <ListRow
-                  title="Investment Account"
-                  value="$15,500.50"
-                  secondary="Portfolio"
-                  icon={TrendingUp}
-                  href="/portfolio"
-                  chevron
-                />
+                {[1, 2, 3, 4, 6, 8].map((n) => (
+                  <div key={n} className="flex items-center gap-2 text-[10px]"><div className="h-2 bg-primary" style={{ width: `${n * 0.25}rem` }} />{n}</div>
+                ))}
+                <div className="flex items-center rounded-md border border-border px-2 text-xs min-h-row">{TW.row} (--spacing-row)</div>
+                <div className="flex items-center rounded-md border border-border px-2 text-xs min-h-row-tall">{TW.rowTall}</div>
               </div>
-            </SectionCard>
+            </Item>
+            <Item name="Shadow">
+              <div className="flex gap-3">
+                <div className="surface-card flex size-16 items-center justify-center rounded-xl text-[10px]">card</div>
+                <div className="flex size-16 items-center justify-center rounded-xl bg-card text-[10px] shadow-sm">sm</div>
+                <div className="flex size-16 items-center justify-center rounded-xl bg-card text-[10px] shadow-md">md</div>
+              </div>
+            </Item>
+          </Group>
 
-            {/* MetricCard Examples */}
-            <SectionCard>
-              <div className="space-y-2 p-4">
-                <h3 className="text-sm font-semibold">MetricCard</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <MetricCard label="Net Worth" icon={Hash} value="$125,000.00" />
-                  <MetricCard label="Monthly Income" icon={Hash} value="$5,200.00" />
-                  <MetricCard label="Savings Rate" icon={Hash} value="32%" />
-                  <MetricCard label="Debt" icon={Hash} value="$12,500.00" />
+          <Group id="grids" title="Grid helpers" file="metric-grid.tsx · section-card.tsx · lib/design/tokens.ts" span>
+            {([
+              ["metricGridClass(4)", metricGridClass(4), 4],
+              ["metricGridClass(3)", metricGridClass(3), 3],
+              ["metricGridClass(6)", metricGridClass(6), 6],
+              ["METRIC_GRID_CLASS", METRIC_GRID_CLASS, 4],
+              ["TW.grid3", TW.grid3, 4],
+            ] as const).map(([name, cls, n]) => (
+              <Item key={name} name={name}>
+                <div className={cls}>
+                  {Array.from({ length: n }).map((_, i) => (
+                    <div key={i} className="flex h-10 items-center justify-center rounded-lg border border-border bg-muted text-xs">{i + 1}</div>
+                  ))}
                 </div>
-              </div>
-            </SectionCard>
+              </Item>
+            ))}
+          </Group>
 
-            {/* Amount Component */}
+          <Group id="size-class" title="Size class" file="ui/size-class.ts">
             <SectionCard>
-              <div className="space-y-3 p-4">
-                <h3 className="text-sm font-semibold">Amount</h3>
-                <div className="space-y-2">
-                  <Amount value={1234.56} />
-                  <Amount value={-100.50} />
-                  <Amount value={0} />
-                  <Amount value={5000000} currency="EUR" />
-                </div>
+              <div className="space-y-1 text-sm">
+                <p>compact &lt; 640 · regular 640-1024 · wide &gt; 1024</p>
+                <p className="text-xs text-muted-foreground">Container width: {width || "..."}px · class: {sizeClass}</p>
               </div>
             </SectionCard>
-
-            {/* InfoTip: the one (i) help icon (replaces visible descriptions) */}
-            <SectionCard>
-              <div className="space-y-2 p-4">
-                <h3 className="flex items-center gap-1 text-sm font-semibold">
-                  InfoTip
-                  <InfoTip label="About InfoTip" text="Tap, click or focus the icon to read the help text." />
-                </h3>
-              </div>
-            </SectionCard>
-
-            {/* PillButton Examples */}
-            <SectionCard>
-              <div className="space-y-2 p-4">
-                <h3 className="text-sm font-semibold">PillButton</h3>
-                <div className="flex flex-wrap gap-2">
-                  <PillButton>All</PillButton>
-                  <PillButton className="bg-primary/80">Expenses</PillButton>
-                  <PillButton>Income</PillButton>
-                  <PillButton>Transfers</PillButton>
-                </div>
-              </div>
-            </SectionCard>
-          </section>
-
-          {/* UI Primitives Section */}
-          <section className="space-y-4">
-            <SectionLabel>UI Primitives</SectionLabel>
-
-            {/* MetricCard Examples */}
-            <SectionCard>
-              <div className="space-y-3 p-4">
-                <h3 className="text-sm font-semibold mb-4">MetricCard</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <MetricCard
-                    label="Balance"
-                    icon={DollarSign}
-                    tone="indigo"
-                    value={25000}
-                    sub="Checking Account"
-                  />
-                  <MetricCard
-                    label="Portfolio"
-                    icon={TrendingUp}
-                    tone="emerald"
-                    value={150000}
-                    sub="Total invested"
-                    badgePct={8.5}
-                  />
-                  <MetricCard
-                    label="Net Worth"
-                    icon={Wallet}
-                    tone="violet"
-                    value={275000}
-                    sub="As of today"
-                  />
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Button Examples */}
-            <SectionCard>
-              <div className="space-y-2 p-4">
-                <h3 className="text-sm font-semibold mb-4">Button</h3>
-                <div className="space-y-2">
-                  <Button className="w-full">Primary Button</Button>
-                  <Button variant="secondary" className="w-full">
-                    Secondary Button
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Outline Button
-                  </Button>
-                  <Button variant="ghost" className="w-full">
-                    Ghost Button
-                  </Button>
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Card Examples */}
-            <SectionCard>
-              <div className="space-y-3 p-4">
-                <h3 className="text-sm font-semibold mb-4">Card</h3>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm">Standard card with content</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <p className="text-sm">Muted card variant</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </SectionCard>
-          </section>
-
-          {/* Size Class Reference */}
-          <section className="space-y-4">
-            <SectionLabel>Size Class Reference</SectionLabel>
-            <SectionCard>
-              <div className="space-y-2 p-4 text-sm">
-                <p>
-                  <strong>Compact:</strong> &lt; 640px
-                </p>
-                <p>
-                  <strong>Regular:</strong> 640px - 1024px
-                </p>
-                <p>
-                  <strong>Wide:</strong> &gt; 1024px
-                </p>
-                <div className="mt-4 p-3 bg-muted/50 rounded text-xs space-y-1">
-                  <p>
-                    Current container width: {width || "calculating..."}px
-                  </p>
-                  <p>Current size class: {sizeClass}</p>
-                </div>
-              </div>
-            </SectionCard>
-          </section>
-
-          <div className="pb-8" />
+          </Group>
         </div>
+        <div className="pb-8" />
       </div>
+    </div>
   );
 }
 
 /**
- * Dev gallery page — displays mobile and ui primitives at 3 size classes.
- * Hidden unless user enables dev mode via DevModeGuard.
+ * Dev gallery: review catalogue of the global components and styles.
+ * Hidden unless the user enables dev mode (DevModeGuard).
  */
 export default function GalleryPage() {
   return (

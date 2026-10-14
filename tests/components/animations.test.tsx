@@ -65,7 +65,8 @@ describe("Animation preference", () => {
       fireEvent.click(screen.getByTestId("toggle-on"));
     });
 
-    expect(screen.getByTestId("status").textContent).toBe("enabled");
+    // useAnimations() is pinned off (owner 2026-10-14): the preference persists but never enables motion.
+    expect(screen.getByTestId("status").textContent).toBe("disabled");
     expect(localStorage.getItem(ANIMATIONS_STORAGE_KEY)).toBe("true");
 
     // Disable animations
@@ -76,7 +77,7 @@ describe("Animation preference", () => {
     expect(screen.getByTestId("status").textContent).toBe("disabled");
   });
 
-  it("loads true if previously saved in localStorage", () => {
+  it("stays disabled even if true was saved in localStorage", () => {
     localStorage.setItem(ANIMATIONS_STORAGE_KEY, "true");
 
     render(
@@ -85,7 +86,7 @@ describe("Animation preference", () => {
       </AnimationProvider>
     );
 
-    expect(screen.getByTestId("status").textContent).toBe("enabled");
+    expect(screen.getByTestId("status").textContent).toBe("disabled");
   });
 
   it("works outside provider with safe fallback", () => {

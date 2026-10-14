@@ -128,7 +128,7 @@ export function PdfPreview({
               {rawText}
             </pre>
           ) : (
-            <div className="divide-y">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {rows.slice(0, 100).map((row, i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
                   <span className="font-mono text-muted-foreground w-20 shrink-0">{row.date}</span>

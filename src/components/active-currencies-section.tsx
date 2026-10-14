@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Globe, Plus, X, Check, AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Coins, Globe, Loader2, Plus, X } from "lucide-react";
 import { currencyLabel, isSupportedCurrency } from "@/lib/fx/supported-currencies";
 
 /**
@@ -154,7 +154,7 @@ export function ActiveCurrenciesSection() {
             <Globe className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={Coins} tone="amber">
               Currencies
               <InfoTip label="About currencies" text="Only these currencies appear in dropdowns (transactions, accounts, FX rates)." />
             </CardTitle>

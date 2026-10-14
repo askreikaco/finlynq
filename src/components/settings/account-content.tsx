@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Key, RefreshCw, Eye, EyeOff, FileText, Check, Shield, Lock, Mail, Download, Upload, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, Key, KeyRound, Lock, Mail, RefreshCw, Shield, ShieldCheck, Upload } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 import { TwoFactor } from "@/app/(app)/settings/account/_components/two-factor";
 import { SignInMethods } from "@/app/(app)/settings/account/_components/sign-in-methods";
@@ -294,7 +294,7 @@ export function AccountContent({
                 <Lock className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="flex items-center gap-1 text-base">
+                <CardTitle icon={Lock} tone="indigo">
                   Password
                   <InfoTip label="About password" text="Your data is re-encrypted under the new password. Nothing is lost." />
                 </CardTitle>
@@ -348,7 +348,7 @@ export function AccountContent({
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="flex items-center gap-1 text-base">
+                <CardTitle icon={Mail} tone="cyan">
                   Email
                   <InfoTip label="About email" text="Recovery email used to reset a forgotten password." />
                 </CardTitle>
@@ -397,7 +397,7 @@ export function AccountContent({
               <Key className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={KeyRound} tone="violet">
                 API key
                 <InfoTip label="About api key" text="Connect AI assistants via MCP or call the REST API. The key is unscoped and never expires: full read/write until you regenerate it, which invalidates the old key." />
               </CardTitle>
@@ -471,7 +471,7 @@ export function AccountContent({
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={ShieldCheck} tone="emerald">
                 Backup
                 <InfoTip label="About backup" text="Full backup and restore, your way back in if you lose your password. Data is encrypted with AES-256; only you hold the key." />
               </CardTitle>

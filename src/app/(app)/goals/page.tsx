@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Plus, Target, CheckCircle2, Pencil, Trash2, PiggyBank } from "lucide-react";
+import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
   MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem, type DetailItem,
@@ -161,7 +161,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: active.length > 0 ? (
-      <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
         {active.map((g) => {
           const currency = g.currency || displayCurrency;
           return (
@@ -191,7 +191,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
       </Card>
     ),
     completed: completed.length > 0 ? (
-      <SectionCard label="Completed" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
         {completed.map((g) => (
           <ListRow
             key={g.id}

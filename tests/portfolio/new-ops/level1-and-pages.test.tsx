@@ -57,7 +57,7 @@ describe("level 1: /portfolio/new operation list", () => {
     const { container } = render(<PortfolioNewPage />);
     const headers = [...container.querySelectorAll("[data-slot='section-label']")].map((n) => n.textContent);
     expect(headers).toEqual(["Trades", "Transfers", "Income and other"]);
-    const groups = container.querySelectorAll("div.divide-y");
+    const groups = container.querySelectorAll('div[class*="list-divider"]');
     expect(groups.length).toBe(3);
   });
 

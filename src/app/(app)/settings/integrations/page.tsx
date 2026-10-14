@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Zap, Landmark, Bot } from "lucide-react";
+import { Bot, Landmark, Plug, Zap } from "lucide-react";
 import { McpGuide } from "@/components/mcp-guide/mcp-guide";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
@@ -90,7 +90,7 @@ export default function IntegrationsSettingsPage() {
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="flex items-center gap-1 text-base">
+                <CardTitle icon={Plug} tone="indigo">
                   Set up MCP
                   <InfoTip label="About MCP" text="Connect AI assistants like Claude, ChatGPT or other MCP clients to your financial data." />
                 </CardTitle>

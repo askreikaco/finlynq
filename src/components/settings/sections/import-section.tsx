@@ -31,20 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Mail,
-  Copy,
-  RefreshCw,
-  BookTemplate,
-  Link as LinkIcon,
-  Landmark,
-  ToggleLeft,
-  ToggleRight,
-  FileSpreadsheet,
-  EyeOff,
-  ChevronRight,
-  Sliders,
-} from "lucide-react";
+import { BookTemplate, ChevronRight, Clock, Copy, Eye, EyeOff, FileCheck, FileSpreadsheet, Landmark, Link as LinkIcon, Mail, RefreshCw, Sliders, ToggleLeft, ToggleRight } from "lucide-react";
 import Link from "next/link";
 import { TemplateManager } from "@/app/(app)/import/components/template-manager";
 import { ConnectorTab } from "@/app/(app)/import/components/connector-tab";
@@ -114,7 +101,7 @@ export function ImportSettingsCard() {
   return (
     <Card id="import-settings" className="scroll-mt-6">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle icon={Sliders} tone="indigo">
           <Sliders className="h-4 w-4" />
           Import settings
         </CardTitle>
@@ -134,7 +121,7 @@ export function ImportSettingsCard() {
               )}
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={FileCheck} tone="cyan">
                 Confirm mapping
                 <InfoTip
                   label="About confirm mapping"
@@ -170,7 +157,7 @@ export function ImportSettingsCard() {
               <EyeOff className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={Eye} tone="cyan">
                 Reconcile picker
                 <InfoTip label="About reconcile picker" text="Choose which accounts appear in the Import page account picker. Hidden accounts stay reachable by direct link." />
               </CardTitle>
@@ -345,7 +332,7 @@ export function ImportEmailItem() {
           <div className="space-y-4" id="email">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle icon={Mail} tone="cyan">
                   <Mail className="h-5 w-5 text-info" />
                   Address
                   <InfoTip
@@ -392,7 +379,7 @@ export function ImportEmailItem() {
             {/* FINLYNQ-138 — imported-email retention window. */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-1 text-base">
+                <CardTitle icon={Clock} tone="amber">
                   Retention
                   <InfoTip label="About retention" text="How long raw forwarded emails are kept before permanent deletion. Applies to existing emails at the next cleanup. Recorded transactions are unaffected." />
                 </CardTitle>

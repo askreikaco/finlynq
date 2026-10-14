@@ -23,7 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings2, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { Loader2, Monitor, Moon, Palette, Settings2, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
@@ -116,7 +116,7 @@ export default function GeneralSettingsPage() {
               <Settings2 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-1 text-base">
+              <CardTitle icon={Palette} tone="violet">
                 Display
                 <InfoTip label="About display" text="Customize how data is displayed." />
               </CardTitle>

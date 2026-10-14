@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
-import { Plug, Loader2 } from "lucide-react";
+import { Link2, Loader2, Plug } from "lucide-react";
 
 interface ConnectedApp {
   id: number;
@@ -125,7 +125,7 @@ export function ConnectedApps() {
             <Plug className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={Link2} tone="cyan">
               Connected apps
               <InfoTip label="About connected apps" text="AI assistants and apps you authorized over OAuth. Unused connections are removed after 60 days; revoke anytime." />
             </CardTitle>
@@ -146,7 +146,7 @@ export function ConnectedApps() {
         ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
           <p className="text-sm text-muted-foreground" data-keep="empty">No connected apps.</p>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border">
             {mcpApiKeyLastUsedAt && (
               <li key="mcp-api-key" className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">

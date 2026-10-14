@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, SlidersHorizontal, Coins, Receipt, Wallet } from "lucide-react";
+import { Coins, Download, Receipt, SlidersHorizontal, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   HEADER_CELL,
@@ -95,10 +95,6 @@ export default function DividendsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [taxYear, setTaxYear] = useState<string>("");
-  const [data, setData] = useState<ApiResponse["data"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
   // One list at every size class (no table). The toolbar layout still follows the size class.
   const regular = useAppSizeClass() !== "compact";
@@ -127,18 +123,12 @@ export default function DividendsPage() {
     return params;
   }, [groupBy, reporting, taxYear, from, to]);
 
-  useEffect(() => {
-    setLoading(true);
-    setLoadError(false);
-    fetch(`/api/portfolio/dividends?${queryParams.toString()}`)
-      .then((r) => r.json())
-      .then((json: ApiResponse) => {
-        if (json.success) setData(json.data);
-        else { setData(null); setLoadError(true); }
-      })
-      .catch(() => { setData(null); setLoadError(true); })
-      .finally(() => setLoading(false));
-  }, [queryParams, reloadKey]);
+  // Cache-first: a revisit paints the last grouped dividends / cards at once and revalidates in the background.
+  const groupedRes = useCacheFirstJson<ApiResponse>(`/api/portfolio/dividends?${queryParams.toString()}`, { keepPrevious: true });
+  const data: ApiResponse["data"] | null = groupedRes.data?.success ? groupedRes.data.data : null;
+  const loading = groupedRes.loading;
+  const loadError = groupedRes.error || (groupedRes.data !== undefined && !groupedRes.data?.success);
+  const reloadGrouped = groupedRes.reload;
 
   const csvHref = useMemo(() => {
     const params = new URLSearchParams(queryParams);
@@ -360,7 +350,7 @@ export default function DividendsPage() {
         {loading ? (
           <PageSkeleton variant="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
+          <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={reloadGrouped} />
         ) : !data || !data.groups || data.groups.length === 0 ? (
           <EmptyState
             icon={Coins}
@@ -370,7 +360,7 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-              <SectionCard label={firstHeader} padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { useStepUp } from "./use-step-up";
 import { clearInviteStash, consumeInviteStash, stripTokenFromAddressBar } from "@/lib/family/invite-stash";
@@ -82,7 +82,7 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
     <>
       <Card className="border-info/30 bg-info/10">
         <CardHeader>
-          <CardTitle className="text-base">{FAMILY_STRINGS.accept_card_title}</CardTitle>
+          <CardTitle icon={Users} tone="indigo">{FAMILY_STRINGS.accept_card_title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div aria-live="polite" className="space-y-3">

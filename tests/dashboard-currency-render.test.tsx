@@ -103,6 +103,8 @@ vi.mock("lucide-react", () => ({
   Activity: () => <span>Activity</span>,
   ArrowUpRight: () => <span>Up</span>,
   ArrowDownRight: () => <span>Down</span>,
+  PieChart: () => <span>Pie</span>,
+  ArrowLeftRight: () => <span>Swap</span>,
 }));
 
 // Mock hooks with mutable state for testing both animated and non-animated paths

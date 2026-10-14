@@ -27,9 +27,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import {
-  Zap, Plus, Trash2, AlertTriangle,
-} from "lucide-react";
+import { AlertTriangle, ListChecks, Plus, Trash2, Zap } from "lucide-react";
 import type { Condition, Action } from "@/lib/rules/schema";
 
 /** Where the rule create/edit pages send the user back to (this section's page). */
@@ -198,7 +196,7 @@ export function RulesSection() {
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="flex items-center gap-1 text-base">
+                <CardTitle icon={ListChecks} tone="indigo">
                   Rules
                   <InfoTip label="About rules" text={<>Auto-categorize and transform transactions. Highest priority first; first match wins. <a href="/docs/transaction-rules-v2" className="underline">Docs</a></>} />
                 </CardTitle>

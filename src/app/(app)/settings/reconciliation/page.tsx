@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
-import { Zap } from "lucide-react";
+import { SlidersHorizontal, Zap } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
@@ -143,7 +143,7 @@ export default function ReconciliationSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1 text-base">
+          <CardTitle icon={SlidersHorizontal} tone="indigo">
             Fuzzy match
             <InfoTip
               label="About fuzzy match"
@@ -239,8 +239,7 @@ export default function ReconciliationSettingsPage() {
 
       <Card id="rules" className="scroll-mt-6">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="h-4 w-4" />
+          <CardTitle icon={Zap} tone="amber">
             Rules
           </CardTitle>
         </CardHeader>

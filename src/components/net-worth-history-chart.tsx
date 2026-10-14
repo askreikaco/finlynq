@@ -13,6 +13,7 @@
  * plan/net-worth-over-time.md Part A.
  */
 
+import { TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   AreaChart,
@@ -315,7 +316,7 @@ export function NetWorthHistoryChart({
       <CardHeader className="pb-1 px-5 pt-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+            <CardTitle icon={TrendingUp} tone="indigo">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">{currency}</p>
           </div>
           <div className="flex items-center gap-1">

@@ -12,7 +12,7 @@ import { usePendingEntity } from "@/lib/data/local-write-queue";
 import { overlayRows } from "@/lib/data/local-write-queue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Tag, Plus, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Tag, Tags, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 const TYPE_LABELS = { E: "Expense", I: "Income", R: "Reconciliation" } as const;
@@ -93,7 +93,7 @@ export function CategoryManagement({ returnTo }: { returnTo: string }) {
                 <Tag className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">Categories</CardTitle>
+                <CardTitle icon={Tags} tone="indigo">Categories</CardTitle>
                 <CardDescription>Manage transaction categories</CardDescription>
               </div>
             </div>

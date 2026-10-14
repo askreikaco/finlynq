@@ -33,7 +33,7 @@ import {
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
-import { ArrowDown, ArrowUp, Check, Merge, MoreHorizontal, Pencil, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Layers, Merge, MoreHorizontal, Pencil, X } from "lucide-react";
 
 const TYPE_LABELS: Record<AccountGroupType, string> = {
   A: "Asset groups",
@@ -273,11 +273,11 @@ export function ManageGroupsPanel({
     const list = ordered[type];
     const movable = list.filter((g) => g.toLowerCase() !== OTHER_GROUP.toLowerCase());
     return (
-      <SectionCard label={TYPE_LABELS[type]} padded={false} data-slot={`manage-groups-${type}`}>
+      <SectionCard label={TYPE_LABELS[type]} icon={Layers} tone="indigo" padded={false} data-slot={`manage-groups-${type}`}>
         {list.length === 0 ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">No groups in use yet.</p>
         ) : (
-          <ul className="divide-y divide-border/50">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {list.map((g) => renderRow(type, g, movable))}
           </ul>
         )}

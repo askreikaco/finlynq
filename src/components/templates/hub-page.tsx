@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
 import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
-import { SectionLabel } from "@/components/mobile/section-label";
+import { CardLabel } from "@/components/mobile/card-label";
+import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 
 export interface HubRow {
   id: string;
@@ -129,16 +130,14 @@ function useNoRedirect(): boolean {
   return false;
 }
 
-/** Group title: always rendered INSIDE the group card as its first row. */
+/** Group title: always rendered INSIDE the group card as its first row (shared CardLabel: icon tile + uppercase label). */
 function renderSectionLabel(title: string, style: NonNullable<HubPageVariants["sectionLabel"]>) {
-  if (style === "caps") {
-    return (
-      <h2 data-slot="hub-section-label" className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-    );
-  }
-  return <SectionLabel className="px-4 pb-1 pt-3">{title}</SectionLabel>;
+  const { icon, tone } = groupLabelIcon(title);
+  return (
+    <CardLabel as="h2" slot={style === "caps" ? "hub-section-label" : "section-label"} icon={icon} tone={tone}>
+      {title}
+    </CardLabel>
+  );
 }
 
 interface CardRowOptions {
@@ -275,7 +274,7 @@ function HubPageBody(props: HubPageProps) {
       className="space-y-2"
     >
       {look === "card" ? (
-        <div className="divide-y divide-border/50 overflow-hidden rounded-group bg-card">
+        <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-group bg-card">
           {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
           {group.rows.map((row) => renderCardRow(row, cardOpts))}
         </div>

@@ -10,7 +10,7 @@ export function FormGroup({ className, ...props }: React.HTMLAttributes<HTMLDivE
   return (
     <div
       className={cn(
-        "rounded-2xl dense:rounded-xl border border-border bg-card divide-y divide-border overflow-hidden",
+        "rounded-2xl dense:rounded-xl border border-border bg-card [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden",
         className,
       )}
       {...props}

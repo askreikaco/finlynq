@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Fingerprint, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Fingerprint } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { enablePasskeyPrf, registerPasskey } from "@/lib/client/passkey-prf";
 import { setPasskeyHint } from "@/lib/client/passkey-auto";
@@ -305,7 +305,7 @@ export function PasskeysCard() {
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={Fingerprint} tone="violet">
               {STRINGS.title}
               <InfoTip label="About passkeys" text={STRINGS.description} />
             </CardTitle>

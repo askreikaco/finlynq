@@ -10,8 +10,8 @@
 import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
-import { SectionLabel } from "@/components/mobile";
+import { ChevronRight, Layers } from "lucide-react";
+import { CardLabel } from "@/components/mobile/card-label";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   OP_GROUPS,
@@ -54,8 +54,8 @@ function PortfolioNewInner() {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
           <section key={group.key}>
-            <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
-              <SectionLabel className="px-4 pb-1 pt-3">{group.label}</SectionLabel>
+            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
+              <CardLabel as="h2" slot="section-label" icon={Layers} tone="indigo">{group.label}</CardLabel>
               {ops.map((o) => {
                 const Icon = o.icon;
                 return (

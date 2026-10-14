@@ -15,10 +15,7 @@ import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { parseSaveError } from "@/lib/save-error";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  Plus, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Copy,
-  Save, FileDown, ArrowRightLeft, Pencil, Receipt, Wallet, LayoutGrid, PiggyBank, Hourglass, Scale,
-} from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, Hourglass, LayoutGrid, Pencil, PiggyBank, Plus, Receipt, Save, Scale, Trash2, Wallet } from "lucide-react";
 import {
   Amount, MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem, type DetailItem, type OverflowAction,
@@ -355,7 +352,7 @@ function BudgetsPageContent() {
   const budgetGroups = (
     <div data-slot="budget-groups" className="grid grid-cols-1 gap-6">
       {Array.from(groupMap.entries()).map(([group, items]) => (
-        <SectionCard key={group} label={group} padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+        <SectionCard key={group} label={group} icon={Wallet} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
           {items.map((b) => {
             const { spent, rollover, effectiveBudget, rawPct, over, envelopeAvailable, remaining } = budgetRowValues(b);
             const left = mode === "envelope" ? envelopeAvailable : remaining;

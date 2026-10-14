@@ -5,6 +5,7 @@
  * State comes from the facade (real on-device flag plus its source: default, on or off); the component never touches
  * storage or local-first directly. Disabled with an explanation on untrusted devices, where offline mode never runs.
  */
+import { WifiOff } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -39,7 +40,7 @@ export function OfflineModeCard() {
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <CardTitle className="flex items-center gap-1">
+            <CardTitle icon={WifiOff} tone="muted">
               Offline mode (beta)
               <InfoTip
                 label="About offline mode"

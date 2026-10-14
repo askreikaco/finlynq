@@ -13,7 +13,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, Legend,
 } from "recharts";
-import { Calculator, CalendarClock, Coins, Landmark, PiggyBank, Percent, Receipt, TrendingUp, Wallet } from "lucide-react";
+import { Calculator, CalendarClock, Coins, Home, Landmark, Percent, PiggyBank, Receipt, SlidersHorizontal, Sparkles, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
@@ -94,7 +94,7 @@ function HomePurchaseTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Purchase details">
+      <SectionCard label="Purchase details" icon={Home} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <div><Label>Purchase Price ($)</Label><AmountInput  value={form.purchasePrice} onValueChange={(nv) => setForm({ ...form, purchasePrice: nv })} /></div>
@@ -121,7 +121,7 @@ function HomePurchaseTab() {
               { icon: Percent, label: "Total Interest", value: result.totalInterest, currency: displayCurrency, tone: "neg" },
             ]}
           />
-          <SectionCard label="Mortgage balance over time">
+          <SectionCard label="Mortgage balance over time" icon={TrendingDown} tone="rose">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={result.balanceOverTime}>
                 <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
@@ -173,7 +173,7 @@ function ExtraSavingsTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Savings details">
+      <SectionCard label="Savings details" icon={PiggyBank} tone="emerald">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <div><Label>Additional Monthly Savings ($)</Label><AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} /></div>
@@ -196,7 +196,7 @@ function ExtraSavingsTab() {
               { icon: Coins, label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
             ]}
           />
-          <SectionCard label="Growth over time">
+          <SectionCard label="Growth over time" icon={TrendingUp} tone="emerald">
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={result.projections}>
                 <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
@@ -220,7 +220,7 @@ function ExtraSavingsTab() {
 /** One payoff strategy: totals as tiles, then the order the debts are cleared in. */
 function StrategyCard({ title, hint, data, currency }: { title: string; hint: string; data: DebtStrategy; currency: string }) {
   return (
-    <SectionCard label={`${title} · ${hint}`}>
+    <SectionCard label={`${title} · ${hint}`} icon={SlidersHorizontal} tone="indigo">
       <div className="space-y-4">
         <MetricGrid
           metrics={[
@@ -228,7 +228,7 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
             { icon: CalendarClock, label: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
-        <div className="divide-y divide-border/50">
+        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {data.order.map((o, i) => (
             <ListRow key={`${o.name}-${i}`} title={`${i + 1}. ${o.name}`} subtitle={`Paid off in month ${o.paidOffMonth}`} />
           ))}
@@ -297,7 +297,7 @@ function DebtPayoffTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Your debts">
+      <SectionCard label="Your debts" icon={Landmark} tone="rose">
         {loansLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -308,7 +308,7 @@ function DebtPayoffTab() {
           <p className="text-sm text-muted-foreground">No loans found. Add loans on the Loans page first.</p>
         ) : (
           <div className="space-y-4">
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {loans.map((l) => (
                 <ListRow
                   key={l.id}
@@ -345,7 +345,7 @@ function DebtPayoffTab() {
             </SectionCard>
           )}
 
-          <SectionCard label="Total debt over time">
+          <SectionCard label="Total debt over time" icon={TrendingDown} tone="rose">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData}>
                 <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Mo ${v}`} />
@@ -369,7 +369,7 @@ function DebtPayoffTab() {
 /** One side of the income comparison: the figures for that income. */
 function IncomeSide({ label, data, currency }: { label: string; data: IncomeChangeResult["current"]; currency: string }) {
   return (
-    <SectionCard label={label}>
+    <SectionCard label={label} icon={SlidersHorizontal} tone="indigo">
       <MetricGrid
         metrics={[
           { icon: Wallet, label: "Annual Income", value: data.annualIncome, currency },
@@ -406,7 +406,7 @@ function IncomeChangeTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Income details">
+      <SectionCard label="Income details" icon={Wallet} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <div><Label>Current Annual Income ($)</Label><AmountInput  value={form.currentIncome} onValueChange={(nv) => setForm({ ...form, currentIncome: nv })} /></div>
@@ -424,7 +424,7 @@ function IncomeChangeTab() {
         <>
           <IncomeSide label="Current" data={result.current} currency={displayCurrency} />
           <IncomeSide label="New" data={result.new} currency={displayCurrency} />
-          <SectionCard label="Impact summary" cardClassName="bg-info/10 border-info/30">
+          <SectionCard label="Impact summary" icon={Sparkles} tone="cyan" cardClassName="bg-info/10 border-info/30">
             <MetricGrid
               metrics={[
                 { icon: Wallet, label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },

@@ -6,6 +6,7 @@
  * Once turned on, the offline outbox and snapshot are sealed under a second layer that needs this passkey (see the
  * lifecycle module). Hidden unless the flag is on.
  */
+import { KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -110,7 +111,7 @@ export function PasskeyUnlockCard() {
   return (
     <Card data-testid="passkey-unlock-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
+        <CardTitle icon={KeyRound} tone="violet">
           Passkey unlock (beta)
           <InfoTip
             label="About passkey unlock"

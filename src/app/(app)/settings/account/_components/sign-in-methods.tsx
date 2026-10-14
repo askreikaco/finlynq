@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, KeyRound, ShieldCheck } from "lucide-react";
 
 const STRINGS = {
   title: "Sign-in",
@@ -180,7 +180,7 @@ export function SignInMethods() {
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={KeyRound} tone="indigo">
               {STRINGS.title}
               <InfoTip label="About sign-in methods" text={STRINGS.description} />
             </CardTitle>

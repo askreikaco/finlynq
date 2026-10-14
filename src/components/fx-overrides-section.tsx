@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
   currencyLabel,
   isSupportedCurrency,
@@ -138,7 +138,7 @@ export function FxOverridesSection() {
             <RefreshCw className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="flex items-center gap-1 text-base">
+            <CardTitle icon={ArrowLeftRight} tone="cyan">
               Custom rates
               <InfoTip label="About custom rates" text="Pin your own FX rate when the market rate differs from your bank's, or for currencies we don't fetch. Stored as 1 USD = N currency." />
             </CardTitle>
