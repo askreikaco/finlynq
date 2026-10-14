@@ -63,9 +63,9 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
           <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden mt-3">
             <motion.div
               className={`h-full rounded-full ${pctSpent > 100 ? "bg-destructive" : pctSpent > 80 ? "bg-warning" : "bg-pos"}`}
-              initial={{ width: 0 }}
+              initial={false}
               animate={{ width: `${Math.min(100, pctSpent)}%` }}
-              transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+              transition={{ duration: 0 }}
             />
           </div>
           <p className="text-xs text-muted-foreground text-center mt-1.5 tabular-nums">
