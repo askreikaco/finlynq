@@ -9,8 +9,9 @@
 
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
-import { PageHeader, SectionLabel } from "@/components/mobile";
-import { Check } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
+import { CardLabel } from "@/components/mobile/card-label";
+import { Check, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NEW_OP_HREF } from "./op-catalog";
@@ -79,8 +80,8 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <section className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
-      {label ? <SectionLabel className="px-4 pb-1 pt-3">{label}</SectionLabel> : null}
+    <section className="@container divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+      {label ? <CardLabel as="h2" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
       {children}
     </section>
   );

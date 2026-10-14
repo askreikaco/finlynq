@@ -60,7 +60,7 @@ export function LanguageCard() {
             <Languages className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Language</CardTitle>
+            <CardTitle icon={Languages} tone="cyan">Language</CardTitle>
             <CardDescription>Number, date, month and weekday formats (labels are not translated)</CardDescription>
           </div>
         </div>

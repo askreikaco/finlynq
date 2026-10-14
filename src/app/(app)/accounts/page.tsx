@@ -235,16 +235,13 @@ export default function AccountsPage() {
   const renderSection = (
     title: string,
     list: AccountBalance[],
-    color: string,
+    tone: "emerald" | "rose",
     SectionIcon: typeof TrendingUp,
   ) => (
     <SectionCard
-      label={
-        <span className="inline-flex items-center gap-2">
-          <SectionIcon className={`h-4 w-4 ${color}`} />
-          {title}
-        </span>
-      }
+      label={title}
+      icon={SectionIcon}
+      tone={tone}
       className="px-3"
     >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
@@ -423,8 +420,8 @@ export default function AccountsPage() {
               />
             </div>
           ),
-          assets: renderSection("Assets", assets, "text-pos", ArrowUpRight),
-          liabilities: renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight),
+          assets: renderSection("Assets", assets, "emerald", ArrowUpRight),
+          liabilities: renderSection("Liabilities", liabilities, "rose", ArrowDownRight),
         };
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {

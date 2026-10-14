@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, KeyRound, ShieldCheck } from "lucide-react";
 
 const STRINGS = {
   title: "Sign-in methods",
@@ -179,7 +179,7 @@ export function SignInMethods() {
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
+            <CardTitle icon={KeyRound} tone="indigo">{STRINGS.title}</CardTitle>
             <CardDescription>{STRINGS.description}</CardDescription>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { AlertTriangle, RefreshCw, Store, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { motion } from "framer-motion";
+import type { MetricTone } from "@/components/mobile/card-label";
 import type { InsightsData, RecurringData } from "./types";
 
 const containerVariants = {
@@ -23,26 +24,21 @@ const itemVariants = {
 
 function InsightCard({
   icon: Icon,
-  iconBg,
+  tone,
   title,
   subtitle,
   children,
 }: {
   icon: typeof AlertTriangle;
-  iconBg: string;
+  tone: MetricTone;
   title: string;
   subtitle: string;
   children: React.ReactNode;
 }) {
   return (
     <motion.div variants={itemVariants}>
-      <SectionCard label={title} cardClassName="card-hover">
-        <div className="mb-3 flex items-center gap-2.5">
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        </div>
+      <SectionCard label={title} icon={Icon} tone={tone} cardClassName="card-hover">
+        <p className="mb-3 text-xs text-muted-foreground">{subtitle}</p>
         <div>{children}</div>
       </SectionCard>
     </motion.div>
@@ -89,7 +85,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {insights && insights.anomalies.length > 0 && (
         <InsightCard
           icon={AlertTriangle}
-          iconBg="bg-warning/10 text-warning"
+          tone="amber"
           title="Spending Alerts"
           subtitle="Categories above average"
         >
@@ -121,7 +117,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {recurring && recurring.count > 0 && (
         <InsightCard
           icon={RefreshCw}
-          iconBg="bg-info/10 text-info"
+          tone="cyan"
           title={`Recurring (${recurring.count})`}
           subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || resolvedCurrency)}/month`}
         >
@@ -145,7 +141,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {insights && insights.topMerchants.length > 0 && (
         <InsightCard
           icon={Store}
-          iconBg="bg-chart-5/10 text-chart-5"
+          tone="violet"
           title="Top Merchants"
           subtitle="Last 6 months spending"
         >
@@ -169,7 +165,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {insights && insights.trends.length > 0 && (
         <InsightCard
           icon={TrendingUp}
-          iconBg="bg-primary/10 text-primary"
+          tone="indigo"
           title="Category Trends"
           subtitle="Spending direction by category"
         >

@@ -347,8 +347,7 @@ export function GenericCsvConnectorTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
+          <CardTitle icon={FileSpreadsheet} tone="emerald">
             Generic CSV (full ledger)
           </CardTitle>
           <CardDescription>

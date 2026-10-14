@@ -31,20 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Mail,
-  Copy,
-  RefreshCw,
-  BookTemplate,
-  Link as LinkIcon,
-  Landmark,
-  ToggleLeft,
-  ToggleRight,
-  FileSpreadsheet,
-  EyeOff,
-  ChevronRight,
-  Sliders,
-} from "lucide-react";
+import { BookTemplate, ChevronRight, Clock, Copy, Eye, EyeOff, FileCheck, FileSpreadsheet, Landmark, Link as LinkIcon, Mail, RefreshCw, Sliders, ToggleLeft, ToggleRight } from "lucide-react";
 import Link from "next/link";
 import { TemplateManager } from "@/app/(app)/import/components/template-manager";
 import { ConnectorTab } from "@/app/(app)/import/components/connector-tab";
@@ -114,10 +101,7 @@ export function ImportSettingsCard() {
   return (
     <Card id="import-settings" className="scroll-mt-6">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Sliders className="h-4 w-4" />
-          Import settings
-        </CardTitle>
+        <CardTitle icon={Sliders} tone="indigo">Import settings</CardTitle>
         <CardDescription>CSV mapping confirmation, account visibility</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -139,7 +123,7 @@ export function ImportSettingsCard() {
               )}
             </div>
             <div>
-              <CardTitle className="text-base">
+              <CardTitle icon={FileCheck} tone="cyan">
                 Confirm field mapping before importing
               </CardTitle>
               <CardDescription>
@@ -183,7 +167,7 @@ export function ImportSettingsCard() {
               <EyeOff className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Reconcile dropdown visibility</CardTitle>
+              <CardTitle icon={Eye} tone="cyan">Reconcile dropdown visibility</CardTitle>
               <CardDescription>
                 Choose which accounts appear in the account picker on the{" "}
                 <Link href="/import" className="underline hover:text-foreground">
@@ -368,10 +352,7 @@ export function ImportEmailItem() {
           <div className="space-y-4" id="email">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-info" />
-                  Import via Email
-                </CardTitle>
+                <CardTitle icon={Mail} tone="cyan">Import via Email</CardTitle>
                 <CardDescription>
                   Forward bank statements and transaction files to your unique
                   import email address.
@@ -451,7 +432,7 @@ export function ImportEmailItem() {
             {/* FINLYNQ-138 — imported-email retention window. */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
+                <CardTitle icon={Clock} tone="amber">
                   Imported-email retention
                 </CardTitle>
                 <CardDescription>

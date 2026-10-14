@@ -5,6 +5,7 @@
  * State comes from the facade (real on-device flag plus its source: default, on or off); the component never touches
  * storage or local-first directly. Disabled with an explanation on untrusted devices, where offline mode never runs.
  */
+import { WifiOff } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -38,7 +39,7 @@ export function OfflineModeCard() {
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <CardTitle>Offline mode (beta)</CardTitle>
+            <CardTitle icon={WifiOff} tone="muted">Offline mode (beta)</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               Save new and edited transactions on this device when you are offline and sync them when you are back online. Home and Accounts also open from the last saved data. Trusted devices only.
             </p>

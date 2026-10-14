@@ -13,6 +13,7 @@
  * Secrets are masked in the display. Sources indicate env/db/default origin.
  */
 
+import { Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
@@ -90,7 +91,7 @@ interface SectionProps {
 
 function ConfigSection({ title, description, children }: SectionProps) {
   return (
-    <SectionCard label={title}>
+    <SectionCard label={title} icon={Server} tone="indigo">
       <p className="text-sm text-muted-foreground mb-2">{description}</p>
       <ul className="flex flex-col divide-y divide-border/60">{children}</ul>
     </SectionCard>

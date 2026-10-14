@@ -9,7 +9,7 @@ import { Suspense, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Key, RefreshCw, Eye, EyeOff, FileText, Check, Shield, Lock, Mail, Download, Upload, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, Key, KeyRound, Lock, Mail, RefreshCw, Shield, ShieldCheck, Upload } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 import { TwoFactor } from "@/app/(app)/settings/account/_components/two-factor";
 import { SignInMethods } from "@/app/(app)/settings/account/_components/sign-in-methods";
@@ -294,7 +294,7 @@ export function AccountContent({
                 <Lock className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">Change Password</CardTitle>
+                <CardTitle icon={Lock} tone="indigo">Change Password</CardTitle>
                 <CardDescription>Your encrypted data is re-encrypted under the new password, nothing is lost</CardDescription>
               </div>
             </div>
@@ -344,7 +344,7 @@ export function AccountContent({
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">Change Email</CardTitle>
+                <CardTitle icon={Mail} tone="cyan">Change Email</CardTitle>
                 <CardDescription>Recovery email used to reset a forgotten password</CardDescription>
               </div>
             </div>
@@ -391,7 +391,7 @@ export function AccountContent({
               <Key className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">API Key</CardTitle>
+              <CardTitle icon={KeyRound} tone="violet">API Key</CardTitle>
               <CardDescription>Connect AI assistants via MCP, or call the REST API from scripts</CardDescription>
             </div>
           </div>
@@ -468,7 +468,7 @@ export function AccountContent({
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Privacy &amp; Backup</CardTitle>
+              <CardTitle icon={ShieldCheck} tone="emerald">Privacy &amp; Backup</CardTitle>
               <CardDescription>Full backup and restore — your escape hatch if you lose your password</CardDescription>
             </div>
           </div>

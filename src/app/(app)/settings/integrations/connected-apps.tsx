@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
-import { Plug, Loader2 } from "lucide-react";
+import { Link2, Loader2, Plug } from "lucide-react";
 
 interface ConnectedApp {
   id: number;
@@ -124,7 +124,7 @@ export function ConnectedApps() {
             <Plug className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Connected apps</CardTitle>
+            <CardTitle icon={Link2} tone="cyan">Connected apps</CardTitle>
             <CardDescription>AI assistants and other apps you&apos;ve authorized to access your data over OAuth. Connections you don&apos;t use are automatically removed after 60 days; you can also revoke them anytime.</CardDescription>
           </div>
         </div>

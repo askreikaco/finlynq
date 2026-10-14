@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, SlidersHorizontal, Coins, Receipt, Wallet } from "lucide-react";
+import { Coins, Download, Receipt, SlidersHorizontal, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   HEADER_CELL,
@@ -370,7 +370,7 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-              <SectionCard label={firstHeader} padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="divide-y divide-border/50 px-3">
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}

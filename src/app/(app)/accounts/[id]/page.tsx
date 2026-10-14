@@ -8,19 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
-import {
-  Wallet,
-  Pencil,
-  Trash2,
-  Inbox,
-  Receipt,
-  TrendingUp,
-  ChevronDown,
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowLeftRight,
-  MoreHorizontal,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -590,7 +578,7 @@ export default function AccountDetailPage() {
           information: (
         <SectionCard
           data-slot="account-information"
-          label="Information"
+          label="Information" icon={Info} tone="cyan"
           padded={false}
           className="divide-y divide-border/50 px-3"
           action={

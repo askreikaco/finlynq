@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SectionCard } from "@/components/mobile/section-card";
-import { AlertTriangle, Bell, CheckCircle2, X, ChevronRight, Shield } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, ChevronRight, ListChecks, Shield, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpotlightItem } from "./types";
@@ -72,7 +72,7 @@ export function ActionCenter() {
 
   return (
     <motion.div variants={itemVariants}>
-      <SectionCard label="Action Center" cardClassName="card-hover">
+      <SectionCard label="Action Center" icon={ListChecks} tone="indigo" cardClassName="card-hover">
         <div className="mb-3 flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
             <Shield className="h-4 w-4" />

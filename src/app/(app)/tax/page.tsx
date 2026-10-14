@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Coins, Lightbulb, Percent, PiggyBank } from "lucide-react";
+import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { TW } from "@/lib/design/tokens";
@@ -84,7 +84,7 @@ function TaxPageContent() {
       />
 
       <div data-slot="tax-cards" className={TW.grid3}>
-      <SectionCard label="TFSA" padded={false} className="px-3">
+      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false} className="px-3">
         <div className="space-y-3 pt-3">
           <div className="px-1">
             <Progress value={tfsaPct} className="h-2.5" />
@@ -99,7 +99,7 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* RRSP vs TFSA Calculator */}
-      <SectionCard label="RRSP vs TFSA Calculator">
+      <SectionCard label="RRSP vs TFSA Calculator" icon={Calculator} tone="indigo">
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">Compare the tax benefit of contributing to RRSP vs TFSA</p>
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
@@ -133,7 +133,7 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* Marginal Tax Rates */}
-      <SectionCard label="Marginal Tax Rates (Ontario)" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" padded={false} className="divide-y divide-border/50 px-3">
         {Object.entries(data.marginalRates).map(([key, rates]) => (
           <ListRow
             key={key}
@@ -146,7 +146,7 @@ function TaxPageContent() {
 
       {/* Asset Location Advice: tap a holding for the reason */}
       {data.assetLocationAdvice.length > 0 && (
-        <SectionCard label="Asset Location Advice" padded={false} className="divide-y divide-border/50 px-3">
+        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" padded={false} className="divide-y divide-border/50 px-3">
           {data.assetLocationAdvice.map((a, i) => (
             <ListRow
               key={`${a.symbol}-${i}`}

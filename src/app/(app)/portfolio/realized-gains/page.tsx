@@ -19,7 +19,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal, Receipt, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Receipt, RefreshCw, SlidersHorizontal, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
@@ -554,7 +554,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" padded={false} className="divide-y divide-border/50 px-3">
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -567,7 +567,7 @@ export default function RealizedGainsPage() {
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} padded={false} className="divide-y divide-border/50 px-3">
+                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" padded={false} className="divide-y divide-border/50 px-3">
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;

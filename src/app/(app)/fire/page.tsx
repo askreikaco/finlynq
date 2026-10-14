@@ -14,7 +14,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend,
 } from "recharts";
-import { CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
@@ -204,7 +204,7 @@ function FirePageContent() {
 
       <div data-slot="fire-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Inputs */}
-      <SectionCard label="Your details">
+      <SectionCard label="Your details" icon={SlidersHorizontal} tone="indigo">
         <div className="space-y-4">
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
             <div>
@@ -271,7 +271,7 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Net Worth Projection Chart */}
-          <SectionCard label="Projected net worth vs FIRE number">
+          <SectionCard label="Projected net worth vs FIRE number" icon={TrendingUp} tone="emerald">
             <ResponsiveContainer width="100%" height={350}>
               <AreaChart data={result.projections}>
                 <XAxis dataKey="age" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} />
@@ -311,7 +311,7 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Monte Carlo Analysis */}
-          <SectionCard label="Monte Carlo analysis">
+          <SectionCard label="Monte Carlo analysis" icon={BarChart3} tone="violet">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -468,7 +468,7 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Sensitivity: years to FIRE by return rate, for one monthly-savings amount */}
-          <SectionCard label="Sensitivity analysis: years to FIRE" className="space-y-3">
+          <SectionCard label="Sensitivity analysis: years to FIRE" icon={Activity} tone="amber" className="space-y-3">
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">How different return rates and savings amounts affect your timeline</p>
               {savingsAdj.length > 0 && (

@@ -30,7 +30,7 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tags } from "lucide-react";
 import { CategoryManagement } from "./_components/category-management";
 import { PageHeader, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
@@ -434,7 +434,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">By category</CardTitle>
+          <CardTitle icon={Tags} tone="indigo">By category</CardTitle>
           <CardDescription>
             Compared with each category&apos;s average over the previous complete months (up to 11) · {cur}
           </CardDescription>

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, Shield, Mail, KeyRound, Layers, Receipt, UserPlus, ShieldCheck } from "lucide-react";
+import { Activity, KeyRound, Layers, Mail, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -498,7 +498,7 @@ export default function AdminPage() {
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard label="Decision prompts" padded={false} className="divide-y divide-border/50 px-3">
+            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" padded={false} className="divide-y divide-border/50 px-3">
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}

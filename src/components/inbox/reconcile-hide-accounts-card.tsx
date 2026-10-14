@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EyeOff, Eye } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { safeAccountName } from "@/lib/safe-name";
 
 interface AccountRow {
@@ -105,7 +105,7 @@ export function ReconcileHideAccountsCard() {
             <EyeOff className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">
+            <CardTitle icon={EyeOff} tone="muted">
               Hide accounts from the reconcile dropdown
             </CardTitle>
             <CardDescription>

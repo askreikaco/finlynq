@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { Plus, Landmark, CheckCircle2, CalendarClock, ListChecks } from "lucide-react";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Plus, Table2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -266,7 +266,7 @@ function LoansPageContent() {
       )}
 
       {activeLoans.length > 0 && (
-        <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+        <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
           {activeLoans.map((loan) => (
             <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
           ))}
@@ -293,7 +293,7 @@ function LoansPageContent() {
 
       {/* Amortization panel. Every figure comes from the schedule the server computed in the loan's OWN currency. */}
       {selectedLoan && amort && (
-        <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`}>
+        <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
           <Tabs defaultValue="chart">
             <TabsList className="h-auto flex-wrap">
               <TabsTrigger value="chart">Chart</TabsTrigger>

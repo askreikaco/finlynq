@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SectionCard } from "@/components/mobile/section-card";
-import { Upload, FileText, FileUp } from "lucide-react";
+import { FileText, FileUp, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { setHandoffFile } from "@/lib/import/file-handoff";
 
@@ -48,7 +48,7 @@ export function QuickImport() {
 
   return (
     <SectionCard
-      label="Quick Import"
+      label="Quick Import" icon={Upload} tone="cyan"
       cardClassName={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
       onDrop={onDrop}
       onDragOver={onDragOver}

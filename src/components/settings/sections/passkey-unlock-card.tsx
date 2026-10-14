@@ -6,6 +6,7 @@
  * Once turned on, the offline outbox and snapshot are sealed under a second layer that needs this passkey (see the
  * lifecycle module). Hidden unless the flag is on.
  */
+import { KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,7 +110,7 @@ export function PasskeyUnlockCard() {
   return (
     <Card data-testid="passkey-unlock-card">
       <CardHeader>
-        <CardTitle>Passkey unlock (beta)</CardTitle>
+        <CardTitle icon={KeyRound} tone="violet">Passkey unlock (beta)</CardTitle>
         <p className="mt-1 text-sm text-muted-foreground">
           Protect the saved copy on this device with Face ID, Touch ID or Windows Hello. Once it is on, the offline copy can be
           read only after you use the passkey, and only in this browser tab until you reload. It stays on this device, is never sent to the

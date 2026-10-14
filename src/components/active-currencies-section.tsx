@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Globe, Plus, X, Check, AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Coins, Globe, Loader2, Plus, X } from "lucide-react";
 import { currencyLabel, isSupportedCurrency } from "@/lib/fx/supported-currencies";
 
 /**
@@ -153,7 +153,7 @@ export function ActiveCurrenciesSection() {
             <Globe className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Currencies you use</CardTitle>
+            <CardTitle icon={Coins} tone="amber">Currencies you use</CardTitle>
             <CardDescription>
               These are the only currencies offered in the app&apos;s dropdowns
               (transaction form, account form, FX rates). {source === "derived" ? (

@@ -6,7 +6,7 @@ import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Calendar, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Calendar, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeeklyRecapData } from "./types";
 import { CspSafeBar } from "@/components/csp-safe-bar";
@@ -59,7 +59,7 @@ export function WeeklyRecap() {
   }));
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Weekly Recap" cardClassName="card-hover relative overflow-hidden">
+      <SectionCard label="Weekly Recap" icon={CalendarDays} tone="violet" cardClassName="card-hover relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
         <div className="mb-3 flex items-center justify-between">

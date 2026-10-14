@@ -4,7 +4,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Database } from "lucide-react";
+import { Database, Info, Shield } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 
 export default function AboutSettingsPage() {
@@ -25,7 +25,7 @@ export default function AboutSettingsPage() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">About</CardTitle>
+              <CardTitle icon={Info} tone="cyan">About</CardTitle>
               <CardDescription>Finlynq</CardDescription>
             </div>
           </div>

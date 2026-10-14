@@ -7,6 +7,7 @@
  * Replaces the All Holdings table and the Holdings-by-account accordion. No <table>.
  */
 
+import { Landmark } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { formatCurrencyAdaptive, formatCurrency } from "@/lib/currency";
@@ -61,7 +62,7 @@ export function HoldingAccountGroups({
       data-slot="holdings-by-account"
     >
       {groups.map((g) => (
-        <SectionCard key={g.accountName} label={g.accountName} padded={false} className="divide-y divide-border/50 px-3">
+        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" padded={false} className="divide-y divide-border/50 px-3">
           {g.holdings.map((h) => (
             <HoldingRow
               key={h.id}

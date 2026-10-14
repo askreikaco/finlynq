@@ -25,7 +25,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
-import { Landmark, Loader2, RefreshCw, CheckCircle2, ExternalLink, Link2, Plus, Clock, AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Landmark, Link2, Loader2, Plus, RefreshCw } from "lucide-react";
 
 /** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
@@ -286,7 +286,7 @@ export function BankFeedsSection() {
               <Landmark className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle icon={Landmark} tone="indigo" className="flex items-center gap-2">
                 SimpleFIN
                 {status?.connected && (
                   <Badge variant="outline" className="text-xs text-pos border-pos/40">
@@ -564,7 +564,7 @@ export function BankFeedsSection() {
                 <Clock className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-base">Pending charges</CardTitle>
+                <CardTitle icon={Clock} tone="amber">Pending charges</CardTitle>
                 <CardDescription>
                   Holds and not-yet-posted charges from your bank. These are volatile (a hold
                   clears and re-posts as a distinct charge) so they are NOT added to your ledger —

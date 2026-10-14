@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { CardLabel, groupLabelIcon, type MetricTone } from "./card-label";
 
 /* ---------- section header ---------- */
 
@@ -37,6 +38,9 @@ export interface InsetGroupProps {
   inset?: "icon" | "avatar";
   /** Group title, rendered INSIDE the group card as its first row (never above the card). */
   header?: React.ReactNode;
+  /** Icon tile before the header (defaults from the title: Account, Explore, Tools, ...). */
+  headerIcon?: LucideIcon;
+  headerTone?: MetricTone | (string & {});
   "data-testid"?: string;
   "aria-label"?: string;
 }
@@ -46,16 +50,19 @@ const INSET_SEP: Record<NonNullable<InsetGroupProps["inset"]>, string> = {
   avatar: "4rem",
 };
 
-export function InsetGroup({ children, className, inset = "icon", header, ...rest }: InsetGroupProps) {
+export function InsetGroup({ children, className, inset = "icon", header, headerIcon, headerTone, ...rest }: InsetGroupProps) {
+  const fallback = groupLabelIcon(header);
   return (
     <div
       data-slot="inset-group"
-      className={cn("overflow-hidden rounded-3xl bg-card", className)}
+      className={cn("@container overflow-hidden rounded-3xl bg-card", className)}
       style={{ ["--inset-sep" as string]: INSET_SEP[inset] } as React.CSSProperties}
       {...rest}
     >
       {header ? (
-        <InsetSectionHeader className="pb-1 pt-3 text-xs font-bold uppercase tracking-normal">{header}</InsetSectionHeader>
+        <CardLabel as="h2" slot="inset-section-header" icon={headerIcon ?? fallback.icon} tone={headerTone ?? fallback.tone}>
+          {header}
+        </CardLabel>
       ) : null}
       {children}
     </div>

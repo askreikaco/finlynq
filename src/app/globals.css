@@ -223,6 +223,8 @@ html {
   --glass-edge: inset 0 1px 0 var(--glass-edge-top), inset 0 -1px 0 var(--glass-edge-bottom), 0 0 14px var(--glass-glow);
   /* ONE card shadow for every top-level surface (cards, sections, neutral buttons), both themes. */
   --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  /* ONE divider between list items (an inset line shadow, not a border). Use `shadow-[var(--list-divider)]`. */
+  --list-divider: rgba(100, 121, 143, 0.12) 0px -1px 0px 0px inset;
   /* Liquid glass card: card colour at 72%, light blur. Opaque --card when blur is unsupported or reduced. */
   --glass-card-bg: oklch(1 0 0 / 72%);
   --glass-card-blur: 14px;
@@ -256,6 +258,7 @@ html {
   --glass-menu-destructive-highlight: oklch(0.6 0.16 25 / 22%);
 }
 .dark {
+  --list-divider: inset 0 -1px 0 0 rgba(255, 255, 255, 0.12);
   /* material, dark */
   --glass-card-bg: oklch(0.2711 0.0035 228.92 / 72%);   /* #252728 at 72% */
   --glass-card-border: oklch(1 0 0 / 6%);

@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { FileSpreadsheet, ArrowRight } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
 
 interface SheetInfo {
   name: string;
@@ -179,7 +179,7 @@ export function ExcelMapperDialog({
         {/* Sample data preview: one list row per sample row (no table). */}
         {sheet.sampleRows.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <SectionCard label="Sample rows" padded={false} className="divide-y divide-border/50 px-3">
+            <SectionCard label="Sample rows" icon={Table2} tone="muted" padded={false} className="divide-y divide-border/50 px-3">
               {sheet.sampleRows.map((row, i) => (
                 <ListRow
                   key={i}

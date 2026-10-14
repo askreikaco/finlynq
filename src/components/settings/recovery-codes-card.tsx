@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { LifeBuoy, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, LifeBuoy, ShieldCheck } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
@@ -180,7 +180,7 @@ export function RecoveryCodesCard() {
             <LifeBuoy className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
+            <CardTitle icon={ShieldCheck} tone="amber">{STRINGS.title}</CardTitle>
             <CardDescription>{STRINGS.description}</CardDescription>
           </div>
         </div>

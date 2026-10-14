@@ -28,23 +28,7 @@ import { serializeAccountIds } from "@/lib/reports/account-filter";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { SankeyChart } from "@/components/sankey-chart";
-import {
-  Download,
-  FileText,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  GitCompareArrows,
-  Workflow,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  PiggyBank,
-  Calendar,
-  Layers,
-  Wallet,
-  Coins,
-} from "lucide-react";
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Calendar, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -619,7 +603,7 @@ export default function ReportsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-base">{periodLabels[period]} Breakdown</CardTitle>
+                        <CardTitle icon={BarChart3} tone="indigo">{periodLabels[period]} Breakdown</CardTitle>
                         <CardDescription>Stacked income and expenses per {period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}</CardDescription>
                       </div>
                     </div>
@@ -667,7 +651,7 @@ export default function ReportsPage() {
                         <ArrowUpRight className="h-5 w-5" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">Income</CardTitle>
+                        <CardTitle icon={TrendingUp} tone="emerald">Income</CardTitle>
                         <CardDescription>
                           {trendsData.income.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalIncome, displayCurrency)}
                         </CardDescription>
@@ -725,7 +709,7 @@ export default function ReportsPage() {
                         <ArrowDownRight className="h-5 w-5" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">Expenses</CardTitle>
+                        <CardTitle icon={TrendingDown} tone="rose">Expenses</CardTitle>
                         <CardDescription>
                           {trendsData.expenses.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalExpenses, displayCurrency)}
                         </CardDescription>
@@ -788,7 +772,7 @@ export default function ReportsPage() {
                   />
                   <Card>
                     <CardHeader>
-                      <CardTitle>Unrealized gains / losses (period change)</CardTitle>
+                      <CardTitle icon={TrendingUp} tone="amber">Unrealized gains / losses (period change)</CardTitle>
                       <CardDescription>
                         How asset valuations and FX translation moved during the
                         selected period. Computed as snapshot at period end −
@@ -820,7 +804,7 @@ export default function ReportsPage() {
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">Balance Sheet</CardTitle>
+                      <CardTitle icon={Scale} tone="indigo">Balance Sheet</CardTitle>
                       <p className="text-xs text-muted-foreground">As of {balanceSheet.date}</p>
                     </div>
                   </div>
@@ -879,7 +863,7 @@ export default function ReportsPage() {
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-base">Cash Flow Diagram</CardTitle>
+                    <CardTitle icon={ArrowLeftRight} tone="cyan">Cash Flow Diagram</CardTitle>
                     <CardDescription>
                       How income flows into expense categories ({startDate} to {endDate})
                     </CardDescription>
@@ -936,7 +920,7 @@ export default function ReportsPage() {
                         <GitCompareArrows className="h-5 w-5" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">Monthly Spending Comparison</CardTitle>
+                        <CardTitle icon={BarChart3} tone="rose">Monthly Spending Comparison</CardTitle>
                         <CardDescription>
                           {yoyData.year1} vs {yoyData.year2} expenses by month
                         </CardDescription>
@@ -979,7 +963,7 @@ export default function ReportsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Monthly Income Comparison</CardTitle>
+                    <CardTitle icon={BarChart3} tone="emerald">Monthly Income Comparison</CardTitle>
                     <CardDescription>
                       {yoyData.year1} vs {yoyData.year2} income by month
                     </CardDescription>
@@ -1021,7 +1005,7 @@ export default function ReportsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Category Comparison</CardTitle>
+                    <CardTitle icon={Tags} tone="violet">Category Comparison</CardTitle>
                     <CardDescription>Expense categories year-over-year change</CardDescription>
                   </CardHeader>
                   <CardContent>

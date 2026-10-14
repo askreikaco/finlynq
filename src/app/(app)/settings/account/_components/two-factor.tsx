@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { RevealForm } from "@/components/settings/reveal-form";
 import { Input } from "@/components/ui/input";
-import { Shield, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Shield, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
 
 const STRINGS = {
@@ -272,7 +272,7 @@ export function TwoFactor() {
             <Shield className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
+            <CardTitle icon={ShieldCheck} tone="emerald">{STRINGS.title}</CardTitle>
             <CardDescription>{STRINGS.description}</CardDescription>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { Amount, DetailSheet, ListRow, SectionCard } from "@/components/mobile";
@@ -40,7 +41,7 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
 
   return (
     <section data-slot="investment-transactions" className="space-y-2">
-      <SectionCard label="Transactions" padded={false}>
+      <SectionCard label="Transactions" icon={ArrowLeftRight} tone="cyan" padded={false}>
         {rows === null ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">Loading…</p>
         ) : error ? (
