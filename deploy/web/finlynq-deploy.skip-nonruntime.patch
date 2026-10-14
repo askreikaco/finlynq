@@ -1,0 +1,32 @@
+--- a/finlynq-deploy.sh
++++ b/finlynq-deploy.sh
+@@ -40,6 +40,29 @@
+   exit 0
+ fi
+ 
++# Skip the image rebuild when everything changed since the last deploy is non-runtime
++# (tests, e2e, docs, _ai, *.md, .github, deploy/web). Never with --force; if the last
++# deployed sha is not in the clone (or git fails) do not skip.
++if [ "${1:-}" != "--force" ] && [ -f "$STATE" ]; then
++  OLD_SHA=$(cat "$STATE")
++  if [ -n "$OLD_SHA" ] && git -C "$SRC" cat-file -e "${OLD_SHA}^{commit}" 2>/dev/null \
++     && CHANGED=$(git -C "$SRC" diff --no-renames --name-only "$OLD_SHA" "$SHA" 2>/dev/null); then
++    RUNTIME=false
++    while IFS= read -r f; do
++      [ -n "$f" ] || continue
++      case "$f" in
++        tests/*|e2e/*|docs/*|_ai/*|*.md|.github/*|deploy/web/*) ;;
++        *) RUNTIME=true; break ;;
++      esac
++    done <<<"$CHANGED"
++    if [ "$RUNTIME" = false ]; then
++      log "skip: non-runtime diff ($SHA)"
++      echo "$SHA" > "$STATE"
++      exit 0
++    fi
++  fi
++fi
++
+ # Check disk usage; abort if >90%
+ DISK_PERCENT=$(df --output=pcent /var/lib/docker | tail -1 | tr -dc 0-9)
+ if [ "$DISK_PERCENT" -gt 90 ]; then
