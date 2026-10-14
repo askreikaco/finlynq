@@ -380,7 +380,7 @@ function SubscriptionsPageContent() {
     <SectionPage
       id="subscriptions"
       title="Subscriptions"
-      subtitle="Recurring bills and subscriptions: what they cost and when they're due."
+      info="Recurring bills and subscriptions: what they cost and when they're due."
       width="report"
       center
       header={{

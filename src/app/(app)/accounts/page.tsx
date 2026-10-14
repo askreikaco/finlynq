@@ -344,7 +344,7 @@ function AccountsPage() {
       <SectionPage
         id="accounts"
         title="Accounts"
-        subtitle="Overview of your assets, liabilities, and net worth"
+        info="Overview of your assets, liabilities, and net worth"
         width="report"
         header={{ actions: createAccountLink }}
       >
@@ -363,7 +363,7 @@ function AccountsPage() {
     <SectionPage
       id="accounts"
       title="Accounts"
-      subtitle="Overview of your assets, liabilities, and net worth"
+      info="Overview of your assets, liabilities, and net worth"
       width="report"
       header={{
         className: "flex items-center justify-between",

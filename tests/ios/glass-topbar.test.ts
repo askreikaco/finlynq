@@ -79,11 +79,10 @@ describe("PageHeader phone bar (render)", () => {
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
 
-  it("shows the subtitle on phones as a muted second line", () => {
+  it("shows no subtitle line on phones (InfoTip only)", () => {
     render(h(PageHeader, { title: "Budgets", subtitle: "Set limits" }));
-    const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "truncate"]));
-    expect(cls(sub)).not.toContain("hidden");
+    expect(screen.queryByText("Set limits")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Budgets" })).toBeTruthy();
   });
 
   it("top-level pages have no left slot (the title sits at the left edge)", () => {

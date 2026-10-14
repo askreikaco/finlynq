@@ -121,7 +121,7 @@ function GalleryContent() {
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto bg-background" style={{ minWidth: "100%" }}>
       <div className="w-full space-y-6 p-4">
-        <PageHeader title="Component Gallery" subtitle={`Size class: ${sizeClass}`} />
+        <PageHeader title="Component Gallery" info={`Size class: ${sizeClass}`} />
 
         <nav
           aria-label="Gallery index"

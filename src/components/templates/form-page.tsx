@@ -29,7 +29,8 @@
  * - `states`: per-state chrome (false = the state node renders bare), copy and retry.
  * - `header`, `width`, `padBottom`, `bodyClassName`, `saveDisabled`, `delete.*` extras.
  * - `rootTestId`: testid of the root (default `${id}-root`). `id` still derives the form id.
- * - `subtitle`: a node, or a function of the loaded record.
+ * - `info`: help text for the (i) InfoTip after the title; a node, or a function of the loaded record.
+ * - `title`: a node, or a function of the loaded record (record identity goes in the title, e.g. "Add to account: AAPL").
  * - `states.{loading,error,notFound}`: `wrapperClassName` wraps the state body; `node` (a node or
  *   a function of `{ retry, message }`) replaces the built-in body. Header chrome rules are unchanged.
  */
@@ -38,6 +39,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Check, Trash2, X } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
@@ -191,8 +193,11 @@ export interface FormPageProps<T, R, V, X = unknown> {
   embedded?: FormPageEmbedded;
   /** Testid of the root element. Default `${id}-root`. */
   rootTestId?: string;
-  title: React.ReactNode;
   /** A node, or a function of the loaded record (undefined until loaded). */
+  title: React.ReactNode | ((record: R | undefined) => React.ReactNode);
+  /** Help text, shown only in the (i) InfoTip after the title. A node, or a function of the loaded record. */
+  info?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
+  /** @deprecated Alias of `info`. */
   subtitle?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
   /** Back, Cancel and the post-save target when no valid ?returnTo= is given. */
   fallbackReturn: string | ((params: Record<string, string | undefined>) => string);
@@ -269,7 +274,8 @@ function FormPageBody<T, R, V, X>({
   entity,
   embedded,
   rootTestId,
-  title,
+  title: titleProp,
+  info,
   subtitle,
   fallbackReturn,
   savePlacement: savePlacementProp = "bar",
@@ -464,12 +470,16 @@ function FormPageBody<T, R, V, X>({
       (actionsOpt as React.ReactNode)
     );
 
-  const subtitleNode = typeof subtitle === "function" ? subtitle(record) : subtitle;
+  const titleNode = typeof titleProp === "function" ? titleProp(record) : titleProp;
+  const infoSrc = info ?? subtitle;
+  const infoNode = typeof infoSrc === "function" ? infoSrc(record) : infoSrc;
   const embeddedHeader = (
     <div data-slot="form-pane-header" className="flex items-start justify-between gap-2 pb-3">
       <div className="min-w-0">
-        <h2 className="truncate text-base font-semibold text-foreground">{title}</h2>
-        {subtitleNode ? <div className="text-xs text-muted-foreground">{subtitleNode}</div> : null}
+        <div className="flex min-w-0 items-center gap-1">
+          <h2 className="truncate text-base font-semibold text-foreground">{titleNode}</h2>
+          {infoNode ? <InfoTip text={infoNode} label="About this form" side="bottom" /> : null}
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {embedded?.actions}
@@ -488,8 +498,8 @@ function FormPageBody<T, R, V, X>({
   );
   const headerNode = embedded ? embeddedHeader : (
     <PageHeader
-      title={title}
-      subtitle={subtitleNode}
+      title={titleNode}
+      info={infoNode}
       backHref={dirtyGuard ? undefined : (header?.backHref ?? returnTo)}
       onBack={dirtyGuard ? () => leave(returnTo) : undefined}
       backLabel={header?.backLabel ?? "Back"}

@@ -194,7 +194,7 @@ function FirePageContent() {
     <SectionPage
       id="fire"
       title={<><Flame className="h-6 w-6 text-warning" /> FIRE Calculator</>}
-      subtitle="Calculate your Financial Independence, Retire Early number and timeline"
+      info="Calculate your Financial Independence, Retire Early number and timeline"
       width="report"
       center
     >

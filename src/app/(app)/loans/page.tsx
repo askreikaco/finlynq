@@ -264,7 +264,7 @@ function LoansPageContent() {
     <SectionPage
       id="loans"
       title="Loans & Debt"
-      subtitle="Track balances, amortization schedules, and payoff strategies"
+      info="Track balances, amortization schedules, and payoff strategies"
       width="report"
             header={{
         filter: { href: tb.filterHref, activeCount: tb.activeCount },

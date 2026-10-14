@@ -54,7 +54,7 @@ export default function WhatsNewPage() {
   }, [reloadKey]);
 
   return (
-    <SectionPage id="whats-new" title="What's new" subtitle="Product news, updates, and announcements." width="report" center>
+    <SectionPage id="whats-new" title="What's new" info="Product news, updates, and announcements." width="report" center>
 
       {error && (
         <ErrorState

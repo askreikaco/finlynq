@@ -352,7 +352,7 @@ export default function FeedbackPage() {
     <SectionPage
       id="feedback"
       title="Feedback"
-      subtitle="Track your reports and follow up on replies from the team."
+      info="Track your reports and follow up on replies from the team."
       width="report"
       center
       header={{

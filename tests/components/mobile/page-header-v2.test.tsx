@@ -17,7 +17,6 @@ import {
   PHONE_BAR_STICKY,
   PHONE_CAPSULE,
   PHONE_BAR_TITLE,
-  PHONE_BAR_SUBTITLE,
 } from "@/components/mobile/page-header";
 
 afterEach(cleanup);
@@ -33,7 +32,6 @@ describe("PageHeader v2: one bar at every width", () => {
     expect(PHONE_CAPSULE).toContain("max-w-[11rem]");
     expect(PHONE_CAPSULE).not.toMatch(/(max-)?regular:/);
     expect(PHONE_BAR_TITLE).toContain("text-base");
-    expect(PHONE_BAR_SUBTITLE).toContain("text-xs");
   });
 
   it("the bar is glass and sticky at every size, pinned at the safe-area inset", () => {
@@ -47,9 +45,8 @@ describe("PageHeader v2: one bar at every width", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(cls(h1)).toEqual(expect.arrayContaining(["text-base", "font-semibold"]));
     expect(cls(h1)).not.toContain("font-extrabold");
-    const sub = screen.getByText("Today");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["text-xs"]));
-    expect(cls(sub)).not.toContain("text-sm");
+    expect(screen.queryByText("Today")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Dashboard" })).toBeTruthy();
   });
 });
 
@@ -86,9 +83,7 @@ describe("PageHeader v2: deprecated props are accepted and ignored", () => {
     const h1 = cls(screen.getByRole("heading", { level: 1 }));
     expect(h1).not.toContain("font-bold");
     expect(h1).not.toContain("md:text-4xl");
-    const sub = cls(screen.getByText("sub"));
-    expect(sub).not.toContain("text-lg");
-    expect(sub).toContain("text-xs");
+    expect(screen.queryByText("sub")).toBeNull();
   });
 
   it("the deprecated props are typed @deprecated in page-header.tsx", () => {

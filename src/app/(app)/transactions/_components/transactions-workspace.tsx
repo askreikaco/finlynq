@@ -658,7 +658,7 @@ export function TransactionsWorkspace({
           <PageHeader
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
-            subtitle="Manage and track all your financial transactions"
+            info="Manage and track all your financial transactions"
             filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
             bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
             overflow={[

@@ -45,7 +45,7 @@ function NewTemplatePage() {
     <FormPage
       id="template-new"
       title="Save as template"
-      subtitle={getMonthLabel(month)}
+      info={getMonthLabel(month)}
       fallbackReturn={`/categories?month=${month}`}
       form="external"
       useLoad={useTemplateBudgets}

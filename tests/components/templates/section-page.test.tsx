@@ -22,7 +22,8 @@ describe("SectionPage", () => {
     const root = screen.getByTestId("settings-general-root");
     expect(root).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "General" })).toBeInTheDocument();
-    expect(screen.getByText("Display")).toBeInTheDocument();
+    expect(screen.queryByText("Display")).toBeNull();
+    expect(screen.getByRole("button", { name: "About General" })).toBeInTheDocument();
     expect(screen.getByText("body")).toBeInTheDocument();
   });
 

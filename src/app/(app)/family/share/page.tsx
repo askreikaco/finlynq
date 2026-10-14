@@ -12,7 +12,7 @@ export default function FamilySharePage() {
     <SectionPage
       id="family-share"
       title={FAMILY_STRINGS.share_page_title}
-      subtitle={FAMILY_STRINGS.share_page_description}
+      info={FAMILY_STRINGS.share_page_description}
       backFallback="/family"
       backLabel={FAMILY_STRINGS.share_back}
       width="none"

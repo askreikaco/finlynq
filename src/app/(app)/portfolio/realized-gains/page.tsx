@@ -388,7 +388,7 @@ export default function RealizedGainsPage() {
     <SectionPage
       id="realized-gains"
       title="Realized gains"
-      subtitle={periodLabel}
+      info={periodLabel}
       backFallback="/portfolio"
       backLabel="Back to portfolio"
       width="none"

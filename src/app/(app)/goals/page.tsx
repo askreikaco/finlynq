@@ -319,7 +319,7 @@ export default function GoalsPage() {
       <ListPage<Goal>
         id="goals"
         title="Goals"
-        subtitle="Track your savings targets and measure progress over time"
+        info="Track your savings targets and measure progress over time"
         viewKey="goals"
         useLoad={useGoalsLoad}
         empty={{

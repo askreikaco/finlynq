@@ -16,6 +16,7 @@ import { BackButton } from "./back-button";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
 import { usePageCustomizeRegistration } from "./page-customize";
 import { FilterButton } from "@/components/page-toolbar";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export interface OverflowAction {
   label: string;
@@ -99,8 +100,8 @@ export function splitHeaderSave(actions: React.ReactNode): { save: React.ReactNo
 export const PHONE_BAR_TITLE =
   "max-w-full text-base font-semibold tracking-normal truncate text-left";
 
-/** Subtitle, every width: a truncated muted caption (text-xs, the system caption step) left-aligned under the title. */
-export const PHONE_BAR_SUBTITLE = "block mt-0 w-full truncate text-left text-xs text-muted-foreground";
+/** Title row: the h1 and the (i) InfoTip right after it. The bar never shows a subtitle/description line (owner 2026-10-14). */
+export const PHONE_BAR_TITLE_ROW = "flex max-w-full min-w-0 items-center gap-1";
 
 /**
  * Icon cells in the capsule: at most this many phone-visible non-primary actions (icon buttons, HeaderStatus).
@@ -235,6 +236,7 @@ function textOf(node: React.ReactNode): string {
  */
 export function PageHeader({
   title,
+  info,
   subtitle,
   actions,
   overflow,
@@ -248,6 +250,9 @@ export function PageHeader({
   onBack,
 }: {
   title: React.ReactNode;
+  /** Help text for the page: shown ONLY in the (i) InfoTip right after the title, never as a visible line. One short sentence. */
+  info?: React.ReactNode;
+  /** @deprecated Compatibility alias of `info`: rendered as the InfoTip content, never as a visible subtitle line. */
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   overflow?: OverflowAction[];
@@ -310,14 +315,18 @@ export function PageHeader({
       {title}
     </h1>
   );
+  const infoText = info ?? subtitle;
+  const infoLabel = typeof title === "string" ? `About ${title}` : "About this page";
   const titleBlock = (
     <div data-slot="page-header-title-block" className={PHONE_BAR_CENTER}>
-      {h1}
-      {subtitle ? (
-        <p data-slot="page-header-subtitle" className={PHONE_BAR_SUBTITLE}>
-          {subtitle}
-        </p>
-      ) : null}
+      {infoText ? (
+        <div className={PHONE_BAR_TITLE_ROW}>
+          {h1}
+          <InfoTip text={infoText} label={infoLabel} side="bottom" />
+        </div>
+      ) : (
+        h1
+      )}
       {belowTitle}
     </div>
   );

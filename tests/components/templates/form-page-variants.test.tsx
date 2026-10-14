@@ -141,10 +141,12 @@ describe("FormPage variants: title and subtitle ReactNode", () => {
     expect(t.querySelector("em")?.textContent).toBe("icon");
   });
 
-  it("subtitle accepts a ReactNode", () => {
+  it("subtitle accepts a ReactNode (shown in the InfoTip)", async () => {
     loaded();
     renderPage({ subtitle: <span data-testid="sub-node">Line <b>two</b></span> });
-    expect(screen.getByTestId("sub-node").querySelector("b")?.textContent).toBe("two");
+    expect(screen.queryByTestId("sub-node")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^About / }));
+    expect((await screen.findByTestId("sub-node")).querySelector("b")?.textContent).toBe("two");
   });
 });
 
