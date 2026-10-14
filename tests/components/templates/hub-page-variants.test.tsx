@@ -65,9 +65,10 @@ describe("HubPage variants: look=card", () => {
   it("renders a rounded card group with divider rows and no InsetGroup", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const main = screen.getByTestId("settings-group-main");
-    const card = main.querySelector(".divide-y");
+    const card = main.querySelector('[class*="list-divider"]');
     expect(card).not.toBeNull();
-    expect(card).toHaveClass("divide-border/50", "overflow-hidden", "rounded-group", "bg-card");
+    expect(card).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]", "overflow-hidden", "rounded-group", "bg-card");
+    expect(card!.className).not.toMatch(/divide-/);
     expect(main.querySelector('[data-slot="inset-group"]')).toBeNull();
   });
 
@@ -187,7 +188,9 @@ describe("HubPage variants: section labels", () => {
     render(<HubPage id="settings" title="Settings" look="card" sectionLabel="caps" groups={groups} />);
     const h = within(screen.getByTestId("settings-group-main")).getByRole("heading", { name: "Main" });
     expect(h.tagName).toBe("H2");
-    expect(h).toHaveClass("px-4", "text-xs", "font-semibold", "uppercase", "tracking-wide", "text-muted-foreground");
+    expect(h).toHaveClass("text-xs", "font-medium", "uppercase", "tracking-wide", "text-muted-foreground");
+    // padding lives on the shared CardLabel row (same px as MetricCard)
+    expect(h.closest('[data-slot="card-label"]')).toHaveClass("px-3", "@[11rem]:px-5");
   });
 
   it("sectionLabel section-label renders SectionLabel", () => {

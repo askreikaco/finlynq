@@ -100,7 +100,7 @@ describe("desktop columns: card grids", () => {
   it("subscriptions: status group and suggestion cards span the full row with inner row grids; empty state is a card", () => {
     const src = code(`${APP}/subscriptions/page.tsx`);
     expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
-    expect(src).toMatch(/Found in your transactions" padded=\{false\} className="col-span-full/);
+    expect(src).toMatch(/Found in your transactions" icon=\{Search\} tone="cyan" padded=\{false\} className="col-span-full/);
     expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
     expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
   });

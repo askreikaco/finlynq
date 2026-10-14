@@ -85,7 +85,7 @@ describe("InsetRow", () => {
     expect(cls).toMatch(/focus-visible:ring-3/);
   });
 
-  it("hairlines start after the icon and skip the first row (no line on the first or last-only row)", () => {
+  it("rows carry the --list-divider shadow on every row but the last (no pseudo-element hairline)", () => {
     const { container } = render(
       <InsetGroup>
         <InsetRow href="/a" label="A" icon={Inbox} />
@@ -94,9 +94,8 @@ describe("InsetRow", () => {
     );
     const rows = container.querySelectorAll("[data-slot='inset-row']");
     expect(rows).toHaveLength(2);
-    expect(rows[0].className).toMatch(/first:before:hidden/);
-    expect(rows[0].className).toMatch(/before:left-\[var\(--inset-sep,3\.125rem\)\]/);
-    expect(rows[0].className).toMatch(/before:h-px/);
+    expect(rows[0].className).toContain("not-last:shadow-[var(--list-divider)]");
+    expect(rows[0].className).not.toMatch(/before:/);
     const group = container.querySelector("[data-slot='inset-group']") as HTMLElement;
     expect(group.style.getPropertyValue("--inset-sep")).toBe("3.125rem");
   });

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -88,7 +89,7 @@ describe("list components use the divider shadow, not divide-y / border-b", () =
   }
 
   it("the whole of src has no divide-y outside the allowlisted table", () => {
-    const { execSync } = require("node:child_process");
+    
     const out = execSync("grep -rln 'divide-y' src --include=*.tsx --include=*.ts || true", { encoding: "utf8" })
       .split("\n")
       .filter(Boolean);
