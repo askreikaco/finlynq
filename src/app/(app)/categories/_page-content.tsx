@@ -680,7 +680,7 @@ function CategoriesOverview() {
       <PageHeader
         title="Categories"
         actions={
-          <ListDetailNewButton href="/categories?edit=new" label="Add" />
+          <ListDetailNewButton href="/categories?edit=new" label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
         }
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
