@@ -41,7 +41,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "Add transaction", short_name: "Add", url: "/transactions/new", icons: [ICON_192] },
       { name: "Accounts", short_name: "Accounts", url: "/accounts", icons: [ICON_192] },
-      { name: "Budgets", short_name: "Budgets", url: "/budgets", icons: [ICON_192] },
+      { name: "Categories", short_name: "Categories", url: "/categories", icons: [ICON_192] },
     ],
     categories: ["finance", "productivity"],
     screenshots: [],

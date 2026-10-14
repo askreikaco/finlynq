@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { User, Mail, Phone, Check, AlertCircle, Trash2 } from "lucide-react";
+import { AlertCircle, AtSign, Check, Mail, Phone, Trash2, User } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 
 type Profile = {
@@ -312,7 +312,7 @@ export default function InfoPage() {
               <User className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Avatar</CardTitle>
+              <CardTitle icon={User} tone="indigo">Avatar</CardTitle>
               <CardDescription>Upload your profile picture (JPEG or PNG, max 140KB)</CardDescription>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function InfoPage() {
       {/* Username (read-only) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Username</CardTitle>
+          <CardTitle icon={AtSign} tone="cyan">Username</CardTitle>
         </CardHeader>
         <CardContent>
           <Input
@@ -381,7 +381,7 @@ export default function InfoPage() {
       {/* Display Name */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Display Name</CardTitle>
+          <CardTitle icon={User} tone="violet">Display Name</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveDisplayName} className="space-y-3 max-w-sm">
@@ -409,7 +409,7 @@ export default function InfoPage() {
               <Phone className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Phone</CardTitle>
+              <CardTitle icon={Phone} tone="emerald">Phone</CardTitle>
               <CardDescription>Optional phone number for your profile</CardDescription>
             </div>
           </div>
@@ -441,7 +441,7 @@ export default function InfoPage() {
               <Mail className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Email</CardTitle>
+              <CardTitle icon={Mail} tone="amber">Email</CardTitle>
               <CardDescription>Recovery email used to reset a forgotten password</CardDescription>
             </div>
           </div>

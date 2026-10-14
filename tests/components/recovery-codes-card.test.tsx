@@ -45,7 +45,7 @@ describe("RecoveryCodesCard status", () => {
     render(<RecoveryCodesCard />);
     expect(await screen.findByTestId("recovery-codes-status")).toHaveTextContent("10 of 10 codes unused");
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: /regenerate recovery codes/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /regenerate codes/i })).toBeInTheDocument();
   });
 
   it("warns at 2 left, but not at 3", async () => {
@@ -72,8 +72,8 @@ describe("RecoveryCodesCard status", () => {
   it("no codes yet: offers Generate (not Regenerate)", async () => {
     status = { unused: 0, total: 0, createdAt: null };
     render(<RecoveryCodesCard />);
-    expect(await screen.findByText(/no recovery codes yet/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^generate recovery codes$/i })).toBeInTheDocument();
+    expect(await screen.findByText(/no codes yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^generate codes$/i })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
@@ -82,12 +82,12 @@ describe("RecoveryCodesCard generate (step-up)", () => {
   it("asks for the password FIRST: no POST until it is entered; the POST carries it", async () => {
     const user = userEvent.setup();
     render(<RecoveryCodesCard />);
-    await user.click(await screen.findByRole("button", { name: /regenerate recovery codes/i }));
+    await user.click(await screen.findByRole("button", { name: /regenerate codes/i }));
     expect(posts()).toHaveLength(0);
     expect(screen.getByText(/existing codes stop working/i)).toBeInTheDocument();
     const go = screen.getByRole("button", { name: /replace my codes/i });
     expect(go).toBeDisabled();
-    await user.type(screen.getByLabelText(/current password/i), "Hunter2!Hunter2");
+    await user.type(screen.getByLabelText(/^password$/i), "Hunter2!Hunter2");
     await user.click(go);
     await waitFor(() => expect(posts()).toHaveLength(1));
     expect(posts()[0].body).toEqual({ currentPassword: "Hunter2!Hunter2" });
@@ -97,8 +97,8 @@ describe("RecoveryCodesCard generate (step-up)", () => {
     const user = userEvent.setup();
     postReply = () => ({ status: 401, body: { error: "Your password is incorrect." } });
     render(<RecoveryCodesCard />);
-    await user.click(await screen.findByRole("button", { name: /regenerate recovery codes/i }));
-    await user.type(screen.getByLabelText(/current password/i), "nope");
+    await user.click(await screen.findByRole("button", { name: /regenerate codes/i }));
+    await user.type(screen.getByLabelText(/^password$/i), "nope");
     await user.click(screen.getByRole("button", { name: /replace my codes/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/password is incorrect/i);
     expect(screen.queryByText(CODES[0])).toBeNull();
@@ -112,8 +112,8 @@ describe("RecoveryCodesCard generate (step-up)", () => {
     const user = userEvent.setup();
     postReply = () => ({ status: st, body: {} });
     render(<RecoveryCodesCard />);
-    await user.click(await screen.findByRole("button", { name: /regenerate recovery codes/i }));
-    await user.type(screen.getByLabelText(/current password/i), "x");
+    await user.click(await screen.findByRole("button", { name: /regenerate codes/i }));
+    await user.type(screen.getByLabelText(/^password$/i), "x");
     await user.click(screen.getByRole("button", { name: /replace my codes/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(re);
   });
@@ -121,8 +121,8 @@ describe("RecoveryCodesCard generate (step-up)", () => {
 
 describe("RecoveryCodesCard shows the codes once", () => {
   async function generate(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(await screen.findByRole("button", { name: /regenerate recovery codes/i }));
-    await user.type(screen.getByLabelText(/current password/i), "Hunter2!Hunter2");
+    await user.click(await screen.findByRole("button", { name: /regenerate codes/i }));
+    await user.type(screen.getByLabelText(/^password$/i), "Hunter2!Hunter2");
     await user.click(screen.getByRole("button", { name: /replace my codes/i }));
     await screen.findByTestId("recovery-codes-list");
   }

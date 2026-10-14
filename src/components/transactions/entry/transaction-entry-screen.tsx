@@ -83,7 +83,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PageHeader, HEADER_SAVE } from "@/components/mobile";
+import { PageHeader, OverflowMenu, HEADER_SAVE } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 
 export type { EntryMode } from "@/lib/transactions/entry-mode";
@@ -112,7 +112,19 @@ interface PostSubscription {
  *   edit           one plain transaction prefilled; PUT /api/transactions (+ splits), Duplicate and Delete in the header
  *   edit-transfer  a transfer pair prefilled; PUT /api/transactions/transfer, Delete in the header
  */
-export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
+/**
+ * Split-view pane mode: the SAME screen (same fields, validation, requests, offline queue, delete confirm) without the
+ * page chrome. The callbacks replace every router.push: after a save, a cancel, a delete, a Duplicate.
+ */
+export interface EntryEmbedded {
+  onSaved?: () => void;
+  onCancel?: () => void;
+  onDeleted?: () => void;
+  /** Duplicate wrote its prefill; the host opens a create pane that reads it. */
+  onDuplicate?: () => void;
+}
+
+export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; embedded?: EntryEmbedded }) {
   const { mutate: swrMutate, cache } = useSWRConfig();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
@@ -320,11 +332,17 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     setInvalid((prev) => (prev?.field === "account" || prev?.field === "toAccount" ? null : prev));
   };
   const goBack = () => {
+    if (embedded) {
+      embedded.onCancel?.();
+      return;
+    }
     if (window.history.length > 1) router.back();
     else router.push("/transactions");
   };
   // Edit: Back, Cancel, a finished save and a delete all return to the list the user came from.
-  const goReturn = () => router.push(returnTo);
+  const goReturn = () => (embedded ? embedded.onSaved?.() : router.push(returnTo));
+  // A save (or a queued save) is done: the pane callback, or the page's next route.
+  const finishSaved = (href: string) => (embedded ? embedded.onSaved?.() : router.push(href));
   const refreshLists = () => {
     void revalidateTransactionLists(swrMutate, cache);
     void mutate("/api/accounts");
@@ -440,7 +458,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       const ordered = sortAccount(
         activeAccounts,
         (a) => Number(a.id),
-        (a, z) => a.name.localeCompare(z.name),
+        (a, z) => (a.name ?? "").localeCompare(z.name ?? ""),
       );
       setAccountId(String((match ?? lastMatch ?? ordered[0] ?? activeAccounts[0]).id));
     }
@@ -662,7 +680,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     setDone(true);
     setErrorMessage(null);
     setSuccessNotice(OFFLINE_SAVED_NOTICE);
-    setTimeout(() => router.push(afterHref), 1200);
+    setTimeout(() => finishSaved(afterHref), 1200);
   };
   const queueCreateOffline = async (err: unknown, signedAmount: number, catId: number): Promise<boolean> => {
     if (!offlineAllowed(err)) return false;
@@ -792,7 +810,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         setSuccessNotice("Transfer recorded successfully!");
         void revalidateTransactionLists(swrMutate, cache);
         mutate("/api/accounts");
-        setTimeout(() => router.push("/transactions"), 600);
+        setTimeout(() => finishSaved("/transactions"), 600);
         return;
       }
 
@@ -1067,7 +1085,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         void revalidateTransactionLists(swrMutate, cache);
         mutate("/api/accounts");
         setErrorMessage(followUpError);
-        setTimeout(() => router.push(afterSaveHref), 2500);
+        setTimeout(() => finishSaved(afterSaveHref), 2500);
         return;
       }
 
@@ -1080,7 +1098,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       );
       void revalidateTransactionLists(swrMutate, cache);
       mutate("/api/accounts");
-      setTimeout(() => router.push(afterSaveHref), 600);
+      setTimeout(() => finishSaved(afterSaveHref), 600);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -1112,7 +1130,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       }
       setConfirmOpen(false);
       refreshLists();
-      goReturn();
+      if (embedded) embedded.onDeleted?.();
+      else goReturn();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Could not reach the server.");
     } finally {
@@ -1131,7 +1150,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             onSelect: () => {
               if (!canDuplicate(editMode.tx, editMode.tx.currency)) return;
               writePrefill(buildPrefill(editMode.tx as unknown as Parameters<typeof buildPrefill>[0]));
-              router.push("/transactions/new?prefill=1");
+              if (embedded) embedded.onDuplicate?.();
+              else router.push("/transactions/new?prefill=1");
             },
           },
           { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
@@ -1175,17 +1195,27 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     <div
       data-testid="txnew-root"
       data-mode={mode.kind}
+      data-form="transaction"
+      data-embedded={embedded ? "true" : undefined}
       className={cn(
-        "flex flex-col bg-background text-foreground",
-        "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
+        "flex flex-col text-foreground",
+        // Pane: fills the 1/3 column on the pane's own card background; the pane (aside) scrolls, so the root just grows.
+        embedded ? "relative w-full" : "bg-background",
+        !embedded && "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
         // No page gutter on this root: stop the bar bleeding (-mx-4) past the screen edge so it keeps its own 16px side padding.
-        "max-regular:[&>[data-slot=page-header]]:mx-0",
-        "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
+        !embedded && "max-regular:[&>[data-slot=page-header]]:mx-0",
+        !embedded && "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
       )}
     >
       {/* Global page bar (PageHeader): back = history back, else /transactions. The spinner shows while saving. */}
       {/* This page is a full-screen fixed root with no page gutter, so the bar must not bleed (-mx-4) past its edges:
           the root class below keeps the bar's own 16px gutter, the same as every other page. */}
+      {embedded ? (
+        <div data-slot="entry-pane-header" className="flex shrink-0 items-center justify-between gap-2 px-4 pb-1">
+          <h2 className="truncate text-base font-semibold text-foreground">{editMode ? `Edit ${txType.toLowerCase()}` : `New ${txType}`}</h2>
+          {editOverflow ? <OverflowMenu items={editOverflow} /> : null}
+        </div>
+      ) : (
       <PageHeader
         className="shrink-0"
         title={editMode ? `Edit ${txType.toLowerCase()}` : `New ${txType}`}
@@ -1213,6 +1243,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           </Button>
         }
       />
+      )}
 
       {/* Type control (44px), 8px below the top bar. */}
       <div data-testid="txnew-type" className="mt-2 shrink-0 px-4">
@@ -1238,7 +1269,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       <main
         className={cn(
           "mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-3",
-          showNumpad && (showCurrencyChips ? "pointer-coarse:pb-[315px]" : "pointer-coarse:pb-[259px]"),
+          showNumpad && !embedded && (showCurrencyChips ? "pointer-coarse:pb-[315px]" : "pointer-coarse:pb-[259px]"),
         )}
       >
         {/* Notice banners */}
@@ -1357,8 +1388,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             />
           )}
           {/* From and To share a relative wrapper so the Transfer swap button sits on their divider;
-              the wrapper repeats the group's hairline (divide-y) because the two rows are no longer its direct children. */}
-          <div className="relative divide-y divide-border">
+              the wrapper repeats the group's divider shadow because the two rows are no longer its direct children. */}
+          <div className="relative [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             <FormRow
               variant="button"
               testId="txnew-row-account"
@@ -1647,7 +1678,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             variant="outline"
             data-testid="txnew-cancel"
             disabled={saving}
-            onClick={editMode ? goReturn : goBack}
+            onClick={editMode && !embedded ? goReturn : goBack}
             className="h-12 rounded-2xl px-5 text-base font-semibold"
           >
             Cancel
@@ -1658,6 +1689,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       {/* Numpad dock: pinned to the safe-area bottom (the tab bar is hidden here). Touch only:
           pointer-coarse, never a JS device check, so a desktop never shows it. */}
       <NumpadDock
+        // Pane (touch at wide): the dock is sticky at the bottom of the scrolling pane (in the pane flow, no reserve needed), so the top of the form stays visible and it never covers the list.
+        className={embedded ? "wide:sticky wide:inset-auto wide:bottom-0 wide:z-10 wide:mt-3 wide:w-full wide:bg-card wide:animate-none wide:rounded-xl wide:border wide:border-border" : undefined}
         activeId={padTarget}
         activeValue={
           padTarget === MAIN_PAD ? amount : (splitRows.find((r) => r.id === padTarget)?.amount ?? "")

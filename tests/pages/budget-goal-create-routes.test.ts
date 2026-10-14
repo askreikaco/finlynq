@@ -11,7 +11,8 @@ import { resolve } from "node:path";
 const APP = "src/app/(app)";
 const read = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 
-const BUDGETS = read(`${APP}/budgets/page.tsx`);
+// The budgets list lives in /categories now (/budgets redirects there).
+const BUDGETS = read(`${APP}/categories/_page-content.tsx`);
 const GOALS = read(`${APP}/goals/page.tsx`);
 
 describe("budgets list: openers navigate, no create/edit dialog", () => {
@@ -22,15 +23,14 @@ describe("budgets list: openers navigate, no create/edit dialog", () => {
   });
 
   it("links to each form page and passes the list URL as returnTo", () => {
-    expect(BUDGETS).toContain("/budgets/new?");
     expect(BUDGETS).toContain("/budgets/templates/new?");
     expect(BUDGETS).toContain("/budgets/templates/apply?");
     expect(BUDGETS).toContain("/budgets/move-money?");
     expect(BUDGETS).toMatch(/returnTo=\$\{encodeURIComponent\(listUrl\)\}/);
   });
 
-  it("keeps the delete confirmation as a dialog", () => {
-    expect(BUDGETS).toContain("<ConfirmDialog");
+  it("keeps the category delete confirmation as a dialog (inside the shared form)", () => {
+    expect(read(`${APP}/categories/_components/category-budget-form.tsx`)).toContain("<ConfirmDialog");
   });
 });
 
@@ -54,12 +54,13 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
 
 describe("route pages render the shared form components", () => {
   const WIRING: [string, string, string][] = [
-    [`${APP}/budgets/new/page.tsx`, "SetBudgetForm", "../_components/set-budget-form"],
     [`${APP}/budgets/templates/new/page.tsx`, "SaveTemplateForm", "../../_components/save-template-form"],
     [`${APP}/budgets/templates/apply/page.tsx`, "ApplyTemplateForm", "../../_components/apply-template-form"],
     [`${APP}/budgets/move-money/page.tsx`, "MoveMoneyForm", "../_components/move-money-form"],
-    [`${APP}/goals/new/page.tsx`, "GoalForm", "../_components/goal-form"],
-    [`${APP}/goals/[id]/edit/page.tsx`, "GoalForm", "../../_components/goal-form"],
+    // Goals: the route renders the shared GoalFormPanel (FormPage + GoalForm), the same one the /goals split pane renders.
+    [`${APP}/goals/new/page.tsx`, "GoalFormPanel", "../_components/goal-form-panel"],
+    [`${APP}/goals/[id]/edit/page.tsx`, "GoalFormPanel", "../../_components/goal-form-panel"],
+    [`${APP}/goals/_components/goal-form-panel.tsx`, "GoalForm", "./goal-form"],
   ];
   for (const [file, component, from] of WIRING) {
     it(`${file} renders <${component}> from ${from}`, () => {
@@ -72,12 +73,10 @@ describe("route pages render the shared form components", () => {
   it("every form-page back/return target is validated with safeReturnTo (in FormPage's useReturnTo)", () => {
     expect(read("src/lib/forms/use-return-to.ts")).toMatch(/safeReturnTo\(searchParams\.get\("returnTo"\)/);
     for (const f of [
-      `${APP}/budgets/new/page.tsx`,
       `${APP}/budgets/templates/new/page.tsx`,
       `${APP}/budgets/templates/apply/page.tsx`,
       `${APP}/budgets/move-money/page.tsx`,
-      `${APP}/goals/new/page.tsx`,
-      `${APP}/goals/[id]/edit/page.tsx`,
+      `${APP}/goals/_components/goal-form-panel.tsx`,
     ]) {
       expect(read(f), f).toMatch(/from "@\/components\/templates"/);
       expect(read(f), f).toMatch(/<FormPage\b/);
@@ -85,7 +84,7 @@ describe("route pages render the shared form components", () => {
   });
 
   it("the goal edit page keeps Delete in the overflow menu and behind a confirm dialog (FormPage delete config)", () => {
-    const src = read(`${APP}/goals/[id]/edit/page.tsx`);
+    const src = read(`${APP}/goals/_components/goal-form-panel.tsx`);
     expect(src).toMatch(/delete=\{\{\s*label: "Delete goal"/);
     expect(read("src/components/templates/form-page.tsx")).toMatch(/destructive: true/);
     expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");

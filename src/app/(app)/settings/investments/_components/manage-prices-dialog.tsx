@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/info-tip";
 import { DatePicker } from "@/components/date-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
@@ -104,20 +105,18 @@ export function ManagePricesPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Enter what this holding is worth, with an effective date. The most recent price on or
-        before any date is used to value it; before your first price it counts as 0. Amounts are
-        in {currency}.
-      </p>
+      <div className="flex items-center justify-end">
+        <InfoTip label="About prices" text={`What this holding is worth from a given date. The latest price on or before a date values it; before your first price it counts as 0. Amounts in ${currency}.`} />
+      </div>
 
       {/* Existing marks */}
-      <div className="max-h-[50vh] divide-y overflow-y-auto rounded-xl border bg-card">
+      <div className="max-h-[50vh] [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-y-auto rounded-xl border bg-card">
         {loading ? (
           <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </div>
         ) : marks.length === 0 ? (
-          <div className="px-4 py-4 text-sm text-muted-foreground">No prices yet — add one below.</div>
+          <div className="px-4 py-4 text-sm text-muted-foreground">No prices.</div>
         ) : (
           marks.map((m) => (
             <div key={m.id} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 text-sm">

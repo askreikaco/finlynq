@@ -67,10 +67,10 @@ describe("PasskeyLockBanner", () => {
 });
 
 describe("PendingSyncCard locked state", () => {
-  it("shows 'Locked: unlock with passkey' while locked, and nothing when the queue has no entries", () => {
+  it("shows 'Locked' while locked, and nothing when the queue has no entries", () => {
     h.pending = { items: [], enabled: true, locked: true };
     render(<PendingSyncCard />);
-    expect(screen.getByTestId("pending-sync-locked").textContent).toContain("Locked: unlock with passkey");
+    expect(screen.getByTestId("pending-sync-locked").textContent).toContain("Locked");
   });
 
   it("renders nothing when unlocked with an empty queue", () => {

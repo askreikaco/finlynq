@@ -6,6 +6,12 @@ import * as React from "react";
 import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
 import { formatCurrency } from "@/lib/currency";
 
+const nav = vi.hoisted(() => ({ query: "" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(nav.query),
+  usePathname: () => "/portfolio/realized-gains",
+}));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
@@ -57,6 +63,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  nav.query = "";
   size.cls = "compact";
   cleanup();
   vi.unstubAllGlobals();
@@ -112,22 +119,19 @@ describe("Realized gains page (report page, not a dialog)", () => {
     expect(get("Realized (VND)")).toContain("12,500,000");
   });
 
-  it("filters open in a bottom sheet from the header Filters button (not an inline dialog)", async () => {
+  it("filters live on the filter page: icon-only Filter link in the top bar, no inline chips", async () => {
     render(<RealizedGainsPage />);
     await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-    const dlg = screen.getByRole("dialog");
-    expect(within(dlg).getByText("Filter realized gains")).toBeTruthy();
-    expect(within(dlg).getByRole("group", { name: "Tax year" })).toBeTruthy();
+    const f = screen.getByRole("link", { name: "Filter" });
+    expect(f.getAttribute("href")).toMatch(/^\/filter\/realized-gains/);
+    expect(f.textContent).toBe("");
+    expect(screen.queryByRole("group", { name: "Tax year" })).toBeNull();
   });
 
-  it("a tax-year chip refetches with taxYear set (filters drive the same API call)", async () => {
-    size.cls = "regular";
+  it("?taxYear=2025 refetches with taxYear set (the filter page drives the same API call)", async () => {
+    nav.query = "taxYear=2025";
     render(<RealizedGainsPage />);
     await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
-    const yearGroup = screen.getByRole("group", { name: "Tax year" });
-    fireEvent.click(within(yearGroup).getByRole("button", { name: "2025" }));
     await waitFor(() => expect(fetchUrls.some((u) => u.includes("taxYear=2025"))).toBe(true));
   });
 

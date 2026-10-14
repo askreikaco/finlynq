@@ -82,19 +82,8 @@ export function AnimationProvider({ children }: { children: ReactNode }) {
  * Returns whether chart and counter animations are enabled (default: false).
  */
 export function useAnimations(): boolean {
-  const ctx = useContext(AnimationContext);
-  if (ctx) {
-    return ctx.animationsEnabled;
-  }
-  // Safe fallback if used outside provider (e.g. standalone test or component)
-  if (typeof window !== "undefined") {
-    try {
-      return localStorage.getItem(ANIMATIONS_STORAGE_KEY) === "true";
-    } catch {
-      return DEFAULT_ANIMATIONS_ENABLED;
-    }
-  }
-  return DEFAULT_ANIMATIONS_ENABLED;
+  // Entry animations (counters, chart draw, card fade-in) are off everywhere; hover effects are CSS.
+  return false;
 }
 
 /**

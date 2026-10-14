@@ -4,8 +4,9 @@
  * Offline write queue status (local-first L3). Renders nothing unless the opt-in is on AND something is queued,
  * so with the flag off Settings is unchanged. Pending = waiting to sync; Failed = rejected by the server, with Retry / Discard.
  */
+import { RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { discardPendingSync, retryPendingSync, usePendingSync } from "@/lib/data/local-write-queue";
@@ -30,8 +31,8 @@ export function PendingSyncCard() {
     return (
       <Card data-testid="pending-sync-locked">
         <CardHeader>
-          <CardTitle>Pending sync</CardTitle>
-          <CardDescription>Locked: unlock with passkey</CardDescription>
+          <CardTitle icon={RefreshCw} tone="amber">Pending sync</CardTitle>
+          <p className="text-xs text-muted-foreground" data-keep="status">Locked</p>
         </CardHeader>
         <CardContent>
           <Button
@@ -55,11 +56,11 @@ export function PendingSyncCard() {
   return (
     <Card data-testid="pending-sync-card">
       <CardHeader>
-        <CardTitle>Pending sync</CardTitle>
-        <CardDescription>
-          {pending.length > 0 ? `${pending.length} saved on this device, will sync when online.` : "Nothing waiting."}
-          {failed.length > 0 ? ` ${failed.length} could not be saved.` : ""}
-        </CardDescription>
+        <CardTitle icon={RefreshCw} tone="amber">Pending sync</CardTitle>
+        <p className="text-xs text-muted-foreground" data-keep="status">
+          {pending.length > 0 ? `${pending.length} waiting to sync.` : "Nothing waiting."}
+          {failed.length > 0 ? ` ${failed.length} failed.` : ""}
+        </p>
       </CardHeader>
       {failed.length > 0 && (
         <CardContent className="space-y-3">

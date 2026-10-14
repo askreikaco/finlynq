@@ -7,26 +7,12 @@ export const ROUTES: RouteDef[] = [
     pattern: "/categories",
     family: "categories",
     kind: "list",
-    fab: { kind: "route", label: "Add category", icon: Tag, href: "/categories/new" },
-  },
-  {
-    pattern: "/categories/new",
-    family: "categories",
-    kind: "form",
-    fab: { kind: "hidden", reason: "is the create flow" },
-    fullScreen: true,
+    fab: { kind: "route", label: "Add category", icon: Tag, href: "/categories?edit=new" },
   },
   {
     pattern: "/categories/[id]",
     family: "categories",
     kind: "tool",
     fab: { kind: "fallback" },
-  },
-  {
-    pattern: "/categories/[id]/edit",
-    family: "categories",
-    kind: "form",
-    fab: { kind: "hidden", reason: "is the rename flow" },
-    fullScreen: true,
   },
 ];

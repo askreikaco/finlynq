@@ -71,7 +71,7 @@ describe("useCardLayout + CustomizeCardsSheet + header Customize", () => {
   it("renders the default layout (defaultVisible:false cards hidden) and the Customize button", async () => {
     render(<CardsPage />);
     await waitFor(() => expect(renderedIds()).toEqual(["hero", "list"]));
-    expect(screen.getByRole("button", { name: "Customize" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "More actions" })).toBeTruthy();
     expect(calls[0].url).toBe("/api/settings/card-layout?page=testpage");
   });
 
@@ -79,7 +79,8 @@ describe("useCardLayout + CustomizeCardsSheet + header Customize", () => {
     render(<CardsPage />);
     await waitFor(() => expect(renderedIds()).toEqual(["hero", "list"]));
 
-    fireEvent.click(screen.getByRole("button", { name: "Customize" }));
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Customize cards" }));
     const dlg = await screen.findByRole("dialog");
     fireEvent.click(within(dlg).getByRole("switch", { name: "Extra" })); // show
     fireEvent.click(within(dlg).getByRole("switch", { name: "List" })); // hide
@@ -105,7 +106,8 @@ describe("useCardLayout + CustomizeCardsSheet + header Customize", () => {
     stored = { order: ["extra", "list", "hero"], hidden: ["hero"] };
     render(<CardsPage />);
     await waitFor(() => expect(renderedIds()).toEqual(["extra", "list"]));
-    fireEvent.click(screen.getByRole("button", { name: "Customize" }));
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Customize cards" }));
     const dlg = await screen.findByRole("dialog");
     fireEvent.click(within(dlg).getByRole("button", { name: "Reset to default" }));
     await waitFor(() => expect(stored).toEqual({ order: ["hero", "list", "extra"], hidden: ["extra"] }));

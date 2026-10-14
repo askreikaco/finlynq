@@ -17,12 +17,12 @@ import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
-import { Link2 as Link2Icon, ExternalLink, Zap } from "lucide-react";
+import { SlidersHorizontal, Zap } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
 import { AmountInput } from "@/components/amount-input";
@@ -135,17 +135,6 @@ export default function ReconciliationSettingsPage() {
     <SectionPage
       id="settings-reconciliation"
       title="Reconciliation"
-      subtitle={<>Tune how the{" "}
-      <Link
-        href="/reconcile"
-        className="underline underline-offset-2 inline-flex items-center gap-1"
-      >
-        <Link2Icon className="h-3 w-3" />
-        /reconcile
-        <ExternalLink className="h-3 w-3" />
-      </Link>{" "}
-      page surfaces fuzzy matches between bank-ledger rows and
-      transactions.</>}
       padBottom="none"
       minW0={false}
       suspense={false}
@@ -154,18 +143,24 @@ export default function ReconciliationSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Fuzzy-match thresholds</CardTitle>
-          <CardDescription>
-            The engine flags a (transaction, bank row) pair as a fuzzy match
-            when their amount + date are within the windows below AND the
-            combined score exceeds the threshold. Exact-hash matches always
-            surface regardless of these settings.
-          </CardDescription>
+          <CardTitle icon={SlidersHorizontal} tone="indigo">
+            Fuzzy match
+            <InfoTip
+              label="About fuzzy match"
+              text={
+                <>
+                  Tunes how <Link href="/reconcile" className="underline">/reconcile</Link> pairs bank rows with
+                  transactions. A pair matches when amount and date are within the windows and the score passes the
+                  threshold. Exact-hash matches always show.
+                </>
+              }
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <NumberKnob
-            label="Date tolerance (days)"
-            description="Maximum |Δdate| between a tx and a bank row. Most posting/settlement lag fits inside 3–7 days."
+            label="Date window (days)"
+            description="Maximum date gap between a transaction and a bank row. Most settlement lag fits in 3–7 days."
             value={thresholds.dateToleranceDays}
             min={0}
             max={30}
@@ -176,8 +171,8 @@ export default function ReconciliationSettingsPage() {
             }
           />
           <NumberKnob
-            label="Amount tolerance (%)"
-            description="Maximum percentage delta between tx and bank amounts. Catches FX-spread + rounding drift on cross-currency moves. 0 = exact-cent match."
+            label="Amount window (%)"
+            description="Maximum percentage gap between amounts. Catches FX spread and rounding. 0 = exact."
             value={thresholds.amountTolerancePct * 100}
             min={0}
             max={100}
@@ -191,8 +186,8 @@ export default function ReconciliationSettingsPage() {
             }
           />
           <NumberKnob
-            label="Amount tolerance floor"
-            description="Absolute amount floor in the tx's currency. The window used is max(amount × pct, floor) so small amounts still get a sensible window."
+            label="Amount floor"
+            description="Minimum window in the transaction currency: max(amount × %, floor)."
             value={thresholds.amountToleranceFloor}
             min={0}
             max={10000}
@@ -203,8 +198,8 @@ export default function ReconciliationSettingsPage() {
             }
           />
           <NumberKnob
-            label="Score threshold"
-            description="Pairs scoring below this value are filtered out. Tighter = fewer suggestions, higher precision. 0.7+ is a strict starting point; 0.6 is the engine default."
+            label="Min score"
+            description="Pairs below this score are hidden. Higher = fewer, more precise matches. Default 0.6; 0.7+ is strict."
             value={thresholds.scoreThreshold}
             min={0}
             max={1}
@@ -226,11 +221,11 @@ export default function ReconciliationSettingsPage() {
               {saving ? "Saving…" : "Save"}
             </Button>
             <Button variant="outline" onClick={onReset} disabled={saving || loading}>
-              Reset to defaults
+              Reset
             </Button>
             {isDefault && !loading && (
-              <span className="text-xs text-muted-foreground">
-                Using built-in defaults.
+              <span className="text-xs text-muted-foreground" data-keep="status">
+                Defaults
               </span>
             )}
             {savedAt && (
@@ -244,11 +239,9 @@ export default function ReconciliationSettingsPage() {
 
       <Card id="rules" className="scroll-mt-6">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="h-4 w-4" />
+          <CardTitle icon={Zap} tone="amber">
             Rules
           </CardTitle>
-          <CardDescription>Auto-categorize and transform transactions</CardDescription>
         </CardHeader>
         <CardContent>
           <RulesSection />
@@ -286,7 +279,10 @@ function NumberKnob({
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
-        <label className="text-sm font-medium">{label}</label>
+        <span className="flex items-center gap-1">
+          <label className="text-sm font-medium">{label}</label>
+          <InfoTip label={`About ${label.toLowerCase()}`} text={description} />
+        </span>
         <AmountInput
           inputMode="decimal"
           value={Number.isFinite(value) ? value : ""}
@@ -301,7 +297,6 @@ function NumberKnob({
           className="w-28 text-right font-mono text-xs"
         />
       </div>
-      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );
 }

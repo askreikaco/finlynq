@@ -37,7 +37,7 @@ import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, m
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS, EMPTY_CELL_CLASS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, pctChange, previousPeriod, resolvePeriod, seriesWindow, RANGE_LABELS, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, formatDelta, resolveCard } from "@/lib/metrics/delta";
@@ -98,16 +98,13 @@ function QuickImportWidget() {
 
 // --- Animation variants ---
 const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.08 },
-  },
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { duration: 0 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 // --- Skeleton loader ---
@@ -397,7 +394,7 @@ export default function DashboardPage() {
       sparkColor: "#f59e0b",
       sparkData: budgetSpark.length >= 2 ? budgetSpark.map((r) => Math.round((r.spent / r.budget) * 1000) / 10) : undefined,
       sparkLabels: budgetSpark.length >= 2 ? budgetSpark.map((r) => r.month) : undefined,
-      href: "/budgets",
+      href: "/categories",
     },
   ];
 
@@ -625,7 +622,7 @@ export default function DashboardPage() {
 
       {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
       <motion.div variants={itemVariants} className="flex justify-end -mb-2 wide:-mb-3" data-slot="dashboard-range">
-        <MetricRangeSelect value={selection} onChange={setSelection} />
+        <PageToolbar range={{ selection, onChange: setSelection }} />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}

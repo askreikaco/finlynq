@@ -24,7 +24,7 @@ describe("fab-registry coverage ratchet", () => {
     const rows = [...text.matchAll(/^\| `(\/[^`]*)` \| `src\/app\/\(app\)\/(.+?)` \|/gm)];
     expect(rows).toHaveLength(routes.length);
     expect(routes).toHaveLength(Object.keys(FAB_ROUTES).length); // derived: one FAB key per page.tsx
-    expect(routes.length).toBeLessThanOrEqual(92); // ratchet: the page count may only go down (was 103 before C-32/C-36; 93 before the settings/account redirect)
+    expect(routes.length).toBeLessThanOrEqual(93); // ratchet: the page count may only go down (was 103 before C-32/C-36; 93 before the settings/account redirect)
     for (const row of rows) {
       const route = routeFromPageFile(`src/app/(app)/${row[2]}`);
       expect(Object.prototype.hasOwnProperty.call(FAB_ROUTES, route), route).toBe(true);

@@ -1,26 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { SmartphoneIcon, Check } from "lucide-react";
+import { Check, Smartphone, SmartphoneIcon } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
   title: "Trusted devices",
-  description: "Manage devices that can sign in without a password",
-  deviceNote: "Trusted devices let you sign in with Google without your password for 30 days.",
+  description: "Devices that can sign in without a password",
+  deviceNote: "Google sign-in skips the password for 30 days.",
   deviceCurrent: "This device",
   createdLabel: "Added",
   lastUsedLabel: "Last used",
   revokeButton: "Revoke",
-  revokeAllButton: "Revoke all devices",
-  signOutOthersButton: "Sign out other devices",
-  signOutOthersConfirm: "Sign out every other device? They will need to sign in again. This device stays signed in.",
-  signOutOthersSuccess: "Other devices signed out",
-  revokeAllConfirm: "Are you sure? You'll need to sign in again on all devices.",
+  revokeAllButton: "Revoke all",
+  signOutOthersButton: "Sign out others",
+  signOutOthersConfirm: "Sign out all other devices? They must sign in again.",
+  signOutOthersSuccess: "Others signed out",
+  revokeAllConfirm: "Revoke all? You must sign in again everywhere.",
   revoking: "Revoking…",
-  noDevices: "No trusted devices",
+  noDevices: "None",
   revokeSuccess: "Device revoked",
   revokeAllSuccess: "All devices revoked",
   genericError: "An error occurred",
@@ -159,13 +160,14 @@ export function TrustedDevices() {
             <SmartphoneIcon className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
-            <CardDescription>{STRINGS.description}</CardDescription>
+            <CardTitle icon={Smartphone} tone="cyan">
+              {STRINGS.title}
+              <InfoTip label="About trusted devices" text={`${STRINGS.description}. ${STRINGS.deviceNote}`} />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-xs text-muted-foreground">{STRINGS.deviceNote}</p>
 
         <div role="status" aria-live="polite">
           {message && (
@@ -190,11 +192,11 @@ export function TrustedDevices() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
                       {STRINGS.createdLabel} {formatDateTimeLocal(device.createdAt)}
                     </p>
                     {device.lastUsedAt && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground" data-keep="data">
                         {STRINGS.lastUsedLabel} {formatDateTimeLocal(device.lastUsedAt)}
                       </p>
                     )}
@@ -232,7 +234,7 @@ export function TrustedDevices() {
             </div>
           </>
         ) : (
-          <p className="text-xs text-muted-foreground">{STRINGS.noDevices}</p>
+          <p className="text-xs text-muted-foreground" data-keep="empty">{STRINGS.noDevices}</p>
         )}
       </CardContent>
     </Card>

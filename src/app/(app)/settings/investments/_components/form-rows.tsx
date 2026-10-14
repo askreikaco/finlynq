@@ -2,10 +2,11 @@
 
 import type { ReactNode } from "react";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/info-tip";
 
 /** Label-left form card for the investments create/edit pages (compact rows). */
 export function FormCard({ children }: { children: ReactNode }) {
-  return <div className="divide-y rounded-xl border bg-card">{children}</div>;
+  return <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border bg-card">{children}</div>;
 }
 
 export function FormRow({
@@ -13,26 +14,33 @@ export function FormRow({
   htmlFor,
   error,
   hint,
+  notice,
   children,
 }: {
   label: string;
   htmlFor?: string;
   error?: string;
+  /** Help text, shown in an (i) InfoTip next to the label. */
   hint?: ReactNode;
+  /** Visible status or warning line under the row (not tooltip-only). */
+  notice?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="px-4 py-2">
       <div className="flex min-h-12 items-center gap-3">
-        <Label htmlFor={htmlFor} className="w-28 shrink-0 text-sm font-normal text-muted-foreground">
-          {label}
-        </Label>
+        <div className="flex w-28 shrink-0 items-center gap-0.5">
+          <Label htmlFor={htmlFor} className="min-w-0 text-sm font-normal text-muted-foreground">
+            {label}
+          </Label>
+          {hint ? <InfoTip label={`About ${label.toLowerCase()}`} text={hint} /> : null}
+        </div>
         <div className="min-w-0 flex-1">{children}</div>
       </div>
       {error ? (
         <p className="pb-1 text-xs text-destructive">{error}</p>
-      ) : hint ? (
-        <div className="pb-1 text-xs text-muted-foreground">{hint}</div>
+      ) : notice ? (
+        <div className="pb-1 text-xs" data-keep="status">{notice}</div>
       ) : null}
     </div>
   );
@@ -81,5 +89,5 @@ export function SegmentedToggle<T extends string>({
 
 /** Plain notice for a route whose record is still loading, missing, or failed to load. */
 export function RouteNotice({ children }: { children: ReactNode }) {
-  return <p className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">{children}</p>;
+  return <p data-keep="status" className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">{children}</p>;
 }

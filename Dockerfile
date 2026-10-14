@@ -24,9 +24,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # compile; the capped builder is 5 GB. The .next/cache mount keeps webpack's
 # persistent cache in the BuildKit cache between builds (not in the layer).
 ENV NODE_OPTIONS="--max-old-space-size=3072"
-# Turbopack build (type check stays on). /sw.js is rewritten to the
-# @serwist/turbopack route; see next.config.ts.
+# Turbopack build. /sw.js is rewritten to the @serwist/turbopack route; see
+# next.config.ts. The type check (~90 s) runs in the "Typecheck (custom)"
+# workflow on every PR to custom, not here (owner 2026-10-14).
 ENV USE_TURBOPACK=1
+ENV SKIP_NEXT_TYPECHECK=1
 RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────

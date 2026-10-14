@@ -52,7 +52,7 @@ class FakeIntersectionObserver {
   disconnect() {}
   takeRecords() { return []; }
 }
-beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "regular";
+beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: the row sheet path (wide opens the split pane, see transactions-dataview)
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   (globalThis as any).ResizeObserver ??= class { observe(){} unobserve(){} disconnect(){} };
@@ -222,10 +222,14 @@ describe("workspace", () => {
     }
   });
 
-  it("one Search and filter link for both views; no inline search input or filter row", () => {
+  it("one PageToolbar for both views (range, month, search icon, Filter icon); no inline search input or filter row", () => {
     render(<TransactionsWorkspace />);
-    const link = screen.getByText("Search and filter").closest("a")!;
-    expect(link.getAttribute("href")).toContain("/transactions/search?");
+    // Top bar: bulk edit takes the slot, so Filter sits inside More.
+    expect(screen.queryByRole("link", { name: "Filter" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit list" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "More actions" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
+    expect(screen.getByLabelText("Time range")).toBeTruthy();
     expect(screen.queryByPlaceholderText("Search payee, note, or tags…")).toBeNull();
     expect(screen.queryByPlaceholderText("All categories")).toBeNull();
   });

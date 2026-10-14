@@ -353,8 +353,7 @@ export function ConnectorTab() {
     <div className="space-y-4 mt-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="h-4 w-4" />
+          <CardTitle icon={LinkIcon} tone="indigo">
             WealthPosition
           </CardTitle>
           <CardDescription>
@@ -450,7 +449,7 @@ export function ConnectorTab() {
                   <div className="pt-2 border-t border-pos/20 space-y-2">
                     <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
                     <div className="max-h-56 overflow-y-auto">
-                      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                         {zipSummary.reconciliation.rows.map((r) => (
                           <ListRow
                             key={r.finlynqAccountId}

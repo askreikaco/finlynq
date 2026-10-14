@@ -82,17 +82,7 @@ const SNAPSHOT = {
     "/api-docs": {
       "kind": "fallback"
     },
-    "/budgets": {
-      "kind": "route",
-      "label": "Add budget",
-      "href": "/budgets/new",
-      "icon": "LucidePlus"
-    },
     "/budgets/move-money": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/budgets/new": {
       "kind": "hidden",
       "reason": "is the create flow"
     },
@@ -107,19 +97,11 @@ const SNAPSHOT = {
     "/categories": {
       "kind": "route",
       "label": "Add category",
-      "href": "/categories/new",
+      "href": "/categories?edit=new",
       "icon": "LucideTag"
-    },
-    "/categories/new": {
-      "kind": "hidden",
-      "reason": "is the create flow"
     },
     "/categories/[id]": {
       "kind": "fallback"
-    },
-    "/categories/[id]/edit": {
-      "kind": "hidden",
-      "reason": "is the rename flow"
     },
     "/chat": {
       "kind": "hidden",
@@ -158,6 +140,10 @@ const SNAPSHOT = {
       "label": "Send feedback",
       "handlerKey": "feedback.send",
       "icon": "LucideMessageSquarePlus"
+    },
+    "/filter/[list]": {
+      "kind": "hidden",
+      "reason": "sticky bottom Reset/Apply bar"
     },
     "/fire": {
       "kind": "fallback"
@@ -260,12 +246,6 @@ const SNAPSHOT = {
     },
     "/settings/bank-feeds": {
       "kind": "fallback"
-    },
-    "/settings/categorization": {
-      "kind": "route",
-      "label": "Add category",
-      "href": "/categories/new",
-      "icon": "LucideTag"
     },
     "/settings/data": {
       "kind": "fallback"
@@ -410,15 +390,11 @@ const SNAPSHOT = {
     "/admin/price-cache": false,
     "/admin/system": false,
     "/api-docs": false,
-    "/budgets": false,
     "/budgets/move-money": true,
-    "/budgets/new": true,
     "/budgets/templates/apply": false,
     "/budgets/templates/new": true,
     "/categories": false,
     "/categories/7": false,
-    "/categories/7/edit": true,
-    "/categories/new": true,
     "/chat": false,
     "/connect": false,
     "/dashboard": false,
@@ -459,7 +435,6 @@ const SNAPSHOT = {
     "/settings/backfill": false,
     "/settings/backfill/7": false,
     "/settings/bank-feeds": false,
-    "/settings/categorization": false,
     "/settings/data": false,
     "/settings/developer": false,
     "/settings/display": false,
@@ -519,15 +494,11 @@ const SNAPSHOT = {
     "/admin/price-cache": "/admin/price-cache",
     "/admin/system": "/admin/system",
     "/api-docs": "/api-docs",
-    "/budgets": "/budgets",
     "/budgets/move-money": "/budgets/move-money",
-    "/budgets/new": "/budgets/new",
     "/budgets/templates/apply": "/budgets/templates/apply",
     "/budgets/templates/new": "/budgets/templates/new",
     "/categories": "/categories",
     "/categories/7": "/categories/[id]",
-    "/categories/7/edit": "/categories/[id]/edit",
-    "/categories/new": "/categories/new",
     "/chat": "/chat",
     "/connect": "/connect",
     "/dashboard": "/dashboard",
@@ -568,7 +539,6 @@ const SNAPSHOT = {
     "/settings/backfill": "/settings/backfill",
     "/settings/backfill/7": "/settings/backfill/[runId]",
     "/settings/bank-feeds": "/settings/bank-feeds",
-    "/settings/categorization": "/settings/categorization",
     "/settings/data": "/settings/data",
     "/settings/developer": "/settings/developer",
     "/settings/display": "/settings/display",

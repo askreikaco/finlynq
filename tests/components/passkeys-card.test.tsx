@@ -87,20 +87,20 @@ describe("PasskeysCard list", () => {
     expect(within(mac).getByText(/added/i)).toBeInTheDocument();
     expect(within(mac).getByText(/last used/i)).toBeInTheDocument();
     expect(within(mac).getByText(/unlock without password/i)).toBeInTheDocument();
-    expect(within(mac).queryByRole("button", { name: /enable password-free unlock/i })).toBeNull();
+    expect(within(mac).queryByRole("button", { name: /enable password-free/i })).toBeNull();
 
     const yubi = screen.getByTestId("passkey-pk2");
     expect(within(yubi).getByText(/never used/i)).toBeInTheDocument();
     expect(within(yubi).getByText(/2FA only/i)).toBeInTheDocument();
     expect(within(yubi).queryByText(/unlock without password/i)).toBeNull();
-    expect(within(yubi).getByRole("button", { name: /enable password-free unlock/i })).toBeInTheDocument();
+    expect(within(yubi).getByRole("button", { name: /enable password-free/i })).toBeInTheDocument();
   });
 
   it("disables Add when the browser has no WebAuthn", async () => {
     vi.stubGlobal("PublicKeyCredential", undefined);
     await renderLoaded();
-    expect(screen.getByRole("button", { name: /add a passkey/i })).toBeDisabled();
-    expect(screen.getByText(/does not support passkeys/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add passkey/i })).toBeDisabled();
+    expect(screen.getByText(/not supported/i)).toBeInTheDocument();
   });
 });
 
@@ -122,8 +122,8 @@ describe("PasskeysCard add", () => {
     wireAdd();
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    expect(await screen.findByText(/it can also unlock your data without your password/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
+    expect(await screen.findByText(/also unlocks your data/i)).toBeInTheDocument();
     const order = calls.map((c) => `${c.method} ${c.url}`).filter((x) => x.includes("register"));
     expect(order).toEqual([
       "POST /api/settings/passkeys/register/options",
@@ -152,12 +152,12 @@ describe("PasskeysCard add", () => {
       body: { passkeys: callsTo("POST", "/api/settings/passkeys/register/verify").length ? [...list, added] : list },
     });
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
     expect(screen.queryByLabelText(/passkey name/i)).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
-    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+    expect(screen.queryByLabelText(/^password$/i)).toBeNull();
     await waitFor(() => expect(startRegistration).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText(/it can also unlock/i)).toBeInTheDocument();
+    expect(await screen.findByText(/also unlocks/i)).toBeInTheDocument();
     expect(await screen.findByText("iPhone · Safari")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /rename iphone · safari/i })).toBeInTheDocument();
   });
@@ -167,8 +167,8 @@ describe("PasskeysCard add", () => {
     wireAdd();
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await screen.findByText(/it can also unlock/i);
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
+    await screen.findByText(/also unlocks/i);
     const finish = callsTo("POST", "/api/settings/passkeys/register/finish-prf")[0].body;
     expect((finish.response as { clientExtensionResults: unknown }).clientExtensionResults).toEqual({});
     expect(JSON.stringify(finish.response)).not.toContain(String(finish.prfOutput));
@@ -178,8 +178,8 @@ describe("PasskeysCard add", () => {
     const user = userEvent.setup();
     wireAdd({ needsPrf: false, prfEnabled: false });
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    expect(await screen.findByText(/two-factor verification; it cannot unlock/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
+    expect(await screen.findByText(/two-factor only/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/prf-options")).toHaveLength(0);
   });
 
@@ -188,8 +188,8 @@ describe("PasskeysCard add", () => {
     wireAdd();
     startAuthentication.mockResolvedValue(assertion());
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    expect(await screen.findByText(/cannot unlock your data without your password on this device/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
+    expect(await screen.findByText(/two-factor only/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/finish-prf")).toHaveLength(0);
   });
 
@@ -198,7 +198,7 @@ describe("PasskeysCard add", () => {
     wireAdd();
     startRegistration.mockRejectedValue(Object.assign(new Error("x"), { name: "NotAllowedError" }));
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
     expect(await screen.findByText(/cancelled/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/verify")).toHaveLength(0);
     expect(localStorage.getItem("pf-passkey-hint")).toBeNull();
@@ -213,13 +213,13 @@ describe("PasskeysCard add", () => {
       b.currentPassword ? ok(b) : (n++, { status: 401, body: { error: "Password required for this action." } });
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    const pw = await screen.findByLabelText(/current password/i);
+    await user.click(screen.getByRole("button", { name: /add passkey/i }));
+    const pw = await screen.findByLabelText(/^password$/i);
     expect(n).toBe(1);
     expect(startRegistration).not.toHaveBeenCalled();
     await user.type(pw, "Hunter2!Hunter2");
     await user.click(screen.getByRole("button", { name: /create passkey/i }));
-    await screen.findByText(/it can also unlock/i);
+    await screen.findByText(/also unlocks/i);
     expect(callsTo("POST", "/api/settings/passkeys/register/options").at(-1)!.body).toEqual({ currentPassword: "Hunter2!Hunter2" });
     // the same password is reused for the PRF step
     expect(callsTo("POST", "/api/settings/passkeys/register/prf-options")[0].body).toMatchObject({ currentPassword: "Hunter2!Hunter2" });
@@ -249,7 +249,7 @@ describe("PasskeysCard rename / remove / enable PRF", () => {
     expect(callsTo("DELETE", "/api/settings/passkeys/pk2")).toHaveLength(0);
     const confirm = screen.getByRole("button", { name: /remove passkey/i });
     expect(confirm).toBeDisabled();
-    await user.type(screen.getByLabelText(/current password/i), "Hunter2!Hunter2");
+    await user.type(screen.getByLabelText(/^password$/i), "Hunter2!Hunter2");
     expect(confirm).toBeEnabled();
     await user.click(confirm);
     await waitFor(() => expect(callsTo("DELETE", "/api/settings/passkeys/pk2")).toHaveLength(1));
@@ -263,7 +263,7 @@ describe("PasskeysCard rename / remove / enable PRF", () => {
     handlers[KEY("DELETE", "/api/settings/passkeys/pk2")] = () => ({ status: 401, body: { error: "Your password is incorrect." } });
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /remove yubikey/i }));
-    await user.type(screen.getByLabelText(/current password/i), "nope");
+    await user.type(screen.getByLabelText(/^password$/i), "nope");
     await user.click(screen.getByRole("button", { name: /remove passkey/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/password is incorrect/i);
     expect(screen.getByText("YubiKey")).toBeInTheDocument();
@@ -276,7 +276,7 @@ describe("PasskeysCard rename / remove / enable PRF", () => {
       b.totpCode ? { body: { success: true } } : (n++, { status: 401, body: { code: "second-factor-required", methods: ["totp", "passkey"] } });
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /remove yubikey/i }));
-    await user.type(screen.getByLabelText(/current password/i), "Hunter2!Hunter2");
+    await user.type(screen.getByLabelText(/^password$/i), "Hunter2!Hunter2");
     await user.click(screen.getByRole("button", { name: /remove passkey/i }));
     const totp = await screen.findByLabelText(/authenticator code/i);
     await user.type(totp, "123456");
@@ -294,7 +294,7 @@ describe("PasskeysCard rename / remove / enable PRF", () => {
     startAuthentication.mockResolvedValue(assertion());
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /remove yubikey/i }));
-    await user.type(screen.getByLabelText(/current password/i), "Hunter2!Hunter2");
+    await user.type(screen.getByLabelText(/^password$/i), "Hunter2!Hunter2");
     await user.click(screen.getByRole("button", { name: /remove passkey/i }));
     expect(screen.queryByLabelText(/authenticator code/i)).toBeNull(); // TOTP not offered
     await user.click(await screen.findByRole("button", { name: /use a passkey instead/i }));
@@ -313,8 +313,8 @@ describe("PasskeysCard rename / remove / enable PRF", () => {
     handlers[KEY("POST", "/api/settings/passkeys/register/finish-prf")] = () => ({ body: { ok: true } });
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
-    await user.click(screen.getByRole("button", { name: /enable password-free unlock/i }));
-    const pw = await screen.findByLabelText(/current password/i);
+    await user.click(screen.getByRole("button", { name: /enable password-free/i }));
+    const pw = await screen.findByLabelText(/^password$/i);
     expect(callsTo("POST", "/api/settings/passkeys/register/prf-options")[0].body).toEqual({ credentialId: "pk2" });
     await user.type(pw, "Hunter2!Hunter2");
     await user.click(screen.getByRole("button", { name: /^enable$/i }));

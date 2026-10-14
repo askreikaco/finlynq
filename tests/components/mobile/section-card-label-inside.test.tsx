@@ -39,7 +39,8 @@ describe("SectionCard label renders inside the card", () => {
       </SectionCard>,
     );
     const label = screen.getByRole("heading", { name: "Active" });
-    expect(label.className).toContain("px-4");
+    // the label row keeps the shared card padding (same px as MetricCard) even when the body is unpadded
+    expect(label.closest("[data-slot=card-label]")!.className).toContain("@[11rem]:px-5");
     const body = container.querySelector("[data-slot=section-card-body]")!;
     expect(body.className).not.toContain("p-4");
     expect(body.className).not.toContain("pb-4");

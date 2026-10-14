@@ -1,39 +1,52 @@
 "use client";
 
 /**
- * Categories hub — merged overview + management page (WP8).
+ * Categories hub: spending / income by category with the month's budgets. Everything lives here: the topbar Add
+ * button and each row's Edit open the ONE shared CategoryBudgetForm (?edit=new | ?edit=<id>). /budgets and
+ * /settings/categorization redirect to /categories.
  *
- * When FINLYNQ_CATEGORIES_MERGED is enabled:
- * - Shows tabbed interface with Overview and Management tabs
- * - Overview: category spending/income report with trends
- * - Management: add/edit/delete categories and link to rules
- *
- * When disabled (default): Shows only overview (backward compatible)
+ * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the Categories
+ * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
  */
 
-import { Fragment, Suspense, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { Sparkline } from "@/components/sparkline";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, getMonthLabel } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { localDateISO } from "@/lib/utils/date";
+import { parseSaveError } from "@/lib/save-error";
 import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-overview";
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CategoryManagement } from "./_components/category-management";
-import { PageHeader, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
+import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
+import { CategoryRow } from "./_components/category-row";
+import {
+  CustomizeCardsSheet, MetricGrid, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
+  type MetricItem, type OverflowAction,
+} from "@/components/mobile";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { CATEGORY_FILTER_KEYS, CATEGORY_SORTS } from "@/lib/toolbar/list-configs";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
+import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import type { PageCard } from "@/lib/card-layout";
+import type { Budget } from "../budgets/_components/budget-types";
+import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
+import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -44,211 +57,133 @@ const OTHER_COLOR = CHART_COLORS.categories[11];
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 /** Cards of the categories overview, default order. */
 const CATEGORY_CARDS: readonly PageCard[] = [
-  { id: "summary", title: "Month summary" },
-  { id: "by-category", title: "By category" },
+  { id: "metrics", title: "Totals" },
+  { id: "summary", title: "Share" },
+  { id: "by-category", title: "Categories" },
 ];
 
-function monthName(key: string, style: "long" | "short" = "long"): string {
-  const [y, m] = key.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, {
-    month: style,
-    year: style === "long" ? "numeric" : "2-digit",
-    timeZone: "UTC",
-  });
+/** Sort the group rows and each group's categories: Name (A-Z default) or Amount (biggest first). */
+function sortRows(rows: OverviewRow[], sort: string, dir: "asc" | "desc"): OverviewRow[] {
+  const sign = dir === "asc" ? 1 : -1;
+  const by = (a: { label?: string; name?: string | null; amount: number }, b: { label?: string; name?: string | null; amount: number }) =>
+    sort === "amount" ? sign * (a.amount - b.amount) : sign * (a.label ?? a.name ?? "").localeCompare(b.label ?? b.name ?? "");
+  return [...rows].sort(by).map((r) => ({ ...r, categories: [...r.categories].sort(by) }));
 }
 
-function changeLabel(change: number | null): string | null {
-  if (change == null || !Number.isFinite(change)) return null;
-  const pct = Math.round(change * 100);
-  return `${pct >= 0 ? "+" : ""}${pct}%`;
+/** Previous month's amount of a series whose last point is the selected month. */
+function prevOf(trend: number[] | null): number | null {
+  return trend && trend.length >= 2 ? trend[trend.length - 2] : null;
 }
 
-/** Up is bad for spending, good for income. */
-function toneClass(change: number | null, isIncome: boolean): string {
-  return change == null ? "text-muted-foreground" : (change > 0) === isIncome ? "text-pos" : "text-destructive";
-}
-
-interface CategoriesPageProps {
-  isMerged: boolean;
-}
-
-export default function CategoriesPageContent({ isMerged }: CategoriesPageProps) {
-  if (!isMerged) {
-    return (
-      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-        <CategoriesOverview />
-      </Suspense>
-    );
-  }
-
-  // Merged UI: show tabs
+export default function CategoriesPageContent() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Categories"
-        subtitle="View spending patterns and manage your categories."
-      />
-
-      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-        <MergedHubTabs />
-      </Suspense>
-    </div>
+    <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+      <CategoriesOverview />
+    </Suspense>
   );
 }
-
-/**
- * Hub tabs. `?tab=manage` opens the Manage tab, so the create/rename pages
- * (/categories/new, /categories/[id]/edit) can return the user to it.
- */
-function MergedHubTabs() {
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "manage" ? "manage" : "overview";
-  return (
-    <Tabs defaultValue={initialTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="manage">Manage</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="overview" className="space-y-6 mt-6">
-        <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-          <CategoriesOverview embedded />
-        </Suspense>
-      </TabsContent>
-
-      <TabsContent value="manage" className="space-y-6 mt-6">
-        <CategoryManagement returnTo="/categories?tab=manage" />
-      </TabsContent>
-    </Tabs>
-  );
-}
-
-interface CategoriesOverviewProps {
-  embedded?: boolean;
-}
-
-/** Usual-month text for a row; "new this period" when there is no average. */
-function usualText(average: number | null, budget: number | null, cur: string): string {
-  const usual = average != null ? `usually ${formatCurrency(average, cur)}` : "new this period";
-  return budget != null ? `${usual} · budget ${formatCurrency(budget, cur)}` : usual;
-}
-
-interface RowBodyProps {
-  label: string;
-  sub: string;
-  dot: string;
-  amount: number;
-  share: number;
-  trend: number[] | null;
-  change: number | null;
-  cur: string;
-  isIncome: boolean;
-  partial: boolean;
-  sparkLabels: string[];
-  shortMonth: string;
-  chevron?: boolean;
-}
-
-/** One row of the By category card: name, sparkline, share bar, amount and vs usual. Used for groups and categories. */
-function RowBody({ label, sub, dot, amount, share, trend, change, cur, isIncome, partial, sparkLabels, shortMonth, chevron }: RowBodyProps) {
-  // Nothing yet this month reads as "none", not a green "-100%".
-  const none = amount === 0;
-  const ch = none ? (partial ? "none yet" : "none") : changeLabel(change);
-  return (
-    <>
-      <div className="min-w-0 flex items-center gap-2.5">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} />
-        <div className="min-w-0">
-          <p className="font-medium truncate">{label}</p>
-          <p className="text-xs text-muted-foreground truncate">{sub}</p>
-        </div>
-      </div>
-      <div className="hidden @xl:block">
-        {trend ? (
-          <Sparkline data={trend} color={isIncome ? CHART_COLORS.positive : CHART_COLORS.negative} labels={sparkLabels} currency={cur} />
-        ) : null}
-      </div>
-      <div className="hidden @xl:block">
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.min(100, share * 100)}%`, backgroundColor: dot }} />
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">{Math.round(share * 100)}% of {shortMonth}</p>
-      </div>
-      <div className="flex items-center gap-2 justify-end">
-        <div className="text-right">
-          <p className="font-semibold tabular-nums">{formatCurrency(amount, cur)}</p>
-          {ch && (
-            <p className={`text-xs font-medium tabular-nums ${none ? "text-muted-foreground" : toneClass(change, isIncome)}`}>
-              {none ? ch : `${ch} vs usual`}
-            </p>
-          )}
-        </div>
-        {chevron && <ChevronRight className="h-4 w-4 text-muted-foreground/60" aria-hidden />}
-      </div>
-    </>
-  );
-}
-
-const ROW_BASE =
-  "grid grid-cols-[minmax(0,1fr)_auto] @xl:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-/** A category row inside an open group. */
-const ROW_CLASS = `${ROW_BASE} rounded-lg px-2 py-3`;
-/** A top-level ungrouped category row, styled like a collapsed group header card. */
-const CARD_ROW = `${ROW_BASE} rounded-xl border bg-card px-4 py-3`;
 
 /** DOM id of a group's row wrapper (scroll target for pie / legend clicks). */
 function groupDomId(key: string): string {
   return `cat-group-${key.replace(/[^A-Za-z0-9_-]/g, "_")}`;
 }
 
-/** Collapsible group header: name, category count, share of month and total on the right, vs usual under it. */
-function groupHeader(row: OverviewRow, cur: string, isIncome: boolean) {
-  const n = row.categories.length;
-  const ch = changeLabel(row.change);
+/** Previous calendar month as YYYY-MM. */
+function prevMonthOf(m: string): string {
+  return shiftMonth(m, -1);
+}
+
+/** "Waiting" / "Failed" badge on a budget queued on this device. */
+function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
+  if (mark.status === "failed") {
+    return (
+      <span className="shrink-0 rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive" title={mark.failReason ?? "Sync failed"}>
+        Sync failed
+      </span>
+    );
+  }
   return (
-    <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="min-w-0 truncate">{row.label}</span>
-        <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
-          {n}
-        </span>
-      </span>
-      <span className="shrink-0 text-right">
-        <span className="block font-mono font-semibold tabular-nums">{formatCurrency(row.amount, cur)}</span>
-        <span className="block text-xs font-normal text-muted-foreground tabular-nums">
-          {Math.round(row.share * 100)}% of month
-          {ch && <span className={`ml-1.5 font-medium ${toneClass(row.change, isIncome)}`}>{ch} vs usual</span>}
-        </span>
-      </span>
+    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground" title="Saved on this device; syncs when online">
+      Waiting to sync
     </span>
   );
 }
 
-function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
+function CategoriesOverview() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const animationsEnabled = useAnimations();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   // Expanded top-level groups (several may be open). Empty = all collapsed.
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
+  const [copying, setCopying] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [editMode, setEditMode] = useState(false);
   const currentMonth = localDateISO().slice(0, 7);
-  const monthParam = searchParams.get("month");
-  const month = monthParam && MONTH_RE.test(monthParam) && monthParam <= currentMonth ? monthParam : currentMonth;
+  // Range + month come from the shared PageToolbar (?range=&month=); the list shows the period's last month.
+  const { selection, explicit, period, setSelection } = useMetricRange();
+  const periodEnd = period.months[period.months.length - 1] ?? currentMonth;
+  const month = MONTH_RE.test(periodEnd) && periodEnd <= currentMonth ? periodEnd : currentMonth;
+  const tb = useListToolbar({ filterPath: "/filter/categories", sorts: CATEGORY_SORTS, filterKeys: CATEGORY_FILTER_KEYS });
   const type: "E" | "I" = searchParams.get("type") === "I" ? "I" : "E";
+  const isIncome = type === "I";
 
   // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
   const overview = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=${type}&months=12`);
   const data: OverviewResponse | null = overview.data?.data ?? null;
   const loading = overview.loading;
   const failed = overview.error;
-  const load = overview.reload;
+  const overviewReload = overview.reload;
 
-  function go(next: { month?: string; type?: "E" | "I" }) {
-    setOpenKeys(new Set()); // a new type or month starts with every group collapsed
-    const m = next.month ?? month;
-    const t = next.type ?? type;
-    const qs = new URLSearchParams();
-    if (m !== currentMonth) qs.set("month", m);
-    if (t === "I") qs.set("type", "I");
+  // The month's budgets (spending only), with the offline queue overlaid.
+  const budgetsRes = useCacheFirstJson<Budget[]>(
+    currencyLoading || isIncome ? null : `/api/budgets?month=${month}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  // Every category (also those with no activity in the window), for the list's completeness and the form.
+  const catsRes = useCacheFirstJson<FormCategory[]>("/api/categories");
+  const catsReload = catsRes.reload;
+  const allCategories = useMemo(() => (Array.isArray(catsRes.data) ? catsRes.data : []), [catsRes.data]);
+  const budgetsReload = budgetsRes.reload;
+  const serverBudgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
+  const budgetsKnown = !isIncome && Array.isArray(budgetsRes.data);
+  const pendingBudgets = usePendingBudgets(() => budgetsReload());
+  const budgets = useMemo(() => applyPendingBudgets(serverBudgets, pendingBudgets, month), [serverBudgets, pendingBudgets, month]);
+
+  // Metric cards: month vs previous month by default (?range=&from=&to= overrides).
+  const win = seriesWindow(period);
+  const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; budget: number; spent: number }> }>(
+    currencyLoading || isIncome ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const seriesRows = useMemo(
+    () => (seriesRes.data && !Array.isArray(seriesRes.data) && Array.isArray(seriesRes.data.series) ? seriesRes.data.series : []),
+    [seriesRes.data],
+  );
+
+  const reloadAll = useCallback(() => {
+    overviewReload();
+    budgetsReload();
+    catsReload();
+  }, [overviewReload, budgetsReload, catsReload]);
+
+  // ?edit=new | ?edit=<id> opens the shared category + budget form.
+  const editParam = searchParams.get("edit");
+  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
+  const formOpen = editParam === "new" || editId != null;
+  function setEdit(next: "new" | number | null) {
+    const qs = new URLSearchParams(searchParams.toString());
+    if (next == null) qs.delete("edit");
+    else qs.set("edit", String(next));
+    router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
+  }
+
+  function go(next: { type: "E" | "I" }) {
+    setOpenKeys(new Set()); // a new type starts with every group collapsed
+    // Read the live address: range / search / filter params are written with replaceState, which useSearchParams misses.
+    const qs = new URLSearchParams(typeof window === "undefined" ? searchParams.toString() : window.location.search);
+    if (next.type === "I") qs.set("type", "I");
+    else qs.delete("type");
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
 
@@ -256,20 +191,59 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !failed ? { onOpen: () => setCustomizeOpen(true) } : null);
 
+  // Overview categories with the live budgets merged in (and queued-create budgets of categories not in the report).
+  const cats: OverviewCategory[] = useMemo(() => {
+    if (!data) return [];
+    const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
+    const merged: OverviewCategory[] = data.categories.map((c) =>
+      isIncome ? { ...c, budget: null } : budgetsKnown ? { ...c, budget: byCat.get(c.id)?.amount ?? null } : c,
+    );
+    const seen = new Set(data.categories.map((c) => c.id));
+    // Categories with no activity in the window still belong in the list (so they can be edited / deleted).
+    for (const c of allCategories) {
+      if (seen.has(c.id) || c.type !== type) continue;
+      seen.add(c.id);
+      merged.push({
+        id: c.id, name: c.name, group: c.group ?? "", amount: 0, share: 0, average: null, change: null,
+        budget: !isIncome && budgetsKnown ? (byCat.get(c.id)?.amount ?? null) : null, trend: data.windowMonths.map(() => 0),
+      });
+    }
+    if (isIncome || !budgetsKnown) return merged;
+    for (const b of budgets) {
+      if (seen.has(b.categoryId)) continue;
+      seen.add(b.categoryId);
+      merged.push({
+        id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
+        average: null, change: null, budget: b.amount, trend: data.windowMonths.map(() => 0),
+      });
+    }
+    return merged;
+  }, [data, budgets, budgetsKnown, isIncome, allCategories, type]);
+
+  const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
+
   if (loading && !data) return <PageSkeleton variant="list" rows={6} />;
   if (failed || !data) {
-    return <ErrorState title="Couldn't load categories" message="Please try again." onRetry={load} />;
+    return <ErrorState title="Couldn't load" message="Try again." onRetry={overviewReload} />;
   }
 
   const cur = data.displayCurrency;
-  const isIncome = type === "I";
   const noun = isIncome ? "income" : "spending";
-  const totalChange = data.averageTotal ? (data.total - data.averageTotal) / data.averageTotal : null;
-  const sparkLabels = data.windowMonths.map((m) => monthName(m, "short"));
-  const shortMonth = monthName(month, "short");
+  const sparkLabels = data.windowMonths;
 
-  const rows = buildGroupRows(data.categories, data.total);
-  const { slices, other } = pieSlices(rows, PIE_SEGMENTS);
+  // Search + budget filter apply to the list only; the pie and totals stay the whole month.
+  const needle = tb.q.trim().toLowerCase();
+  const budgetFilter = tb.filters.budget ?? "";
+  const visibleCats = cats.filter((c) => {
+    if (needle && !`${c.name ?? ""} ${c.group}`.toLowerCase().includes(needle)) return false;
+    if (budgetFilter === "with") return c.budget != null;
+    if (budgetFilter === "none") return c.budget == null;
+    if (budgetFilter === "over") return c.budget != null && c.amount > c.budget;
+    return true;
+  });
+  const allRows = buildGroupRows(cats, data.total);
+  const rows = sortRows(buildGroupRows(visibleCats, data.total), tb.sort.sort, tb.sort.dir);
+  const { slices, other } = pieSlices(allRows, PIE_SEGMENTS);
   const sliceIndex = new Map(slices.map((r, i) => [r.key, i]));
   const colorOf = (key: string) => {
     const i = sliceIndex.get(key);
@@ -294,7 +268,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   // Pie slice / legend item: a group expands and scrolls into view; a category opens its detail page; "Other" does nothing.
   function openPieKey(key: string) {
     if (key === OTHER_KEY) return;
-    const row = findRow(rows, key);
+    const row = findRow(allRows, key);
     if (!row) return;
     if (row.kind === "category") {
       router.push(`/categories/${row.categories[0].id}`);
@@ -307,188 +281,309 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   }
 
   const pieLabel = topRow
-    ? `${isIncome ? "Income" : "Spending"} in ${monthName(month)}: ${formatCurrency(data.total, cur)}, largest ${topRow.label} ${pct(topRow.amount)}%`
+    ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
     : undefined;
 
-  const categoryRowBody = (c: OverviewCategory, group: string) => (
-    <RowBody
-      label={subLabel(c.name, group)}
-      sub={usualText(c.average, c.budget, cur)}
-      dot={colorOf(`c:${c.id}`)}
-      amount={c.amount}
-      share={c.share}
-      trend={c.trend}
-      change={c.change}
+  // ---- budgets: totals, form links, delete, copy ------------------------------------------------------------------
+  const listUrl = `/categories${month !== currentMonth ? `?month=${month}` : ""}`;
+  const formQuery = `month=${month}&returnTo=${encodeURIComponent(listUrl)}`;
+  const budgeted = cats.filter((c) => c.budget != null);
+  const totalBudget = budgeted.reduce((s, c) => s + (c.budget ?? 0), 0);
+  const totalSpent = budgeted.reduce((s, c) => s + c.amount, 0);
+  const totalLeft = totalBudget - totalSpent;
+
+  const caption = compareCaption(selection);
+  const pointsOf = (pick: (r: { budget: number; spent: number }) => number): MonthPoint[] =>
+    seriesRows.map((r) => ({ month: r.month, value: pick(r) }));
+  const common = { period, isDefault: !explicit, currency: cur, caption, kind: "money" } as const;
+  const budgetCard = resolveCard({ ...common, points: pointsOf((r) => r.budget), mode: "sum", pageValue: totalBudget });
+  const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
+  const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalLeft });
+  // Exactly these three cards.
+  const metrics: MetricItem[] = [
+    {
+      id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
+      sub: budgetCard.delta ?? NO_HISTORY_CAPTION, badgePct: budgetCard.badgePct,
+      sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
+    },
+    {
+      id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
+      valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
+      sub: spentCard.delta ?? NO_HISTORY_CAPTION, badgePct: spentCard.badgePct, invertTone: true,
+      sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
+    },
+    {
+      id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
+      valueClassName: totalLeft >= 0 ? "text-pos" : "text-destructive",
+      sub: leftCard.delta ?? NO_HISTORY_CAPTION, badgePct: leftCard.badgePct,
+      sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
+    },
+  ];
+
+  /** Server row of a budget (no overlay fields) as the offline queue's baseline. */
+  function serverRowOf(b: Budget) {
+    return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
+  }
+
+  /** Remove a budget (server or queued on this device). False = failed (the reason is in actionError). */
+  async function clearBudget(b: Budget): Promise<boolean> {
+    // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
+    if (b.pendingSync?.kind === "create") {
+      const dropped = await discardQueuedCreate(b.pendingSync.opId);
+      if (!dropped) setActionError("Being sent now. Try again.");
+      return dropped;
+    }
+    try {
+      const res = await fetch(`/api/budgets?id=${b.id}`, { method: "DELETE" });
+      return res.ok;
+    } catch (netErr) {
+      // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
+      const serverRow = serverBudgets.find((x) => x.id === b.id) ?? b;
+      return isLocalWriteQueueActive() && isNetworkFailure(netErr) ? await queueOfflineBudgetDelete(serverRowOf(serverRow)) : false;
+    }
+  }
+
+  // Copy last month's budgets into the selected month (the upserting POST /api/budgets, native amount + currency).
+  async function handleCopyFromPrevMonth() {
+    setActionError("");
+    setCopying(true);
+    try {
+      const res = await fetch(`/api/budgets?month=${prevMonthOf(month)}`);
+      if (!res.ok) {
+        setActionError(await parseSaveError(res, "Couldn't load last month"));
+        return;
+      }
+      const prevRows = await res.json();
+      if (!Array.isArray(prevRows) || prevRows.length === 0) {
+        setActionError("No budgets last month.");
+        return;
+      }
+      for (const b of prevRows as Array<{ categoryId: number; amount: number; currency?: string }>) {
+        const post = await fetch("/api/budgets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryId: b.categoryId, month, amount: b.amount, ...(b.currency ? { currency: b.currency } : {}) }),
+        });
+        if (!post.ok) {
+          setActionError(await parseSaveError(post, "Couldn't copy"));
+          return;
+        }
+      }
+      reloadAll();
+    } catch {
+      setActionError("Network error.");
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  const overflow: OverflowAction[] = [
+    { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
+    ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
+    { label: "Apply template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` },
+    { label: "Rules", icon: ListChecks, href: "/settings/rules" },
+    ...(budgets.length >= 2 ? [{ label: "Move money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
+  ];
+
+  // ---- rows ---------------------------------------------------------------------------------------------------------
+
+  /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
+  function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
+    const body = categoryRow(c, group, dot, indent);
+    return editMode ? (
+      <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
+        {body}
+      </button>
+    ) : (
+      <Link href={`/categories/${c.id}`} className={className}>{body}</Link>
+    );
+  }
+
+  /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
+  const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
+    <CategoryRow
+      label={r.label}
+      dot={r.dot}
+      amount={r.amount}
+      prev={prevOf(r.trend)}
+      budget={r.budget}
+      trend={r.trend}
       cur={cur}
       isIncome={isIncome}
-      partial={data.partial}
       sparkLabels={sparkLabels}
-      shortMonth={shortMonth}
+      count={r.count}
+      badge={r.badge}
+      indent={r.indent}
     />
   );
 
-  const embeddedHeader = (
-    <div className={embedded ? "flex flex-wrap items-center justify-end gap-2" : "flex flex-wrap items-center gap-2"}>
+  const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+    rowFor({
+      indent,
+      label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
+      badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
+    });
+
+  const groupRow = (row: OverviewRow) =>
+    rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+
+  const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  const toolbar = (
+    <div data-slot="categories-toolbar" className="space-y-3">
       <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
         <TabsList>
           <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
           <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="min-w-32 text-center text-sm font-medium">{monthName(month)}</span>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Next month"
-          disabled={month >= currentMonth}
-          onClick={() => go({ month: shiftMonth(month, 1) })}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}
+      <PageToolbar range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
     </div>
   );
 
-  // The two cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
-  const cardNodes: Record<string, ReactNode> = {
-    summary: (
-      <>
-      <Card>
-        <CardContent className="pt-5 space-y-4">
-          <div className="flex flex-col regular:flex-row regular:items-center gap-5">
-            {slices.length > 0 && (
-              <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
-                <PieChart width={160} height={160}>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={80}
-                    stroke="none"
-                    isAnimationActive={animationsEnabled}
-                    onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {pieData.map((d) => (
-                      <Cell key={d.key} fill={d.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </div>
-            )}
+  /** Budget tools (formerly the 3-dot menu): visible, small buttons under the metric cards. */
+  const budgetTools = (
+    <div data-slot="budget-tools" className="flex flex-wrap items-center gap-2">
+      {overflow.map((it) => {
+        const Icon = it.icon;
+        const inner = (<>{Icon ? <Icon className="mr-1 h-3.5 w-3.5" aria-hidden /> : null}{it.label}</>);
+        return it.href ? (
+          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" render={<Link href={it.href} />}>{inner}</Button>
+        ) : (
+          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" disabled={it.disabled} onClick={it.onSelect}>{inner}</Button>
+        );
+      })}
+    </div>
+  );
 
-            <div className="min-w-0 flex-1 space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isIncome ? "Income" : "Spending"} in {monthName(month)}{data.partial ? " so far" : ""}
-                  </p>
-                  <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
-                </div>
-                {data.averageTotal != null && (
-                  <p className="text-sm text-muted-foreground">
-                    Usual month {formatCurrency(data.averageTotal, cur)}
-                    {changeLabel(totalChange) && (
-                      <span className={`ml-1.5 font-medium ${toneClass(totalChange, isIncome)}`}>{changeLabel(totalChange)}</span>
-                    )}
-                  </p>
-                )}
-              </div>
-              {slices.length > 0 ? (
-                <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  {pieData.map((d) => {
-                    const isOther = d.key === OTHER_KEY;
-                    const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
-                    return (
-                      <li key={d.key}>
-                        <button
-                          type="button"
-                          disabled={isOther}
-                          onClick={() => openPieKey(d.key)}
-                          className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
-                        >
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
-                          <span className="truncate">{d.name} {share}%</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">No {noun} recorded in {monthName(month)} yet.</p>
-              )}
+  // The cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
+  const cardNodes: Record<string, ReactNode> = {
+    metrics: isIncome ? null : (
+      <div className="space-y-3">
+        <MetricGrid metrics={metrics} columns={3} />
+        {budgetTools}
+      </div>
+    ),
+    summary: (
+      <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
+        <div className="flex flex-col regular:flex-row regular:items-center gap-5">
+          {slices.length > 0 && (
+            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
+              <PieChart width={160} height={160}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={48}
+                  outerRadius={80}
+                  stroke="none"
+                  isAnimationActive={animationsEnabled}
+                  onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {pieData.map((d) => (
+                    <Cell key={d.key} fill={d.color} />
+                  ))}
+                </Pie>
+              </PieChart>
             </div>
+          )}
+
+          <div className="min-w-0 flex-1 space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {getMonthLabel(month)}{data.partial ? " · so far" : ""}
+              </p>
+              <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
+            </div>
+            {slices.length > 0 ? (
+              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {pieData.map((d) => {
+                  const isOther = d.key === OTHER_KEY;
+                  const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
+                  return (
+                    <li key={d.key}>
+                      <button
+                        type="button"
+                        disabled={isOther}
+                        onClick={() => openPieKey(d.key)}
+                        className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
+                      >
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
+                        <span className="truncate">{d.name} {share}%</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No {noun}.</p>
+            )}
           </div>
-        </CardContent>
-      </Card>
-      </>
+        </div>
+      </SectionCard>
     ),
     "by-category": (
-      <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">By category</CardTitle>
-          <CardDescription>
-            Compared with each category&apos;s average over the previous complete months (up to 11) · {cur}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-2 regular:px-6">
-          {data.categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-2">No categories with {noun} in the last 12 months.</p>
-          ) : (
-            <ul data-slot="category-group-cards" className="grid grid-cols-1 items-start gap-2 regular:grid-cols-2 regular:gap-3 wide:grid-cols-3">
-              {rows.map((row) =>
-                row.kind === "group" ? (
-                  <li key={row.key} id={groupDomId(row.key)} className="@container min-w-0">
-                    <Accordion
-                      value={openKeys.has(row.key) ? row.key : null}
-                      onValueChange={(v) => setOpen(row.key, v === row.key)}
-                    >
-                      <AccordionItem value={row.key} title={groupHeader(row, cur, isIncome)}>
-                        <ul className="-mx-2 -my-2 divide-y">
-                          {row.categories.map((c) => (
-                            <li key={c.id}>
-                              <Link href={`/categories/${c.id}`} className={ROW_CLASS}>
-                                {categoryRowBody(c, row.group)}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </AccordionItem>
-                    </Accordion>
-                  </li>
-                ) : (
-                  <li key={row.key} className="@container min-w-0">
-                    <Link href={`/categories/${row.categories[0].id}`} className={CARD_ROW}>
-                      {categoryRowBody(row.categories[0], "")}
-                    </Link>
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-      </>
+      <SectionCard
+        label="Categories"
+        icon={Tags}
+        tone="indigo"
+        padded={false}
+        className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]"
+      >
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground regular:col-span-full">No {noun}.</p>
+        ) : (
+          rows.map((row) =>
+            row.kind === "group" ? (
+              <div key={row.key} id={groupDomId(row.key)} data-slot="category-group">
+                <Accordion
+                  value={openKeys.has(row.key) ? row.key : null}
+                  onValueChange={(v) => setOpen(row.key, v === row.key)}
+                  className="gap-0"
+                >
+                  <AccordionItem
+                    value={row.key}
+                    title={groupRow(row)}
+                    className="rounded-none border-0 bg-transparent"
+                    triggerClassName="rounded-none px-4 py-3"
+                    panelClassName="border-t border-border/50 p-0"
+                  >
+                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                      {row.categories.map((c) => (
+                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
+                      ))}
+                    </ul>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            ) : (
+              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key), ROW_LINK)}</div>
+            ),
+          )
+        )}
+      </SectionCard>
     ),
   };
 
   return (
     <div className="space-y-6">
-      {!embedded && (
-        <PageHeader
-          title="Spending by category"
-          subtitle="Where your money goes, and how each category compares with a usual month."
-        />
-      )}
-      {embeddedHeader}
+      <PageHeader
+        title="Categories"
+        actions={
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        }
+        filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
+        bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
+        hideMore
+      />
+      {toolbar}
+      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
       {cardLayout.layout.order
         .filter((id) => !cardLayout.layout.hidden.includes(id))
@@ -499,17 +594,40 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       <CustomizeCardsSheet
         open={customizeOpen}
         onOpenChange={setCustomizeOpen}
-        title="Customize categories"
-        description="Show, hide and reorder the cards on the categories overview."
+        title="Customize"
+        description="Show, hide, reorder cards."
         cards={CATEGORY_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
 
+      <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
+        <SheetContent side="right" className="w-full overflow-y-auto regular:max-w-md">
+          <SheetHeader>
+            <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
+          </SheetHeader>
+          {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
+            <CategoryBudgetForm
+              key={`${editParam}-${budgetsKnown}-${allCategories.length}`}
+              category={editId != null ? (allCategories.find((c) => c.id === editId) ?? null) : null}
+              categories={allCategories}
+              budgets={budgets}
+              month={month}
+              currency={displayCurrency}
+              defaultType={type}
+              onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); setEdit(null); }}
+              onCancel={() => setEdit(null)}
+              onDeleted={() => { reloadAll(); setEdit(null); }}
+              onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
       {data.partial && (
         <p className="text-xs text-muted-foreground">
-          {monthName(month)} is still running, so its amounts are month-to-date. Amounts are in {cur}, converted at each transaction&apos;s historical rate.
+          {getMonthLabel(month)} to date · {cur}
         </p>
       )}
     </div>

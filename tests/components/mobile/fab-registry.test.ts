@@ -98,15 +98,15 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has one key per registry route, ratcheted at most 92", () => {
+  it("has one key per registry route, ratcheted at most 93", () => {
     expect(Object.keys(FAB_ROUTES)).toHaveLength(ALL_ROUTES.length);
-    expect(ALL_ROUTES.length).toBeLessThanOrEqual(92);
+    expect(ALL_ROUTES.length).toBeLessThanOrEqual(93);
   });
 
-  it("kind counts are 37 fallback, 17 route, 6 handler, 32 hidden, 0 redirect", () => {
+  it("kind counts are 37 fallback, 15 route, 6 handler, 30 hidden, 0 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 37, route: 17, handler: 6, hidden: 32 });
+    expect(counts).toEqual({ fallback: 37, route: 15, handler: 6, hidden: 30 });
     expect(counts.redirect).toBeUndefined();
   });
 
@@ -117,8 +117,7 @@ describe("FAB_ROUTES table", () => {
       .sort();
     expect(rows).toEqual([
       ["/accounts", "Add account", "/accounts/new"],
-      ["/budgets", "Add budget", "/budgets/new"],
-      ["/categories", "Add category", "/categories/new"],
+      ["/categories", "Add category", "/categories?edit=new"],
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
       ["/goals", "Add goal", "/goals/new"],
@@ -128,7 +127,6 @@ describe("FAB_ROUTES table", () => {
       ["/portfolio/dividends", "Record dividend", "/portfolio/new/income-expense"],
       ["/portfolio/realized-gains", "Record sale", "/portfolio/new/sell"],
       ["/settings/backfill/[runId]", "New run", "/settings/backfill"],
-      ["/settings/categorization", "Add category", "/categories/new"],
       ["/settings/investments", "Add security", "/settings/investments/securities/new"],
       ["/settings/rules", "Add rule", "/settings/rules/new"],
       ["/subscriptions", "Add subscription", "/subscriptions/new"],

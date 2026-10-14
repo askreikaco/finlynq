@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SectionCard } from "@/components/mobile/section-card";
-import { AlertTriangle, Bell, CheckCircle2, X, ChevronRight, Shield } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, ChevronRight, ListChecks, Shield, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpotlightItem } from "./types";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 const SEVERITY_ICON = {
@@ -72,7 +72,7 @@ export function ActionCenter() {
 
   return (
     <motion.div variants={itemVariants}>
-      <SectionCard label="Action Center" cardClassName="card-hover">
+      <SectionCard label="Action Center" icon={ListChecks} tone="indigo" cardClassName="card-hover">
         <div className="mb-3 flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
             <Shield className="h-4 w-4" />
@@ -92,7 +92,7 @@ export function ActionCenter() {
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               <AnimatePresence mode="popLayout">
                 {displayItems.map((item, i) => {
                   const config = SEVERITY_ICON[item.severity];
@@ -100,10 +100,10 @@ export function ActionCenter() {
                   return (
                     <motion.div
                       key={item.id}
-                      initial={{ opacity: 0, y: 8 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -80 }}
-                      transition={{ duration: 0.25, delay: i * 0.04 }}
+                      transition={{ duration: 0.15 }}
                       className="group flex items-center gap-3 py-3 first:pt-1"
                     >
                       {/* Severity dot */}

@@ -8,19 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
-import {
-  Wallet,
-  Pencil,
-  Trash2,
-  Inbox,
-  Receipt,
-  TrendingUp,
-  ChevronDown,
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowLeftRight,
-  MoreHorizontal,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -46,12 +34,12 @@ import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { MetricCard } from "@/components/metric-card";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { MetricRangeSelect } from "@/components/metric-range-select";
-import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { PageToolbar } from "@/components/page-toolbar";
 import { cardProps, makeCardResolver, monthEndBalances } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
 import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
+import { useTransactionsToolbar } from "../../transactions/_hooks/use-transactions-toolbar";
 import {
   PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
 } from "@/components/mobile";
@@ -117,14 +105,22 @@ export default function AccountDetailPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   // The list of transactions is rendered by the embedded <TransactionsWorkspace>
   // below (its own SWR fetch); we fetch the transaction count but don't display it anymore.
-  const [balance, setBalance] = useState<number | null>(null);
-  const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
-  const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
+  // Computed balance from the dashboard payload, cache-first: a revisit paints the last balance at once and revalidates.
+  const dashboardRes = useCacheFirstJson<{ balances?: AccountBalance[] }>("/api/dashboard");
+  const acctBalance = dashboardRes.data ? dashboardRes.data.balances?.find((b) => b.accountId === Number(id)) : undefined;
+  const balance: number | null = dashboardRes.data ? (acctBalance?.balance ?? 0) : null;
+  const cashFlowBasis: number | null = acctBalance?.cashFlowBasis ?? null;
+  const holdingsValue: number | null = acctBalance?.holdingsValue ?? null;
+  // The account row (name, currency, flags), cache-first too. includeArchived=1 is load-bearing: this is the detail view
+  // and the only place Unarchive lives (see the effect below).
+  const accountsRes = useCacheFirstJson<Account[]>("/api/accounts?includeArchived=1");
   // Monthly balance history for the Balance card's chart + "vs last month" (native currency of the account).
   // Month-end balance history (native currency), cache-first so it also paints offline; a range reaches back past a year.
   const balanceHistory = useCacheFirstJson<{ series?: BalancePoint[] }>(`/api/net-worth-history?period=all&accountId=${id}&basis=native`);
   const balanceSeries = Array.isArray(balanceHistory.data?.series) ? balanceHistory.data.series : null;
-  const metricRange = useMetricRange();
+  // One toolbar for the cards and the embedded transaction list (range, search, filter).
+  const txToolbar = useTransactionsToolbar();
+  const metricRange = txToolbar.range;
 
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -182,15 +178,7 @@ export default function AccountDetailPage() {
   // feeds both). Mirrors the initial load effect. Passed as the workspace's
   // `onDataChange` so the header tiles stay in sync after a bulk/inline edit.
   function refreshBalanceAndTxns() {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        const b = d.balances?.find((x: AccountBalance) => x.accountId === Number(id));
-        setBalance(b?.balance ?? 0);
-        setCashFlowBasis(b?.cashFlowBasis ?? null);
-        setHoldingsValue(b?.holdingsValue ?? null);
-      })
-      .catch(() => {});
+    dashboardRes.reload();
     balanceHistory.reload();
 
     fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
@@ -285,6 +273,19 @@ export default function AccountDetailPage() {
     }
   }
 
+  // Sync the cached/revalidated list into the page state (reloadAccount() still patches `account` after a save).
+  useEffect(() => {
+    const list = accountsRes.data;
+    if (Array.isArray(list)) {
+      setAccounts(list);
+      const found = list.find((a) => a.id === Number(id));
+      setAccount(found ?? null);
+      setLoadFailed(!found);
+    } else if (accountsRes.error) {
+      setLoadFailed(true);
+    }
+  }, [accountsRes.data, accountsRes.error, id]);
+
   useEffect(() => {
     // `includeArchived=1`: GET /api/accounts hides archived accounts by default
     // (it is the lists/pickers source), but THIS page is the detail view — and
@@ -292,34 +293,6 @@ export default function AccountDetailPage() {
     // account was never found, `account` stayed null, and the render guard
     // below sat on its loading skeleton forever: the account became both
     // unviewable and permanently un-unarchivable from the web UI.
-    setLoadFailed(false);
-    fetch("/api/accounts?includeArchived=1")
-      .then((r) => r.json())
-      .then((accts: Account[]) => {
-        setAccounts(Array.isArray(accts) ? accts : []);
-        const found = Array.isArray(accts)
-          ? accts.find((a: Account) => a.id === Number(id))
-          : undefined;
-        setAccount(found ?? null);
-        // Distinguish "still loading" from "no such account". Both used to
-        // render the same endless skeleton, so a bad/foreign id looked
-        // identical to a slow network.
-        if (!found) setLoadFailed(true);
-      })
-      .catch(() => setLoadFailed(true));
-
-    // Fetch the computed balance from the dashboard API. For investment
-    // accounts, balance = market value of holdings; cashFlowBasis is the
-    // transaction sum surfaced separately.
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        const acctBalance = d.balances?.find((b: AccountBalance) => b.accountId === Number(id));
-        setBalance(acctBalance?.balance ?? 0);
-        setCashFlowBasis(acctBalance?.cashFlowBasis ?? null);
-        setHoldingsValue(acctBalance?.holdingsValue ?? null);
-      });
-
     fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
       .then((r) => r.json())
       .catch(() => {});
@@ -423,6 +396,7 @@ export default function AccountDetailPage() {
       {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
+        filter={{ href: txToolbar.list.filterHref, activeCount: txToolbar.list.activeCount }}
         title={account.name}
         lead={
           <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
@@ -509,7 +483,10 @@ export default function AccountDetailPage() {
         busy={deletingAccount}
       />
 
-      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+        search={{ value: txToolbar.list.q, onChange: txToolbar.list.setQ, placeholder: "Payee or note" }}
+      />
 
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
@@ -590,9 +567,9 @@ export default function AccountDetailPage() {
           information: (
         <SectionCard
           data-slot="account-information"
-          label="Information"
+          label="Information" icon={Info} tone="cyan"
           padded={false}
-          className="divide-y divide-border/50 px-3"
+          className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
           action={
         <Button
           size="sm"
@@ -650,6 +627,7 @@ export default function AccountDetailPage() {
             <Suspense fallback={<div className="h-40 animate-shimmer rounded-xl" />}>
         <TransactionsWorkspace
           lockedAccountId={account.id}
+          toolbar={txToolbar}
           showHeader={false}
           onDataChange={refreshBalanceAndTxns}
         />

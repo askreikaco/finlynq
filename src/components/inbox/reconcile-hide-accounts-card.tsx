@@ -16,12 +16,12 @@ import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EyeOff, Eye } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Eye, EyeOff } from "lucide-react";
 import { safeAccountName } from "@/lib/safe-name";
 
 interface AccountRow {
@@ -105,16 +105,18 @@ export function ReconcileHideAccountsCard() {
             <EyeOff className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">
-              Hide accounts from the reconcile dropdown
+            <CardTitle icon={EyeOff} tone="muted">
+              Hide accounts
+              <InfoTip
+                label="About hiding accounts"
+                text={
+                  <>
+                    Hidden accounts leave the <a href="/import" className="underline">Import</a> account picker. They stay
+                    reachable here and by direct link.
+                  </>
+                }
+              />
             </CardTitle>
-            <CardDescription>
-              Hidden accounts no longer clutter the account picker on the{" "}
-              <a href="/import" className="underline hover:text-foreground">
-                Import
-              </a>{" "}
-              page. They stay fully accessible here and via direct links.
-            </CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -123,11 +125,11 @@ export function ReconcileHideAccountsCard() {
           <p className="mb-3 text-sm text-destructive">{error}</p>
         )}
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading accounts…</p>
+          <p className="text-sm text-muted-foreground" data-keep="status">Loading…</p>
         ) : accounts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No accounts yet.</p>
+          <p className="text-sm text-muted-foreground" data-keep="empty">No accounts.</p>
         ) : (
-          <ul className="divide-y">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accounts.map((a) => {
               const isHidden = hiddenIds.includes(a.id);
               return (

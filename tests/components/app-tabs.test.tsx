@@ -25,11 +25,11 @@ const EXPECTED_TABS = [
   ["More", "/more"],
 ];
 
-const RAIL_LINKS_EXPECTED = ["Home", "Accounts", "Investment", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "More"];
+const RAIL_LINKS_EXPECTED = ["Home", "Accounts", "Investment", "Transactions", "Spending by category", "Reports", "Goals", "Loans & Debt", "More"];
 
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 const rail = () => screen.getByRole("navigation", { name: "Main navigation" });
-// The rail is one list at every width >= regular: 4 mobile tabs, 5 extras, More (10 items, no breakpoint variants).
+// The rail is one list at every width >= regular: 4 mobile tabs, 4 extras, More (9 items, no breakpoint variants).
 const railLinks = () => within(rail()).queryAllByRole("link");
 const tabsOf = (nav: HTMLElement) => within(nav).getAllByRole("link").map((l) => [l.textContent, l.getAttribute("href")]);
 const currentOf = (nav: HTMLElement) =>
@@ -260,8 +260,8 @@ describe("unread badges come from the shared store (nav-unread)", () => {
   });
 });
 
-describe("rail: 4 mobile tabs + 5 extras + More (10 items at every width >= regular)", () => {
-  it("the rail holds exactly 10 links in order, More last", () => {
+describe("rail: 4 mobile tabs + 4 extras + More (9 items at every width >= regular)", () => {
+  it("the rail holds exactly 9 links in order, More last", () => {
     render(<AppTabs />);
     expect(railLinks().map((l) => l.textContent)).toEqual(RAIL_LINKS_EXPECTED);
     expect(railLinks().at(-1)!.textContent).toBe("More");
@@ -287,19 +287,19 @@ describe("rail: 4 mobile tabs + 5 extras + More (10 items at every width >= regu
     expect(within(bar()).getAllByRole("link")).toHaveLength(5);
   });
 
-  it("the rail extras are the 5 registry entries with rail order 5..9 (no extra is a mobileBar tab)", () => {
+  it("the rail extras are the 4 registry entries with rail order 6..9, Budgets is not one of them (no extra is a mobileBar tab)", () => {
     const ids = getRailExtrasSorted().map((e) => e.path);
-    expect(ids).toEqual(["/budgets", "/categories", "/reports", "/goals", "/loans"]);
+    expect(ids).toEqual(["/categories", "/reports", "/goals", "/loans"]);
     for (const e of getRailExtrasSorted()) {
       expect(e.surfaces).toContain("sidebar");
       expect(e.surfaces).not.toContain("mobileBar");
     }
   });
 
-  it("a rail extra (/budgets) marks its item active; More is not active", () => {
-    mockPath = "/budgets/12";
+  it("a rail extra (/goals) marks its item active; More is not active", () => {
+    mockPath = "/goals/12";
     render(<AppTabs />);
-    expect(currentOf(rail())).toEqual(["Budgets"]);
+    expect(currentOf(rail())).toEqual(["Goals"]);
     expect(currentOf(bar())).toEqual(["More"]);
   });
 

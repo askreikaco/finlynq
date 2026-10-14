@@ -18,9 +18,9 @@ Note (2026-10-10): the header/skeleton/error counts below predate releases 2 and
 | pages with PageSkeleton (direct or via imports) | 11 |
 | pages that re-export another page module | 7 |
 
-Pages with ErrorState: `/accounts/[id]`, `/accounts`, `/budgets`, `/categories/[id]`, `/categories`, `/dashboard`, `/goals`, `/loans`, `/settings/investments`, `/subscriptions`.
+Pages with ErrorState: `/accounts/[id]`, `/accounts`, `/categories/[id]`, `/categories`, `/dashboard`, `/goals`, `/loans`, `/settings/investments`, `/subscriptions`.
 
-Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`, `/reports`, `/settings/investments`, `/subscriptions`.
+Pages with PageSkeleton: `/categories/[id]`, `/categories`, `/goals`, `/reports`, `/settings/investments`, `/subscriptions`.
 
 ## Method
 
@@ -54,14 +54,10 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/admin/instance` | `src/app/(app)/admin/instance/page.tsx` | app | yes (page.tsx:131) | no | no | - |
 | `/admin` | `src/app/(app)/admin/page.tsx` | app | yes (page.tsx:655) | no | no | - |
 | `/api-docs` | `src/app/(app)/api-docs/page.tsx` | app | yes (page.tsx:567) | no | no | titleClassName text-3xl font-bold text-zinc-900 dark:text-zinc-50 |
-| `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:235) | yes (page.tsx:221) | yes (page.tsx:220) | - |
 | `/budgets/move-money` | `src/app/(app)/budgets/move-money/page.tsx` | app | yes (page.tsx:21) | no | no | - |
-| `/budgets/new` | `src/app/(app)/budgets/new/page.tsx` | app | yes (page.tsx:22) | no | no | - |
 | `/budgets/templates/apply` | `src/app/(app)/budgets/templates/apply/page.tsx` | app | yes (page.tsx:21) | no | no | - |
 | `/budgets/templates/new` | `src/app/(app)/budgets/templates/new/page.tsx` | app | yes (page.tsx:36) | no | yes (page.tsx:45) | - |
 | `/categories/[id]` | `src/app/(app)/categories/[id]/page.tsx` | app | yes (page.tsx:167); backHref + backLabel | yes (page.tsx:76) | yes (page.tsx:144) | - |
-| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | no | no | no | - |
-| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | no | no | no | - |
 | `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app | no | no | no | - |
 | `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app | no | no | no | - |
 | `/categories` | `src/app/(app)/categories/page.tsx` | app | no | via import (categories/_page-content.tsx:58) | via import (categories/_page-content.tsx:139) | ErrorState/PageSkeleton from categories/_page-content.tsx (reachable); no PageHeader in depth-3 imports |
@@ -95,7 +91,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings/backfill/[runId]` | `src/app/(app)/settings/backfill/[runId]/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:303) | no | no | - |
 | `/settings/backfill` | `src/app/(app)/settings/backfill/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:115) | no | no | - |
 | `/settings/bank-feeds` | `src/app/(app)/settings/bank-feeds/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/integrations/page.tsx:76) | no | no | re-exports `/settings/integrations/page` (page source) |
-| `/settings/categorization` | `src/app/(app)/settings/categorization/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:131) | no | no | - |
 | `/settings/data` | `src/app/(app)/settings/data/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/developer/page.tsx:62) | no | no | re-exports `/settings/developer/page` (page source) |
 | `/settings/developer` | `src/app/(app)/settings/developer/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:62) | no | no | - |
 | `/settings/display` | `src/app/(app)/settings/display/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/general/page.tsx:102) | no | no | re-exports `/settings/general/page` (page source) |
@@ -125,6 +120,7 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/transactions/[id]/split` | `src/app/(app)/transactions/[id]/split/page.tsx` | app | yes (_components/transaction-split-form.tsx PageHeader) | no | no | full-page Split transaction (replaces split-dialog.tsx); hidden FAB + tab bar |
 | `/transactions` | `src/app/(app)/transactions/page.tsx` | app | via import (transactions/_components/transactions-workspace.tsx:698) | no | no | header from transactions/_components/transactions-workspace.tsx:698 (reachable) |
 | `/transactions/search` | `src/app/(app)/transactions/search/page.tsx` | app | yes (page.tsx:158) | no | no | - |
+| `/filter/[list]` | `src/app/(app)/filter/[list]/page.tsx` | app | via import (components/filter-sort-page.tsx PageHeader) | no | no | shared filter + sort page; hidden FAB |
 | `/whats-new` | `src/app/(app)/whats-new/page.tsx` | app | yes (page.tsx:56) | no | no | - |
 
 ## Raw grep evidence (run 2026-10-09 in the worktree)
@@ -163,7 +159,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
   scenarios/page.tsx:523:      <PageHeader
   settings/developer/page.tsx:62:      <PageHeader
   settings/reconciliation/page.tsx:136:      <PageHeader
-  settings/categorization/page.tsx:131:      <PageHeader
   settings/backfill/[runId]/page.tsx:303:        <PageHeader
   settings/backfill/page.tsx:115:      <PageHeader
   settings/general/page.tsx:102:      <PageHeader
@@ -180,7 +175,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
   import/page.tsx:349:      <PageHeader
   import/pending/_components/reconcile-header.tsx:66:          <PageHeader title={detail
   import/pending/_components/staged-list-view.tsx:103:          <PageHeader
-  budgets/page.tsx:414:      <PageHeader
   reports/page.tsx:347:      <PageHeader
   accounts/[id]/page.tsx:526:      <PageHeader
   accounts/page.tsx:416:        <PageHeader

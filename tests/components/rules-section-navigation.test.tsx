@@ -50,7 +50,7 @@ describe("RulesSection navigation", () => {
   it("Add Rule links to /settings/rules/new with returnTo=/settings/rules", async () => {
     render(<RulesSection />);
     await waitFor(() => expect(screen.getByText("Groceries")).toBeTruthy());
-    const add = screen.getByRole("link", { name: /Add Rule/ });
+    const add = screen.getByRole("link", { name: /^Add$/ });
     expect(add.getAttribute("href")).toBe("/settings/rules/new?returnTo=%2Fsettings%2Frules");
   });
 

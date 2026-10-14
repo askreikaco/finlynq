@@ -1,14 +1,14 @@
 "use client";
 
 
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { SectionCard } from "@/components/mobile/section-card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -30,16 +30,19 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Plus,
-  Archive,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { AccountFormPanel } from "./_components/account-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import type { SeriesPoint } from "@/lib/dashboard/series-change";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { ACCOUNT_FILTER_KEYS, ACCOUNT_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
@@ -118,11 +121,14 @@ const ACCOUNT_CARDS: readonly PageCard[] = [
 const METRIC_CARD_IDS = new Set(["net-worth", "summary"]);
 const LIST_CARD_IDS = new Set(["assets", "liabilities"]);
 
-export default function AccountsPage() {
+function AccountsPage() {
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
+  // Split view (regular+): a row selects the account into the edit pane (?sel=<id>); phones keep the link to the account page.
+  const detail = useListDetail();
 
-  // Show-archived toggle (persists archived accounts in the list with a badge)
-  const [showArchived, setShowArchived] = useState(false);
+  // Toolbar: search, and the filter page (type, archived) + sort. Archived accounts stay in the list with a badge.
+  const tb = useListToolbar({ filterPath: "/filter/accounts", sorts: ACCOUNT_SORTS, filterKeys: ACCOUNT_FILTER_KEYS });
+  const showArchived = tb.filters.archived === "1";
   // FINLYNQ-148: the Settings → Dropdown Ordering "account" list is the user's
   // configured account sort order. The /accounts list must honour it (it was
   // ignoring the setting and rendering in raw API order). Pinned accounts lead
@@ -170,7 +176,13 @@ export default function AccountsPage() {
   );
 
   // The toggle hides archived rows from the LIST only.
-  const visible = showArchived ? accounts : accounts.filter((a) => !a.archived);
+  const needle = tb.q.trim().toLowerCase();
+  const visible = accounts.filter(
+    (a) =>
+      (showArchived || !a.archived) &&
+      (!tb.filters.type || a.accountType === tb.filters.type) &&
+      (!needle || `${a.accountName ?? ""} ${a.alias ?? ""} ${a.accountGroup ?? ""}`.toLowerCase().includes(needle)),
+  );
   const assets = visible.filter((a) => a.accountType === "A");
   const liabilities = visible.filter((a) => a.accountType === "L");
   // Totals INCLUDE archived regardless of the toggle — an archived account's
@@ -200,11 +212,17 @@ export default function AccountsPage() {
       (group) =>
         [
           group,
-          sortAccountOrder(
-            map.get(group) ?? [],
-            (a) => a.accountId,
-            (a, b) => (a.accountName ?? "").localeCompare(b.accountName ?? ""),
-          ),
+          // An explicit ?sort= from the filter page wins; otherwise the configured account order.
+          tb.sortExplicit
+            ? sortRecords(map.get(group) ?? [], tb.sort, {
+                name: (a) => a.accountName,
+                amount: (a) => a.convertedBalance ?? a.balance,
+              })
+            : sortAccountOrder(
+                map.get(group) ?? [],
+                (a) => a.accountId,
+                (a, b) => (a.accountName ?? "").localeCompare(b.accountName ?? ""),
+              ),
         ] as const,
     );
   };
@@ -235,16 +253,13 @@ export default function AccountsPage() {
   const renderSection = (
     title: string,
     list: AccountBalance[],
-    color: string,
+    tone: "emerald" | "rose",
     SectionIcon: typeof TrendingUp,
   ) => (
     <SectionCard
-      label={
-        <span className="inline-flex items-center gap-2">
-          <SectionIcon className={`h-4 w-4 ${color}`} />
-          {title}
-        </span>
-      }
+      label={title}
+      icon={SectionIcon}
+      tone={tone}
       className="px-3"
     >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
@@ -252,11 +267,12 @@ export default function AccountsPage() {
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
           <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent shadow-none">
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
               <ListRow
                 key={a.accountId}
-                href={`/accounts/${a.accountId}`}
+                {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
+                selected={detail.selectedId === String(a.accountId)}
                 className={a.archived ? "opacity-60" : undefined}
                 title={
                   <span className="inline-flex max-w-full items-center gap-2 align-middle">
@@ -299,13 +315,14 @@ export default function AccountsPage() {
 
   // Create account is its own page (/accounts/new), not a dialog.
   const createAccountLink = (
-    <Link
+    <ListDetailNewButton
       href="/accounts/new"
-      aria-label="Create Account"
-      className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
+      label="Create Account"
+      size="sm"
+      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
     >
       <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
-    </Link>
+    </ListDetailNewButton>
   );
 
   const cardLayout = useCardLayout("accounts", ACCOUNT_CARDS);
@@ -350,10 +367,8 @@ export default function AccountsPage() {
       width="report"
       header={{
         className: "flex items-center justify-between",
-        overflow: [
-          { label: "Manage groups", icon: FolderCog, href: "/accounts/groups" },
-          { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
-        ],
+        overflow: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
         actions: (
           <>
             <Button
@@ -366,16 +381,6 @@ export default function AccountsPage() {
               <FolderCog className="h-4 w-4 mr-1.5" />
               Manage groups
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={HEADER_DESKTOP_ONLY}
-              onClick={() => setShowArchived((v) => !v)}
-              title={showArchived ? "Hide archived accounts" : "Show archived accounts"}
-            >
-              <Archive className="h-4 w-4 mr-1.5" />
-              {showArchived ? "Hide archived" : "Show archived"}
-            </Button>
             {createAccountLink}
           </>
         ),
@@ -383,7 +388,10 @@ export default function AccountsPage() {
     >
       <OnboardingTips page="accounts" />
 
-      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search accounts" }}
+      />
 
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
@@ -423,8 +431,8 @@ export default function AccountsPage() {
               />
             </div>
           ),
-          assets: renderSection("Assets", assets, "text-pos", ArrowUpRight),
-          liabilities: renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight),
+          assets: renderSection("Assets", assets, "emerald", ArrowUpRight),
+          liabilities: renderSection("Liabilities", liabilities, "rose", ArrowDownRight),
         };
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {
@@ -450,12 +458,30 @@ export default function AccountsPage() {
           const run: string[] = [];
           while (i < shown.length && LIST_CARD_IDS.has(shown[i])) run.push(shown[i++]);
           blocks.push(
-            // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+.
-            <div key={run.join("+")} data-slot="accounts-list" className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
-              {run.map((r) => (
-                <Fragment key={r}>{nodes[r]}</Fragment>
-              ))}
-            </div>,
+            // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+. In the split
+            // view the list column is 2/3 wide, so the stacks drop a step (data-split-grid: 1 column at regular, 2 at wide).
+            <ListDetailLayout
+              key={run.join("+")}
+              entity="account"
+              newLabel="Create Account"
+              list={
+                <div data-slot="accounts-list" data-split-grid className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
+                  {run.map((r) => (
+                    <Fragment key={r}>{nodes[r]}</Fragment>
+                  ))}
+                </div>
+              }
+              pane={(api) => (
+                <AccountFormPanel
+                  embedded
+                  mode={api.isNew ? "create" : "edit"}
+                  id={api.selectedId ?? undefined}
+                  onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
+                  onCancel={api.clear}
+                  onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
+                />
+              )}
+            />,
           );
         }
         return blocks;
@@ -472,5 +498,13 @@ export default function AccountsPage() {
         onReset={cardLayout.reset}
       />
     </SectionPage>
+  );
+}
+
+export default function AccountsRoute() {
+  return (
+    <Suspense fallback={<div className="w-full"><SummarySkeleton /></div>}>
+      <AccountsPage />
+    </Suspense>
   );
 }

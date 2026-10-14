@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { AlertTriangle, RefreshCw, Check, X } from "lucide-react";
+import { AlertTriangle, Check, History, RefreshCw, X } from "lucide-react";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 
@@ -167,7 +167,7 @@ export default function CurrencyAuditPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-warning" />
-                    <CardTitle className="text-sm">
+                    <CardTitle icon={History} tone="muted">
                       Transaction #{row.transactionId}
                       {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}
                     </CardTitle>

@@ -4,7 +4,7 @@
  * The /reports "Income vs Expenses" trend card (extracted from reports/page.tsx so the Family
  * overview renders the identical card). Markup, colors and axes are unchanged.
  */
-import { BarChart3 } from "lucide-react";
+import { ArrowLeftRight, BarChart3 } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -56,7 +56,7 @@ export function IncomeExpenseTrendCard({
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">{title}</CardTitle>
+              <CardTitle icon={ArrowLeftRight} tone="emerald">{title}</CardTitle>
               <CardDescription>{description}</CardDescription>
             </div>
           </div>

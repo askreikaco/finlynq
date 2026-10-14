@@ -75,6 +75,8 @@ describe("bars that must use the sticky bar", () => {
     const files = walk(join(ROOT, "src/app/(app)")).concat(walk(join(ROOT, "src/components")));
     const offenders = files
       .filter((f) => !f.endsWith("components/mobile/page-header.tsx"))
+      // The dev gallery renders the .glass-bar primitive as a labelled specimen.
+      .filter((f) => !f.endsWith("(app)/dev/gallery/page.tsx"))
       .filter((f) => /className=["'`][^"'`]*(?<![\w-])glass-bar(?![\w-])/.test(readFileSync(f, "utf8")))
       .map((f) => relative(ROOT, f));
     expect(offenders).toEqual([]);

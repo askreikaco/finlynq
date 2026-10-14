@@ -246,24 +246,22 @@ describe("Dashboard card layout", () => {
 describe("Customize flow", () => {
   const open = async () => {
     await dashboard();
-    fireEvent.click(screen.getByRole("button", { name: /Customize/ }));
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Customize cards" }));
     return await screen.findByRole("dialog");
   };
 
-  it("header: [More][Customize] in one group, the Add primary to the right; Customize is not in the More menu", async () => {
+  it("header: More holds Customize cards (no gear button); the Add primary sits to the right of the capsule", async () => {
     await dashboard();
-    const customize = screen.getByRole("button", { name: "Customize" });
-    expect(customize.getAttribute("title")).toBe("Customize");
-    const capsule = customize.closest('[data-slot="header-capsule"]') as HTMLElement;
-    const more = capsule.querySelector('[data-slot="overflow-trigger"]') as HTMLElement;
-    // More first, then Customize, in the same capsule
-    expect(more.compareDocumentPosition(customize) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Customize" })).toBeNull();
+    const more = screen.getByRole("button", { name: "More actions" });
+    const capsule = more.closest('[data-slot="header-capsule"]') as HTMLElement;
     const add = screen.getByRole("link", { name: "Add transaction" });
     expect(capsule.contains(add)).toBe(false);
-    expect(customize.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(more.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(more);
     const menu = await screen.findByRole("menu");
-    expect(within(menu).queryByText("Customize")).toBeNull();
+    expect(within(menu).getByText("Customize cards")).toBeTruthy();
     expect(within(menu).getByText("General settings")).toBeTruthy();
   });
 

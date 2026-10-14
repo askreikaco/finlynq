@@ -90,7 +90,7 @@ describe("Settings hub at every size (G2-06)", () => {
     expect(container.querySelector("aside")).toBeNull();
     expect(container.querySelector('nav[aria-label="Settings sections"]')).toBeNull();
     expect(container.querySelector('[role="tablist"]')).toBeNull();
-    expect(container.querySelectorAll('[data-slot="settings-hub-row"]').length).toBe(7);
+    expect(container.querySelectorAll('[data-slot="settings-hub-row"]').length).toBe(6);
   });
 
   it("the shell and hub source carry no size-specific layout (no md/lg/max-md tokens, no wrappers)", () => {

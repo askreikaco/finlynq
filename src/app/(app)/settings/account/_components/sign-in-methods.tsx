@@ -2,32 +2,33 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, KeyRound, ShieldCheck } from "lucide-react";
 
 const STRINGS = {
-  title: "Sign-in methods",
-  description: "Manage how you sign in to your account",
+  title: "Sign-in",
+  description: "Manage how you sign in.",
   googleSection: "Google",
   linkedAt: "Linked",
   lastUsed: "Last used {{date}}",
   unlinkButton: "Unlink",
-  linkButton: "Link Google account",
-  unlinkSuccess: "Google account unlinked",
-  linkSuccess: "Google account linked",
-  linkSessionError: "Your session changed during linking. Sign in again and retry.",
-  linkAlreadyLinkedError: "That Google account is already linked to another Finlynq account.",
-  passwordLabel: "Password to confirm",
-  passwordPlaceholder: "Enter your password",
+  linkButton: "Link Google",
+  unlinkSuccess: "Google unlinked",
+  linkSuccess: "Google linked",
+  linkSessionError: "Session changed. Sign in and retry.",
+  linkAlreadyLinkedError: "Already linked to another account.",
+  passwordLabel: "Password",
+  passwordPlaceholder: "Password",
   unlinkConfirmTitle: "Unlink Google",
-  unlinkConfirmMessage: "Enter your password to unlink your Google account",
+  unlinkConfirmMessage: "Enter your password to unlink Google.",
   unlinkConfirm: "Unlink",
   cancel: "Cancel",
   unlinking: "Unlinking…",
   invalidPasswordError: "Invalid password",
-  rateLimitError: "Too many attempts. Please try again later.",
+  rateLimitError: "Too many attempts. Try later.",
   genericError: "An error occurred",
   passwordRequiredError: "Password is required",
 } as const;
@@ -179,8 +180,10 @@ export function SignInMethods() {
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
-            <CardDescription>{STRINGS.description}</CardDescription>
+            <CardTitle icon={KeyRound} tone="indigo">
+              {STRINGS.title}
+              <InfoTip label="About sign-in methods" text={STRINGS.description} />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -206,12 +209,12 @@ export function SignInMethods() {
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
               <div className="text-sm">
                 <p className="font-medium text-foreground">{data.google.email}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground" data-keep="data">
                   {STRINGS.linkedAt}
                   {data.google.linkedAt && ` ${new Date(data.google.linkedAt).toLocaleDateString()}`}
                 </p>
                 {data.google.lastLoginAt && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" data-keep="data">
                     {STRINGS.lastUsed.replace("{{date}}", new Date(data.google.lastLoginAt).toLocaleDateString())}
                   </p>
                 )}
@@ -248,7 +251,7 @@ export function SignInMethods() {
             className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
           >
             <p id="unlink-title" className="text-sm font-medium">{STRINGS.unlinkConfirmTitle}</p>
-            <p className="text-xs text-muted-foreground">{STRINGS.unlinkConfirmMessage}</p>
+            <p className="text-xs text-muted-foreground" data-keep="warning">{STRINGS.unlinkConfirmMessage}</p>
 
             <div>
               <label htmlFor="unlink-password" className="text-xs font-medium text-muted-foreground">

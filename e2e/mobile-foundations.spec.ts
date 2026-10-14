@@ -239,14 +239,14 @@ test("390px: header buttons stay on screen, primary action visible, secondary ac
   expect(failures).toEqual([]);
 });
 
-test("390px: Accounts ⋯ menu lists Manage groups + Show archived", async ({ browser }) => {
+test("390px: Accounts ⋯ menu lists Manage groups (archived lives on the filter page)", async ({ browser }) => {
   const { ctx, page } = await openPage(browser, 390, 844, true);
   await settle(page, "/accounts");
   // Keyboard-open: a fixed "Unlock your data" banner (UnlockGate, pre-existing) can sit over the top row in dev.
   await page.getByRole("button", { name: "More actions" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("menuitem", { name: "Manage groups" })).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "Show archived" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Show archived" })).toHaveCount(0);
   await ctx.close();
 });
 

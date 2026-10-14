@@ -107,8 +107,8 @@ export function LinkForm({
           error={error || undefined}
           hint={
             isAccount
-              ? "Choose an account to hold this security. Quantity and cost basis come from a transaction."
-              : "Choose a security to add to this account. Quantity and cost basis come from a transaction."
+              ? "Pick the account that holds this security. Quantity and cost basis come from a transaction."
+              : "Pick a security to add to this account. Quantity and cost basis come from a transaction."
           }
         >
           <Select items={items} value={value} onValueChange={(v) => setValue(v ?? "")}>

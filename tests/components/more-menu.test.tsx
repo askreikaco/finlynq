@@ -82,13 +82,11 @@ describe("More screen", () => {
     render(<MoreMenu />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("More");
     expect(rows("main")).toEqual([
-      ["Budgets", "/budgets"],
       ["Goals", "/goals"],
       ["Reports", "/reports"],
       ["Spending by category", "/categories"],
       ["Family Wealth", "/family"],
       ["Reconcile", "/import?tab=reconcile"],
-      ["Categories", "/settings/categorization"],
       ["Import", "/import"],
     ]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
@@ -302,7 +300,7 @@ describe("More with categories merged hub", () => {
     expect(labels.length).toBe(uniqueLabels.size);
   });
 
-  it("merged OFF keeps both Spending by category and Categories", () => {
+  it("merged OFF has one /categories row and no separate category settings row", () => {
     const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: false });
     const mainGroup = groups.find((g) => g.id === "main");
     expect(mainGroup).toBeTruthy();
@@ -310,8 +308,7 @@ describe("More with categories merged hub", () => {
     const settingsCatRow = mainGroup!.rows.find((r) => r.href === "/settings/categorization");
     expect(categoryRow).toBeTruthy();
     expect(categoryRow?.label).toBe("Spending by category");
-    expect(settingsCatRow).toBeTruthy();
-    expect(settingsCatRow?.label).toBe("Categories");
+    expect(settingsCatRow).toBeUndefined();
   });
 });
 

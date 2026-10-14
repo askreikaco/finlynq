@@ -23,7 +23,12 @@ import {
   type EnrichedHolding, type EtfXrayTab, type FilterType,
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
-import { PortfolioSkeleton, HoldingTypeChips } from "./_components/portfolio-ui";
+import { PortfolioSkeleton } from "./_components/portfolio-ui";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { HOLDING_FILTER_KEYS, HOLDING_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { ErrorState } from "@/components/error-state";
 import { TopMoversCard } from "./_components/top-movers-card";
 import { EtfXrayCard } from "./_components/etf-xray-card";
@@ -32,9 +37,8 @@ import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingAccountGroups, accountHoldingTitle, type AccountHoldingGroup } from "./_components/holding-account-groups";
 import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
-import { ArrowDownUp, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportByHoldingToCSV } from "./_components/csv";
 import type { PageCard } from "@/lib/card-layout";
 import { PortfolioSummary } from "./_components/mobile-portfolio";
@@ -53,13 +57,14 @@ const PORTFOLIO_CARDS: readonly (PageCard & { devOnly?: boolean })[] = [
   { id: "benchmarks", title: "Benchmarks", devOnly: true },
 ];
 
-type HoldingSortField = "marketValue" | "unrealized" | "name";
-
 export default function PortfolioPage() {
   const devMode = useDevMode();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   const { data, loading, reload } = usePortfolioOverview(displayCurrency, currencyLoading);
-  const [filter, setFilter] = useState<FilterType>("all");
+  // One toolbar: range (cards), search, and the filter page (type, empty, currency) + sort.
+  const metricRange = useMetricRange();
+  const tb = useListToolbar({ filterPath: "/filter/holdings", sorts: HOLDING_SORTS, filterKeys: HOLDING_FILTER_KEYS });
+  const filter: FilterType = (tb.filters.assetType as FilterType | undefined) ?? "all";
   // Edit/delete dialog for individual portfolio holdings. Null = closed.
   // (Create-mode was removed — "Add holding" now navigates to the consolidated
   // /settings/investments page; this dialog is edit-in-place only.)
@@ -67,8 +72,6 @@ export default function PortfolioPage() {
   const [benchmarkPeriod, setBenchmarkPeriod] = useState("1y");
   const { benchmarks, benchmarkLoading } = useBenchmarks(benchmarkPeriod, !!devMode);
   // Holdings sort (compact control in the holdings toolbar): applies within each account.
-  const [holdingSort, setHoldingSort] = useState<HoldingSortField>("marketValue");
-  const [holdingSortDir, setHoldingSortDir] = useState<"asc" | "desc">("desc");
   const [etfXrayTab, setEtfXrayTab] = useState<EtfXrayTab>("stocks");
   const [stocksPage, setStocksPage] = useState(1);
   const STOCKS_PER_PAGE = 25;
@@ -77,14 +80,14 @@ export default function PortfolioPage() {
   // started returning per-row native-currency rollups on `byHolding`; rows
   // that span multiple currencies fall back to display currency per-row.
   // Component-state only (resets on reload).
-  const [showNative, setShowNative] = useState(false);
+  const showNative = tb.filters.native === "1";
   // Hide entries with no current position. For table rows: quantity is null
   // or 0 (matches the row's own `hasMetrics` rule below — these are the
   // rows that already render as "--" across Qty/Avg/Mkt Value). For chart
   // buckets: aggregated value rounds to $0 (>0.005 keeps half-cent rounding
   // safe). Default on — empty rows are noise on a value-weighted view.
   // Toggle lives in the holdings table filter bar.
-  const [hideEmpty, setHideEmpty] = useState(true);
+  const hideEmpty = tb.filters.empty !== "1";
 
   // Holdings grouped per account (one HoldingRow list per account). Type filter and hide-empty apply to
   // each holding; the sort applies within each account; accounts are listed by name.
@@ -93,25 +96,24 @@ export default function PortfolioPage() {
     const keep = (h: EnrichedHolding) =>
       (filter === "all" || h.assetType === filter) &&
       (!hideEmpty || (h.quantity ?? 0) !== 0 || (h.marketValueDisplay ?? 0) !== 0);
-    const cmp = (x: EnrichedHolding, y: EnrichedHolding): number => {
-      switch (holdingSort) {
-        case "name": return accountHoldingTitle(x).localeCompare(accountHoldingTitle(y));
-        case "unrealized": return (x.unrealizedGainPct ?? 0) - (y.unrealizedGainPct ?? 0);
-        default: return (x.marketValueDisplay ?? 0) - (y.marketValueDisplay ?? 0);
-      }
-    };
+    const needle = tb.q.trim().toLowerCase();
+    const matches = (h: EnrichedHolding) => !needle || `${accountHoldingTitle(h)} ${h.name ?? ""}`.toLowerCase().includes(needle);
     const byAccount = new Map<string, EnrichedHolding[]>();
     for (const h of data.holdings) {
-      if (!keep(h)) continue;
+      if (!keep(h) || !matches(h)) continue;
       byAccount.set(h.accountName, [...(byAccount.get(h.accountName) ?? []), h]);
     }
     return Array.from(byAccount.entries())
       .sort(([x], [y]) => (x ?? "").localeCompare(y ?? ""))
       .map(([accountName, holdings]) => ({
         accountName,
-        holdings: [...holdings].sort((x, y) => (holdingSortDir === "desc" ? -cmp(x, y) : cmp(x, y))),
+        holdings: sortRecords(holdings, tb.sort, {
+          name: (h) => accountHoldingTitle(h),
+          amount: (h) => h.marketValueDisplay ?? 0,
+          unrealized: (h) => h.unrealizedGainPct ?? 0,
+        }),
       }));
-  }, [data, filter, hideEmpty, holdingSort, holdingSortDir]);
+  }, [data, filter, hideEmpty, tb.q, tb.sort]);
 
   const cardLayout = useCardLayout("portfolio", PORTFOLIO_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -199,7 +201,7 @@ export default function PortfolioPage() {
     ),
     summary: (
       <>
-      <PortfolioSummary summary={summary} currency={displayCurrency} />
+      <PortfolioSummary summary={summary} currency={displayCurrency} range={metricRange} />
 
       </>
     ),
@@ -220,61 +222,16 @@ export default function PortfolioPage() {
     ),
     holdings: (
       <>
-      <div data-slot="portfolio-toolbar" className="flex flex-col gap-3">
-        <HoldingTypeChips
-          filter={filter}
-          setFilter={setFilter}
-          counts={{ all: summary.totalHoldings, ...Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, v.count])) }}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={holdingSort} onValueChange={(v) => setHoldingSort((v ?? "marketValue") as HoldingSortField)}>
-            <SelectTrigger className="h-8 w-44 text-xs" aria-label="Sort holdings by" data-testid="holding-sort-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="marketValue">Market value</SelectItem>
-              <SelectItem value="unrealized">Unrealized %</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setHoldingSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            aria-label={holdingSortDir === "asc" ? "Sorted ascending. Sort descending" : "Sorted descending. Sort ascending"}
-            title={holdingSortDir === "asc" ? "Ascending" : "Descending"}
-          >
-            <ArrowDownUp className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={hideEmpty ? "default" : "outline"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setHideEmpty(!hideEmpty)}
-            title="Hide holdings with no current position (quantity = 0, e.g. fully-sold)"
-          >
-            {hideEmpty ? "Hiding empty" : "Showing all"}
-          </Button>
-          <Button
-            variant={showNative ? "default" : "outline"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setShowNative(!showNative)}
-            title={`Show each holding in its own currency instead of your display currency (${data.displayCurrency ?? displayCurrency})`}
-          >
-            {showNative ? "Holding currency" : `In ${data.displayCurrency ?? displayCurrency}`}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5 ml-auto"
-            onClick={() => exportByHoldingToCSV(data.byHolding ?? [], data.displayCurrency ?? displayCurrency)}
-          >
-            <Download className="h-3.5 w-3.5" />
-            CSV
-          </Button>
-        </div>
+      <div data-slot="portfolio-toolbar" className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1.5"
+          onClick={() => exportByHoldingToCSV(data.byHolding ?? [], data.displayCurrency ?? displayCurrency)}
+        >
+          <Download className="h-3.5 w-3.5" />
+          CSV
+        </Button>
       </div>
       {/* Holdings per account: one list at every width. Tap a holding for its sheet (Edit, Lots, transactions). */}
       <HoldingAccountGroups
@@ -350,6 +307,7 @@ export default function PortfolioPage() {
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
           { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
         ],
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
         actions: <>
           <Link
             href="/portfolio/realized-gains"
@@ -399,6 +357,11 @@ export default function PortfolioPage() {
           </div>
         </div>
       )}
+
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search holdings" }}
+      />
 
       {cardLayout.layout.order
         .filter((id) => !cardLayout.layout.hidden.includes(id) && (devMode || !PORTFOLIO_CARDS.find((c) => c.id === id)?.devOnly))

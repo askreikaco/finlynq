@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { localDateISO } from "@/lib/utils/date";
 import {
   parseRangeSelection, previousPeriod, rangeToParams, resolvePeriod,
-  type Period, type RangeSelection,
+  type Period, type RangeKey, type RangeSelection,
 } from "./period";
 
 /**
@@ -13,7 +13,7 @@ import {
  * a change repaints at once (history.replaceState does not re-render useSearchParams). `baseMonth` anchors the
  * presets on a page-specific month (budgets month navigator).
  */
-export function useMetricRange(baseMonth?: string): {
+export function useMetricRange(baseMonth?: string, defaultRange?: RangeKey): {
   selection: RangeSelection;
   /** True when the URL carries an explicit non-default range. */
   explicit: boolean;
@@ -22,18 +22,25 @@ export function useMetricRange(baseMonth?: string): {
   setSelection: (next: RangeSelection) => void;
 } {
   const searchParams = useSearchParams();
-  const [selection, setSel] = useState<RangeSelection>(() => parseRangeSelection((k) => searchParams?.get(k)));
+  const [selection, setSel] = useState<RangeSelection>(() => {
+    const parsed = parseRangeSelection((k) => searchParams?.get(k));
+    // A page default (reports: this_year) applies only while the URL carries no ?range= at all.
+    return defaultRange && !searchParams?.get("range") ? { range: defaultRange, ...(parsed.month ? { month: parsed.month } : {}) } : parsed;
+  });
   const setSelection = useCallback((next: RangeSelection) => {
     setSel(next);
     try {
       const url = new URL(window.location.href);
-      for (const k of ["range", "from", "to"]) url.searchParams.delete(k);
-      for (const [k, v] of Object.entries(rangeToParams(next))) url.searchParams.set(k, v);
+      // A page that owns ?month= itself (budgets: baseMonth) keeps it; otherwise the selection owns it.
+      for (const k of baseMonth ? ["range", "from", "to"] : ["range", "from", "to", "month"]) url.searchParams.delete(k);
+      const params = rangeToParams(next);
+      if (defaultRange && defaultRange !== "this_month" && next.range === "this_month") params.range = "this_month";
+      for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
       window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     } catch {
       /* URL sync is a convenience; the cards still follow the state. */
     }
-  }, []);
+  }, [baseMonth, defaultRange]);
   const today = localDateISO();
   const period = useMemo(() => resolvePeriod(selection, today, baseMonth), [selection, today, baseMonth]);
   const previous = useMemo(() => previousPeriod(period), [period]);

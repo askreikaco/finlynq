@@ -108,14 +108,14 @@ describe("More section headers and groups", () => {
     await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
     const headers = screen
       .getByTestId("more-menu")
-      .querySelectorAll("[data-slot='inset-group'] > h2");
-    expect(Array.from(headers).map((h) => h.textContent)).toEqual([
-      "Account",
-      "Explore",
-      "Tools",
-      "Admin",
-      "Appearance",
-    ]);
+      .querySelectorAll("[data-slot='inset-group'] [data-slot='inset-section-header']");
+    // Explore's label sits OUTSIDE its card (headerPlacement="outside"); the others are inside.
+    expect(Array.from(headers).map((h) => h.textContent)).toEqual(["Account", "Tools", "Admin", "Appearance"]);
+    const outside = Array.from(
+      screen.getByTestId("more-menu").querySelectorAll("[data-slot='inset-section-header']"),
+    ).find((h) => h.textContent === "Explore");
+    expect(outside).toBeTruthy();
+    expect(outside!.closest("[data-slot='inset-group']")).toBeNull();
     for (const id of ["main", "explore", "tools", "admin", "appearance"]) {
       const g = screen.getByTestId(`more-group-${id}`);
       expect(g.querySelector("[data-slot='inset-group']")).not.toBeNull();

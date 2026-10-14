@@ -48,23 +48,17 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   const tools: MoreRow[] = [];
   const admin: MoreRow[] = [];
 
-  // Main group: Tracking (Budgets, Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
+  // Main group: Tracking (Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
   const mainPaths = [
-    "/budgets",
     "/goals",
     "/reports",
     "/categories",
     ...(f.familyEnabled ? ["/family"] : []),
     "/import?tab=reconcile",
-    "/settings/categorization",
     "/import",
   ];
 
   for (const path of mainPaths) {
-    // Skip settings/categorization when categories are merged into the hub
-    if (f.categoriesMerged && path === "/settings/categorization") {
-      continue;
-    }
     const entry = entryMap.get(path);
     if (entry && (entry.mode !== "dev" || f.devMode)) {
       const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
@@ -235,7 +229,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
 
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-            <InsetGroup header={g.header}>
+            <InsetGroup header={g.header} headerPlacement={g.id === "explore" ? "outside" : "inside"}>
               {g.rows.map((r) => (
                 <InsetRow
                   key={r.id}

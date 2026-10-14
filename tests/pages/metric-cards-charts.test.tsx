@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-// Metric cards with charts: /loans, /goals, /budgets and /dashboard render the shared MetricCard with a monthly
+// Metric cards with charts: /loans, /goals, /categories (budget totals) and /dashboard render the shared MetricCard with a monthly
 // sparkline, a % badge and a signed difference line vs the previous period (default: this month vs last month;
 // ?range= compares with the preceding period of the same length). No history = value only, never a fake chart.
 import * as React from "react";
@@ -63,13 +63,15 @@ vi.mock("recharts", () => {
   const Leaf = () => null;
   const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
   return {
-    ResponsiveContainer: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, ComposedChart: Wrap,
+    ResponsiveContainer: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, ComposedChart: Wrap, PieChart: Wrap, Pie: Wrap,
     Line: Leaf, Area: Leaf, Bar: Leaf, Cell: Leaf, XAxis: Leaf, YAxis: Leaf, Tooltip: Leaf, Legend: Leaf,
     ReferenceLine: Leaf, CartesianGrid: Leaf,
   };
 });
 
-import BudgetsPage from "@/app/(app)/budgets/page";
+import CategoriesPageContent from "@/app/(app)/categories/_page-content";
+
+const BudgetsPage = () => <CategoriesPageContent />;
 import GoalsPage from "@/app/(app)/goals/page";
 import LoansPage from "@/app/(app)/loans/page";
 
@@ -204,17 +206,20 @@ function stubBudgets(series: Array<{ month: string; budget: number; spent: numbe
     const u = String(url);
     if (u.startsWith("/api/budgets/series")) return json({ displayCurrency: "USD", series });
     if (u.startsWith("/api/budgets")) return json([BUDGET]);
-    if (u.startsWith("/api/dashboard")) return json({ spendingByCategory: [{ categoryId: 10, total: -120 }], incomeVsExpenses: [] });
-    if (u.startsWith("/api/age-of-money")) return json({ error: "none" });
+    if (u.startsWith("/api/reports/categories")) return json({ data: REPORT });
     return json([]);
   }));
 }
+const REPORT = {
+  month: "2026-10", partial: true, windowMonths: ["2026-09", "2026-10"], total: 120, averageTotal: null, displayCurrency: "USD", type: "E",
+  categories: [{ id: 10, name: "Groceries", group: "Food", amount: 120, share: 1, average: null, change: null, budget: 500, trend: [100, 120] }],
+};
 const BUDGET_SERIES = [
   { month: "2026-05", budget: 500, spent: 90 }, { month: "2026-06", budget: 500, spent: 95 }, { month: "2026-07", budget: 500, spent: 100 },
   { month: "2026-08", budget: 500, spent: 105 }, { month: "2026-09", budget: 500, spent: 100 }, { month: "2026-10", budget: 500, spent: 120 },
 ];
 
-describe("/budgets metric cards", () => {
+describe("/categories budget metric cards", () => {
   it("every summary metric is a MetricCard; spent has sparkline, % vs previous month, inverted tone and a delta line", async () => {
     H.search = "month=2026-10";
     stubBudgets(BUDGET_SERIES);
@@ -236,7 +241,7 @@ describe("/budgets metric cards", () => {
     stubBudgets([]);
     render(<BudgetsPage />);
     await screen.findByTestId("metric-total-budget");
-    await waitFor(() => expect(screen.getByRole("button", { name: /Groceries/ })).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Food")).toBeTruthy());
     for (const id of ["total-budget", "total-spent", "remaining"]) {
       expect(sparkCount(id)).toBe(0);
       expect(hasBadge(id)).toBe(false);
@@ -906,6 +911,8 @@ describe("/reports summary cards", () => {
       if (u.includes("/api/net-worth-history")) return json({ series: [{ date: "2026-08-31", value: 500 }, { date: "2026-09-30", value: 700 }, { date: "2026-10-08", value: 800 }] });
       return { ok: false, status: 404, json: async () => null };
     }));
+    // Reports default to this year; these tiles are about the month-vs-last-month default, so ask for it.
+    if (!H.search) H.search = "range=this_month";
     const { default: ReportsPage } = await import("@/app/(app)/reports/page");
     render(<ReportsPage />);
     await screen.findAllByText("Total Income");
@@ -918,7 +925,7 @@ describe("/reports summary cards", () => {
     await waitFor(() => expect(tileOf("Total Income").textContent).toMatch(/\+\$200\.00 vs last month/));
     const income = tileOf("Total Income");
     expect(income.textContent).toContain("+20.0%");
-    expect(income.textContent).toMatch(/\d{4}-01-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
+    expect(income.textContent).toMatch(/\d{4}-\d{2}-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
     expect(income.querySelectorAll("[data-spark]").length).toBeGreaterThan(0);
     // spending down = green (inverted)
     expect(tileOf("Total Expenses").textContent).toMatch(/-\$100\.00 vs last month/);

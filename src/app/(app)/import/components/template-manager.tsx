@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, BookTemplate } from "lucide-react";
+import { BookTemplate, FileText, Pencil, Trash2 } from "lucide-react";
 import type { ImportTemplate } from "@/lib/import-templates";
 import { EditTemplateDialog } from "./edit-template-dialog";
 
@@ -49,10 +49,10 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
     <>
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Saved Templates ({templates.length})</CardTitle>
+          <CardTitle icon={FileText} tone="muted">Saved Templates ({templates.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">

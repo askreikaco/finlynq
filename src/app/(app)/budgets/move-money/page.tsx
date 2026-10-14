@@ -18,7 +18,7 @@ function MoveMoneyPage() {
       id="move-money"
       title="Move money between envelopes"
       subtitle={getMonthLabel(month)}
-      fallbackReturn={`/budgets?month=${month}`}
+      fallbackReturn={`/categories?month=${month}`}
       form="external"
       header={{ actions: null }}
     >

@@ -1,13 +1,8 @@
 {
   "family": "categories",
   "unmigrated": [
-    "src/app/(app)/categories/[id]/edit/page.tsx",
     "src/app/(app)/categories/[id]/page.tsx",
     "src/app/(app)/categories/page.tsx"
   ],
-  "chrome": {
-    "src/app/(app)/categories/[id]/edit/page.tsx": {
-      "suspense-null": 1
-    }
-  }
+  "chrome": {}
 }

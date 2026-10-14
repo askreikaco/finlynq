@@ -10,6 +10,12 @@ export const ROUTES: RouteDef[] = [
     fab: { kind: "fallback" },
   },
   {
+    pattern: "/filter/[list]",
+    family: "misc",
+    kind: "form",
+    fab: { kind: "hidden", reason: "sticky bottom Reset/Apply bar" },
+  },
+  {
     pattern: "/chat",
     family: "misc",
     kind: "form",

@@ -127,7 +127,7 @@ describe("Tab icons and labels", () => {
   it("every tab in both layouts renders an icon (svg) and a label", () => {
     render(<AppTabs />);
     const sets = [bar().querySelectorAll("a"), railVisible()];
-    expect(sets.map((s) => s.length)).toEqual([5, 10]);
+    expect(sets.map((s) => s.length)).toEqual([5, 9]);
     for (const links of sets) {
       links.forEach((l) => {
         expect(l.querySelector("svg")).not.toBeNull();

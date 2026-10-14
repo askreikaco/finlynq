@@ -18,7 +18,7 @@ function has(el: Element, ...classes: string[]) {
 describe("FormGroup", () => {
   it("carries the list card classes and passes through props", () => {
     render(<FormGroup data-testid="g">row</FormGroup>);
-    has(screen.getByTestId("g"), "rounded-2xl", "border", "border-border", "bg-card", "divide-y", "divide-border", "overflow-hidden");
+    has(screen.getByTestId("g"), "rounded-2xl", "border", "border-border", "bg-card", "[&>*:not(:last-child)]:shadow-[var(--list-divider)]", "overflow-hidden");
   });
 });
 
@@ -39,7 +39,7 @@ describe("FormNote and FormFooter", () => {
 describe("old transactions/new imports still resolve", () => {
   it("ListCard is the shared FormGroup", () => {
     render(<ListCard data-testid="lc">x</ListCard>);
-    has(screen.getByTestId("lc"), "rounded-2xl", "divide-y");
+    has(screen.getByTestId("lc"), "rounded-2xl", "[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
   });
 
   it("transactions FormRow defaults to narrow label and tall row", () => {

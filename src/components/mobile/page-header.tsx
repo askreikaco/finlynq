@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
+import { Filter, ListChecks, MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
 import { usePageCustomizeRegistration } from "./page-customize";
+import { FilterButton } from "@/components/page-toolbar";
 
 export interface OverflowAction {
   label: string;
@@ -237,6 +238,9 @@ export function PageHeader({
   subtitle,
   actions,
   overflow,
+  filter,
+  bulkEdit,
+  hideMore,
   className,
   lead,
   belowTitle,
@@ -248,6 +252,17 @@ export function PageHeader({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   overflow?: OverflowAction[];
+  /**
+   * Filter: opens the page's filter + sort page. Top bar actions, right to left: PRIMARY (yellow Add / Edit), then a
+   * secondary group of at most 2 buttons: [bulk-edit or Filter] on the right, [More] on its left. Bulk edit wins the
+   * slot; with a `bulkEdit` the Filter entry moves INSIDE More. The Customize-cards action (usePageCustomize) is
+   * always a More item, never a bar button. A page declares what it has; it never lays the bar out itself.
+   */
+  filter?: { href: string | (() => string); activeCount?: number };
+  /** Bulk-edit / select-mode toggle for lists (icon button, aria-label `label`, default "Edit list"). */
+  bulkEdit?: { onToggle: () => void; active?: boolean; label?: string };
+  /** Render no More button at all (e.g. /categories). Also skips Customize cards. With `hideMore`, `bulkEdit` and `filter` both render (bulk edit, then Filter) since that still keeps the group at 2 buttons. */
+  hideMore?: boolean;
   /** Page layout classes for the bar; the bar's grid layout always wins over conflicting ones. */
   className?: string;
   /**
@@ -284,7 +299,15 @@ export function PageHeader({
   const { save, rest: otherActions } = splitHeaderSave(actions);
   // Set by a page with cards (usePageCustomize): the Customize button joins the More group, right after More.
   const customize = usePageCustomizeRegistration();
-  const hasRight = !!actions || (overflow?.length ?? 0) > 0 || !!customize;
+  // More menu: Filter (only when bulk edit took its slot), the page's own items, then Customize cards.
+  const moreItems: OverflowAction[] = hideMore ? [] : [
+    ...(bulkEdit && filter
+      ? [{ label: "Filter", icon: Filter, href: typeof filter.href === "function" ? filter.href() : filter.href }]
+      : []),
+    ...(overflow ?? []),
+    ...(customize ? [{ label: "Customize cards", icon: Settings, onSelect: customize.onOpen }] : []),
+  ];
+  const hasRight = !!actions || moreItems.length > 0 || !!filter || !!bulkEdit;
   const h1 = (
     <h1 data-slot="page-header-title" className={PHONE_BAR_TITLE}>
       {title}
@@ -308,7 +331,7 @@ export function PageHeader({
   const primaryOwn = !save && !!primary;
   const capsulePrimary = save ? primary : null;
   const hasCapsule =
-    (overflow?.length ?? 0) > 0 || !!capsulePrimary || !!customize || cells.some((c) => !isSecondaryNode(c));
+    moreItems.length > 0 || !!filter || !!bulkEdit || !!capsulePrimary || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -333,8 +356,24 @@ export function PageHeader({
             <div data-slot="header-capsule" className={PHONE_CAPSULE}>
               {cells}
               {capsulePrimary}
-              {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-              {customize ? <CustomizeButton onOpen={customize.onOpen} title={customize.title} /> : null}
+              {moreItems.length > 0 ? <OverflowMenu items={moreItems} /> : null}
+              {bulkEdit ? (
+                <Button
+                  type="button"
+                  variant={bulkEdit.active ? "secondary" : "outline"}
+                  size="icon"
+                  aria-label={bulkEdit.label ?? "Edit list"}
+                  aria-pressed={bulkEdit.active ?? false}
+                  data-slot="bulk-edit-trigger"
+                  onClick={bulkEdit.onToggle}
+                >
+                  <ListChecks className="size-4" aria-hidden />
+                </Button>
+              ) : filter ? (
+                <FilterButton {...filter} variant="outline" />
+              ) : null}
+              {/* No More button (hideMore): bulk edit and Filter are then the two secondary buttons. */}
+              {hideMore && bulkEdit && filter ? <FilterButton {...filter} variant="outline" /> : null}
             </div>
           ) : (
             // Only secondary actions (hidden at every width): no capsule, so no empty glass pill.
@@ -345,26 +384,6 @@ export function PageHeader({
         </div>
       ) : null}
     </div>
-  );
-}
-
-/**
- * "Customize" (gear): opens the page's card sheet. Same group as More (the header capsule), an icon button with the
- * accessible name and tooltip "Customize". One 44px slot (header-capsule cell rule in globals.css).
- */
-export function CustomizeButton({ onOpen, title = "Customize" }: { onOpen: () => void; title?: string }) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      aria-label="Customize"
-      title={title}
-      data-slot="customize-trigger"
-      onClick={onOpen}
-    >
-      <Settings className="size-4" aria-hidden />
-    </Button>
   );
 }
 

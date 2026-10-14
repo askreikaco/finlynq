@@ -7,7 +7,6 @@ const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|r
 const FILES: string[] = [
   "src/app/(app)/settings/backfill/[runId]/page.tsx",
   "src/app/(app)/settings/backfill/page.tsx",
-  "src/app/(app)/settings/categorization/page.tsx",
   "src/app/(app)/settings/developer/page.tsx",
   "src/app/(app)/settings/general/page.tsx",
 ];

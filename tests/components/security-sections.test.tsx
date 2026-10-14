@@ -60,16 +60,16 @@ describe("TwoFactor", () => {
     await user.click(await screen.findByRole("button", { name: "Enable 2FA" }));
     expect(await screen.findByAltText(/provisioning qr/i)).toHaveAttribute("src", expect.stringMatching(/^data:image\/png/));
     await user.type(screen.getByLabelText(/verification code/i), "123456");
-    await user.type(screen.getByLabelText(/current password/i), "pw");
+    await user.type(screen.getByLabelText(/^password$/i), "pw");
     await user.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(bodiesOf("/api/auth/mfa/setup").some((b) => b.action === "enable")).toBe(true));
     const enable = bodiesOf("/api/auth/mfa/setup").find((b) => b.action === "enable");
     expect(enable).toEqual({ action: "enable", secret: "SECRET1", code: "123456", currentPassword: "pw" });
     // secret no longer visible after enabling
     await waitFor(() => expect(screen.queryByDisplayValue("SECRET1")).toBeNull());
-    expect(screen.getByText(/^On — authenticator app$/)).toBeInTheDocument();
+    expect(screen.getByText(/^On$/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/verification code/i)).toBeNull();
-    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+    expect(screen.queryByLabelText(/^password$/i)).toBeNull();
   });
 
   it("does not render the secret into localStorage", async () => {
@@ -96,7 +96,7 @@ describe("TwoFactor", () => {
     render(<TwoFactor />);
     await user.click(await screen.findByRole("button", { name: "Disable 2FA" }));
     await user.type(await screen.findByLabelText(/verification code/i), "654321");
-    await user.type(screen.getByLabelText(/current password/i), "pw");
+    await user.type(screen.getByLabelText(/^password$/i), "pw");
     await user.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(bodiesOf("/api/auth/mfa/setup").length).toBe(1));
     expect(bodiesOf("/api/auth/mfa/setup")[0]).toEqual({ action: "disable", code: "654321", currentPassword: "pw" });
@@ -104,13 +104,13 @@ describe("TwoFactor", () => {
     expect(await screen.findByRole("button", { name: "Enable 2FA" })).toBeInTheDocument();
     expect(screen.getByText("Off")).toBeInTheDocument();
     expect(screen.queryByLabelText(/verification code/i)).toBeNull();
-    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+    expect(screen.queryByLabelText(/^password$/i)).toBeNull();
   });
 
   it("default render has no input fields (On and Off)", async () => {
     handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: true } });
     const on = render(<TwoFactor />);
-    await screen.findByText("On — authenticator app");
+    await screen.findByText("On");
     expect(on.container.querySelectorAll("input")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Disable 2FA" })).toBeInTheDocument();
     cleanup();
@@ -127,14 +127,14 @@ describe("TwoFactor", () => {
     render(<TwoFactor />);
     await user.click(await screen.findByRole("button", { name: "Disable 2FA" }));
     await user.type(screen.getByLabelText(/verification code/i), "123");
-    await user.type(screen.getByLabelText(/current password/i), "pw");
+    await user.type(screen.getByLabelText(/^password$/i), "pw");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByLabelText(/verification code/i)).toBeNull();
-    expect(screen.queryByLabelText(/current password/i)).toBeNull();
-    expect(screen.getByText("On — authenticator app")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^password$/i)).toBeNull();
+    expect(screen.getByText("On")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Disable 2FA" }));
     expect(screen.getByLabelText(/verification code/i)).toHaveValue("");
-    expect(screen.getByLabelText(/current password/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^password$/i)).toHaveValue("");
   });
 
   it("enable: Cancel hides the QR/fields and clears them", async () => {
@@ -174,7 +174,7 @@ describe("SignInMethods", () => {
     handlers["/api/settings/sign-in-methods"] = () => methods(false);
     handlers["/api/auth/config"] = () => ({ body: { googleEnabled: false } });
     render(<SignInMethods />);
-    await screen.findByText("Sign-in methods");
+    await screen.findByText("Sign-in");
     expect(screen.queryByRole("link", { name: /link google/i })).toBeNull();
   });
 
@@ -186,7 +186,7 @@ describe("SignInMethods", () => {
     handlers["/api/settings/sign-in-methods/google"] = () => ({ status, body: { error: "x" } });
     render(<SignInMethods />);
     await user.click(await screen.findByRole("button", { name: "Unlink" }));
-    await user.type(screen.getByLabelText(/password to confirm/i), "pw");
+    await user.type(screen.getByLabelText(/^password$/i), "pw");
     const confirm = screen.getAllByRole("button", { name: "Unlink" }).at(-1)!;
     await user.click(confirm);
     expect(await screen.findByText("Invalid password")).toBeInTheDocument();
@@ -231,7 +231,7 @@ describe("TrustedDevices", () => {
     const user = userEvent.setup();
     vi.stubGlobal("confirm", vi.fn(() => true));
     render(<TrustedDevices />);
-    await user.click(await screen.findByRole("button", { name: /revoke all devices/i }));
+    await user.click(await screen.findByRole("button", { name: /revoke all/i }));
     await waitFor(() => expect(calls.some((c) => c.url === "/api/settings/devices?all=1")).toBe(true));
   });
 });

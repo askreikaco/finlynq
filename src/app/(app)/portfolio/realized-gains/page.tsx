@@ -18,13 +18,13 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal, Receipt, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Receipt, RefreshCw, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import {
-  HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
   ListRow,
@@ -34,13 +34,15 @@ import {
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
-import { useAppSizeClass } from "@/components/adaptive";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ChipGroup, ReportFilterSheet, monthLabel, signedPercent } from "../_components/report-controls";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { monthLabel, signedPercent } from "../_components/report-controls";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { REALIZED_FILTER_KEYS } from "@/lib/toolbar/list-configs";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -116,13 +118,6 @@ const CURRENT_YEAR = new Date().getFullYear();
 // FINLYNQ-193 — group-by modes for the rolled-up view. "off" keeps the
 // flat one-row-per-closure list (the legacy view).
 type GroupMode = "off" | "holding" | "account" | "holding_account";
-
-const GROUP_MODE_LABELS: Record<GroupMode, string> = {
-  off: "Off",
-  holding: "By holding",
-  account: "By account",
-  holding_account: "Holding + account",
-};
 
 /**
  * One rolled-up group row. Aggregates qty + realized gain across its member
@@ -219,22 +214,17 @@ function lotDetailItems(r: ApiRow): DetailItem[] {
 
 export default function RealizedGainsPage() {
   const { displayCurrency } = useDisplayCurrency();
-  const [taxYear, setTaxYear] = useState<number | null>(CURRENT_YEAR);
-  const [term, setTerm] = useState<"all" | "short" | "long">("all");
-  // FINLYNQ-183: the toggle now switches between per-row native currency and
-  // the unified DISPLAY-currency view (there is no separate "base currency").
-  const [showUnified, setShowUnified] = useState(false);
-  // FINLYNQ-193 — additive view options (component-state only, resets on
-  // reload; matches the FINLYNQ-129/172 toggle precedent).
-  const [hideZero, setHideZero] = useState(false);
-  const [groupMode, setGroupMode] = useState<GroupMode>("off");
-  const [data, setData] = useState<ApiResponse["data"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  // One structure per size class (list on compact, table + toolbar from regular), never both in the DOM.
-  const regular = useAppSizeClass() !== "compact";
+  // Filters live in the URL and are set on the filter page; the toolbar's range feeds the metric cards.
+  const tb = useListToolbar({ filterPath: "/filter/realized-gains", filterKeys: REALIZED_FILTER_KEYS });
+  const taxYear: number | null = tb.filters.taxYear === "all" ? null : Number(tb.filters.taxYear) || CURRENT_YEAR;
+  const term: "all" | "short" | "long" = tb.filters.term === "short" || tb.filters.term === "long" ? tb.filters.term : "all";
+  // FINLYNQ-129/172: native (each closure in its own currency) vs the unified display-currency view.
+  const showUnified = tb.filters.currency === "unified";
+  // FINLYNQ-193: additive view options.
+  const hideZero = tb.filters.hideZero === "1";
+  const groupMode: GroupMode = showUnified
+    ? ((["holding", "account", "holding_account"] as const).find((m) => m === tb.filters.groupMode) ?? "off")
+    : "off";
   const [openLot, setOpenLot] = useState<ApiRow | null>(null);
   const metricRange = useMetricRange();
   const rangeArg = useMemo(
@@ -242,33 +232,21 @@ export default function RealizedGainsPage() {
     [metricRange.selection, metricRange.explicit, metricRange.period],
   );
 
-  useEffect(() => {
+  // Cache-first: a revisit paints the last rows / metric cards at once and revalidates in the background.
+  const gainsUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (taxYear) params.set("taxYear", String(taxYear));
     params.set("term", term);
     if (showUnified) params.set("unified", "1");
-    setLoading(true);
-    setLoadError(false);
-    fetch(`/api/portfolio/realized-gains?${params.toString()}`)
-      .then((r) => r.json())
-      .then((json: ApiResponse) => {
-        if (json.success) setData(json.data);
-        else { setData(null); setLoadError(true); }
-      })
-      .catch(() => { setData(null); setLoadError(true); })
-      .finally(() => setLoading(false));
-  }, [taxYear, term, showUnified, reloadKey]);
+    return `/api/portfolio/realized-gains?${params.toString()}`;
+  }, [taxYear, term, showUnified]);
+  const gainsRes = useCacheFirstJson<ApiResponse>(gainsUrl, { keepPrevious: true });
+  const data: ApiResponse["data"] | null = gainsRes.data?.success ? gainsRes.data.data : null;
+  const loading = gainsRes.loading;
+  const loadError = gainsRes.error || (gainsRes.data !== undefined && !gainsRes.data?.success);
+  const reloadGains = gainsRes.reload;
 
-  // FINLYNQ-193 mixed-currency rule: group-by is UNIFIED-VIEW-ONLY. The
-  // unified view converts every closure into the single display currency, so
-  // summing realized gain across a group is always one-currency-correct.
-  // Native view rows are each in their own sleeve currency, so a group could
-  // span multiple currencies — we never sum those. The selector is disabled
-  // in native view; this effect also resets a stale mode if the user turns
-  // the unified toggle back off while grouped.
-  useEffect(() => {
-    if (!showUnified && groupMode !== "off") setGroupMode("off");
-  }, [showUnified, groupMode]);
+  // FINLYNQ-193 mixed-currency rule: group-by is UNIFIED-VIEW-ONLY (groupMode above is "off" in the native view).
 
   // The unified currency is always the user's display currency; the server
   // stamps it onto each row's `baseCurrency`, so prefer that and fall back to
@@ -397,13 +375,6 @@ export default function RealizedGainsPage() {
     exportCsv(visibleRows, columns, `realized-gains${yearTag}.csv`);
   };
 
-  const yearChoices = [
-    CURRENT_YEAR,
-    CURRENT_YEAR - 1,
-    CURRENT_YEAR - 2,
-    CURRENT_YEAR - 3,
-  ];
-
   const exportDisabled = loading || !data || visibleCount === 0;
 
   // Subtitle = the active period and view, so the header says what is on screen.
@@ -412,63 +383,6 @@ export default function RealizedGainsPage() {
     term === "all" ? "All terms" : term === "short" ? "Short-term" : "Long-term",
     showUnified ? unifiedCurrency : "Native currency",
   ].join(" · ");
-
-  // Rendered twice (md+ toolbar and the mobile sheet); no element ids inside, so no clash.
-  const filterFields = (
-    <>
-      <ChipGroup
-        label="Tax year"
-        options={[
-          ...yearChoices.map((y) => ({ value: String(y), label: String(y) })),
-          { value: "all", label: "All time" },
-        ]}
-        value={taxYear === null ? "all" : String(taxYear)}
-        onChange={(v) => setTaxYear(v === "all" ? null : Number(v))}
-      />
-      <ChipGroup
-        label="Term"
-        options={[
-          { value: "all", label: "All" },
-          { value: "short", label: "Short (≤365d)" },
-          { value: "long", label: "Long (>365d)" },
-        ]}
-        value={term}
-        onChange={(v) => setTerm(v)}
-      />
-      <ChipGroup
-        label="Currency"
-        options={[
-          { value: "native", label: "Native" },
-          { value: "unified", label: `In ${unifiedCurrency}` },
-        ]}
-        value={showUnified ? "unified" : "native"}
-        onChange={(v) => setShowUnified(v === "unified")}
-      />
-      <ChipGroup
-        label="Zero-gain rows"
-        options={[
-          { value: "show", label: "Show all" },
-          { value: "hide", label: "Hide zero-gain" },
-        ]}
-        value={hideZero ? "hide" : "show"}
-        onChange={(v) => setHideZero(v === "hide")}
-      />
-      {/* Mixed-currency rule: grouping sums realized gain across closures,
-          which is only single-currency-safe in the unified display view. */}
-      <ChipGroup
-        label="Group by"
-        options={(["off", "holding", "account", "holding_account"] as const).map((m) => ({ value: m, label: GROUP_MODE_LABELS[m] }))}
-        value={groupMode}
-        onChange={(v) => setGroupMode(v)}
-        disabled={!showUnified}
-      />
-      {!showUnified && (
-        <p className="text-xs text-muted-foreground">
-          Switch to “In {unifiedCurrency}” to group (avoids summing across native currencies).
-        </p>
-      )}
-    </>
-  );
 
   return (
     <SectionPage
@@ -485,17 +399,6 @@ export default function RealizedGainsPage() {
       header={{
         actions: (
           <>
-            {!regular && (
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Filters"
-                className={HEADER_CELL}
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -508,23 +411,16 @@ export default function RealizedGainsPage() {
           </>
         ),
         overflow: [{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }],
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >
 
-      {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
-      {regular ? (
-        <div className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
-          {filterFields}
-        </div>
-      ) : (
-        <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter realized gains">
-          {filterFields}
-        </ReportFilterSheet>
-      )}
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+      />
 
       {!loading && data && data.rows.length > 0 && (
         <>
-          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
           <MetricGrid metrics={summaryMetrics} />
         </>
       )}
@@ -533,7 +429,7 @@ export default function RealizedGainsPage() {
         {loading ? (
           <PageSkeleton variant="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
+          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={reloadGains} />
         ) : !data || data.rows.length === 0 ? (
           <EmptyState
             icon={Coins}
@@ -546,7 +442,7 @@ export default function RealizedGainsPage() {
             <p className="text-sm text-muted-foreground">
               No rows match the current filters. Every closure in this range has a zero realized gain.
             </p>
-            <Button variant="outline" size="sm" onClick={() => setHideZero(false)}>
+            <Button variant="outline" size="sm" render={<Link href={tb.filterHref()} />}>
               Show zero-gain rows
             </Button>
           </div>
@@ -554,7 +450,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -567,7 +463,7 @@ export default function RealizedGainsPage() {
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} padded={false} className="divide-y divide-border/50 px-3">
+                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;

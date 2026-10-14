@@ -308,7 +308,7 @@ export function GroupedPickerPanel({
 /** Inset grouped-list card: one rounded surface, hairlines between its children. */
 export function PickerCard({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("overflow-hidden rounded-xl bg-card divide-y divide-border", className)}>
+    <div className={cn("overflow-hidden rounded-xl bg-card [&>*:not(:last-child)]:shadow-[var(--list-divider)]", className)}>
       {children}
     </div>
   );

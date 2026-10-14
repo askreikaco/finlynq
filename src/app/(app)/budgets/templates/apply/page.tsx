@@ -18,7 +18,7 @@ function ApplyTemplatePage() {
       id="template-apply"
       title="Apply budget template"
       subtitle={`Applies to ${getMonthLabel(month)}`}
-      fallbackReturn={`/budgets?month=${month}`}
+      fallbackReturn={`/categories?month=${month}`}
       form="external"
       header={{ actions: null }}
     >

@@ -1,5 +1,5 @@
 // Desktop pages are full width and lay independent cards in 1 / 2 / 3 columns (owner 2026-10-13).
-// Static source checks, no rendering: no max-w page wrapper, grid classes present, transactions wide 2-col.
+// Static source checks, no rendering: no max-w page wrapper, grid classes present, transactions single column.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -13,7 +13,6 @@ const APP = "src/app/(app)";
 describe("desktop columns: the app pages are full width", () => {
   const PAGES = [
     `${APP}/transactions/page.tsx`,
-    `${APP}/budgets/page.tsx`,
     `${APP}/categories/_page-content.tsx`,
     `${APP}/categories/[id]/page.tsx`,
     `${APP}/subscriptions/page.tsx`,
@@ -53,19 +52,21 @@ describe("desktop columns: the app pages are full width", () => {
 });
 
 describe("desktop columns: transactions", () => {
-  it("date cards are 1 column at regular and 2 columns at wide, each card unbroken", () => {
+  it("date cards are ONE column at every width (no regular/wide 2-col grid), each card unbroken", () => {
     const src = code("src/components/transactions/mobile-tx-list.tsx");
     expect(src).toMatch(/data-slot="tx-date-groups"/);
     expect(src).toMatch(/grid grid-cols-1 items-start gap-6/);
-    expect(src).toMatch(/wide:grid-cols-2/);
+    expect(src).not.toMatch(/wide:grid-cols-2/);
     expect(src).not.toMatch(/regular:grid-cols-2/);
   });
 
-  it("the opt-in split view keeps a single-column list beside the detail pane", () => {
+  it("the split view is list 2fr | pane 1fr (ListDetailLayout) and the workspace no longer carries the old 3fr/2fr opt-in", () => {
     const ws = code(`${APP}/transactions/_components/transactions-workspace.tsx`);
-    expect(ws).toContain("singleColumn={splitView}");
-    expect(ws).toMatch(/splitView \? "grid grid-cols-\[minmax\(0,3fr\)_minmax\(0,2fr\)\]/);
-    expect(code("src/components/transactions/mobile-tx-list.tsx")).toMatch(/!singleColumn && "wide:grid-cols-2"/);
+    expect(ws).toContain("<ListDetailLayout");
+    expect(ws).not.toContain("singleColumn={splitView}");
+    expect(ws).not.toContain("minmax(0,3fr)");
+    expect(code("src/lib/list-detail/selection.ts")).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(code("src/components/transactions/mobile-tx-list.tsx")).not.toMatch(/wide:grid-cols-2/);
   });
 });
 
@@ -74,20 +75,11 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("budgets: category group cards span the full row, their rows in the inner 2 / 3-column grid", () => {
-    const src = code(`${APP}/budgets/page.tsx`);
-    expect(src).toMatch(/data-slot="budget-groups" className="grid grid-cols-1 gap-6"/);
-    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
-  });
-
-  it("categories: group cards are 2 / 3 columns and rows reflow with a container query", () => {
+  it("categories: ONE full-width SectionCard list (single column, rows reflow by container width); metric cards max 3 columns", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
-    expect(src).toMatch(/data-slot="category-group-cards"[^>]*regular:grid-cols-2[^>]*wide:grid-cols-3/);
-    expect(src).toContain("@container");
-    expect(src).toMatch(/@xl:grid-cols-\[/);
-    expect(code(`${APP}/categories/_components/category-management.tsx`)).toMatch(
-      /data-slot="category-manage-groups"[^>]*regular:grid-cols-2[^>]*wide:grid-cols-3/,
-    );
+    expect(src).toMatch(/label="Categories"[\s\S]*shadow-\[var\(--list-divider\)\]/);
+    expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
+    expect(code(`${APP}/categories/_components/category-row.tsx`)).toContain("@container");
   });
 
   it("categories/[id]: summary and recent span the row, chart spans 2", () => {
@@ -100,7 +92,7 @@ describe("desktop columns: card grids", () => {
   it("subscriptions: status group and suggestion cards span the full row with inner row grids; empty state is a card", () => {
     const src = code(`${APP}/subscriptions/page.tsx`);
     expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
-    expect(src).toMatch(/Found in your transactions" padded=\{false\} className="col-span-full/);
+    expect(src).toMatch(/Found in your transactions" icon=\{Search\} tone="cyan" padded=\{false\} className="col-span-full/);
     expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
     expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
   });

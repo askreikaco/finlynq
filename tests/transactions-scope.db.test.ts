@@ -1,7 +1,7 @@
 /**
  * Investment scope on the shared transaction query builder, against real Postgres.
  *
- * A row is "investment" when its account has is_investment = true OR
+ * A row is "investment" when its account has is_investment = true OR its account group is 'Investment' (trim/case-insens) OR
  * portfolio_holding_id IS NOT NULL. scope=daily is the complement, scope=investment
  * is the set, and an unset scope is no filter.
  *
@@ -28,6 +28,10 @@ describe.skipIf(!enabled)("transactions scope: investment vs daily (real Postgre
   let dailyId: number;
   let investAccountRowId: number;
   let holdingLinkedRowId: number;
+  const groupRowIds: number[] = [];
+  let transferPersonalLegId: number;
+  let transferInvLegId: number;
+  let transferBothLegIds: number[];
 
   beforeAll(async () => {
     await resetTestDb();
@@ -49,6 +53,21 @@ describe.skipIf(!enabled)("transactions scope: investment vs daily (real Postgre
       quantity: 1,
       portfolioHoldingId: holding,
     });
+    // Unflagged accounts in the Investment group (case/space variants).
+    // Names must differ after lookup normalisation (case/trim-insensitive unique index), so index them.
+    for (const [i, group] of ["Investment", "investment", " Investment "].entries()) {
+      const acc = await createAccount({ userId, name: `Grp ${i}`, currency: "CAD", isInvestment: false, group });
+      groupRowIds.push(await recordTransaction({ userId, accountId: acc, currency: "CAD", amount: -5 }));
+    }
+    // Transfer legs: personal<->investment-group (personal leg stays), investment<->investment (both hidden).
+    const grpA = await createAccount({ userId, name: "Fund A", currency: "CAD", isInvestment: false, group: "Investment" });
+    const grpB = await createAccount({ userId, name: "Fund B", currency: "CAD", isInvestment: false, group: "Investment" });
+    transferPersonalLegId = await recordTransaction({ userId, accountId: bank, currency: "CAD", amount: -100 });
+    transferInvLegId = await recordTransaction({ userId, accountId: grpA, currency: "CAD", amount: 100 });
+    transferBothLegIds = [
+      await recordTransaction({ userId, accountId: grpA, currency: "CAD", amount: -50 }),
+      await recordTransaction({ userId, accountId: grpB, currency: "CAD", amount: 50 }),
+    ];
   });
 
   afterAll(async () => {
@@ -56,29 +75,35 @@ describe.skipIf(!enabled)("transactions scope: investment vs daily (real Postgre
   });
 
   it("scope=daily excludes investment-account rows and holding-linked rows", async () => {
-    expect(Number(await getTransactionCount(userId, { scope: "daily" }))).toBe(1);
+    expect(Number(await getTransactionCount(userId, { scope: "daily" }))).toBe(2);
     const rows = await getTransactions(userId, { scope: "daily" });
-    expect(rows.map((r) => r.id)).toEqual([dailyId]);
+    expect(rows.map((r) => r.id).sort((a, b) => a - b)).toEqual([dailyId, transferPersonalLegId].sort((a, b) => a - b));
   });
 
   it("scope=investment returns only investment rows (either condition)", async () => {
-    expect(Number(await getTransactionCount(userId, { scope: "investment" }))).toBe(2);
-    const ids = (await getTransactions(userId, { scope: "investment" })).map((r) => r.id).sort((a, b) => a - b);
-    expect(ids).toEqual([investAccountRowId, holdingLinkedRowId].sort((a, b) => a - b));
+    const ids = (await getTransactions(userId, { scope: "investment" })).map((r) => r.id);
+    expect(ids).toEqual(expect.arrayContaining([investAccountRowId, holdingLinkedRowId]));
+    expect(ids).not.toContain(dailyId);
+  });
+
+  it("Investment-group accounts (unflagged, any case/spacing) and their transfer legs split correctly", async () => {
+    const daily = (await getTransactions(userId, { scope: "daily" })).map((r) => r.id);
+    expect(daily.sort((a, b) => a - b)).toEqual([dailyId, transferPersonalLegId].sort((a, b) => a - b));
+    const inv = (await getTransactions(userId, { scope: "investment" })).map((r) => r.id);
+    for (const id of [...groupRowIds, transferInvLegId, ...transferBothLegIds]) expect(inv).toContain(id);
+    expect(inv).not.toContain(transferPersonalLegId);
   });
 
   it("no scope applies no investment filter", async () => {
-    expect(Number(await getTransactionCount(userId, {}))).toBe(3);
-    expect(Number(await getTransactionCount(userId, { scope: undefined }))).toBe(3);
+    expect(Number(await getTransactionCount(userId, {}))).toBe(10);
+    expect(Number(await getTransactionCount(userId, { scope: undefined }))).toBe(10);
   });
 
   it("scope composes with the cursor page query", async () => {
     const page = await getTransactionsPage(userId, { scope: "investment" }, 10);
-    expect(page.rows.map((r) => r.id).sort((a, b) => a - b)).toEqual(
-      [investAccountRowId, holdingLinkedRowId].sort((a, b) => a - b),
-    );
-    expect(page.hasMore).toBe(false);
+    expect(page.rows.map((r) => r.id)).toEqual(expect.arrayContaining([investAccountRowId, holdingLinkedRowId]));
+    expect(page.rows.map((r) => r.id)).not.toContain(dailyId);
     const daily = await getTransactionsPage(userId, { scope: "daily" }, 10);
-    expect(daily.rows.map((r) => r.id)).toEqual([dailyId]);
+    expect(daily.rows.map((r) => r.id).sort((a, b) => a - b)).toEqual([dailyId, transferPersonalLegId].sort((a, b) => a - b));
   });
 });

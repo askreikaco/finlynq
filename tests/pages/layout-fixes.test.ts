@@ -11,7 +11,8 @@ const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf-8");
 
 const SETTINGS_GENERAL = "src/app/(app)/settings/general/page.tsx";
-const BUDGETS = "src/app/(app)/budgets/page.tsx";
+// Budgets were merged into /categories (2026-10); /budgets redirects there.
+const BUDGETS = "src/app/(app)/categories/_page-content.tsx";
 const PERF_CHART = "src/components/portfolio/PerformanceChart.tsx";
 const ACCOUNT_DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
 const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holding-account-groups.tsx";
@@ -47,24 +48,24 @@ describe("settings/general at 390", () => {
     expect(read("src/components/templates/section-page.tsx")).not.toMatch(/\blead=/);
   });
 
-  it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {
+  it("Display Currency row is a column below regular and a row from wide (control full width below regular)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">');
-    expect(src).toContain('<div className="w-full regular:w-56 regular:shrink-0">');
+    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-4">');
+    expect(src).toContain('<div className="w-full wide:w-56 wide:shrink-0">');
     expect(src).not.toContain('<div className="w-56">');
   });
 
   it("UI Font and Animation rows keep label-left / control-right on phones (label takes the spare width)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label>UI Font</Label>');
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label htmlFor="animation-toggle">');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label>Font</Label>');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label htmlFor="animation-toggle">');
     expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 
-  it("Appearance row stacks below regular; segmented control is not forced to full width", () => {
+  it("Appearance row stacks below wide; segmented control is not forced to full width", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">');
-    expect(src).toContain('self-start rounded-lg border p-0.5 regular:self-auto');
+    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">');
+    expect(src).toContain('self-start rounded-lg border p-0.5 wide:self-auto');
   });
 
   it("general page has no hidden lead node (the settings shell bar that needed it is gone)", () => {
@@ -72,20 +73,20 @@ describe("settings/general at 390", () => {
   });
 });
 
-describe("budgets at 390", () => {
+describe("categories (with budgets) at 390", () => {
   it("summary tiles use the shared MetricGrid (2 / 3 / 4 columns by width) and the shared Amount value style, no hand-rolled grid", () => {
     const src = read(BUDGETS);
-    expect(src).toContain("<MetricGrid metrics={summaryMetrics} />");
+    expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
     expect(src).not.toMatch(/grid-cols-2 gap-3/);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
   });
 
-  it("category groups are inset SectionCards of ListRows (one layout at every width): no Card per group, no table", () => {
+  it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('<SectionCard key={group} label={group} padded={false}');
-    expect(src).toContain("<ListRow");
+    expect(src).toMatch(/label="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
+    expect(src).toContain("padded={false}");
+    expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");
-    expect(src).not.toContain('<Card key={group} className="gap-1">');
   });
 
   it("month label goes through getMonthLabel and the shared locale helper (no hardcoded locale in the page)", () => {

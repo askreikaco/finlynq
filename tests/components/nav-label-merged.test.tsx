@@ -109,7 +109,7 @@ describe("MoreMenu with categoriesMerged", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
 
     const moreRows = screen.getAllByTestId("more-row");
-    expect(moreRows.some((r) => r.textContent?.includes("Budgets"))).toBe(true);
+    expect(moreRows.some((r) => r.textContent?.includes("Goals"))).toBe(true);
     expect(moreRows.some((r) => r.textContent?.includes("Settings"))).toBe(true);
   });
 

@@ -196,6 +196,7 @@ describe("nav-config", () => {
         "/transactions/audit",
         "/transactions/new",
         "/transactions/search",
+        "/filter/[list]", // shared filter + sort page opened from the PageToolbar funnel (no nav entry)
         "/settings/backfill",
         "/settings/investments/securities/new", // create-security page, opened from the investments list (no nav entry)
         "/settings/investments/cash-sleeves/new", // add-cash-sleeve page, opened from the investments list
@@ -203,8 +204,6 @@ describe("nav-config", () => {
         "/import/pending", // live route, not redirected
         "/manage-accounts",
         "/more", // mobile-only route
-        "/categories/new", // create-category page, opened from the categories Add button (no nav entry)
-        "/categories/[id]/edit", // rename-category page, opened from the category row (no nav entry)
         "/settings/rules/new", // create-rule page, opened from the rules Add button (no nav entry)
         "/settings/rules/[id]/edit", // edit-rule page, opened from the rule row (no nav entry)
       ]);
@@ -265,9 +264,8 @@ describe("nav-config", () => {
       expect(entry?.label).toBe("Spending by category");
     });
 
-    it("should have 'Categories' for /settings/categorization", () => {
-      const entry = getNavEntry("/settings/categorization");
-      expect(entry?.label).toBe("Categories");
+    it("has no /settings/categorization entry (it redirects to /categories)", () => {
+      expect(getNavEntry("/settings/categorization")).toBeUndefined();
     });
 
     it("should have 'Reconciliation' for /settings/reconciliation", () => {
@@ -454,7 +452,6 @@ describe("nav-config", () => {
         "/scenarios": lucideIcons.GitBranch,
         "/api-docs": lucideIcons.FileText,
         "/settings": lucideIcons.Settings,
-        "/settings/categorization": lucideIcons.Tag,
         "/admin": lucideIcons.ShieldCheck,
         "/admin/inbox": lucideIcons.Inbox,
         "/admin/announcements": lucideIcons.Megaphone,
@@ -620,7 +617,7 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have complete REDIRECTS array with all 11 entries in exact form", () => {
+    it("should have complete REDIRECTS array with all 16 entries in exact form", () => {
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -629,6 +626,11 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/budgets", destination: "/categories", permanent: false },
+        { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/settings/categorization", destination: "/categories", permanent: false },
+        { source: "/categories/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/categories/:id(\\d+)/edit", destination: "/categories?edit=:id", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
@@ -649,7 +651,7 @@ describe("nav-config", () => {
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
-      // Expected 11 entries (full table)
+      // Expected 16 entries (full table)
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -658,6 +660,11 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/budgets", destination: "/categories", permanent: false },
+        { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/settings/categorization", destination: "/categories", permanent: false },
+        { source: "/categories/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/categories/:id(\\d+)/edit", destination: "/categories?edit=:id", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
@@ -701,16 +708,6 @@ describe("nav-config", () => {
     it("should return 'Spending by category' for /categories when categoriesMerged is omitted", () => {
       const result = navLabel("/categories", "Spending by category");
       expect(result).toBe("Spending by category");
-    });
-
-    it("should return label unchanged for /settings/categorization when categoriesMerged is true", () => {
-      const result = navLabel("/settings/categorization", "Categories", { categoriesMerged: true });
-      expect(result).toBe("Categories");
-    });
-
-    it("should return label unchanged for /settings/categorization when categoriesMerged is false", () => {
-      const result = navLabel("/settings/categorization", "Categories", { categoriesMerged: false });
-      expect(result).toBe("Categories");
     });
 
     it("should return label unchanged for /dashboard when categoriesMerged is true", () => {
