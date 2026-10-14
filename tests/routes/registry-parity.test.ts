@@ -141,6 +141,10 @@ const SNAPSHOT = {
       "handlerKey": "feedback.send",
       "icon": "LucideMessageSquarePlus"
     },
+    "/filter/[list]": {
+      "kind": "hidden",
+      "reason": "sticky bottom Reset/Apply bar"
+    },
     "/fire": {
       "kind": "fallback"
     },
