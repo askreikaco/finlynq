@@ -101,10 +101,14 @@ describe("turbopack build wiring (static)", () => {
     expect(pkg.dependencies.esbuild).toBeTruthy();
   });
 
-  it("Dockerfile sets only USE_TURBOPACK=1 and does not skip the type check", () => {
+  it("Dockerfile skips the in-build type check; the typecheck workflow gates PRs to custom", () => {
     const d = read("Dockerfile");
     expect(d).toMatch(/^ENV USE_TURBOPACK=1$/m);
-    expect(d).not.toContain("SKIP_NEXT_TYPECHECK");
+    expect(d).toMatch(/^ENV SKIP_NEXT_TYPECHECK=1$/m);
     expect(d).toContain("npm run build");
+    const wf = read(".github/workflows/typecheck-custom.yml");
+    expect(wf).toContain("branches: [custom]");
+    expect(wf).toContain("npm run typecheck");
+    expect(JSON.parse(read("package.json")).scripts.typecheck).toContain("tsc --noEmit");
   });
 });

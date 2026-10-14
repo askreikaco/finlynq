@@ -1,0 +1,39 @@
+name: Typecheck (custom)
+
+# Required check for PRs into custom. The Docker build skips the Next.js type
+# check (SKIP_NEXT_TYPECHECK=1) so deploys take seconds less; this is the gate.
+# Runner: set repo variable TYPECHECK_RUNNER (e.g. the owner PC runner label)
+# to move it off GitHub-hosted runners.
+
+on:
+  pull_request:
+    branches: [custom]
+    paths-ignore:
+      - 'mobile/**'
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ${{ vars.TYPECHECK_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
