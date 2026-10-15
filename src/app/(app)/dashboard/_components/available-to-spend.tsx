@@ -4,7 +4,6 @@ import { MetricCard } from "@/components/metric-card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Wallet } from "lucide-react";
-import { motion } from "framer-motion";
 import type { MetricTrend } from "./key-metrics";
 
 type Props = {
@@ -34,11 +33,11 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
       valueClassName={available >= 0 ? "text-pos" : "text-destructive"}
       sub={trend?.delta ?? (monthLabel ? `${monthLabel} remaining` : "This month remaining")}
       note={trend?.delta ? (monthLabel ? `${monthLabel} remaining` : "This month remaining") : undefined}
-      badgePct={trend?.badgePct}
-      invertTone={false}
+      delta={{ pct: trend?.badgePct }}
       sparkData={trend?.sparkData}
       sparkLabels={trend?.sparkLabels}
       sparkColor="#06b6d4"
+      progress={income > 0 ? { value: pctSpent, tone: pctSpent > 100 ? "destructive" : pctSpent > 80 ? "warning" : "pos", caption: `${Math.round(pctSpent)}% of income spent`, ariaLabel: "Income spent" } : undefined}
     >
       {income > 0 && (
         <div className="mt-4 space-y-2">
@@ -60,17 +59,6 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
               {formatCurrency(available, resolvedCurrency)}
             </span>
           </div>
-          <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden mt-3">
-            <motion.div
-              className={`h-full rounded-full ${pctSpent > 100 ? "bg-destructive" : pctSpent > 80 ? "bg-warning" : "bg-pos"}`}
-              initial={false}
-              animate={{ width: `${Math.min(100, pctSpent)}%` }}
-              transition={{ duration: 0 }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground text-center mt-1.5 tabular-nums">
-            {Math.round(pctSpent)}% of income spent
-          </p>
         </div>
       )}
     </MetricCard>

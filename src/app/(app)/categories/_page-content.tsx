@@ -9,6 +9,7 @@
  * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,8 +33,7 @@ import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, 
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
-  type MetricItem, type OverflowAction,
+  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi, type OverflowAction,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -300,22 +300,22 @@ function CategoriesOverview() {
   const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
   const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalLeft });
   // Exactly these three cards.
-  const metrics: MetricItem[] = [
+  const metrics: MetricCardProps[] = [
     {
-      id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
-      sub: budgetCard.delta ?? NO_HISTORY_CAPTION, badgePct: budgetCard.badgePct,
+      id: "total-budget", label: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
+      delta: { pct: budgetCard.badgePct, text: budgetCard.delta ?? NO_HISTORY_CAPTION },
       sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
     },
     {
-      id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
+      id: "total-spent", label: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
       valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
-      sub: spentCard.delta ?? NO_HISTORY_CAPTION, badgePct: spentCard.badgePct, invertTone: true,
+      delta: { pct: spentCard.badgePct, text: spentCard.delta ?? NO_HISTORY_CAPTION, invert: true },
       sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
-      id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
+      id: "remaining", label: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
       valueClassName: totalLeft >= 0 ? "text-pos" : "text-destructive",
-      sub: leftCard.delta ?? NO_HISTORY_CAPTION, badgePct: leftCard.badgePct,
+      delta: { pct: leftCard.badgePct, text: leftCard.delta ?? NO_HISTORY_CAPTION },
       sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
     },
   ];

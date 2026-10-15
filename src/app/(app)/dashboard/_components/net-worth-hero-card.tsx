@@ -49,7 +49,7 @@ export function NetWorthHeroCard({
       size="hero"
       value={value}
       currency={currency}
-      badgePct={comparison ? comparison.pct : change != null ? changePct : null}
+      delta={{ pct: comparison ? comparison.pct : change != null ? changePct : null }}
       sub={comparison ? (comparison.delta ?? undefined) : change != null ? `${change >= 0 ? "+" : ""}${formatCurrency(change, currency)} ${changeCaption}` : undefined}
       note={footnote}
       sparkData={sparkData}

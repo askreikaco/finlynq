@@ -10,6 +10,7 @@
  * the Budgets page; the switcher in the header moves between categories.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -43,7 +44,7 @@ import { ArrowLeftRight, BarChart3, CalendarClock, Pencil, Percent, Receipt, Sca
 import { Button } from "@/components/ui/button";
 import {
   Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
-  useCardLayout, usePageCustomize, type MetricItem,
+  useCardLayout, usePageCustomize,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -184,13 +185,12 @@ function CategoryPageContent() {
     ? (sel.range === "custom" ? periodName : sel.month ? periodName : RANGE_LABELS[sel.range])
     : "This month so far";
   const countCard = resolveCard({ points: countPts, period: metricRange.period, mode: "sum", isDefault: false, kind: "count", caption });
-  const summaryMetrics: MetricItem[] = [
+  const summaryMetrics: MetricCardProps[] = [
     { icon: Wallet,
       label: rangeTitle,
       value: metricRange.explicit || sel.month ? (thisCard.value ?? 0) : stats.thisMonth,
       currency: cur,
-      ...cardProps(thisCard),
-      invertTone: !isIncome,
+      ...cardProps(thisCard, !isIncome),
       note: currentMonth?.budget != null && !metricRange.explicit && !sel.month
         ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
         : `${countCard.value ?? currentMonth?.count ?? 0} transaction${(countCard.value ?? currentMonth?.count) === 1 ? "" : "s"}`,
@@ -199,8 +199,7 @@ function CategoryPageContent() {
       label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
       value: stats.lastMonth,
       currency: cur,
-      ...cardProps(lastCard),
-      invertTone: !isIncome,
+      ...cardProps(lastCard, !isIncome),
       note: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
     { icon: Scale,

@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * MetricCard — the ONE metric / KPI card used across the app (dashboard design):
- * left column: icon + uppercase label, big value, small sub-line with an optional percentage
- * badge, an optional second small line; right column: the chart (optional).
+ * MetricCard — the ONE metric / KPI card used across the app (dashboard design). Every part is optional
+ * and shows only when its prop is given:
+ *   label (+ icon tile, tone, `info` tip, `action`) · value (`size="hero"` = larger) · `delta` (% badge vs the
+ *   previous period + text) · `sub` / `note` lines · `sparkData` strip · `progress` (bar + % + caption) ·
+ *   `href` (whole card is a link) · `children` (free extra content under the lines).
+ * Layout: left column: icon + uppercase label, big value, sub-line, optional second line; right column: the chart.
  *
  * The sparkline follows the card's own width (container query): a narrow card shows it as a
  * full-bleed strip along the bottom; a wide card (≥ 36rem, e.g. the Net Worth hero) moves it
@@ -23,18 +26,45 @@ import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { AnimatedNumber } from "@/components/animated-number";
 import { formatPercent } from "@/lib/locale";
 import { LazyView } from "@/components/ui/lazy-view";
-import { useAnimations } from "@/hooks/use-animations";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CardLabel, CARD_PAD_T, CARD_PAD_X, METRIC_TONES, type MetricTone } from "@/components/mobile/card-label";
+import { ProgressBar, type ProgressTone } from "@/components/mobile/list-row";
+import { InfoTip } from "@/components/ui/info-tip";
+import { formatCurrency } from "@/lib/currency";
+import type { AmountTone } from "@/components/mobile/amount";
 
+// No mount animation on metric cards: the variants are inert (hover animation lives in the Card classes).
 const itemVariants = {
   hidden: { opacity: 1, y: 0 },
   visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
-const noAnimationVariants = {
-  hidden: { opacity: 1, y: 0 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
+/** Change vs the previous period: `pct` = the green / red badge, `text` = the signed difference line ("+$12 vs last month"). */
+export type MetricDelta = {
+  /** Percent (already in percent, -0.5 = -0.5%); null / undefined = no badge. */
+  pct?: number | null;
+  /** Caption after the badge. The card's `sub`, when given, takes its place. */
+  text?: ReactNode;
+  /** Less is better (debt, spent): up = red, down = green. */
+  invert?: boolean;
+};
+
+/** Progress part: a thin bar plus a caption under it. `value` 0..100 (clamped); null = empty bar. */
+export type MetricProgress = {
+  value: number | null;
+  tone?: ProgressTone;
+  /** Text under the bar; default "<n>%". */
+  caption?: ReactNode;
+  /** Accessible name of the bar; default = the card label when it is text. */
+  ariaLabel?: string;
+};
+
+const VALUE_TONE: Record<AmountTone, string> = {
+  auto: "",
+  pos: "text-pos",
+  neg: "text-neg",
+  muted: "text-muted-foreground",
+  none: "",
 };
 
 export { METRIC_TONES };
@@ -45,18 +75,29 @@ export type MetricCardProps = {
   icon: LucideIcon;
   /** A METRIC_TONES name, or raw classes for the icon tile. */
   tone?: MetricTone | (string & {});
-  /** number = animated currency amount; anything else renders as-is. */
+  /** Short help text -> an InfoTip (i) in the label row. */
+  info?: ReactNode;
+  /** Control on the right of the label row (e.g. an edit button). */
+  action?: ReactNode;
+  /** number = animated money amount (in `currency`, else the display currency); anything else renders as-is (wrap a plain count in <span>). */
   value: number | ReactNode;
   currency?: string;
+  /** Sign colour of a numeric value: "auto" = green > 0 / red < 0. */
+  valueTone?: AmountTone;
+  /** Prefix "+" on a positive money amount. */
+  showSign?: boolean;
   /** Extra classes for the big number (e.g. a green / red tone). */
   valueClassName?: string;
+  /** "hero" = the larger number of the Net Worth card. */
+  size?: "default" | "hero";
+  /** Change vs the previous period (badge + text). */
+  delta?: MetricDelta;
+  /** One-line caption under the value (a delta `text` or any caption). */
   sub?: ReactNode;
-  /** Percentage badge before the sub-line (green ↗ / red ↘); null/undefined = none. */
-  badgePct?: number | null;
-  /** Flip the badge colours (up = red, down = green) for metrics where less is better, e.g. expenses. */
-  invertTone?: boolean;
   /** A second small line under the sub-line. */
   note?: ReactNode;
+  /** Bar + caption under the lines. */
+  progress?: MetricProgress;
   /** Shimmer placeholder instead of the number. */
   loading?: boolean;
   sparkData?: number[];
@@ -65,11 +106,15 @@ export type MetricCardProps = {
   sparkLabels?: string[];
   /** Drill-through target; omitted = a static card. */
   href?: string;
-  /** Extra content under the sub-line (e.g. a progress bar). */
+  /** Free extra content under the lines (use `progress` for a bar). */
   children?: ReactNode;
+  /** Classes of the card surface (glow, tint). */
   className?: string;
-  /** "hero" = the larger number of the Net Worth card. */
-  size?: "default" | "hero";
+  /** Classes of the grid cell around the card (e.g. `max-regular:hidden`). */
+  cellClassName?: string;
+  /** Stable id -> data-testid="metric-<id>" and a labelled group on the cell. */
+  id?: string;
+  ariaLabel?: string;
   onMouseMove?: MouseEventHandler<HTMLDivElement>;
   /** If true, wraps the card in LazyView rendering a skeleton until in viewport */
   lazy?: boolean;
@@ -79,13 +124,17 @@ export function MetricCard({
   label,
   icon: Icon,
   tone = "muted",
+  info,
+  action,
   value,
   currency,
+  valueTone,
+  showSign = false,
   valueClassName = "",
   sub,
-  badgePct,
-  invertTone = false,
+  delta,
   note,
+  progress,
   loading = false,
   sparkData,
   sparkColor = "#6366f1",
@@ -93,14 +142,25 @@ export function MetricCard({
   href,
   children,
   className = "",
+  cellClassName,
+  id,
+  ariaLabel,
   size = "default",
   onMouseMove,
   lazy = false,
 }: MetricCardProps) {
-  const animationsEnabled = useAnimations();
   const { displayCurrency } = useDisplayCurrency();
   const resolvedCurrency = currency?.trim() ? currency : displayCurrency;
-  const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
+  const tonePick = valueTone === "auto" && typeof value === "number" ? (value > 0 ? "pos" : value < 0 ? "neg" : "none") : (valueTone ?? "none");
+  const valueClass = [VALUE_TONE[tonePick], valueClassName].filter(Boolean).join(" ");
+  const shownValue: ReactNode =
+    typeof value === "number" ? (
+      showSign && value > 0 ? <span>{`+${formatCurrency(value, resolvedCurrency)}`}</span> : <AnimatedNumber value={value} currency={resolvedCurrency} />
+    ) : (
+      value
+    );
+  const subText = sub ?? delta?.text;
+  const hasLabelExtras = !!info || !!action;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
   // Hero: 5xl only once the number column (card minus the 40% sparkline column) fits "808.924.476 ₫" at 48px (@[42rem]).
@@ -112,15 +172,29 @@ export function MetricCard({
     >
       <div className="@[36rem]:flex @[36rem]:items-stretch @[36rem]:gap-6 h-full">
         <CardContent className={`${CARD_PAD_T} ${CARD_PAD_X} min-w-0 ${size === "hero" ? "@[36rem]:flex-none @[36rem]:min-w-[16rem]" : "@[36rem]:flex-1"} ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
-          <CardLabel inset icon={Icon} tone={tone} tileClassName="transition-transform duration-300 group-hover:scale-110">
+          <CardLabel
+            inset
+            icon={Icon}
+            tone={tone}
+            tileClassName="transition-transform duration-300 group-hover:scale-110"
+            action={
+              hasLabelExtras ? (
+                // Inside a linked card a click on the tip / action must not navigate.
+                <span className="flex items-center gap-1" onClick={href ? (e) => { e.preventDefault(); e.stopPropagation(); } : undefined}>
+                  {info ? <InfoTip text={info} label={typeof label === "string" ? `About ${label}` : undefined} /> : null}
+                  {action}
+                </span>
+              ) : undefined
+            }
+          >
             {label}
           </CardLabel>
 
           {loading ? (
             <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
           ) : (
-            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none ${size === "hero" && typeof value === "number" ? "whitespace-nowrap" : "break-words"} ${valueClassName}`}>
-              {typeof value === "number" ? <AnimatedNumber value={value} currency={resolvedCurrency} /> : value}
+            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none ${size === "hero" && typeof value === "number" ? "whitespace-nowrap" : "break-words"} ${valueClass}`}>
+              {shownValue}
             </div>
           )}
 
@@ -129,10 +203,10 @@ export function MetricCard({
               " "
             ) : (
               <>
-                {(badgePct != null || sub) && (
+                {(delta?.pct != null || subText) && (
                   <div className="flex flex-wrap items-center gap-2">
-                    {badgePct != null && <PctBadge pct={badgePct} invert={invertTone} />}
-                    {sub && <span className="min-w-0">{sub}</span>}
+                    {delta?.pct != null && <PctBadge pct={delta.pct} invert={delta.invert} />}
+                    {subText && <span className="min-w-0">{subText}</span>}
                   </div>
                 )}
                 {note && <div>{note}</div>}
@@ -140,6 +214,19 @@ export function MetricCard({
             )}
           </div>
           {children && <div className="mb-4">{children}</div>}
+          {progress && !loading && (
+            <div data-slot="metric-progress" className="mb-4 space-y-1.5">
+              <ProgressBar
+                value={progress.value}
+                tone={progress.tone}
+                ariaLabel={progress.ariaLabel ?? (typeof label === "string" ? label : "Progress")}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                {progress.caption ?? (progress.value == null ? "" : `${Math.round(progress.value)}%`)}
+              </p>
+            </div>
+          )}
         </CardContent>
 
         {hasSpark && (
@@ -163,7 +250,13 @@ export function MetricCard({
   );
 
   const content = (
-    <motion.div variants={motionVariants} className="h-full">
+    <motion.div
+      variants={itemVariants}
+      data-testid={id ? `metric-${id}` : undefined}
+      role={id ? "group" : undefined}
+      aria-label={id ? (ariaLabel ?? (typeof label === "string" ? label : undefined)) : ariaLabel}
+      className={`h-full min-w-0${cellClassName ? ` ${cellClassName}` : ""}`}
+    >
       {href ? (
         <Link href={href} className="block h-full">
           {card}

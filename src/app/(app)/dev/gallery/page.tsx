@@ -17,7 +17,7 @@ import { Amount } from "@/components/mobile/amount";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { DetailSheet } from "@/components/mobile/detail-sheet";
-import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricTone } from "@/components/metric-card";
+import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
 import { Sparkline } from "@/components/sparkline";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Bell, CalendarClock, DollarSign, Inbox, LogOut, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
+import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 
 const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
@@ -97,6 +97,60 @@ function Swatch({ name }: { name: string }) {
   );
 }
 
+/** Every optional part of the one MetricCard, as a switch. */
+const METRIC_PARTS = [
+  ["info", "Info tip"],
+  ["action", "Action"],
+  ["hero", "Hero size"],
+  ["delta", "Delta"],
+  ["sub", "Sub-line"],
+  ["note", "Note"],
+  ["spark", "Sparkline"],
+  ["progress", "Progress"],
+  ["href", "Link"],
+  ["loading", "Loading"],
+] as const;
+type MetricPart = (typeof METRIC_PARTS)[number][0];
+
+/** Switches in, ONE MetricCard out: each part shows only when its prop is given. */
+function MetricPlayground() {
+  const [parts, setParts] = useState<Record<MetricPart, boolean>>({
+    info: false, action: false, hero: false, delta: true, sub: true, note: false, spark: true, progress: false, href: false, loading: false,
+  });
+  const toggle = (k: MetricPart) => setParts((p) => ({ ...p, [k]: !p[k] }));
+  const card: MetricCardProps = {
+    label: "Net worth",
+    icon: Wallet,
+    tone: "indigo",
+    value: 125000,
+    ...(parts.info ? { info: "Assets minus liabilities." } : {}),
+    ...(parts.action ? { action: <Button variant="ghost" size="icon-sm" aria-label="Edit"><Pencil className="size-3.5" /></Button> } : {}),
+    ...(parts.hero ? { size: "hero" as const } : {}),
+    ...(parts.delta ? { delta: { pct: 1.9, text: "+$2,300 vs last month" } } : {}),
+    ...(parts.sub && !parts.delta ? { sub: "As of today" } : {}),
+    ...(parts.note ? { note: "Second note line" } : {}),
+    ...(parts.spark ? { sparkData: SPARK, sparkLabels: SPARK_LABELS, sparkColor: "#6366f1" } : {}),
+    ...(parts.progress ? { progress: { value: 64, caption: "64% of goal" } } : {}),
+    ...(parts.href ? { href: "/dashboard" } : {}),
+    ...(parts.loading ? { loading: true } : {}),
+  };
+  return (
+    <div className="grid gap-4 regular:grid-cols-[14rem_minmax(0,1fr)]" data-testid="metric-playground">
+      <div className="space-y-2 rounded-xl border border-border/50 p-3">
+        {METRIC_PARTS.map(([k, name]) => (
+          <label key={k} className="flex items-center justify-between gap-2 text-sm">
+            {name}
+            <Switch checked={parts[k]} onCheckedChange={() => toggle(k)} aria-label={name} />
+          </label>
+        ))}
+      </div>
+      <div className="min-w-0 self-start">
+        <MetricCard {...card} />
+      </div>
+    </div>
+  );
+}
+
 function GalleryContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sizeClass = useSizeClass(containerRef as React.RefObject<HTMLElement>);
@@ -115,10 +169,10 @@ function GalleryContent() {
   }, [sizeClass]);
 
   const metrics = [
-    { id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", iconTone: "indigo" as const, sub: "+$1,200 vs last month", badgePct: 1.9, sparkData: SPARK, sparkColor: "#6366f1" },
-    { id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", iconTone: "emerald" as const, tone: "pos" as const },
-    { id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", iconTone: "rose" as const, badgePct: 4.2, invertTone: true },
-    { id: "g4", label: "Savings", icon: PiggyBank, value: "32%", iconTone: "amber" as const },
+    { id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, sparkData: SPARK, sparkColor: "#6366f1" },
+    { id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },
+    { id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },
+    { id: "g4", label: "Savings", icon: PiggyBank, value: "32%", tone: "amber" as const },
   ];
 
   return (
@@ -140,29 +194,24 @@ function GalleryContent() {
 
         <div className={TW.grid3}>
           <Group id="metric" title="MetricCard" file="components/metric-card.tsx · mobile/metric-grid.tsx" span>
-            <div className={TW.grid3}>
-              <Item name="Default / hero" file="size">
-                <div className="space-y-3">
-                  <MetricCard label="Default" icon={Wallet} tone="indigo" value={25000} sub="Checking" />
-                  <MetricCard label="Hero" icon={Wallet} tone="violet" value={275000} size="hero" sub="As of today" />
-                </div>
-              </Item>
-              <Item name="Sparkline + delta + href" file="sparkData, badgePct, href">
-                <div className="space-y-3">
-                  <MetricCard label="Portfolio" icon={TrendingUp} tone="emerald" value={150000} sub="+$4,000 vs last month" badgePct={8.5} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#10b981" href="/portfolio" />
-                  <MetricCard label="Spent (less is better)" icon={DollarSign} tone="rose" value={3100} badgePct={4.2} invertTone note="Second note line" />
-                </div>
-              </Item>
-              <Item name="Loading / skeleton / progress child">
-                <div className="space-y-3">
-                  <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
-                  <MetricCardSkeleton />
-                  <MetricCard label="Budget" icon={PiggyBank} tone="amber" value={800} sub="of $1,000">
-                    <Progress value={80} className="mt-2" />
-                  </MetricCard>
-                </div>
-              </Item>
-            </div>
+            <Item name="One component, every part optional" file="switch a part on / off">
+              <MetricPlayground />
+            </Item>
+            <Item name="Combinations" file="same MetricCard, different props">
+              <div className="grid gap-3 regular:grid-cols-2 wide:grid-cols-3">
+                <MetricCard label="Value only" icon={Wallet} tone="indigo" value={25000} />
+                <MetricCard label="Value + sub" icon={Wallet} tone="cyan" value={25000} sub="Checking" />
+                <MetricCard label="Delta (less is better)" icon={DollarSign} tone="rose" value={3100} delta={{ pct: 4.2, text: "+$124 vs last month", invert: true }} note="Second note line" />
+                <MetricCard label="Sparkline + delta + link" icon={TrendingUp} tone="emerald" value={150000} delta={{ pct: 8.5, text: "+$4,000 vs last month" }} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#10b981" href="/portfolio" />
+                <MetricCard label="Progress" icon={PiggyBank} tone="amber" value={800} sub="of $1,000" progress={{ value: 80, tone: "warning", caption: "80% spent" }} />
+                <MetricCard label="Info + action" icon={Wallet} tone="violet" value={4200} info="Shown in the label row." action={<Button variant="ghost" size="icon-sm" aria-label="Edit"><Pencil className="size-3.5" /></Button>} />
+                <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
+                <MetricCardSkeleton />
+              </div>
+            </Item>
+            <Item name="Hero size" file="size=&quot;hero&quot;">
+              <MetricCard label="Hero" icon={Wallet} tone="violet" value={275000} size="hero" delta={{ pct: 3.4, text: "+$9,200 vs last month" }} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#8b5cf6" progress={{ value: 55, caption: "55% of goal" }} />
+            </Item>
             <Item name="Tones" file="METRIC_TONES">
               <div className="grid grid-cols-2 gap-3 regular:grid-cols-4 wide:grid-cols-7">
                 {TONES.map((t) => (

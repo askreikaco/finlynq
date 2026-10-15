@@ -116,9 +116,9 @@ function HomePurchaseTab() {
           <MetricGrid
             metrics={[
               { icon: Landmark, label: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
-              { icon: Wallet, label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, tone: "neg" },
+              { icon: Wallet, label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, valueTone: "neg" },
               { icon: PiggyBank, label: "Down Payment", value: result.downPayment, currency: displayCurrency },
-              { icon: Percent, label: "Total Interest", value: result.totalInterest, currency: displayCurrency, tone: "neg" },
+              { icon: Percent, label: "Total Interest", value: result.totalInterest, currency: displayCurrency, valueTone: "neg" },
             ]}
           />
           <SectionCard label="Mortgage balance over time" icon={TrendingDown} tone="rose">
@@ -191,7 +191,7 @@ function ExtraSavingsTab() {
         <>
           <MetricGrid
             metrics={[
-              { icon: TrendingUp, label: "Future Value", value: result.futureValue, currency: displayCurrency, tone: "pos" },
+              { icon: TrendingUp, label: "Future Value", value: result.futureValue, currency: displayCurrency, valueTone: "pos" },
               { icon: PiggyBank, label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
               { icon: Coins, label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
             ]}
@@ -224,7 +224,7 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
       <div className="space-y-4">
         <MetricGrid
           metrics={[
-            { icon: Percent, label: "Total Interest", value: data.totalInterest, currency, tone: "neg" },
+            { icon: Percent, label: "Total Interest", value: data.totalInterest, currency, valueTone: "neg" },
             { icon: CalendarClock, label: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
@@ -427,9 +427,9 @@ function IncomeChangeTab() {
           <SectionCard label="Impact summary" icon={Sparkles} tone="cyan" cardClassName="bg-info/10 border-info/30">
             <MetricGrid
               metrics={[
-                { icon: Wallet, label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },
-                { icon: PiggyBank, label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, tone: "pos", showSign: true },
-                { icon: Receipt, label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, tone: "neg", showSign: true },
+                { icon: Wallet, label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, valueTone: "pos", showSign: true },
+                { icon: PiggyBank, label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, valueTone: "pos", showSign: true },
+                { icon: Receipt, label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, valueTone: "neg", showSign: true },
                 { icon: TrendingUp, label: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
               ]}
             />

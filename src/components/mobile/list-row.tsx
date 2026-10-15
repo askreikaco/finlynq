@@ -55,6 +55,23 @@ const BAR_TONE: Record<ProgressTone, string> = {
   pos: "bg-pos",
 };
 
+/** The ONE thin progress bar (ListRow's mini bar, MetricCard's progress part). `value` 0..100, clamped; null = empty track. */
+export function ProgressBar({ value, tone = "primary", ariaLabel, className }: { value: number | null; tone?: ProgressTone; ariaLabel: string; className?: string }) {
+  const fill = value == null ? null : Math.min(100, Math.max(0, value));
+  return (
+    <span
+      role="progressbar"
+      aria-label={ariaLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={fill ?? 0}
+      className={cn("block h-1.5 shrink-0 overflow-hidden rounded-full bg-muted", className)}
+    >
+      {fill != null ? <span className={cn("block h-full rounded-full", BAR_TONE[tone])} style={{ width: `${fill}%` }} /> : null}
+    </span>
+  );
+}
+
 interface RowProgress {
   /** Fill 0..100 (uncapped values are clamped); null = bar without fill. */
   pct: number | null;
@@ -179,7 +196,6 @@ export function ListRow({
       <span data-slot={`${slot}-dot`} className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden />
     ) : null);
 
-  const fill = progress?.pct == null ? null : Math.min(100, Math.max(0, progress.pct));
   const hasValue = value !== undefined || secondary !== undefined;
 
   const body = (
@@ -243,16 +259,7 @@ export function ListRow({
               ) : null}
               {progress ? (
                 <span data-slot={`${slot}-budget`} className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                  <span
-                    role="progressbar"
-                    aria-label={progress.aria}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={fill ?? 0}
-                    className="block h-1.5 w-[10cqw] min-w-10 max-w-24 shrink-0 overflow-hidden rounded-full bg-muted @3xl:min-w-14"
-                  >
-                    {fill != null ? <span className={cn("block h-full rounded-full", BAR_TONE[progress.tone ?? "primary"])} style={{ width: `${fill}%` }} /> : null}
-                  </span>
+                  <ProgressBar value={progress.pct} tone={progress.tone} ariaLabel={progress.aria} className="w-[10cqw] min-w-10 max-w-24 @3xl:min-w-14" />
                   <span className={cn("whitespace-nowrap", progress.labelClassName)}>{progress.label}</span>
                 </span>
               ) : null}

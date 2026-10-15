@@ -164,11 +164,10 @@ export function makeCardResolver(
     resolveCard({ points: points ? [...points] : null, period: range.period, mode, isDefault: !range.explicit, pageValue, kind, currency, caption });
 }
 
-/** The card props every MetricCard / MetricItem takes from a ResolvedCard (delta line as `sub`, badge, sparkline). */
-export function cardProps(c: ResolvedCard): Pick<MetricCardProps, "sub" | "badgePct" | "sparkData" | "sparkLabels"> {
+/** The card props every MetricCard takes from a ResolvedCard (`delta` = badge + signed difference line, sparkline); `invert` = less is better. */
+export function cardProps(c: ResolvedCard, invert = false): Pick<MetricCardProps, "delta" | "sparkData" | "sparkLabels"> {
   return {
-    ...(c.delta ? { sub: c.delta } : {}),
-    badgePct: c.badgePct,
+    delta: { pct: c.badgePct, ...(c.delta ? { text: c.delta } : {}), ...(invert ? { invert } : {}) },
     ...(c.sparkData ? { sparkData: c.sparkData, sparkLabels: c.sparkLabels } : {}),
   };
 }

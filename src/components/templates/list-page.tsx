@@ -27,6 +27,7 @@
  * - `summarySlot`, `emptySlot`, `body` replace the summary grid, empty card, and toggle+DataView.
  * - `toolbarPlacement`, `header`, `stack`, `loadingNode`, `skeletonRows`, `suspenseRows`.
  */
+import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -36,7 +37,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile/page-header";
-import { MetricGrid, type MetricItem } from "@/components/mobile/metric-grid";
+import { MetricGrid } from "@/components/mobile/metric-grid";
 import { DataView } from "@/components/adaptive/data-view";
 import { ViewModeToggle, type ViewKey } from "@/components/adaptive/view-mode";
 import { useApi } from "@/lib/data/use-api";
@@ -69,7 +70,7 @@ export interface ListPageProps<T, D = T[], X = unknown> {
   /** Primary Add action in the header (phone: PHONE_PRIMARY_CLASS). The page also feeds the FAB from its route entry. */
   add?: { label: string; href: string };
   /** Summary stat cards. A function gets the loaded records; the grid is hidden while the list is empty. */
-  summary?: MetricItem[] | ((records: T[]) => MetricItem[]);
+  summary?: MetricCardProps[] | ((records: T[]) => MetricCardProps[]);
   viewKey: ViewKey;
   /** Cards view (phone default). Only the selected view is mounted. */
   cards: ListPageView<T, X>;

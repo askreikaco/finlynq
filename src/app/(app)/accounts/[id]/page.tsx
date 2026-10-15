@@ -481,8 +481,7 @@ export default function AccountDetailPage() {
         currency={account.currency}
         valueClassName={displayBalance >= 0 ? "text-pos" : "text-destructive"}
         sparkColor={displayBalance >= 0 ? "#10b981" : "#f43f5e"}
-        invertTone={account.type === "L"}
-        {...cardProps(balanceCard)}
+        {...cardProps(balanceCard, account.type === "L")}
         note={
           holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
             <>

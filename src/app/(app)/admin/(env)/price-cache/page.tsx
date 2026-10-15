@@ -21,12 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
-import { METRIC_GRID_CLASS } from "@/components/mobile";
-import { cn } from "@/lib/utils";
+import { MetricGrid } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Database, Layers, RefreshCw, Trash2 } from "lucide-react";
 
 type Tab = "price" | "fx";
 
@@ -327,20 +326,19 @@ export default function AdminPriceCachePage() {
 
       {/* Summary */}
       {data && (
-        <Card>
-          <CardContent className={cn(METRIC_GRID_CLASS, "py-4")}>
-            <Stat label="Total rows" value={data.summary.totalRows.toLocaleString()} />
-            <Stat label={tab === "fx" ? "Currencies" : "Symbols"} value={data.summary.distinctKeys.toLocaleString()} />
-            <Stat label="First date" value={data.summary.firstDate ?? "—"} />
-            <Stat label="Last date" value={data.summary.lastDate ?? "—"} />
-            <Stat label="Today rows" value={data.summary.todayRows.toLocaleString()} />
-            <Stat
-              label="Stale today"
-              value={data.summary.staleTodayRows.toLocaleString()}
-              warn={data.summary.staleTodayRows > 0}
-            />
-          </CardContent>
-        </Card>
+        <MetricGrid
+          metrics={[
+            { id: "total-rows", label: "Total rows", icon: Database, value: data.summary.totalRows.toLocaleString() },
+            { id: "keys", label: tab === "fx" ? "Currencies" : "Symbols", icon: Layers, value: data.summary.distinctKeys.toLocaleString() },
+            { id: "first-date", label: "First date", icon: CalendarDays, value: data.summary.firstDate ?? "—" },
+            { id: "last-date", label: "Last date", icon: CalendarDays, value: data.summary.lastDate ?? "—" },
+            { id: "today-rows", label: "Today rows", icon: CalendarCheck, value: data.summary.todayRows.toLocaleString() },
+            {
+              id: "stale-today", label: "Stale today", icon: AlertTriangle, value: data.summary.staleTodayRows.toLocaleString(),
+              tone: data.summary.staleTodayRows > 0 ? "amber" : "muted", valueClassName: data.summary.staleTodayRows > 0 ? "text-warning" : undefined,
+            },
+          ]}
+        />
       )}
 
       {/* Filters */}
@@ -504,14 +502,5 @@ export default function AdminPriceCachePage() {
         onConfirm={confirmBulkDelete}
       />
     </SectionPage>
-  );
-}
-
-function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className={`text-sm font-semibold tabular-nums ${warn ? "text-warning" : ""}`}>{value}</span>
-    </div>
   );
 }

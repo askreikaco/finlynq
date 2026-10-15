@@ -145,8 +145,7 @@ export function KeyMetrics({
           ? ("threeMonth" in c && c.threeMonth ? `${c.sub} · ${c.threeMonth}` : c.sub)
           : "threeMonth" in c ? c.threeMonth : undefined
       }
-      badgePct={trendOf(c.key)?.badgePct}
-      invertTone={c.key === "dti"}
+      delta={{ pct: trendOf(c.key)?.badgePct, invert: c.key === "dti" }}
       sparkData={trendOf(c.key)?.sparkData}
       sparkLabels={trendOf(c.key)?.sparkLabels}
       sparkColor={c.key === "savings" ? "#10b981" : "#f59e0b"}
