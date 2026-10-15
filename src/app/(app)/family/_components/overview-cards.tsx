@@ -174,8 +174,7 @@ export function HeadlineCards(d: HeadlineData) {
             label: expensesLabel,
             value: d.flows.expenses,
             currency,
-            invertTone: true,
-            ...(expensesCard ? cardProps(expensesCard) : {}),
+            ...(expensesCard ? cardProps(expensesCard, true) : {}),
             ...(expensesCard?.delta
               ? { note: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}` }
               : { sub: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}` }),

@@ -17,6 +17,7 @@
  * md+ keeps the table with a sticky header inside its own scroll box.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,6 @@ import {
   MetricGrid,
   SectionCard,
   type DetailItem,
-  type MetricItem,
 } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
@@ -294,17 +294,17 @@ export default function RealizedGainsPage() {
     [visibleRows],
   );
 
-  const summaryMetrics = useMemo<MetricItem[]>(() => {
-    const items: MetricItem[] = [];
+  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
+    const items: MetricCardProps[] = [];
     // Monthly history of the closed lots in view (their close dates). A tax-year load is complete for that year, so
     // its empty months are real zeros; earlier months were not loaded and give no comparison.
     const today = localDateISO().slice(0, 7);
     const through = taxYear && `${taxYear}-12` < today ? `${taxYear}-12` : today;
     const from = taxYear ? `${taxYear}-01` : undefined;
-    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricItem => {
+    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricCardProps => {
       const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
+        label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -318,7 +318,7 @@ export default function RealizedGainsPage() {
     }
     const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
+      icon: Receipt, label: "Closed lots", value: <span>{lots.value ?? visibleRows.length}</span>, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
       ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
     });
     return items;

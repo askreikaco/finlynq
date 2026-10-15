@@ -1,6 +1,7 @@
 "use client";
 
 
+import { MetricCard, type MetricCardProps } from "@/components/metric-card";
 import { Fragment, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useDevMode } from "@/hooks/use-dev-mode";
@@ -19,7 +20,6 @@ import { todayISO } from "@/lib/utils/date";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { REPORT_FILTER_KEYS } from "@/lib/toolbar/list-configs";
-import { MetricCard } from "@/components/metric-card";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod } from "@/lib/metrics/period";
 import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
@@ -38,7 +38,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CustomizeCardsSheet, MetricGrid, MetricItemCard, useCardLayout, usePageCustomize, type MetricItem } from "@/components/mobile";
+import { CustomizeCardsSheet, MetricGrid, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   GroupedStatementRows,
@@ -345,25 +345,25 @@ export default function ReportsPage() {
   const netCard = resolveFlow(netPts, "sum");
   const rateCard = resolveRatioCard({ num: netPts, den: incomePts, period: metricRange.period, caption });
   const reportNote = (v: string) => `${startDate} to ${endDate}: ${v}`;
-  const summaryMetrics: MetricItem[] = trendsData
+  const summaryMetrics: MetricCardProps[] = trendsData
     ? [
         {
-          id: "report-income", label: "Total Income", icon: TrendingUp, iconTone: "emerald", tone: "pos", sparkColor: "#10b981",
+          id: "report-income", label: "Total Income", icon: TrendingUp, tone: "emerald", valueTone: "pos", sparkColor: "#10b981",
           value: incomeCard.value ?? trendsData.totalIncome, currency: displayCurrency, ...cardProps(incomeCard),
           ...(incomeCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalIncome, displayCurrency)) } : {}),
         },
         {
-          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, iconTone: "rose", tone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e", invertTone: true,
-          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard),
+          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, tone: "rose", valueTone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e",
+          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard, true),
           ...(expenseCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalExpenses, displayCurrency)) } : {}),
         },
         {
-          id: "report-net-savings", label: "Net Savings", icon: DollarSign, iconTone: "indigo", tone: "auto", sparkColor: "#6366f1",
+          id: "report-net-savings", label: "Net Savings", icon: DollarSign, tone: "indigo", valueTone: "auto", sparkColor: "#6366f1",
           value: netCard.value ?? trendsData.netSavings, currency: displayCurrency, ...cardProps(netCard),
           ...(netCard.value != null ? { note: reportNote(formatCurrency(trendsData.netSavings, displayCurrency)) } : {}),
         },
         {
-          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, iconTone: "violet", sparkColor: "#8b5cf6",
+          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, tone: "violet", sparkColor: "#8b5cf6",
           value: <span>{rateCard.value ?? trendsData.savingsRate}%</span>,
           valueClassName: (rateCard.value ?? trendsData.savingsRate) >= 0 ? "text-pos" : "text-destructive",
           ...cardProps(rateCard),
@@ -389,7 +389,7 @@ export default function ReportsPage() {
       {trendsData && (
         <>
           <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
-            {summaryMetrics.map((m) => <MetricItemCard key={m.id ?? m.label} m={m} />)}
+            {summaryMetrics.map((m) => <MetricCard key={m.id ?? String(m.label)} {...m} />)}
           </div>
         </>
       )}
@@ -649,9 +649,9 @@ export default function ReportsPage() {
                   <MetricGrid
                     columns={3}
                     metrics={[
-                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto", sub: "Asset price moves, period change" },
-                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto", sub: "Currency translation, period change" },
-                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto", sub: "Valuation + FX" },
+                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, valueTone: "auto", sub: "Asset price moves, period change" },
+                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, valueTone: "auto", sub: "Currency translation, period change" },
+                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, valueTone: "auto", sub: "Valuation + FX" },
                     ]}
                   />
                   <Card>

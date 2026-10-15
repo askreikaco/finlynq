@@ -1,5 +1,6 @@
 "use client";
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -265,20 +266,20 @@ function LoansPageContent() {
   const debtCard = resolveCard({ ...common, points: loanSeries?.balance, mode: "last", pageValue: totalDebt, kind: "money" });
   const payCard = resolveCard({ ...common, points: loanSeries?.payment, mode: "last", pageValue: totalMonthly, kind: "money" });
   const activeCard = resolveCard({ ...common, points: loanSeries?.active, mode: "last", pageValue: activeLoans.length, kind: "count" });
-  const metrics: MetricItem[] = [
+  const metrics: MetricCardProps[] = [
     {
-      id: "total-debt", label: "Total debt", icon: Landmark, iconTone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
-      sub: debtCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: debtCard.badgePct, invertTone: true,
+      id: "total-debt", label: "Total debt", icon: Landmark, tone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
+      delta: { pct: debtCard.badgePct, text: debtCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
       sparkData: debtCard.sparkData, sparkLabels: debtCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
-      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, iconTone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
-      sub: payCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: payCard.badgePct, invertTone: true,
+      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, tone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
+      delta: { pct: payCard.badgePct, text: payCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
       sparkData: payCard.sparkData, sparkLabels: payCard.sparkLabels, sparkColor: "#f59e0b",
     },
     {
-      id: "active-loans", label: "Active loans", icon: ListChecks, iconTone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
-      sub: activeCard.delta ?? NO_HISTORY_CAPTION, badgePct: activeCard.badgePct, invertTone: true,
+      id: "active-loans", label: "Active loans", icon: ListChecks, tone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
+      delta: { pct: activeCard.badgePct, text: activeCard.delta ?? NO_HISTORY_CAPTION, invert: true },
       sparkData: activeCard.sparkData, sparkLabels: activeCard.sparkLabels, sparkColor: "#6366f1",
     },
   ];

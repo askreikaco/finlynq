@@ -113,14 +113,14 @@ describe("ListPage", () => {
     const { unmount } = render(
       <ListPage<Goal>
         {...baseProps()}
-        summary={(records) => [{ icon: Wallet, label: "Count", value: records.length }]}
+        summary={(records) => [{ icon: Wallet, label: "Count", value: <span>{records.length}</span> }]}
       />,
     );
     expect(screen.getByText("Count")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
     unmount();
 
-    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: 7 }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: <span>7</span> }]} />);
     expect(screen.getByText("Static")).toBeTruthy();
     expect(screen.getByText("7")).toBeTruthy();
   });
