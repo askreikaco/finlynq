@@ -405,7 +405,7 @@ export function DataSection() {
                 <span className="font-medium truncate">{importFileName}</span>
                 <Badge variant="outline" className="text-xs">Preview</Badge>
               </div>
-              <SectionCard label="Preview" icon={Eye} tone="muted" list className="px-3">
+              <SectionCard label="Preview" icon={Eye} tone="muted" list>
                 {importPreview.map((row, i) => (
                   <ListRow
                     key={i}

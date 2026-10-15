@@ -91,7 +91,7 @@ afterEach(() => { cleanup(); H.SIZE.v = "regular"; H.FETCHED.length = 0; H.SELEC
 describe("shared CategoryRow", () => {
   it("source: group header and category both render through CategoryRow; the old bespoke row/header are gone", () => {
     const src = read(PAGE);
-    expect(src).toContain('import { CategoryRow } from "./_components/category-row"');
+    expect(src).toContain('import { CategoryRow, type CategoryRowProps } from "./_components/category-row"');
     expect(src.match(/<CategoryRow\b/g)).toHaveLength(1); // one component, fed by rowFor for both kinds
     expect(src).toContain("rowFor({");
     expect(src).toMatch(/const groupRow[\s\S]*rowFor\(/);
@@ -145,10 +145,10 @@ describe("Edit mode and column alignment", () => {
 
   it("child rows indent the name only: group and category rows share the right-hand value columns", () => {
     const src = read(PAGE);
-    expect(src).toContain("PROGRESS_ROW_LINK"); // the shared tappable row (py-3 pl-4 pr-11 = row padding + chevron slot)
-    expect(read("src/components/mobile/progress-row.tsx")).toContain("py-3 pl-4 pr-11");
-    expect(src).not.toMatch(/PROGRESS_ROW_LINK\} pl-8/);
-    expect(read("src/components/mobile/progress-row.tsx")).toContain('indent && "pl-5"');
+    // single rows reserve the chevron slot where the group's toggle button sits, so the value columns line up
+    expect(src).toContain('chevron: "reserve"');
+    expect(src).not.toContain("embedded: true"); // the group row is a selectable ListRow now, not inside a trigger
+    expect(read("src/components/mobile/list-row.tsx")).toContain('indent && "pl-5"');
   });
 });
 

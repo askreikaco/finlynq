@@ -282,7 +282,7 @@ export default function AdminInboxPage() {
             <p className="p-8 text-sm text-muted-foreground text-center">No {category} messages.</p>
           )}
           {rows && rows.length > 0 && (
-            <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {rows.map((r) => (
                 <li key={r.id}>
                   <ListRow

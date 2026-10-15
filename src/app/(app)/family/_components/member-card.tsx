@@ -198,7 +198,7 @@ export function MemberCard({
                 {s.loans.loans.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{NONE}</p>
                 ) : (
-                  <ul className="flex flex-col">
+                  <ul className="-mx-3 @[11rem]:-mx-5 flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {s.loans.loans.map((l) => (
                       <li key={l.ref}>
                         <ListRow

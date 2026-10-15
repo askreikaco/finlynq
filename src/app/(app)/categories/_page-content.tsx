@@ -17,7 +17,6 @@
 import type { MetricCardProps } from "@/components/metric-card";
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -41,9 +40,9 @@ import { CategoryGroup } from "./_components/category-group";
 import { groupSelId, isGroupSelId } from "@/lib/categories/group-key";
 import { withMode, withSel } from "@/lib/list-detail/selection";
 import { sizeClassFor } from "@/components/ui/size-class";
-import { CategoryRow } from "./_components/category-row";
+import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PROGRESS_ROW_LINK, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
+  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
   type ListDetailPaneApi, type OverflowAction,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -430,7 +429,7 @@ function CategoriesOverview() {
     }
 
     /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
+    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean; row?: CategoryRowProps["row"] }) => (
       <CategoryRow
         label={r.label}
         dot={r.dot}
@@ -444,51 +443,46 @@ function CategoriesOverview() {
         count={r.count}
         badge={r.badge}
         indent={r.indent}
+        row={r.row}
       />
     );
 
-    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false, row?: CategoryRowProps["row"]) =>
       rowFor({
-        indent,
+        indent, row,
         label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
         badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
       });
 
-    const groupRow = (row: OverviewRow) =>
-      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+    const groupRow = (row: OverviewRow, rowProps?: CategoryRowProps["row"]) =>
+      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key), row: rowProps });
 
     /**
      * A selectable row (category or group): a link to its detail route that, at wide, selects it into the pane instead;
      * in Edit list mode a button that opens the shared form prefilled. Never toggles a group (only the chevron does).
+     * `chevron: "reserve"` keeps the slot where the group's toggle button sits, so value columns line up.
      */
-    function selectableRow(id: string | number, name: string, body: ReactNode) {
-      const idStr = String(id);
-      const selected = detail.selectedId === idStr;
-      return editMode ? (
-        <button type="button" data-edit-row="" aria-label={`Edit: ${name}`} onClick={() => openEdit(id)} className={`${PROGRESS_ROW_LINK} bg-primary/5 text-left`}>
-          {body}
-        </button>
-      ) : (
-        <Link
-          href={`/categories/${id}`}
-          className={`${PROGRESS_ROW_LINK}${selected ? " bg-muted" : ""}`}
-          {...(selected ? { "data-selected": "true", "aria-current": "true" as const } : {})}
-          onClick={(e) => {
-            if (!detail.split) return;
-            e.preventDefault();
-            detail.select(id); // wide: the row selects into the pane; below wide the link opens the detail route
-          }}
-        >
-          {body}
-        </Link>
-      );
+    function selectableRow(id: string | number, name: string, build: (row: CategoryRowProps["row"]) => ReactNode) {
+      const selected = detail.selectedId === String(id);
+      return editMode
+        ? build({ onPress: () => openEdit(id), "aria-label": `Edit: ${name}`, "data-edit-row": "", className: "bg-primary/5", chevron: "reserve" })
+        : build({
+            href: `/categories/${id}`,
+            selected,
+            chevron: "reserve",
+            onPress: (e) => {
+              if (!detail.split) return;
+              e.preventDefault();
+              detail.select(id); // wide: the row selects into the pane; below wide the link opens the detail route
+            },
+          });
     }
 
     const categoryLink = (c: OverviewCategory, group: string, dot: string, indent = false) =>
-      selectableRow(c.id, subLabel(c.name, group), categoryRow(c, group, dot, indent));
+      selectableRow(c.id, subLabel(c.name, group), (rp) => categoryRow(c, group, dot, indent, rp));
 
     const groupLink = (row: OverviewRow) =>
-      selectableRow(groupSelId(t, row.label), row.label, groupRow(row));
+      selectableRow(groupSelId(t, row.label), row.label, (rp) => groupRow(row, rp));
 
     const summary = (
       <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">

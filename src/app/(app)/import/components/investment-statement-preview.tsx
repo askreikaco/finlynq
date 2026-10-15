@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -191,31 +192,17 @@ export function InvestmentStatementPreview({
         <div className="overflow-auto flex-1 rounded-lg border">
           <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {rows.slice(0, 100).map((row, i) => (
-              <div
+              <ListRow
                 key={i}
-                className="flex items-center gap-3 px-3 py-2 text-xs"
-              >
-                <span className="font-mono text-muted-foreground w-20 shrink-0">
-                  {row.date}
-                </span>
-                <Badge
-                  variant="outline"
-                  className="shrink-0 text-xs px-1.5 max-w-[12ch] truncate"
-                >
-                  {row.portfolioHolding ?? "—"}
-                </Badge>
-                <span className="flex-1 truncate">{row.payee}</span>
-                {row.quantity != null && row.quantity !== 0 && (
-                  <span className="font-mono text-xs text-muted-foreground shrink-0">
-                    qty {row.quantity}
+                size="dense"
+                title={row.payee}
+                subtitle={[row.date, row.portfolioHolding ?? "—", row.quantity != null && row.quantity !== 0 ? `qty ${row.quantity}` : null].filter(Boolean).join(" · ")}
+                value={
+                  <span className={`font-mono ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
+                    {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                   </span>
-                )}
-                <span
-                  className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}
-                >
-                  {formatCurrency(row.amount, row.currency ?? displayCurrency)}
-                </span>
-              </div>
+                }
+              />
             ))}
             {rows.length > 100 && (
               <div className="text-center text-xs text-muted-foreground py-3">

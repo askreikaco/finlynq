@@ -87,15 +87,16 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 | `mobile/page-header.tsx` | PageHeader, OverflowMenu, HEADER_SECONDARY (alias HEADER_DESKTOP_ONLY) | One header for all sizes (see 3d); secondary actions in "..." menu below regular |
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
-| `mobile/list-row.tsx` | `:41` ListRow, `:13` ListRowProps | Native list row, min-h 56px (`:37-39` doc) |
+| `mobile/list-row.tsx` | ListRow, ListRowProps | THE row of every list. Optional parts by prop: leading (icon tile, initials, status dot), title, subtitle, value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, href / onPress / select, selected, size (regular 56px / dense 44px), shape (square / rounded). Gallery: /dev/gallery#list-row |
 | `mobile/section-card.tsx` | `:6` SectionCard | Card with optional uppercase label (`:5` doc) |
 | `mobile/section-label.tsx` | `:5` SectionLabel | 12/700 uppercase muted label (`:4` doc) |
 | `mobile/stat-tile.tsx` | `:6` StatTile | Compact stat replacing tall icon cards below md (`:5` doc) |
 | `mobile/amount.tsx` | `:34` Amount, `:17` amountToneClass | Money amount, tabular, sign color (`:16`, `:25-26` doc) |
 | `mobile/metric-grid.tsx` | `:14` MetricGrid | Grid of metrics |
 | `mobile/net-worth-hero.tsx` | `:10` NetWorthHero | Hero total block |
-| `mobile/account-row.tsx` | `:18` AccountRow | Account list row |
-| `mobile/holding-row.tsx` | `:10` HoldingRow | Holding list row |
+| `mobile/account-row.tsx` | AccountRow | Thin wrapper: account data to ListRow props |
+| `mobile/holding-row.tsx` | HoldingRow | Thin wrapper: holding data to ListRow props |
+| `mobile/tx-row.tsx` | TxRow | Thin wrapper: transaction / subscription / loan payment to ListRow props |
 | `mobile/detail-sheet.tsx` | `:6` DetailItem, `:15` DetailSheet | Sheet listing every field a row omits |
 | `mobile/customize-dashboard-sheet.tsx` | `:11` DashboardCard, `:23` CustomizeDashboardSheet | Dashboard card picker sheet |
 

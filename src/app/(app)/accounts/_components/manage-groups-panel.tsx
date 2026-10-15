@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
 import {
   OTHER_GROUP,
   orderGroups,
@@ -216,55 +216,59 @@ export function ManageGroupsPanel({
     }
 
     return (
-      <li key={g} className="flex min-h-row items-center gap-2 pl-4 pr-1">
-        <span className="min-w-0 flex-1 truncate py-2.5 text-base regular:text-sm">{g}</span>
-        {!isOther && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 text-muted-foreground regular:pointer-fine:size-8"
+      <li key={g}>
+        <ListRow
+          title={g}
+          actions={
+            !isOther ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 text-muted-foreground regular:pointer-fine:size-8"
+                    disabled={busy}
+                    aria-label={`Actions for ${g}`}
+                    title="Group actions"
+                  />
+                }
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-48">
+                <DropdownMenuItem
+                  disabled={busy || movableIndex <= 0}
+                  onClick={() => move(type, g, -1)}
+                >
+                  <ArrowUp className="size-4" aria-hidden />
+                  Move up
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={busy || movableIndex < 0 || movableIndex >= movable.length - 1}
+                  onClick={() => move(type, g, 1)}
+                >
+                  <ArrowDown className="size-4" aria-hidden />
+                  Move down
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={busy} onClick={() => startRename(type, g)}>
+                  <Pencil className="size-4" aria-hidden />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
                   disabled={busy}
-                  aria-label={`Actions for ${g}`}
-                  title="Group actions"
-                />
-              }
-            >
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-auto min-w-48">
-              <DropdownMenuItem
-                disabled={busy || movableIndex <= 0}
-                onClick={() => move(type, g, -1)}
-              >
-                <ArrowUp className="size-4" aria-hidden />
-                Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={busy || movableIndex < 0 || movableIndex >= movable.length - 1}
-                onClick={() => move(type, g, 1)}
-              >
-                <ArrowDown className="size-4" aria-hidden />
-                Move down
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={busy} onClick={() => startRename(type, g)}>
-                <Pencil className="size-4" aria-hidden />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={busy}
-                onClick={() => setMergeTarget({ type, name: g })}
-              >
-                <Merge className="size-4" aria-hidden />
-                Merge into Other
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+                  onClick={() => setMergeTarget({ type, name: g })}
+                >
+                  <Merge className="size-4" aria-hidden />
+                  Merge into Other
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            ) : undefined
+          }
+        />
       </li>
     );
   }

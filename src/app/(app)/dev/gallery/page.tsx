@@ -10,6 +10,9 @@ import { SectionCard } from "@/components/mobile/section-card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
+import { AccountRow } from "@/components/mobile/account-row";
+import { HoldingRow } from "@/components/mobile/holding-row";
+import { TxRow } from "@/components/mobile/tx-row";
 import { Amount } from "@/components/mobile/amount";
 import { InsetRow } from "@/components/mobile/inset-row";
 import { PillButton } from "@/components/mobile/pill-button";
@@ -42,7 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DollarSign, Inbox, Pencil, PiggyBank, Plus, TrendingUp, Wallet } from "lucide-react";
+import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 
 const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
@@ -286,7 +289,7 @@ function GalleryContent() {
               </Item>
             </div>
             <Item name="list, label inside (ListRow)" file="list">
-              <SectionCard label="Accounts" list className="px-4" icon={Wallet} tone="indigo">
+              <SectionCard label="Accounts" list icon={Wallet} tone="indigo">
                 <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
                 <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
                 <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
@@ -308,7 +311,7 @@ function GalleryContent() {
               </Item>
             </div>
             <Item name="CARD_ROW_GRID" file="regular: 2 columns, wide: 3">
-              <SectionCard label="CARD_ROW_GRID" list className={cn("px-4", CARD_ROW_GRID)}>
+              <SectionCard label="CARD_ROW_GRID" list className={CARD_ROW_GRID}>
                 {["A", "B", "C", "D"].map((n) => (
                   <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
                 ))}
@@ -324,6 +327,103 @@ function GalleryContent() {
                 <PillButton>Income</PillButton>
               </div>
             </Item>
+          </Group>
+
+          <Group id="list-row" title="ListRow" file="mobile/list-row.tsx" span>
+            <p className="text-xs text-muted-foreground">
+              One row for every list. Each part shows when its prop is given: leading (icon tile, initials, status dot), title, subtitle,
+              value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, link / button,
+              selected, size, shape. AccountRow, HoldingRow and TxRow only map data to these props.
+            </p>
+            <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2">
+              <SectionCard label="Leading" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <ListRow icon={Wallet} title="Icon tile" subtitle="icon" />
+                <ListRow icon={ShoppingCart} tile="neg" title="Tile tone neg" subtitle="tile=&quot;neg&quot;" />
+                <ListRow initials="CC" title="Initials" subtitle="initials (avatar)" />
+                <ListRow dot="var(--pos)" title="Status dot" subtitle="dot=var(--pos)" />
+                <ListRow title="No leading" subtitle="title and subtitle only" />
+              </SectionCard>
+              <SectionCard label="Trailing" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <ListRow icon={Wallet} title="Value" value={<Amount value={2500} />} />
+                <ListRow icon={PiggyBank} title="Value + secondary" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" />
+                <ListRow icon={Bell} title="Quiet value" value="Pro plan" quietValue />
+                <ListRow icon={Bell} title="Unread" unread={3} href="/dev/gallery" />
+                <ListRow title="Count and badge" count={4} badge={<Badge variant="outline" className="text-xs">new</Badge>} />
+                <ListRow icon={Settings} title="Trailing node" trailing={<Switch checked={on} onCheckedChange={setOn} aria-label="Demo switch" />} />
+              </SectionCard>
+              <SectionCard label="Behaviour" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <ListRow icon={Wallet} title="Link row (href)" subtitle="chevron by default" href="/dev/gallery" />
+                <ListRow icon={PiggyBank} title="Button row (onPress)" subtitle="opens the sheet" onPress={() => setDetail(true)} />
+                <ListRow icon={Wallet} title="Selected (split view)" subtitle="selected" selected onPress={() => {}} />
+                <ListRow icon={Wallet} title="Disabled" disabled onPress={() => {}} />
+                <ListRow icon={Wallet} title="Dimmed (archived)" dimmed href="/dev/gallery" chevron={false} />
+                <ListRow icon={Plus} tone="accent" title="Accent action" onPress={() => {}} chevron={false} />
+                <ListRow icon={LogOut} tone="destructive" title="Destructive action" onPress={() => {}} />
+                <ListRow icon={Trash2} title="Row with actions" subtitle="buttons sit outside the link" actions={<Button size="sm" variant="outline">Delete</Button>} />
+                <ListRow title="Select" subtitle="click toggles the checkbox" select={{ checked: on, onToggle: () => setOn((v) => !v), label: "Select demo row" }} />
+              </SectionCard>
+              <SectionCard label="Size and shape" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <ListRow icon={Wallet} title="Regular (56px, 44px compact)" value={<Amount value={100} />} />
+                <ListRow size="dense" icon={Wallet} title="Dense (44px)" value={<Amount value={100} />} />
+                <div className="space-y-2 p-3">
+                  <ListRow shape="rounded" icon={Wallet} title="Rounded" className="bg-muted/40" value={<Amount value={100} />} />
+                  <ListRow icon={Wallet} title="Square (default)" className="bg-muted/40" value={<Amount value={100} />} />
+                </div>
+              </SectionCard>
+              <SectionCard label="Chart, progress, delta" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <ListRow
+                  dot="var(--primary)"
+                  title="Category row"
+                  trend={SPARK}
+                  trendLabels={SPARK_LABELS}
+                  trendColor="#6366f1"
+                  currency="EUR"
+                  value="$400.00"
+                  delta="+$50.00 (+14%)"
+                  deltaTone="text-destructive"
+                  progress={{ pct: 80, tone: "warning", label: "Left $100.00", aria: "Budget used" }}
+                  count={3}
+                  href="/dev/gallery"
+                />
+                <ListRow
+                  dot="var(--primary)"
+                  title="Goal row"
+                  subtitle="Due 2026-12-31"
+                  trend={null}
+                  value="$2,000.00"
+                  delta="of $5,000.00"
+                  progress={{ pct: 40, tone: "warning", label: "40%", aria: "Goal saved" }}
+                  chevron={false}
+                  onPress={() => {}}
+                />
+                <ListRow
+                  dot="var(--pos)"
+                  title="Loan row (paid off)"
+                  subtitle="4.5% · $350.00 monthly"
+                  strike
+                  trend={SPARK}
+                  trendColor="#f43f5e"
+                  value="$0.00"
+                  delta="Paid off"
+                  progress={{ pct: 100, tone: "pos", label: "100%", aria: "Loan paid" }}
+                  chevron={false}
+                  onPress={() => {}}
+                />
+              </SectionCard>
+              <SectionCard label="Domain wrappers" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <AccountRow accountId={1} accountName="Checking" alias="TCB" currency="EUR" balance={2500} displayCurrency="EUR" type="asset" />
+                <AccountRow accountId={2} accountName="Credit card" currency="GBP" balance={-420.5} convertedBalance={-495} displayCurrency="EUR" type="liability" />
+                <HoldingRow name="AAPL" marketValue={5000} unrealizedPct={5.5} currency="EUR" onPress={() => setDetail(true)} />
+                <TxRow icon={ShoppingCart} tile="muted" title="Groceries" subtitle="Food · Checking" amount={-54.3} currency="EUR" />
+                <TxRow icon={Repeat} tile="warn" title="Netflix" subtitle="monthly · next Nov 1" amount={-15.99} currency="EUR" meta="per month" onPress={() => {}} />
+                <TxRow icon={CalendarClock} tile="pos" title="Salary" subtitle="Income" amount={3200} currency="EUR" amountTone="pos" showSign />
+              </SectionCard>
+              <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("[&>*:not(:last-child)]:shadow-[var(--list-divider)] ", CARD_ROW_GRID)}>
+                {["A", "B", "C", "D"].map((n) => (
+                  <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
+                ))}
+              </SectionCard>
+            </div>
           </Group>
 
           <Group id="shadow" title="Card shadow token" file="ui/card.tsx · .surface-card · --shadow-card">

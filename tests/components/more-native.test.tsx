@@ -95,9 +95,9 @@ describe("More account card", () => {
     expect(add).toHaveAttribute("data-variant", "accent");
     expect(add.querySelector(".text-primary")).not.toBeNull();
     const manage = within(card).getByRole("link", { name: /manage accounts/i });
-    const all = Array.from(card.querySelectorAll("[data-slot='account-card'], [data-slot='inset-row']"));
+    const all = Array.from(card.querySelectorAll("[data-slot='list-row']"));
     expect(all.indexOf(add)).toBeLessThan(all.indexOf(manage));
-    expect(all.indexOf(add)).toBeGreaterThan(all.indexOf(card.querySelector("[data-slot='account-card']")!));
+    expect(all.indexOf(add)).toBeGreaterThan(all.indexOf(within(card).getAllByTestId("account-row")[1]));
   });
 });
 
@@ -128,7 +128,7 @@ describe("More section headers and groups", () => {
     const rows = screen.getAllByTestId("more-row");
     expect(rows.length).toBeGreaterThan(5);
     for (const r of rows) {
-      expect(r).toHaveAttribute("data-slot", "inset-row");
+      expect(r).toHaveAttribute("data-slot", "list-row");
       expect(r.closest("[data-slot='section-card-body']")).not.toBeNull();
       expect(r.getAttribute("href")).toMatch(/^\//);
     }

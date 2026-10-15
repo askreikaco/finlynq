@@ -388,8 +388,8 @@ function SubscriptionsPageContent() {
                 <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
                   {/* Detected from transactions */}
                   {suggestions.length > 0 && (
-                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full px-3">
-                      <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
+                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
+                      <p className="px-4 pt-3 pb-1 text-sm text-muted-foreground">
                         {suggestions.length === 1
                           ? "1 payment repeats on a schedule but isn't tracked yet."
                           : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
@@ -406,7 +406,7 @@ function SubscriptionsPageContent() {
                                 subtitle={`${formatCurrency(Math.abs(r.avgAmount), r.currency)} / ${FREQUENCY_SUFFIX[freq]} · seen ${r.count}× · last ${formatDate(r.lastDate)}`}
                                 chevron={false}
                               />
-                              <div className="flex items-center gap-1.5 pb-3 pl-12">
+                              <div className="flex items-center gap-1.5 pb-3 pl-16">
                                 <Button variant="ghost" size="sm" onClick={() => reviewDetected(r)}>Review</Button>
                                 <Button size="sm" onClick={() => trackDetected(r)} disabled={busyKey !== null}>
                                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -418,7 +418,7 @@ function SubscriptionsPageContent() {
                         })}
                       </div>
                       {suggestions.length > SUGGESTIONS_PREVIEW && (
-                        <Button variant="link" size="sm" className="px-1 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
+                        <Button variant="link" size="sm" className="px-4 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
                           {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
                         </Button>
                       )}
@@ -437,7 +437,7 @@ function SubscriptionsPageContent() {
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full px-3 ${CARD_ROW_GRID}`}>
+                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}
@@ -549,12 +549,12 @@ function SubscriptionRow({
         onPress={onOpen}
       />
       {due && (
-        <div className="flex items-center gap-1.5 pb-3 pl-12">
+        <div className="flex items-center gap-1.5 pb-3 pl-16">
           <DueActions sub={sub} busy={busy} onPost={onPost} onSkip={onSkip} />
         </div>
       )}
       {sub.cancelReminderDate && (
-        <p className="flex items-center gap-1 pb-2 pl-12 text-xs text-warning">
+        <p className="flex items-center gap-1 pb-2 pl-16 text-xs text-warning">
           <Bell className="h-3 w-3" /> Cancel reminder {formatDate(sub.cancelReminderDate)}
         </p>
       )}

@@ -16,7 +16,8 @@ import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
-import { InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-row";
+import { ThemePicker, type ThemeChoice } from "@/components/mobile/inset-row";
+import { ListRow } from "@/components/mobile/list-row";
 import { SectionCard } from "@/components/mobile/section-card";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
@@ -239,13 +240,14 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
             data-testid={`more-group-${g.id}`}
           >
             {g.rows.map((r) => (
-              <InsetRow
+              <ListRow
                 key={r.id}
                 href={r.href}
-                label={r.label}
+                title={r.label}
                 icon={r.icon}
-                badge={badges[r.href] ?? 0}
-                current={isCurrentRoute(columnCurrent, r.href)}
+                tile="primary"
+                unread={badges[r.href] ?? 0}
+                selected={isCurrentRoute(columnCurrent, r.href)}
                 data-testid="more-row"
               />
             ))}
@@ -257,7 +259,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
         </SectionCard>
 
         <SectionCard list data-testid="more-group-session">
-          <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
+          <ListRow tone="destructive" icon={LogOut} title="Log out" onPress={signOut} data-testid="more-signout" />
         </SectionCard>
       </div>
     </div>

@@ -166,7 +166,6 @@ export default function AdminEmailInboxPage() {
         icon={Users}
         tone="indigo"
         list
-        className="px-3"
       >
         {data?.byUser.map((g) => (
           <ListRow
@@ -254,7 +253,7 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" list className="px-3">
+      <SectionCard label="Rows" icon={List} tone="muted" list>
         {loading && !data && (
           <p data-keep="status" className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}
@@ -290,7 +289,7 @@ export default function AdminEmailInboxPage() {
               }
               secondary={fmt(r.receivedAt)}
             />
-            <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 pb-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-2 text-xs text-muted-foreground">
               <span>Source {r.sourceKind}</span>
               <span>Confidence {r.parseConfidence ?? "—"}</span>
               <span>Tier {r.encryptionTier ?? "service"}</span>

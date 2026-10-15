@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, KeyRound, Layers, Mail, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { Activity, KeyRound, Layers, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -503,7 +503,7 @@ export default function AdminPage() {
                   />
                 </>
               }
-              icon={MessageSquare} tone="violet" list className="px-3">
+              icon={MessageSquare} tone="violet" list>
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -642,7 +642,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <SectionCard list className="px-3">
+              <SectionCard list>
                 {users.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
                 ) : (
@@ -688,62 +688,14 @@ export default function AdminPage() {
               <Card>
                 <CardContent className="p-6">
                   {stats && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Registrations (last 30 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.registrationsLast30Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Email-verified users
-                        </span>
-                        <span className="font-bold flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          {stats.verifiedUsers} / {stats.totalUsers}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Total logins
-                        </span>
-                        <span className="font-bold">
-                          {stats.totalLogins.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Active users (last 7 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.activeUsersLast7Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Active users (last 30 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.activeUsersLast30Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Total accounts created
-                        </span>
-                        <span className="font-bold">{stats.totalAccounts}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-3">
-                        <span className="text-muted-foreground">
-                          Total transactions
-                        </span>
-                        <span className="font-bold">
-                          {stats.totalTransactions.toLocaleString()}
-                        </span>
-                      </div>
+                    <div className="-mx-6 -my-3 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                      <ListRow title="Registrations (last 30 days)" value={stats.registrationsLast30Days} />
+                      <ListRow title="Email-verified users" value={`${stats.verifiedUsers} / ${stats.totalUsers}`} />
+                      <ListRow title="Total logins" value={stats.totalLogins.toLocaleString()} />
+                      <ListRow title="Active users (last 7 days)" value={stats.activeUsersLast7Days} />
+                      <ListRow title="Active users (last 30 days)" value={stats.activeUsersLast30Days} />
+                      <ListRow title="Total accounts created" value={stats.totalAccounts} />
+                      <ListRow title="Total transactions" value={stats.totalTransactions.toLocaleString()} />
                     </div>
                   )}
                 </CardContent>
@@ -757,7 +709,7 @@ export default function AdminPage() {
                       <InfoTip label="About recent logins" text="Last 15 users who signed in, most recent first." />
                     </h2>
                   </div>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(stats?.recentLogins ?? []).map((row) => (
                       <ListRow
                         key={row.id}
@@ -787,7 +739,7 @@ export default function AdminPage() {
                       />
                     </h2>
                   </div>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {grants.map((grant) => {
                       // FINLYNQ-166's pure dormancy predicate — reused here for
                       // last_used_at (null OR >DORMANT_DAYS ago = dormant).

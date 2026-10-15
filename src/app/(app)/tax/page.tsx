@@ -85,9 +85,9 @@ function TaxPageContent() {
       />
 
       <div data-slot="tax-cards" className={TW.grid3}>
-      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false} className="px-3">
+      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false}>
         <div className="space-y-3 pt-3">
-          <div className="px-1">
+          <div className="px-4">
             <Progress value={tfsaPct} className="h-2.5" />
           </div>
           <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
@@ -142,7 +142,7 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* Marginal Tax Rates */}
-      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" list className="px-3">
+      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" list>
         {Object.entries(data.marginalRates).map(([key, rates]) => (
           <ListRow
             key={key}
@@ -155,7 +155,7 @@ function TaxPageContent() {
 
       {/* Asset Location Advice: tap a holding for the reason */}
       {data.assetLocationAdvice.length > 0 && (
-        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" list className="px-3">
+        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" list>
           {data.assetLocationAdvice.map((a, i) => (
             <ListRow
               key={`${a.symbol}-${i}`}

@@ -179,7 +179,7 @@ export function DbPane({
           return (
             <div
               key={r.id}
-              className={`px-2 ${dimmed} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
+              className={`${dimmed} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
               onClick={
                 clickable
                   ? (e) => {

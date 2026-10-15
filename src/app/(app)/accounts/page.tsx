@@ -6,8 +6,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { SectionCard } from "@/components/mobile/section-card";
-import { Badge } from "@/components/ui/badge";
-import { InvisibleMark } from "@/components/invisible-mark";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
@@ -30,7 +28,7 @@ import {
   Plus,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, AccountRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { AccountFormPanel } from "./_components/account-form-panel";
 import { AccountDetail } from "./_components/account-detail";
 import { SectionPage } from "@/components/templates/section-page";
@@ -242,7 +240,7 @@ function AccountsPage() {
     </span>
   );
 
-  const renderSection = (title: string, list: AccountBalance[]) => (
+  const renderSection = (title: string, list: AccountBalance[], type: "asset" | "liability") => (
     <SectionCard
       label={title}
       labelPlacement="outside"
@@ -263,28 +261,22 @@ function AccountsPage() {
           >
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
-              <ListRow
+              <AccountRow
                 key={a.accountId}
-                {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
+                accountId={a.accountId}
+                accountName={a.accountName}
+                alias={a.alias}
+                currency={a.currency}
+                balance={a.balance}
+                convertedBalance={a.convertedBalance}
+                displayCurrency={displayCurrency}
+                archived={a.archived}
+                type={type}
+                group={a.accountGroup}
+                isInvestment={a.isInvestment}
+                invisible={a.invisible}
                 selected={detail.selectedId === String(a.accountId)}
-                className={a.archived ? "px-4 opacity-60" : "px-4"}
-                title={
-                  <span className="inline-flex max-w-full items-center gap-2 align-middle">
-                    <span className="truncate">
-                      {a.accountName}
-                      {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
-                    </span>
-                    <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
-                    {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
-                    {a.invisible && <InvisibleMark />}
-                  </span>
-                }
-                value={<Amount value={a.balance} currency={a.currency} size="md" tone={a.balance < 0 ? "neg" : "none"} />}
-                secondary={
-                  a.convertedBalance != null && a.currency.toUpperCase() !== displayCurrency.toUpperCase()
-                    ? formatCurrency(a.convertedBalance, displayCurrency)
-                    : undefined
-                }
+                onPress={detail.split ? () => detail.select(a.accountId) : undefined}
               />
             ))}
             </div>
@@ -447,8 +439,8 @@ function AccountsPage() {
               />
             </div>
           ),
-          assets: renderSection("Assets", assets),
-          liabilities: renderSection("Liabilities", liabilities),
+          assets: renderSection("Assets", assets, "asset"),
+          liabilities: renderSection("Liabilities", liabilities, "liability"),
         };
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {

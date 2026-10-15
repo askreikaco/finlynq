@@ -28,7 +28,7 @@ import { formatPercent } from "@/lib/locale";
 import { LazyView } from "@/components/ui/lazy-view";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CardLabel, CARD_PAD_T, CARD_PAD_X, METRIC_TONES, type MetricTone } from "@/components/mobile/card-label";
-import { ProgressBar, type ProgressTone } from "@/components/mobile/progress-row";
+import { ProgressBar, type ProgressTone } from "@/components/mobile/list-row";
 import { InfoTip } from "@/components/ui/info-tip";
 import { formatCurrency } from "@/lib/currency";
 import type { AmountTone } from "@/components/mobile/amount";

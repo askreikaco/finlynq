@@ -101,6 +101,7 @@ function ConfigSection({ title, description, children }: SectionProps) {
       }
       icon={Server}
       tone="indigo"
+      padded={false}
     >
       <ul className="flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</ul>
     </SectionCard>

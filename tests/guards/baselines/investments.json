@@ -11,7 +11,6 @@
       "sab-pad": 1
     },
     "src/app/(app)/settings/investments/_components/manage-prices-dialog.tsx": {
-      "min-h": 1,
       "sab-pad": 1
     },
     "src/app/(app)/settings/investments/page.tsx": {

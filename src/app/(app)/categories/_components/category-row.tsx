@@ -5,11 +5,11 @@
  * Colour dot, label, amount, change vs last month (value and %), mini chart and the budget progress bar
  * (remaining budget). A group passes the rollup of its children, so both look and read the same.
  *
- * Only inline elements (spans), so it can sit inside an accordion trigger (button) or a link.
+ * A thin mapping of category data to ListRow props; `embedded` renders it inside an accordion trigger.
  */
 
 import type { ReactNode } from "react";
-import { ProgressRow } from "@/components/mobile/progress-row";
+import { ListRow, type ListRowProps } from "@/components/mobile/list-row";
 import { formatCurrency } from "@/lib/currency";
 
 export interface CategoryRowProps {
@@ -34,6 +34,8 @@ export interface CategoryRowProps {
   badge?: ReactNode;
   /** Indent the name only (a category inside a group); the value columns stay aligned with the group row. */
   indent?: boolean;
+  /** Interaction (link / button / selected / embedded in an accordion trigger), straight to ListRow. */
+  row?: Partial<Pick<ListRowProps, "href" | "onPress" | "selected" | "embedded" | "className" | "aria-label" | "data-edit-row" | "chevron">>;
 }
 
 /** Change vs last month: signed value and % (null % when last month was 0 or unknown). */
@@ -53,7 +55,7 @@ function signed(n: number, cur: string): string {
   return `${n > 0 ? "+" : n < 0 ? "-" : ""}${formatCurrency(Math.abs(n), cur)}`;
 }
 
-export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIncome, sparkLabels, count, badge, indent }: CategoryRowProps) {
+export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIncome, sparkLabels, count, badge, indent, row }: CategoryRowProps) {
   const delta = monthDelta(amount, prev);
   const progress = budgetProgress(amount, budget);
   // Up is bad for spending, good for income.
@@ -61,19 +63,22 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
   const barTone = !progress ? undefined : progress.ratio > 1 ? "destructive" : progress.ratio >= 0.75 ? "warning" : "primary";
   const usedPct = progress ? Math.round(Number.isFinite(progress.ratio) ? progress.ratio * 100 : 999) : null;
   return (
-    <ProgressRow
+    <ListRow
+      {...row}
       slot="category"
-      label={label}
+      title={label}
       dot={dot}
       value={formatCurrency(amount, cur)}
       trend={trend}
-      sparkLabels={sparkLabels}
-      cur={cur}
-      pct={usedPct}
-      barTone={barTone}
-      progressAria="Budget used"
-      progressLabel={progress ? `${progress.left < 0 ? "Over" : "Left"} ${formatCurrency(Math.abs(progress.left), cur)}` : "No budget"}
-      progressLabelClassName={progress && progress.left < 0 ? "text-destructive" : ""}
+      trendLabels={sparkLabels}
+      currency={cur}
+      progress={{
+        pct: usedPct,
+        tone: barTone,
+        label: progress ? `${progress.left < 0 ? "Over" : "Left"} ${formatCurrency(Math.abs(progress.left), cur)}` : "No budget",
+        labelClassName: progress && progress.left < 0 ? "text-destructive" : "",
+        aria: "Budget used",
+      }}
       delta={
         delta ? (
           <>

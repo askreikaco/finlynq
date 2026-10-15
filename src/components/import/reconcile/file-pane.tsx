@@ -177,7 +177,7 @@ export function FilePane({
             return (
               <div
                 key={r.id}
-                className={`px-2 ${dimmed} ${importedClass} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
+                className={`${dimmed} ${importedClass} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
                 onClick={
                   clickable
                     ? (e) => {
@@ -194,47 +194,48 @@ export function FilePane({
                     : undefined
                 }
               >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(r.id)}
-                    onChange={() => onToggleSelect(r.id)}
-                    disabled={isImported}
-                    title={isImported ? "Already loaded into the bank ledger" : undefined}
-                    aria-label={`Select row ${r.rowIndex}`}
-                    className="shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <ListRow
-                      title={
-                        <>
-                          {r.payee || <span className="text-muted-foreground">—</span>}
-                          {r.category && <span className="text-muted-foreground"> · {r.category}</span>}
-                        </>
-                      }
-                      subtitle={`${r.date} · ${typeLabel}`}
-                      value={amountCell}
-                      secondary={
-                        hasAnyAnchor && showBalance && dayBalance !== undefined
-                          ? formatCurrency(dayBalance, r.currency || "CAD")
-                          : undefined
-                      }
+                <ListRow
+                  leading={
+                    <input
+                      type="checkbox"
+                      checked={selected.has(r.id)}
+                      onChange={() => onToggleSelect(r.id)}
+                      disabled={isImported}
+                      title={isImported ? "Already loaded into the bank ledger" : undefined}
+                      aria-label={`Select row ${r.rowIndex}`}
+                      className="shrink-0"
                     />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onToggleExpand(r.id)}
-                    aria-label={isExpanded ? "Collapse row editor" : "Edit row"}
-                    className="text-muted-foreground hover:text-foreground p-1 -m-1"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center gap-1 pb-2 pl-7 text-xs">
+                  }
+                  title={
+                    <>
+                      {r.payee || <span className="text-muted-foreground">—</span>}
+                      {r.category && <span className="text-muted-foreground"> · {r.category}</span>}
+                    </>
+                  }
+                  subtitle={`${r.date} · ${typeLabel}`}
+                  value={amountCell}
+                  secondary={
+                    hasAnyAnchor && showBalance && dayBalance !== undefined
+                      ? formatCurrency(dayBalance, r.currency || "CAD")
+                      : undefined
+                  }
+                  trailing={
+                    <button
+                      type="button"
+                      onClick={() => onToggleExpand(r.id)}
+                      aria-label={isExpanded ? "Collapse row editor" : "Edit row"}
+                      className="text-muted-foreground hover:text-foreground p-1 -m-1"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  }
+                  chevron={false}
+                />
+                <div className="flex flex-wrap items-center gap-1 pb-2 pl-11 pr-4 text-xs">
                   {r.isDuplicate && r.reconcileState !== "skipped_duplicate" && (
                     <Badge variant="outline" className="text-xs">
                       dupe
@@ -255,7 +256,7 @@ export function FilePane({
                   {rowActions && <span className="ml-auto">{rowActions(r)}</span>}
                 </div>
                 {isExpanded && (
-                  <div className="pb-3">
+                  <div className="px-4 pb-3">
                     <StagedRowEditor
                       stagedImportId={stagedImportId}
                       row={r}

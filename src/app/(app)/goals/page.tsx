@@ -9,12 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
 import { localDateISO } from "@/lib/utils/date";
-import type { ProgressTone } from "@/components/mobile/progress-row";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
-  MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ProgressRow, ProgressRowButton,
+  MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ListRow, type ProgressTone,
   useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type DetailItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -57,25 +56,23 @@ function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; dis
   const status = goalStatus(g, today);
   const done = status === "completed";
   return (
-    <ProgressRowButton onPress={onOpen} selected={selected}>
-      <ProgressRow
-        slot="goal"
-        label={g.name}
-        dot={STATUS_DOT[status]}
-        meta={g.deadline ? `Due ${g.deadline}` : "No deadline"}
-        value={formatCurrency(g.currentAmount, currency)}
-        delta={`of ${formatCurrency(g.targetAmount, currency)}`}
-        deltaTitle="Saved of target"
-        trend={null}
-        cur={currency}
-        pct={g.progress}
-        barTone={done ? "pos" : progressTone(g.progress)}
-        progressLabel={`${Math.max(0, g.progress)}%`}
-        progressAria={`Goal ${g.name} saved`}
-        badge={g.pendingSync ? <SyncMarkBadge mark={g.pendingSync} /> : undefined}
-        strike={done}
-      />
-    </ProgressRowButton>
+    <ListRow
+      slot="goal"
+      title={g.name}
+      subtitle={g.deadline ? `Due ${g.deadline}` : "No deadline"}
+      dot={STATUS_DOT[status]}
+      value={formatCurrency(g.currentAmount, currency)}
+      delta={`of ${formatCurrency(g.targetAmount, currency)}`}
+      deltaTitle="Saved of target"
+      trend={null}
+      currency={currency}
+      progress={{ pct: g.progress, tone: done ? "pos" : progressTone(g.progress), label: `${Math.max(0, g.progress)}%`, aria: `Goal ${g.name} saved` }}
+      badge={g.pendingSync ? <SyncMarkBadge mark={g.pendingSync} /> : undefined}
+      strike={done}
+      chevron={false}
+      selected={selected}
+      onPress={onOpen}
+    />
   );
 }
 

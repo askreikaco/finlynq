@@ -23,6 +23,7 @@ import { formatCurrency } from "@/lib/currency";
 import { todayISO } from "@/lib/utils/date";
 import { Loader2, Trash2 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
+import { ListRow } from "@/components/mobile/list-row";
 
 type Mark = { id: number; date: string; price: number; currency: string };
 
@@ -119,20 +120,24 @@ export function ManagePricesPanel({
           <div className="px-4 py-4 text-sm text-muted-foreground">No prices.</div>
         ) : (
           marks.map((m) => (
-            <div key={m.id} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 text-sm">
-              <span className="font-mono tabular-nums text-muted-foreground">{m.date}</span>
-              <span className="ml-auto font-medium tabular-nums">{formatCurrency(m.price, m.currency)}</span>
-              <Button
-                aria-label="Delete this price"
-                variant="ghost"
-                size="sm"
-                className="h-11 w-11 px-0"
-                onClick={() => setDeleteId(m.id)}
-                title="Delete this price"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            </div>
+            <ListRow
+              key={m.id}
+              size="dense"
+              title={<span className="font-mono tabular-nums">{m.date}</span>}
+              value={formatCurrency(m.price, m.currency)}
+              actions={
+                <Button
+                  aria-label="Delete this price"
+                  variant="ghost"
+                  size="sm"
+                  className="h-11 w-11 px-0"
+                  onClick={() => setDeleteId(m.id)}
+                  title="Delete this price"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              }
+            />
           ))
         )}
       </div>

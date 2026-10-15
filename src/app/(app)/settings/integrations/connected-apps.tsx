@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ListRow } from "@/components/mobile/list-row";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
@@ -146,47 +147,43 @@ export function ConnectedApps() {
         ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
           <p className="text-sm text-muted-foreground" data-keep="empty">No connected apps.</p>
         ) : (
-          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border">
             {mcpApiKeyLastUsedAt && (
-              <li key="mcp-api-key" className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">MCP client (API key)</p>
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground">
-                      Last used {formatRelativeTime(mcpApiKeyLastUsedAt)}
-                    </span>
-                  </div>
-                </div>
-                <Link href="/settings/developer">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                  >
-                    API key
-                  </Button>
-                </Link>
+              <li key="mcp-api-key">
+                <ListRow
+                  title="MCP client (API key)"
+                  subtitle={`Last used ${formatRelativeTime(mcpApiKeyLastUsedAt)}`}
+                  actions={
+                    <Link href="/settings/developer">
+                      <Button variant="outline" size="sm" className="shrink-0">
+                        API key
+                      </Button>
+                    </Link>
+                  }
+                />
               </li>
             )}
             {apps.map((app) => (
-              <li key={app.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{app.clientName}</p>
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className="text-xs font-mono">{app.scope}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Connected {formatDate(app.createdAt)}
+              <li key={app.id}>
+                <ListRow
+                  title={app.clientName}
+                  subtitle={
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="text-xs font-mono">{app.scope}</Badge>
+                      <span>Connected {formatDate(app.createdAt)}</span>
                     </span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 text-destructive hover:text-destructive"
-                  onClick={() => { setRevokeError(""); setRevokeId(app.id); }}
-                >
-                  Revoke
-                </Button>
+                  }
+                  actions={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => { setRevokeError(""); setRevokeId(app.id); }}
+                    >
+                      Revoke
+                    </Button>
+                  }
+                />
               </li>
             ))}
           </ul>

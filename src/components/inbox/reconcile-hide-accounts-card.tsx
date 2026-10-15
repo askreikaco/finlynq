@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Eye, EyeOff } from "lucide-react";
 import { safeAccountName } from "@/lib/safe-name";
@@ -129,48 +130,34 @@ export function ReconcileHideAccountsCard() {
         ) : accounts.length === 0 ? (
           <p className="text-sm text-muted-foreground" data-keep="empty">No accounts.</p>
         ) : (
-          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+          <ul className="-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accounts.map((a) => {
               const isHidden = hiddenIds.includes(a.id);
               return (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between gap-3 py-2.5"
-                >
-                  <div className="min-w-0">
-                    <span className="text-sm font-medium">
-                      {safeAccountName(a)}
-                    </span>
-                    <span className="ml-1.5 text-xs text-muted-foreground">
-                      {a.currency}
-                    </span>
-                    {a.archived && (
-                      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                        archived
-                      </span>
-                    )}
-                    {isHidden && (
-                      <span className="ml-1.5 rounded bg-warning/10 px-1.5 py-0.5 text-xs text-warning">
-                        hidden
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant={isHidden ? "outline" : "ghost"}
-                    size="sm"
-                    onClick={() => toggle(a.id)}
-                    disabled={savingId === a.id}
-                  >
-                    {isHidden ? (
-                      <>
-                        <Eye className="h-4 w-4 mr-1.5" /> Show
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-4 w-4 mr-1.5" /> Hide
-                      </>
-                    )}
-                  </Button>
+                <li key={a.id}>
+                  <ListRow
+                    size="dense"
+                    title={safeAccountName(a)}
+                    subtitle={[a.currency, a.archived ? "archived" : null, isHidden ? "hidden" : null].filter(Boolean).join(" · ")}
+                    actions={
+                      <Button
+                        variant={isHidden ? "outline" : "ghost"}
+                        size="sm"
+                        onClick={() => toggle(a.id)}
+                        disabled={savingId === a.id}
+                      >
+                        {isHidden ? (
+                          <>
+                            <Eye className="h-4 w-4 mr-1.5" /> Show
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-4 w-4 mr-1.5" /> Hide
+                          </>
+                        )}
+                      </Button>
+                    }
+                  />
                 </li>
               );
             })}

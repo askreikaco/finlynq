@@ -450,7 +450,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" list className="px-3">
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" list>
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -463,7 +463,7 @@ export default function RealizedGainsPage() {
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" list className="px-3">
+                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" list>
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;

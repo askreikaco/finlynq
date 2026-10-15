@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Search, Settings } from "lucide-react";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ListRow } from "@/components/mobile/list-row";
 import { filterRecent } from "@/lib/transactions/recent-picks";
 
 /**
@@ -339,18 +340,15 @@ export function PickerRow({
   onSelect: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-current={selected ? "true" : undefined}
-      className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left text-base text-foreground outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted active:bg-muted"
-    >
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate">{label}</span>
-        {detail ? <span className="truncate text-sm text-muted-foreground">{detail}</span> : null}
-      </span>
-      {selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" /> : null}
-    </button>
+    <ListRow
+      size="dense"
+      title={label}
+      subtitle={detail}
+      selected={selected}
+      onPress={onSelect}
+      chevron={false}
+      trailing={selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" /> : undefined}
+    />
   );
 }
 

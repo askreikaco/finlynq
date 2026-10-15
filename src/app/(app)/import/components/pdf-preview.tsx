@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -18,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { File, Eye, ArrowRight } from "lucide-react";
+import { File, Eye } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -130,14 +131,17 @@ export function PdfPreview({
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {rows.slice(0, 100).map((row, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
-                  <span className="font-mono text-muted-foreground w-20 shrink-0">{row.date}</span>
-                  <span className="flex-1 truncate">{row.payee}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
-                    {formatCurrency(row.amount, row.currency ?? displayCurrency)}
-                  </span>
-                </div>
+                <ListRow
+                  key={i}
+                  size="dense"
+                  title={row.payee}
+                  subtitle={row.date}
+                  value={
+                    <span className={`font-mono ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
+                      {formatCurrency(row.amount, row.currency ?? displayCurrency)}
+                    </span>
+                  }
+                />
               ))}
               {rows.length > 100 && (
                 <div className="text-center text-xs text-muted-foreground py-3">

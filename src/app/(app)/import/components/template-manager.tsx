@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { Badge } from "@/components/ui/badge";
 import { BookTemplate, FileText, Pencil, Trash2 } from "lucide-react";
 import type { ImportTemplate } from "@/lib/import-templates";
@@ -54,28 +55,33 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
         <CardContent className="p-0">
           <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {templates.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">
+              <ListRow
+                key={t.id}
+                title={t.name}
+                subtitle={
+                  <>
                     {t.fileHeaders.length} headers
                     {t.defaultAccount && <> · {t.defaultAccount}</>}
                     {t.isDefault && <> · <Badge variant="secondary" className="text-xs px-1 py-0">default</Badge></>}
-                  </p>
-                </div>
-                <Button aria-label="Edit template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
-                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-                <Button aria-label="Delete template"
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  onClick={() => deleteTemplate(t.id)}
-                  disabled={deleting === t.id}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-              </div>
+                  </>
+                }
+                actions={
+                  <>
+                    <Button aria-label="Edit template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                    <Button aria-label="Delete template"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => deleteTemplate(t.id)}
+                      disabled={deleting === t.id}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </>
+                }
+              />
             ))}
           </div>
         </CardContent>
