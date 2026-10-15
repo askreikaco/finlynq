@@ -359,15 +359,15 @@ export function TwoFactor() {
               </div>
             )}
 
-            <div>
-              <div className="flex items-center gap-1">
-                <label htmlFor="secret" className="text-xs font-medium text-muted-foreground">
-                  {STRINGS.secretLabel}
-                </label>
-                <InfoTip label="About secret key" text={STRINGS.secretHelp} />
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Field id="secret" readOnly value={secret} controlClassName="font-mono" />
+            <Field
+              label={STRINGS.secretLabel}
+              info={STRINGS.secretHelp}
+              infoLabel="About secret key"
+              id="secret"
+              readOnly
+              value={secret}
+              controlClassName="font-mono"
+              suffix={
                 <Button
                   type="button"
                   variant="outline"
@@ -377,8 +377,8 @@ export function TwoFactor() {
                 >
                   {secretCopied ? STRINGS.copiedButton : STRINGS.copyButton}
                 </Button>
-              </div>
-            </div>
+              }
+            />
 
             <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">
               <Field

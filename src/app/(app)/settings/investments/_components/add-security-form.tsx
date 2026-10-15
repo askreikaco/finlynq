@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
 import { Field, FieldGroup } from "@/components/ui/field";
-import { FormFooter, FormRow, SegmentedToggle } from "./form-rows";
+import { FormFooter } from "@/components/forms";
 
 type PriceSource = "auto" | "manual";
 
@@ -140,29 +140,21 @@ export function AddSecurityForm({
       }}
     >
       <FieldGroup>
-        <FormRow
+        <Field
           label="Ticker"
-          htmlFor="sec-symbol"
+          info="Name and currency are filled from the ticker; edit if needed."
           error={errors.symbol}
-          hint="Name and currency are filled from the ticker; edit if needed."
-        >
-          <div className="relative">
-            <Field
-              id="sec-symbol"
-              value={symbol}
-              onChange={(e) => {
-                setSymbol(e.target.value);
-                if (!nameTouchedRef.current) setName(""); // drop stale auto-name
-              }}
-              onBlur={() => lookupTicker(symbol, isCrypto)}
-              placeholder="e.g. AAPL, VTI, BTC"
-              autoFocus
-            />
-            {lookupLoading && (
-              <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            )}
-          </div>
-        </FormRow>
+          id="sec-symbol"
+          value={symbol}
+          onChange={(e) => {
+            setSymbol(e.target.value);
+            if (!nameTouchedRef.current) setName(""); // drop stale auto-name
+          }}
+          onBlur={() => lookupTicker(symbol, isCrypto)}
+          placeholder="e.g. AAPL, VTI, BTC"
+          autoFocus
+          suffix={lookupLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" aria-hidden /> : undefined}
+        />
         <Field
           label="Name"
           info="Auto-filled from the ticker, or type it."
@@ -186,7 +178,6 @@ export function AddSecurityForm({
           maxLength={4}
         />
         <Field
-          label="Crypto"
           label="Crypto asset"
           control="switch"
           checked={isCrypto}
@@ -196,27 +187,26 @@ export function AddSecurityForm({
             lookupTicker(symbol, v);
           }}
         />
-        <FormRow
+        <Field
           label="Pricing"
-          hint="Auto fetches market prices. Manual is for custom holdings: add prices under Prices after creating it."
-          notice={
+          control="segmented"
+          info="Auto fetches market prices. Manual is for custom holdings: add prices under Prices after creating it."
+          hint={
             priceSource === "manual" ? undefined : lookupFound === true ? (
-              <span className="text-muted-foreground">✓ Live price found.</span>
-            ) : lookupFound === false ? (
-              <span className="text-warning">No live price found. Use Manual if it can’t be priced.</span>
+              "✓ Live price found."
             ) : undefined
           }
-        >
-          <SegmentedToggle<PriceSource>
-            options={["auto", "manual"]}
-            value={priceSource}
-            onChange={(mode) => {
-              setPriceSource(mode);
-              priceSourceTouchedRef.current = true;
-            }}
-            labels={{ auto: "Auto-fetch", manual: "Manual" }}
-          />
-        </FormRow>
+          warning={priceSource !== "manual" && lookupFound === false ? "No live price found. Use Manual if it can’t be priced." : undefined}
+          value={priceSource}
+          onValueChange={(mode) => {
+            setPriceSource(mode as PriceSource);
+            priceSourceTouchedRef.current = true;
+          }}
+          options={[
+            { value: "auto", label: "Auto-fetch" },
+            { value: "manual", label: "Manual" },
+          ]}
+        />
       </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>

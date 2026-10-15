@@ -6,7 +6,7 @@
  * dialogs and charts are not mocked.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import FamilyPage from "@/app/(app)/family/page";
 import FamilySharePage from "@/app/(app)/family/share/page";
@@ -232,7 +232,8 @@ describe("Overview", () => {
     expect(within(household).getAllByText("$3,000.00").length).toBeGreaterThan(0);
     expect(within(household).getByText("$1,200.00")).toBeTruthy();
     expect(screen.getByTestId("household-note").textContent).toMatch(/Alice \(not shared\)/);
-    // asOf rendered dd/mm/yyyy
+    // asOf rendered dd/mm/yyyy (the range sits in the chart's (i) tip)
+    fireEvent.click(screen.getByRole("button", { name: "About this chart" }));
     expect(screen.getAllByText(/01\/10\/2026/).length).toBeGreaterThan(0);
   });
 

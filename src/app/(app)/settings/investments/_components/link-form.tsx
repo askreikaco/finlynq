@@ -11,7 +11,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { parseSaveError } from "@/lib/save-error";
-import { FormFooter } from "./form-rows";
+import { FormFooter } from "@/components/forms";
 import { FieldGroup, Field } from "@/components/ui/field";
 import { descriptionOf, symbolLabel, type Account, type Security } from "./shared";
 
@@ -106,10 +106,10 @@ export function LinkForm({
           label={label}
           error={error || undefined}
           info={
-                    isAccount
-                      ? "Pick the account that holds this security. Quantity and cost basis come from a transaction."
-                      : "Pick a security to add to this account. Quantity and cost basis come from a transaction."
-                  }
+            isAccount
+              ? "Pick the account that holds this security. Quantity and cost basis come from a transaction."
+              : "Pick a security to add to this account. Quantity and cost basis come from a transaction."
+          }
           control="select"
           value={value}
           onValueChange={(v) => setValue(v ?? "")}

@@ -226,14 +226,8 @@ export default function AdminEmailInboxPage() {
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          From
-          <Field control="date" value={since} onChange={(e) => setSince(e.target.value)} />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          To
-          <Field control="date" value={until} onChange={(e) => setUntil(e.target.value)} />
-        </label>
+        <Field label="From" control="date" value={since} onChange={(e) => setSince(e.target.value)} />
+        <Field label="To" control="date" value={until} onChange={(e) => setUntil(e.target.value)} />
         {selectedUserLabel && (
           <Badge variant="outline" className="gap-1">
             user: {selectedUserLabel}

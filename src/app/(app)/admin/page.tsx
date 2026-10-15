@@ -848,22 +848,20 @@ export default function AdminPage() {
           <Button variant="outline" disabled={updatingUser === detailUser.id} onClick={() => handleRoleToggle(detailUser.id, detailUser.role)}>
             {detailUser.role === "admin" ? "Revoke Admin" : "Make Admin"}
           </Button>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">Plan</span>
-            <Field
-              control="select"
-              aria-label="Plan"
-              value={detailUser.plan ?? "free"}
-              disabled={updatingUser === detailUser.id}
-              onValueChange={(v) => handlePlanChange(detailUser.id, v)}
-              compact
-              options={[
-                { value: "free", label: "Free" },
-                { value: "pro", label: "Pro" },
-                { value: "premium", label: "Premium" },
-              ]}
-            />
-          </label>
+          <Field
+            label="Plan"
+            control="select"
+            aria-label="Plan"
+            value={detailUser.plan ?? "free"}
+            disabled={updatingUser === detailUser.id}
+            onValueChange={(v) => handlePlanChange(detailUser.id, v)}
+            compact
+            options={[
+              { value: "free", label: "Free" },
+              { value: "pro", label: "Pro" },
+              { value: "premium", label: "Premium" },
+            ]}
+          />
         </DetailSheet>
       )}
 

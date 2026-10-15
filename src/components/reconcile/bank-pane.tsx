@@ -154,8 +154,8 @@ export function BankPane({
                     aria-label="Select all bank rows"
                     checked={allChecked}
                     ref={(el) => {
-                                        if (el) el.indeterminate = someChecked;
-                                      }}
+                      if (el) el.indeterminate = someChecked;
+                    }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
                   />
                 </TableHead>

@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Search, Settings } from "lucide-react";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 import { filterRecent } from "@/lib/transactions/recent-picks";
 
 /**
@@ -226,20 +227,14 @@ export function GroupedPickerPanel({
         ) : (
           <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
         )}
-        <div className="relative mt-3">
-          <Search
-            aria-hidden="true"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-          />
-          <input
-            type="text"
-            aria-label={placeholder}
-            placeholder={placeholder}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-base text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
-          />
-        </div>
+        <Field
+          className="mt-3"
+          aria-label={placeholder}
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          prefix={<Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
+        />
       </SheetHeader>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-5 p-4">

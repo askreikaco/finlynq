@@ -43,7 +43,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FieldLabel } from "@/components/forms";
 import { Trash2, AlertTriangle } from "lucide-react";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { Field } from "@/components/ui/field";
@@ -420,63 +419,45 @@ export function HoldingEditForm({
         />
       )}
 
-      <div className="space-y-1.5">
-        <FieldLabel
-          label="Symbol / ticker"
-          info="Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position. Custom currencies you've added in Settings are recognized here too."
-        />
-        <Field
-          value={form.symbol}
-          onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-          placeholder="e.g. VCN.TO, AAPL, BTC, USD"
-          list="symbol-suggestions"
-        />
-        <datalist id="symbol-suggestions">
-          {currencyOptions.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
-        {symbolLoading ? (
-          <p data-keep="status" className="text-xs text-muted-foreground">Looking up…</p>
-        ) : symbolInfo ? (
-          <p data-keep="data" className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{symbolInfo.label}</span>
-          </p>
-        ) : null}
-      </div>
+      <Field
+        label="Symbol / ticker"
+        info="Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position. Custom currencies you've added in Settings are recognized here too."
+        value={form.symbol}
+        onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+        placeholder="e.g. VCN.TO, AAPL, BTC, USD"
+        list="symbol-suggestions"
+        hint={symbolLoading ? "Looking up…" : symbolInfo?.label}
+      />
+      <datalist id="symbol-suggestions">
+        {currencyOptions.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
 
-      <div className="space-y-1.5">
-        <FieldLabel
-          label="Holding currency"
-          info={
-            <>
-              {currencyAutoSource ? (
-                <>Auto-detected from <strong>{currencyAutoSource}</strong>. Override if needed.</>
-              ) : (
-                <>
-                  The currency this holding trades / is denominated in. For cash positions, type the currency code in
-                  Symbol (USD, EUR, XAU…) and this will auto-fill.
-                </>
-              )}
-              {accountCurrency ? (
-                <> Account currency: <strong>{accountCurrency}</strong>.</>
-              ) : null}
-            </>
-          }
-        />
-        <Field
-          value={form.currency}
-          onChange={(e) => {
-            setForm({ ...form, currency: e.target.value.toUpperCase() });
-            setCurrencyTouched(true);
-          }}
-        />
-        {errors.currency && (
-          <p className="text-xs text-destructive">
-            {errors.currency}
-          </p>
-        )}
-      </div>
+      <Field
+        label="Holding currency"
+        info={
+          <>
+            {currencyAutoSource ? (
+              <>Auto-detected from <strong>{currencyAutoSource}</strong>. Override if needed.</>
+            ) : (
+              <>
+                The currency this holding trades / is denominated in. For cash positions, type the currency code in
+                Symbol (USD, EUR, XAU…) and this will auto-fill.
+              </>
+            )}
+            {accountCurrency ? (
+              <> Account currency: <strong>{accountCurrency}</strong>.</>
+            ) : null}
+          </>
+        }
+        error={errors.currency}
+        value={form.currency}
+        onChange={(e) => {
+          setForm({ ...form, currency: e.target.value.toUpperCase() });
+          setCurrencyTouched(true);
+        }}
+      />
 
       <Field
         label="Crypto asset"

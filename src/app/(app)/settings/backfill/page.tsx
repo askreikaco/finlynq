@@ -169,36 +169,37 @@ export default function BackfillWizardPage() {
             <div className="space-y-1">
               {accounts.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">No investment accounts.</p>}
               {accounts.map((a) => (
-                <label key={a.accountId} className="flex items-center gap-2 text-sm">
-                  <Field
-                    control="checkbox"
-                    checked={accountIds.includes(a.accountId)}
-                    onChange={(e) => {
-                                        setAccountIds((prev) =>
-                                          e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
-                                        );
-                                      }}
-                  />
-                  <span>{a.name}</span>
-                </label>
+                <Field
+                  key={a.accountId}
+                  label={a.name}
+                  control="checkbox"
+                  checked={accountIds.includes(a.accountId)}
+                  onChange={(e) => {
+                    setAccountIds((prev) =>
+                      e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
+                    );
+                  }}
+                />
               ))}
             </div>
           )}
 
           {scopeChoice === "date_range" && (
             <div className="flex gap-3 items-center">
-              <label className="text-sm">From: <Field
+              <Field
+                label="From:"
                 control="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="ml-1"
-              /></label>
-              <label className="text-sm">To: <Field
+              />
+              <Field
+                label="To:"
                 control="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="ml-1"
-              /></label>
+              />
             </div>
           )}
         </CardContent>

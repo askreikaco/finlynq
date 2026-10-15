@@ -7,7 +7,7 @@
  */
 
 import * as React from "react";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, Minus, Plus, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
@@ -35,6 +35,8 @@ export interface FieldOption {
   icon?: LucideIcon;
   /** Segmented only: extra classes while this option is selected (a tone). */
   selectedClassName?: string;
+  /** Segmented only: accessible name and tooltip when the label is an icon or initials. */
+  ariaLabel?: string;
 }
 
 /** State every control renderer shares; built once in Field. */
@@ -46,6 +48,7 @@ export interface ControlState {
   disabled?: boolean;
   required?: boolean;
   compact: boolean;
+  pill?: boolean;
   row: boolean;
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
@@ -68,7 +71,7 @@ export function TextControl({
 >) {
   const { id, describedBy, invalid, disabled, required, row, compact, prefix, suffix, className, ariaLabel } = state;
   return (
-    <Surface row={row} compact={compact} invalid={invalid} disabled={disabled}>
+    <Surface row={row} compact={compact} pill={state.pill} invalid={invalid} disabled={disabled}>
       {prefix}
       <input
         ref={inputRef}
@@ -154,7 +157,7 @@ export function TextareaControl({
   }, []);
 
   return (
-    <Surface row={row} compact={compact} invalid={invalid} disabled={disabled} multiline>
+    <Surface row={row} compact={compact} pill={state.pill} invalid={invalid} disabled={disabled} multiline>
       {prefix}
       <textarea
         ref={setRef}
@@ -250,6 +253,105 @@ export function AmountControl({
 }
 
 // ---------------------------------------------------------------------------
+// stepper: [-] 2-digit integer [+]
+
+const STEP_BUTTON =
+  "flex size-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors active:bg-muted disabled:opacity-50";
+
+/**
+ * A small integer with -/+ buttons (repeat count, months, number of splits). The text stays editable (digits only,
+ * numeric keyboard); `onStep` replaces the default +/-1 rule (the split count jumps 0 -> 2). Test ids derive from
+ * the native `data-testid`: `<id>`, `<id>-decrease`, `<id>-increase`.
+ */
+export function StepperControl({
+  state,
+  inputRef,
+  value,
+  onValueChange,
+  min = 0,
+  max = 99,
+  stepLabel = "value",
+  onStep,
+  onInteract,
+  onFocus,
+  maxLength = 3,
+  ...rest
+}: {
+  state: ControlState;
+  inputRef?: React.Ref<HTMLInputElement>;
+  value: string | number;
+  onValueChange: (next: string) => void;
+  min?: number;
+  max?: number;
+  /** Noun for the button names: "Decrease {stepLabel}" / "Increase {stepLabel}". */
+  stepLabel?: string;
+  /** Custom stepping rule; receives the direction and the current text, returns the next text. */
+  onStep?: (delta: 1 | -1, current: string) => string;
+  /** Called on focus and before a step (the entry screen closes its numpad here). */
+  onInteract?: () => void;
+} & Omit<React.ComponentProps<"input">, "prefix" | "type" | "className" | "ref" | "value" | "onChange" | "min" | "max">) {
+  const { id, describedBy, invalid, disabled, className, ariaLabel } = state;
+  const text = String(value);
+  const current = /^\d+$/.test(text) ? Number(text) : 0;
+  const testId = (rest as { "data-testid"?: string })["data-testid"];
+  const step = (delta: 1 | -1) => {
+    onInteract?.();
+    onValueChange(
+      onStep ? onStep(delta, text) : String(Math.min(max, Math.max(min, current + delta))),
+    );
+  };
+  return (
+    <div data-slot="field-stepper" className="flex items-center justify-end gap-1">
+      <button
+        type="button"
+        aria-label={`Decrease ${stepLabel}`}
+        data-testid={testId ? `${testId}-decrease` : undefined}
+        disabled={disabled || current <= min}
+        onClick={() => step(-1)}
+        className={STEP_BUTTON}
+      >
+        <Minus aria-hidden="true" className="size-[18px]" />
+      </button>
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
+        maxLength={maxLength}
+        disabled={disabled}
+        aria-label={rest["aria-label"] ?? ariaLabel ?? stepLabel}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
+        data-slot="input"
+        {...rest}
+        value={text}
+        onChange={(e) => onValueChange(e.target.value.replace(/\D/g, "").slice(0, maxLength))}
+        onFocus={(e) => {
+          onInteract?.();
+          onFocus?.(e);
+        }}
+        className={cn(
+          "w-12 bg-transparent text-center text-base tabular-nums text-foreground outline-none placeholder:text-muted-foreground",
+          className,
+        )}
+      />
+      <button
+        type="button"
+        aria-label={`Increase ${stepLabel}`}
+        data-testid={testId ? `${testId}-increase` : undefined}
+        disabled={disabled || current >= max}
+        onClick={() => step(1)}
+        className={STEP_BUTTON}
+      >
+        <Plus aria-hidden="true" className="size-[18px]" />
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // select
 
 export function SelectControl({
@@ -291,7 +393,7 @@ export function SelectControl({
         aria-describedby={describedBy}
         aria-invalid={invalid || undefined}
         data-testid={testId}
-        className={cn(row && "border-0 bg-transparent px-0 shadow-none dark:bg-transparent min-h-11 focus-visible:ring-0", className)}
+        className={cn(row && "border-0 bg-transparent px-0 shadow-none dark:bg-transparent min-h-11 focus-visible:ring-0", state.pill && "rounded-full", className)}
       >
         {prefix}
         <SelectValue placeholder={placeholder} />
@@ -349,7 +451,7 @@ export function ComboboxControl({
       aria-label={ariaLabel}
       aria-describedby={describedBy}
       data-testid={testId}
-      className={cn(row && "border-0 bg-transparent px-0 shadow-none dark:bg-transparent min-h-11 focus-visible:ring-0", className)}
+      className={cn(row && "border-0 bg-transparent px-0 shadow-none dark:bg-transparent min-h-11 focus-visible:ring-0", state.pill && "rounded-full", className)}
     />
   );
 }
@@ -459,6 +561,7 @@ export function SegmentedControl({
   value,
   onValueChange,
   fill,
+  pills,
   testId,
 }: {
   state: ControlState;
@@ -467,6 +570,8 @@ export function SegmentedControl({
   onValueChange: (value: string) => void;
   /** Equal-width columns across the whole row (default: as wide as the options). */
   fill?: boolean;
+  /** Separate round chips instead of one bordered bar (people filters, tags). */
+  pills?: boolean;
   testId?: string;
 }) {
   const { labelId, disabled, invalid, compact, className, ariaLabel, describedBy } = state;
@@ -493,14 +598,18 @@ export function SegmentedControl({
       aria-labelledby={labelId}
       aria-describedby={describedBy}
       className={cn(
-        CONTROL_SURFACE,
-        "inline-flex max-w-full items-stretch overflow-hidden rounded-lg p-0.5",
-        compact ? "min-h-8 pointer-coarse:min-h-11 dense:pointer-fine:min-h-7" : "min-h-11 dense:pointer-fine:min-h-9",
-        fill && "grid w-full",
-        invalid && "border-destructive",
+        pills
+          ? "flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-x-auto p-0.5"
+          : cn(
+              CONTROL_SURFACE,
+              "inline-flex max-w-full items-stretch overflow-hidden rounded-lg p-0.5",
+              compact ? "min-h-8 pointer-coarse:min-h-11 dense:pointer-fine:min-h-7" : "min-h-11 dense:pointer-fine:min-h-9",
+              fill && "grid w-full",
+              invalid && "border-destructive",
+            ),
         className,
       )}
-      style={fill ? { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } : undefined}
+      style={fill && !pills ? { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } : undefined}
     >
       {options.map((o, i) => {
         const selected = o.value === value;
@@ -514,6 +623,8 @@ export function SegmentedControl({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={o.ariaLabel}
+            title={o.ariaLabel}
             disabled={isOff(o)}
             tabIndex={selected ? 0 : -1}
             onClick={() => onValueChange(o.value)}
@@ -527,8 +638,16 @@ export function SegmentedControl({
               }
             }}
             className={cn(
-              "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-sm font-medium leading-tight transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
-              selected ? (o.selectedClassName ?? "bg-primary/10 text-primary-text") : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+              "inline-flex items-center justify-center gap-1.5 text-center text-sm font-medium leading-tight transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
+              pills
+                ? cn(
+                    "min-h-9 min-w-9 shrink-0 rounded-full px-3 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+                    selected ? (o.selectedClassName ?? "bg-primary text-primary-foreground ring-2 ring-primary") : "bg-muted text-muted-foreground hover:text-foreground",
+                  )
+                : cn(
+                    "min-h-9 rounded-md px-3 py-1",
+                    selected ? (o.selectedClassName ?? "bg-primary/10 text-primary-text") : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                  ),
             )}
           >
             {Icon ? <Icon aria-hidden className="size-4" /> : null}
@@ -584,7 +703,7 @@ export function PickerControl({
         "flex items-center gap-2 text-left transition-colors active:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50",
         row
           ? "min-h-11 dense:pointer-fine:min-h-9 w-full min-w-0 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-md"
-          : cn(CONTROL_SURFACE, compact ? CONTROL_BOX_COMPACT : CONTROL_BOX, CONTROL_STATE, CONTROL_FOCUS_VISIBLE),
+          : cn(CONTROL_SURFACE, compact ? CONTROL_BOX_COMPACT : CONTROL_BOX, CONTROL_STATE, CONTROL_FOCUS_VISIBLE, state.pill && "rounded-full"),
         className,
       )}
     >

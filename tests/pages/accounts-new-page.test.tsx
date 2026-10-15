@@ -81,11 +81,11 @@ describe("New account page: fields", () => {
   it("keeps field help in (i) tips, not as paragraphs under the inputs", async () => {
     render(<NewAccountRoute />);
     for (const name of ["Alias", "Type", "Group", "Opening balance", "Investment account", "Invisible"]) {
-      expect(screen.getByRole("button", { name: `About ${name}` })).toBeTruthy();
+      expect(screen.getByRole("button", { name: `About ${name.toLowerCase()}` })).toBeTruthy();
     }
     expect(screen.queryByText(/Short nickname used when matching/)).toBeNull();
     expect(screen.queryByText(/Hidden from net worth/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "About Invisible" }));
+    fireEvent.click(screen.getByRole("button", { name: "About invisible" }));
     expect(await screen.findByText(/Hidden from net worth, totals, reports and metrics/)).toBeTruthy();
   });
 

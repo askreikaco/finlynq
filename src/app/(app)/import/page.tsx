@@ -380,7 +380,7 @@ function ImportPageInner() {
                 if (Number.isFinite(n)) switchAccount(n);
               }}
               placeholder="Select an account"
-              className="w-full max-w-[260px]"
+              className="max-w-[260px]"
               options={dropdownAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency} {hiddenSet.has(a.id) ? " · hidden" : ""}</> }))}
             />
           </div>

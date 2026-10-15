@@ -186,8 +186,8 @@ export function ReconcilePreviewTable({
                         control="checkbox"
                         checked={!!row.forceCommit}
                         onChange={(e) =>
-                                                  onChange(row.rowIndex, { forceCommit: e.target.checked })
-                                                }
+                          onChange(row.rowIndex, { forceCommit: e.target.checked })
+                        }
                       />
                     )}
                     {row.match && (
@@ -228,7 +228,6 @@ export function ReconcilePreviewTable({
                     searchPlaceholder="Search…"
                     emptyMessage="No accounts"
                     compact
-                    className="w-full"
                   />
                 </TableCell>
                 <TableCell className="align-top">
@@ -243,7 +242,6 @@ export function ReconcilePreviewTable({
                     searchPlaceholder="Search…"
                     emptyMessage="No categories"
                     compact
-                    className="w-full"
                   />
                 </TableCell>
                 <TableCell className="align-top">
@@ -265,7 +263,7 @@ export function ReconcilePreviewTable({
                     emptyMessage="No holdings on this account"
                     disabled={row.accountId === null}
                     compact
-                    className={`h-7 text-xs w-full ${needsHolding && row.portfolioHoldingId == null ? "border-warning/30" : ""}`}
+                    invalid={needsHolding && row.portfolioHoldingId == null}
                   />
                 </TableCell>
               </TableRow>

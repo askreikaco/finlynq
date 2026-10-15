@@ -64,7 +64,7 @@ describe("compact new-transaction layout", () => {
     seedPrefill();
     render(<Page />);
     const list = screen.getByTestId("txnew-list");
-    expect(list.className).toContain("shadow-[var(--list-divider)]");
+    expect(list.querySelector("[class*='shadow-[var(--list-divider)]']")).not.toBeNull(); // inset hairline between rows
     expect(rowIds()).toEqual([
       "txnew-row-date",
       "txnew-row-amount",
@@ -113,7 +113,7 @@ describe("compact new-transaction layout", () => {
     expect(count.placeholder).toBe("0");
     fireEvent.change(count, { target: { value: "1" } });
     expect(card().getAttribute("data-state")).toBe("closed");
-    expect(screen.getByTestId("txnew-split-summary").textContent).toBe("Enter 2 or more to split");
+    expect(document.getElementById("txnew-split-count-hint")?.textContent).toBe("Enter 2 or more to split");
     fireEvent.change(count, { target: { value: "3" } });
     expect(card().getAttribute("data-state")).toBe("open");
     expect(screen.getByTestId("split-row-1")).toBeTruthy();

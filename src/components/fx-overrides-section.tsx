@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ArrowLeftRight, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
@@ -13,7 +11,7 @@ import {
   isSupportedCurrency,
 } from "@/lib/fx/supported-currencies";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { Field } from "@/components/ui/field";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { todayISO } from "@/lib/utils/date";
 type Override = {
   id: number;
@@ -175,7 +173,7 @@ export function FxOverridesSection() {
           <div className="rounded-md border border-border/50 p-3 space-y-3">
             <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Currency</Label>
+                <span className="text-xs font-medium">Currency</span>
                 {customCode ? (
                   <div className="flex items-center gap-1">
                     <Field
@@ -202,17 +200,16 @@ export function FxOverridesSection() {
                       ...sortCurrency(
                         activeCurrencies
                           .filter((c) => c !== "USD")
-                          .map((c): ComboboxItemShape => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
+                          .map((c): FieldComboboxOption => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
                         (c) => c.value,
                         (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                       ),
-                      { value: "__custom__", label: "+ Custom currency code…" } satisfies ComboboxItemShape,
+                      { value: "__custom__", label: "+ Custom currency code…" } satisfies FieldComboboxOption,
                     ]}
                     placeholder="EUR"
                     searchPlaceholder="Search currencies…"
                     emptyMessage="No matches"
                     compact
-                    className="w-full"
                   />
                 )}
                 {customCode ? (
@@ -222,7 +219,7 @@ export function FxOverridesSection() {
                 ) : null}
               </div>
               <div>
-                <Label className="text-xs">Rate</Label>
+                <span className="text-xs font-medium">Rate</span>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">1</span>
                   <Field

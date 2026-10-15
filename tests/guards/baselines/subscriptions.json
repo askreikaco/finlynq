@@ -5,9 +5,6 @@
     "src/app/(app)/subscriptions/[id]/edit/page.tsx": {
       "suspense-null": 1
     },
-    "src/app/(app)/subscriptions/_components/subscription-form.tsx": {
-      "rounded-2xl": 1
-    },
     "src/app/(app)/subscriptions/new/page.tsx": {
       "suspense-null": 1
     }

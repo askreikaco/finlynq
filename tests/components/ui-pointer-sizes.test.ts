@@ -21,22 +21,23 @@ const WIDTH_TOKEN_SRC = /(?<![\w-])(max-)?(sm|md|lg|xl|2xl):(?=[a-z\[!@-])/;
 
 // Every primitive that carries a size or touch rule in this package.
 const PRIMITIVES = [
-  "button", "input", "select", "combobox", "group-combobox", "tabs", "switch",
-  "pagination", "card", "checkbox", "badge", "table",
+  "button", "tabs", "switch", "pagination", "card", "badge", "table",
+  // The Field family: the control box lives in control-surface.ts, the rest are its internal controls.
+  "control-surface", "field/field", "field/controls", "field/surface", "field/select-base", "field/combobox-base", "field/group-combobox",
 ] as const;
 
 // Touch controls: each must carry these pointer-coarse 44px rules in its source.
 const TOUCH_RULES: Record<string, string[]> = {
   button: ["pointer-coarse:h-11", "pointer-coarse:size-11", "pointer-coarse:before:-inset-2.5"],
-  input: ["pointer-coarse:h-11"],
-  select: ["pointer-coarse:data-[size=default]:h-11", "pointer-coarse:data-[size=sm]:h-11"],
-  combobox: ["pointer-coarse:data-[size=default]:h-11", "pointer-coarse:data-[size=sm]:h-11"],
-  "group-combobox": ["pointer-coarse:h-11", "pointer-coarse:min-h-11"],
+  "control-surface": ["h-11", "pointer-coarse:h-11"],
+  "field/select-base": ["pointer-coarse:min-h-11"],
+  "field/combobox-base": ["pointer-coarse:min-h-11"],
+  "field/group-combobox": ["pointer-coarse:min-h-11"],
   tabs: ["pointer-coarse:group-data-horizontal/tabs:h-11", "pointer-coarse:before:-inset-y-1.5"],
   switch: ["pointer-coarse:before:-inset-y-3", "pointer-coarse:before:-inset-x-2"],
 };
 
-const source = (name: string) => read(`src/components/ui/${name}.tsx`);
+const source = (name: string) => read(`src/components/ui/${name}.${name === "control-surface" ? "ts" : "tsx"}`);
 
 // A Button size is 44px on coarse pointers if it sets the box or the hit-slop pseudo-element.
 function coarse44(c: string[]): boolean {
@@ -119,8 +120,8 @@ describe("ui primitives: dense never reduces a coarse target", () => {
     expect(bare, `${name}.tsx dense tokens without pointer-fine`).toEqual([]);
   });
 
-  it("dense reductions are present where planned (button, icon, input, select, combobox, group-combobox, tabs)", () => {
-    for (const name of ["button", "input", "select", "combobox", "group-combobox", "tabs"]) {
+  it("dense reductions are present where planned (button, icon, the Field control box, tabs)", () => {
+    for (const name of ["button", "control-surface", "tabs"]) {
       expect(source(name), name).toContain("dense:pointer-fine:");
     }
   });

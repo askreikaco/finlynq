@@ -17,9 +17,9 @@
 
 import * as React from "react";
 import { LayoutGrid, List } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { SizeClass } from "@/components/ui/size-class";
 import { readUserItem, writeUserItem, useSessionUserId } from "@/lib/client/user-storage";
+import { Field } from "@/components/ui/field";
 import { useAppSizeClass } from "./size-class-context";
 
 export type ViewMode = "cards" | "list";
@@ -205,59 +205,18 @@ const OPTIONS: ReadonlyArray<{ mode: ViewMode; label: string; Icon: typeof Layou
   { mode: "list", label: "List", Icon: List },
 ];
 
-/**
- * Two-segment Cards / List control. A radiogroup with arrow-key movement.
- * Targets are 32px on fine pointers and 44px on coarse pointers.
- */
+/** Two-segment Cards / List control (a Field segmented, compact: 32px on fine pointers, 44px on touch). */
 export function ViewModeToggle({ viewKey, className }: { viewKey: ViewKey; className?: string }) {
   const [mode, setMode] = useViewMode(viewKey);
-  const refs = React.useRef<Array<HTMLButtonElement | null>>([]);
-
-  const move = (from: number, delta: number) => {
-    const next = (from + delta + OPTIONS.length) % OPTIONS.length;
-    setMode(OPTIONS[next].mode);
-    refs.current[next]?.focus();
-  };
-
   return (
-    <div
-      role="radiogroup"
+    <Field
+      control="segmented"
+      compact
       aria-label="View"
-      className={cn("inline-grid grid-cols-2 gap-0.5 rounded-lg border border-border bg-card p-0.5", className)}
-    >
-      {OPTIONS.map(({ mode: option, label, Icon }, i) => {
-        const selected = option === mode;
-        return (
-          <button
-            key={option}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            tabIndex={selected ? 0 : -1}
-            onClick={() => setMode(option)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                e.preventDefault();
-                move(i, 1);
-              } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                e.preventDefault();
-                move(i, -1);
-              }
-            }}
-            className={cn(
-              "inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-              "pointer-coarse:h-11 pointer-coarse:px-4",
-              selected ? "bg-muted text-foreground" : "text-muted-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-          </button>
-        );
-      })}
-    </div>
+      value={mode}
+      onValueChange={(v) => setMode(v as ViewMode)}
+      options={OPTIONS.map(({ mode: option, label, Icon }) => ({ value: option, label, icon: Icon }))}
+      className={className}
+    />
   );
 }

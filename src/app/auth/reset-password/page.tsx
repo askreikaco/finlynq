@@ -14,8 +14,6 @@ import { LogoMark } from "@/components/logo-mark";
 import { Field } from "@/components/ui/field";
 import { dropAllLocalCaches } from "@/lib/data/local-read-cache-wipe";
 
-const INPUT_CLASS =
-  "w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm max-regular:h-11 max-regular:py-0 max-regular:text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
 
 function ResetPasswordForm() {
   const token = useSearchParams().get("token") ?? "";
@@ -103,46 +101,37 @@ function ResetPasswordForm() {
         your old password and cannot be recovered without it.
       </div>
 
-      <div>
-        <Field
-          label="New password"
-          id="new-password"
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="At least 12 characters"
-          required
-          minLength={12}
-          autoComplete="new-password"
-          className={INPUT_CLASS}
-        />
-      </div>
+      <Field
+        label="New password"
+        id="new-password"
+        type="password"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        placeholder="At least 12 characters"
+        required
+        minLength={12}
+        autoComplete="new-password"
+      />
 
-      <div>
-        <Field
-          label="Confirm new password"
-          id="confirm-password"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          className={INPUT_CLASS}
-        />
-        {mismatch && <p className="mt-1 text-xs text-destructive">Passwords don{"’"}t match.</p>}
-      </div>
+      <Field
+        label="Confirm new password"
+        id="confirm-password"
+        type="password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        required
+        autoComplete="new-password"
+        error={mismatch ? "Passwords don’t match." : undefined}
+      />
 
-      <div>
-        <Field
-          label={<>Type <span className="font-mono">WIPE</span> to confirm</>}
-          id="confirmation"
-          value={confirmation}
-          onChange={(e) => setConfirmation(e.target.value)}
-          required
-          autoComplete="off"
-          className={INPUT_CLASS}
-        />
-      </div>
+      <Field
+        label={<>Type <span className="font-mono">WIPE</span> to confirm</>}
+        id="confirmation"
+        value={confirmation}
+        onChange={(e) => setConfirmation(e.target.value)}
+        required
+        autoComplete="off"
+      />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

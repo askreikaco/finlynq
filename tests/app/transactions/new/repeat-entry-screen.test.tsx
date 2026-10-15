@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
+import userEvent from "@testing-library/user-event";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 
 const H = vi.hoisted(() => ({ mutate: vi.fn(), push: vi.fn() }));
@@ -88,8 +89,17 @@ async function mount(over: Record<string, unknown> = {}) {
   await screen.findByTestId("txnew-row-date");
   fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2027-01-10" } });
 }
+const frequencyBox = () => screen.getByRole("combobox", { name: "Frequency" });
+const frequencyValue = () => frequencyBox().textContent ?? "";
+/** Choose a frequency in the Frequency select (open it, tap the option). */
+async function pickFrequency(label: string) {
+  const user = userEvent.setup();
+  await user.click(frequencyBox());
+  await user.click(await screen.findByRole("option", { name: label }));
+}
+
 const repeatToggle = () => screen.getByRole("switch", { name: "Repeat" });
-const summary = () => screen.getByTestId("txnew-repeat-summary").textContent;
+const summary = () => document.getElementById("txnew-repeat-toggle-hint")?.textContent ?? null;
 const openSheet = () => fireEvent.click(repeatToggle());
 // The accordion applies every change at once; there is no Done step any more.
 const done = () => {};
@@ -128,17 +138,17 @@ describe("Repeat accordion card", () => {
   it("shows the summary under the title and clears when switched off", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
+    await pickFrequency("Weekly");
     fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
     expect(summary()).toBe("Weekly · 12×");
     openSheet();
-    expect(screen.queryByTestId("txnew-repeat-summary")).toBeNull();
+    expect(summary()).toBeNull();
   });
 
   it("a custom interval reads 'Every 3 days'", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    await pickFrequency("Custom");
     fireEvent.change(screen.getByTestId("repeat-interval-days"), { target: { value: "3" } });
     expect(summary()).toBe("Every 3 days");
   });
@@ -155,7 +165,7 @@ describe("Save: repeat", () => {
   it("adds repeat to the single POST body (expense is negative, entered currency kept)", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    await pickFrequency("Monthly");
     fireEvent.click(screen.getByRole("radio", { name: "On date" }));
     fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2027-12-31" } });
     done();
@@ -178,7 +188,7 @@ describe("Save: repeat", () => {
     fireEvent.click(screen.getByRole("button", { name: "Currency" }));
     fireEvent.click(await screen.findByRole("button", { name: /EUR/ }));
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Annually" }));
+    await pickFrequency("Annually");
     fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
     fireEvent.click(screen.getByRole("button", { name: "Decrease times" }));
     done();
@@ -200,7 +210,7 @@ describe("Save: repeat", () => {
   it("an invalid custom interval blocks Save and posts nothing", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    await pickFrequency("Custom");
     fireEvent.change(screen.getByTestId("repeat-interval-days"), { target: { value: "0" } });
     save();
     expect(await screen.findByText("Check the repeat settings")).toBeTruthy();
@@ -210,7 +220,7 @@ describe("Save: repeat", () => {
   it("a repeat without a payee shows the inline error and posts nothing", async () => {
     await mount({ payee: "" });
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    await pickFrequency("Monthly");
     done();
     save();
     expect(await screen.findByText("Repeat needs a payee")).toBeTruthy();
@@ -234,7 +244,7 @@ describe("Save: repeat", () => {
     replies["POST /api/transactions"] = { status, body };
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    await pickFrequency("Monthly");
     done();
     save();
     const alert = await screen.findByRole("alert");

@@ -84,22 +84,15 @@ export function FilterSortPage({ config }: { config: FilterSortConfig }) {
   const renderField = (f: FilterField) => {
     switch (f.kind) {
       case "segment": {
-        const cols = Math.min(f.options.length, 4);
         return (
-          <div role="radiogroup" aria-label={f.label} className="grid gap-1 rounded-lg bg-muted p-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-            {f.options.map((o) => (
-              <button
-                key={o.value || "all"}
-                type="button"
-                role="radio"
-                aria-checked={(values[f.key] ?? "") === o.value}
-                onClick={() => set(f.key, o.value)}
-                className={`min-h-11 rounded-md text-sm font-medium ${(values[f.key] ?? "") === o.value ? "bg-background text-foreground shadow-[var(--shadow-card)]" : "text-muted-foreground"}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          <Field
+            control="segmented"
+            fill
+            aria-label={f.label}
+            value={values[f.key] ?? ""}
+            onValueChange={(v) => set(f.key, v)}
+            options={f.options.map((o) => ({ value: o.value, label: o.label }))}
+          />
         );
       }
       case "select": {
@@ -119,7 +112,6 @@ export function FilterSortPage({ config }: { config: FilterSortConfig }) {
             searchPlaceholder="Search…"
             emptyMessage="No matches"
             compact
-            className="w-full"
           />
         );
       }

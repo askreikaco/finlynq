@@ -17,6 +17,7 @@ export type {
   SwitchFieldProps,
   CheckboxFieldProps,
   SegmentedFieldProps,
+  StepperFieldProps,
   PickerFieldProps,
   CustomFieldProps,
 } from "./field";

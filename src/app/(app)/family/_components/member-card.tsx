@@ -22,7 +22,7 @@ import {
 const NONE = FAMILY_STRINGS.overview_none;
 
 /** Label text only (React escapes it). Generic fallback labels are muted + marked. */
-function Label({ text, generic }: { text: string; generic: boolean }) {
+function LabelText({ text, generic }: { text: string; generic: boolean }) {
   return generic ? (
     <span className="text-muted-foreground" title={FAMILY_STRINGS.overview_generic_badge}>
       {text}
@@ -202,7 +202,7 @@ export function MemberCard({
                     {s.loans.loans.map((l) => (
                       <li key={l.ref}>
                         <ListRow
-                          title={<Label text={l.label} generic={l.labelIsGeneric} />}
+                          title={<LabelText text={l.label} generic={l.labelIsGeneric} />}
                           subtitle={`${formatPercent(l.annualRate, 2)} · ${FAMILY_STRINGS.overview_loan_balance}: ${money(l.remainingBalanceConverted)}${l.payoffDate ? ` · ${formatDate(l.payoffDate)}` : ""}`}
                           chevron={false}
                         />

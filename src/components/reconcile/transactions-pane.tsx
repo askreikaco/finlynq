@@ -119,8 +119,8 @@ export function TransactionsPane({
                     aria-label="Select all transactions"
                     checked={allChecked}
                     ref={(el) => {
-                                        if (el) el.indeterminate = someChecked;
-                                      }}
+                      if (el) el.indeterminate = someChecked;
+                    }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
                   />
                 </TableHead>

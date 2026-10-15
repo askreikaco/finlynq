@@ -271,12 +271,12 @@ export default function TransferForm() {
           onValueChange={(v) => setHoldingId(v ?? "")}
           disabled={!sourceAccount}
           placeholder={
-                sourceAccount
-                  ? sourceHoldings.length === 0
-                    ? "No non-cash holdings in source"
-                    : "Pick a holding"
-                  : "Pick source account first"
-              }
+            sourceAccount
+              ? sourceHoldings.length === 0
+                ? "No non-cash holdings in source"
+                : "Pick a holding"
+              : "Pick source account first"
+          }
           options={sourceHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
         />
         <Field

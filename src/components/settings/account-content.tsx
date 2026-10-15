@@ -317,11 +317,10 @@ export function AccountContent({
                 onChange={(e) => setCurPw(e.target.value)}
               />
               <div>
-                <div className="flex items-center gap-1">
-                  <label className="text-xs font-medium text-muted-foreground">New</label>
-                  <InfoTip label="Password rule" text="At least 12 characters." />
-                </div>
                 <Field
+                  label="New"
+                  info="At least 12 characters."
+                  infoLabel="Password rule"
                   type="password"
                   autoComplete="new-password"
                   value={newPw}

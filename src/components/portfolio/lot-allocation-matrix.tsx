@@ -282,7 +282,6 @@ export function LotAllocationMatrix({
   // regular:pointer-fine:text-xs is REQUIRED: the base Input carries `regular:pointer-fine:text-sm`.
   // tailwind-merge only drops a base class with the SAME modifier, so the override must use it too.
   // Touch (pointer-coarse) keeps the base 16px text. Plain text-xs would shrink phones to 12px.
-  const inputCls = "h-7 w-16 px-1 text-right regular:pointer-fine:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-2.5">
@@ -316,22 +315,20 @@ export function LotAllocationMatrix({
             ))}
           </div>
           <span className="text-border">|</span>
-          <label className="flex items-center gap-1">From
-            <Field
-              control="date"
-              value={fromDate}
-              onChange={(e) => { setFromDate(e.target.value); setYearFilter("all"); }}
-              className="w-[130px]"
-            />
-          </label>
-          <label className="flex items-center gap-1">To
-            <Field
-              control="date"
-              value={toDate}
-              onChange={(e) => { setToDate(e.target.value); setYearFilter("all"); }}
-              className="w-[130px]"
-            />
-          </label>
+          <Field
+            label="From"
+            control="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setYearFilter("all"); }}
+            className="w-[130px]"
+          />
+          <Field
+            label="To"
+            control="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setYearFilter("all"); }}
+            className="w-[130px]"
+          />
         </div>
         {/* Buys filter — rows */}
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
@@ -349,22 +346,20 @@ export function LotAllocationMatrix({
             ))}
           </div>
           <span className="text-border">|</span>
-          <label className="flex items-center gap-1">From
-            <Field
-              control="date"
-              value={buyFrom}
-              onChange={(e) => { setBuyFrom(e.target.value); setBuyYear("all"); }}
-              className="w-[130px]"
-            />
-          </label>
-          <label className="flex items-center gap-1">To
-            <Field
-              control="date"
-              value={buyTo}
-              onChange={(e) => { setBuyTo(e.target.value); setBuyYear("all"); }}
-              className="w-[130px]"
-            />
-          </label>
+          <Field
+            label="From"
+            control="date"
+            value={buyFrom}
+            onChange={(e) => { setBuyFrom(e.target.value); setBuyYear("all"); }}
+            className="w-[130px]"
+          />
+          <Field
+            label="To"
+            control="date"
+            value={buyTo}
+            onChange={(e) => { setBuyTo(e.target.value); setBuyYear("all"); }}
+            className="w-[130px]"
+          />
           <span className="text-border">|</span>
           <Field
             label="Used lots only"
@@ -433,7 +428,9 @@ export function LotAllocationMatrix({
                             value={alloc[k] ?? ""}
                             placeholder="0"
                             onValueChange={(nv) => setCell(s.closeTxId, lot.id, nv)}
-                            className={inputCls}
+                            compact
+                            className="w-16"
+                            controlClassName="text-right tabular-nums"
                           />
                           {g && num(k) > EPS && (
                             <span className={`text-xs leading-none tabular-nums ${g.gain >= 0 ? "text-pos" : "text-destructive"}`}>
@@ -477,7 +474,9 @@ export function LotAllocationMatrix({
                         value={alloc[k] ?? ""}
                         placeholder="0"
                         onValueChange={(nv) => setCell(s.closeTxId, SHORT_LOT_ID, nv)}
-                        className={inputCls}
+                        compact
+                        className="w-16"
+                        controlClassName="text-right tabular-nums"
                       />
                     </td>
                   );

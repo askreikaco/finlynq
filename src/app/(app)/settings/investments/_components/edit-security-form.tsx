@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { parseSaveError } from "@/lib/save-error";
 import { ASSET_TYPE_LABELS, advisoryFor, type Security } from "./shared";
 import { Field, FieldGroup } from "@/components/ui/field";
-import { FormFooter, FormRow, SegmentedToggle } from "./form-rows";
+import { FormFooter } from "@/components/forms";
 
 type PriceSource = "auto" | "manual";
 
@@ -122,10 +122,10 @@ export function EditSecurityForm({
             error={errors.symbol}
             info="Changing this re-points the holding and its history to the new ticker."
             hint={
-                        !errors.symbol && advisoryFor(security) ? (
-                          <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
-                        ) : undefined
-                      }
+              !errors.symbol && advisoryFor(security) ? (
+                <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
+              ) : undefined
+            }
             id="edit-symbol"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
@@ -158,21 +158,17 @@ export function EditSecurityForm({
         {/* Pricing mode — manual securities are excluded from the market price API
             and valued off the prices you enter. Hidden for cash sleeves (always 1). */}
         {!isCash && (
-          <FormRow
+          <Field
             label="Pricing"
-            hint={
-              priceSource === "manual"
-                ? "Not fetched from the market. Set prices under Prices."
-                : "Prices are fetched automatically from Yahoo/CoinGecko."
-            }
-          >
-            <SegmentedToggle<PriceSource>
-              options={["auto", "manual"]}
-              value={priceSource}
-              onChange={setPriceSource}
-              labels={{ auto: "Auto-fetch", manual: "Manual" }}
-            />
-          </FormRow>
+            control="segmented"
+            info="Auto-fetch: prices come automatically from Yahoo/CoinGecko. Manual: not fetched from the market; set prices under Prices."
+            value={priceSource}
+            onValueChange={(v) => setPriceSource(v as PriceSource)}
+            options={[
+              { value: "auto", label: "Auto-fetch" },
+              { value: "manual", label: "Manual" },
+            ]}
+          />
         )}
       </FieldGroup>
       <FormFooter>

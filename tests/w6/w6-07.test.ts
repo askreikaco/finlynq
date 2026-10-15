@@ -16,7 +16,7 @@ const ARIA: [string, string, number][] = [
 // Split form (S-INT): rows are driven by the Splits count, so there is no per-row Remove control.
 // The count field is the accessible control and keeps the tall (touch-sized) row.
 const SPLIT_FORM = "src/app/(app)/transactions/_components/transaction-split-form.tsx";
-const SPLIT_COUNT = "src/components/transactions/split-rows/split-count-row.tsx";
+const SPLIT_COUNT = "src/components/transactions/split-rows/split-rows.tsx";
 const SKELETON: [string, string, number][] = [
   ["src/app/(app)/transactions/page.tsx", "bg-muted animate-pulse", 7],
 ];
@@ -40,10 +40,10 @@ describe("W6-07 design-system sweep", () => {
     expect(form.includes("<SplitRows")).toBe(true);
     const count = readFileSync(SPLIT_COUNT, "utf8");
     expect(count.includes("data-testid=\"split-count\"")).toBe(true);
-    // Two inputs carry the name: the page-variant input and the shared SplitCountControl (entry variant and the
-    // Split accordion header). They are mutually exclusive variants, never rendered together.
+    // Two stepper Fields carry the name: the page-variant count and the entry variant (the Split card header). They are
+    // mutually exclusive variants, never rendered together. The stepper is the 44px touch-sized control.
     expect(count.split("aria-label=\"Number of splits\"").length - 1).toBe(2);
-    expect(count.includes("height=\"tall\"")).toBe(true);
+    expect(count.includes("control=\"stepper\"")).toBe(true);
   });
   for (const [f, old] of SKELETON) {
     it(`${f} skeletons use animate-shimmer, not ${old}`, () => {

@@ -32,6 +32,7 @@ import {
   PickerControl,
   SegmentedControl,
   SelectControl,
+  StepperControl,
   SwitchControl,
   TextControl,
   TextareaControl,
@@ -78,8 +79,12 @@ export interface FieldChromeProps {
   className?: string;
   /** Classes of the control element itself: typography only (text-right, font-mono, tabular-nums). */
   controlClassName?: string;
+  /** Width of the control column (a Tailwind width class, e.g. "w-44"); with labelPlacement="inline" the label takes the rest. */
+  controlWidth?: string;
   /** 32px control for table cells and toolbar chips (44px on touch). */
   compact?: boolean;
+  /** Fully rounded control (toolbar search, range pill). */
+  pill?: boolean;
   id?: string;
   disabled?: boolean;
   ref?: React.Ref<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -177,9 +182,26 @@ export type SegmentedFieldProps = FieldChromeProps & {
   options: readonly FieldOption[];
   /** Equal-width columns across the whole row. */
   fill?: boolean;
+  /** Separate round chips instead of one bordered bar. */
+  pills?: boolean;
   "aria-label"?: string;
   "data-testid"?: string;
 };
+export type StepperFieldProps = FieldChromeProps &
+  Omit<NativeInput, "value" | "onChange" | "min" | "max" | "step" | "defaultValue"> & {
+    control: "stepper";
+    value: string | number;
+    /** The next text (digits only). */
+    onValueChange: (next: string) => void;
+    min?: number;
+    max?: number;
+    /** Noun for the button names: "Decrease {stepLabel}". */
+    stepLabel?: string;
+    /** Custom stepping rule (direction, current text) -> next text. */
+    onStep?: (delta: 1 | -1, current: string) => string;
+    /** Called on focus and before a step. */
+    onInteract?: () => void;
+  };
 export type PickerFieldProps = FieldChromeProps & {
   control: "picker";
   /** What is picked (shown in the button); empty shows the placeholder. */
@@ -209,6 +231,7 @@ export type FieldProps =
   | SwitchFieldProps
   | CheckboxFieldProps
   | SegmentedFieldProps
+  | StepperFieldProps
   | PickerFieldProps
   | CustomFieldProps;
 
@@ -238,7 +261,9 @@ export function Field(props: FieldProps) {
     testId,
     className,
     controlClassName,
+    controlWidth,
     compact = false,
+    pill = false,
     id: idProp,
     disabled,
     ref,
@@ -270,6 +295,7 @@ export function Field(props: FieldProps) {
     disabled,
     required,
     compact,
+    pill,
     row,
     prefix,
     suffix,
@@ -350,11 +376,15 @@ export function Field(props: FieldProps) {
           value={r.value}
           onValueChange={r.onValueChange}
           fill={r.fill}
+          pills={r.pills}
           testId={testIdOf}
         />
       );
       break;
     }
+    case "stepper":
+      controlNode = <StepperControl state={state} inputRef={ref} {...(rest as object as Omit<React.ComponentProps<typeof StepperControl>, "state">)} />;
+      break;
     case "picker": {
       const r = rest as unknown as Omit<PickerFieldProps, keyof FieldChromeProps | "control">;
       controlNode = (
@@ -406,8 +436,6 @@ export function Field(props: FieldProps) {
     <>
       {Icon ? <Icon aria-hidden="true" data-slot="form-row-icon" className="size-[18px] shrink-0 text-muted-foreground" /> : null}
       <span className={cn(hideLabel ? "sr-only" : "min-w-0 truncate")}>{label}</span>
-      {required && !hideLabel ? <span aria-hidden="true" className="text-destructive">*</span> : null}
-      {optional && !hideLabel ? <span className="text-xs font-normal text-muted-foreground">(optional)</span> : null}
     </>
   ) : Icon ? (
     <Icon aria-hidden="true" data-slot="form-row-icon" className="size-[18px] shrink-0 text-muted-foreground" />
@@ -423,6 +451,8 @@ export function Field(props: FieldProps) {
         >
           {labelContent}
         </LabelTag>
+        {required && !hideLabel ? <span aria-hidden="true" className="text-destructive">*</span> : null}
+        {optional && !hideLabel ? <span className="text-xs font-normal text-muted-foreground">(optional)</span> : null}
         {labelVisible ? infoNode : null}
       </div>
     ) : null;
@@ -445,7 +475,7 @@ export function Field(props: FieldProps) {
   ) : null;
 
   const controlRow = (
-    <div data-slot="field-control" className={cn("flex min-w-0 items-center gap-1.5", placement === "inline" ? "shrink-0" : "flex-1")}>
+    <div data-slot="field-control" className={cn("flex min-w-0 items-center gap-1.5", placement === "inline" ? "shrink-0" : "flex-1", controlWidth)}>
       <div className={cn("min-w-0", placement !== "inline" && "flex-1")}>{controlNode}</div>
       {tipAfter}
     </div>
@@ -453,7 +483,8 @@ export function Field(props: FieldProps) {
 
   // The root fills its parent (like the inputs it replaces) unless the caller sets a width. Only the left layout is a
   // size container (it needs to measure itself); a size container collapses to 0 wide when it is shrink-to-fit.
-  const rootBase = cn("w-full min-w-0", row && "py-2", className);
+  const natural = control === "segmented" && !rest.fill && !hasLabel; // a bare segmented bar is as wide as its options
+  const rootBase = cn(natural ? "w-auto max-w-full" : "w-full min-w-0", row && "py-2", className);
   const dataAttrs = {
     "data-slot": "field",
     "data-control": control,
@@ -526,6 +557,7 @@ export function FieldGroup({
   bare = false,
   label,
   info,
+  panel,
   icon,
   tone,
   children,
@@ -535,13 +567,24 @@ export function FieldGroup({
   label?: React.ReactNode;
   /** Help text for an (i) tip in the title row. */
   info?: React.ReactNode;
+  /** Content below the rows in the same card (an expandable panel); plain layout, not divider rows. */
+  panel?: React.ReactNode;
   icon?: LucideIcon;
   tone?: MetricTone | (string & {});
 }) {
   const rows = (
-    <FieldRowContext.Provider value={true}>
-      <div className="min-w-0 px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</div>
-    </FieldRowContext.Provider>
+    <>
+      <FieldRowContext.Provider value={true}>
+        <div className={cn("min-w-0 px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]", panel && "shadow-[var(--list-divider)]")}>
+          {children}
+        </div>
+      </FieldRowContext.Provider>
+      {panel ? (
+        <div data-slot="field-group-panel" className="px-4">
+          {panel}
+        </div>
+      ) : null}
+    </>
   );
   if (bare && !label) {
     return (

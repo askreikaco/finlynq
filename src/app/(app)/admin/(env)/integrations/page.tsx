@@ -11,7 +11,6 @@ import { useCallback, useEffect, useState } from "react";
 import { SectionPage } from "@/components/templates/section-page";
 import { TW } from "@/lib/design/tokens";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Mail, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
@@ -288,13 +287,13 @@ export default function AdminIntegrationsPage() {
               <Badge className={providerColor(status.provider)}>{providerLabel(status.provider)}</Badge>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground">From address</Label>
+              <span className="text-xs font-semibold text-muted-foreground">From address</span>
               <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm break-all">
                 {status.from.name} &lt;{status.from.address}&gt;
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-muted-foreground">Configured providers</Label>
+              <span className="text-xs font-semibold text-muted-foreground">Configured providers</span>
               <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {(["resend", "brevo", "smtp"] as const).map((p) => (
                   <li key={p}>
@@ -344,7 +343,6 @@ export default function AdminIntegrationsPage() {
                   { value: "brevo", label: "Brevo" },
                   { value: "smtp", label: "SMTP" },
                 ]}
-                className="w-full"
               />
               <Field
                 label="From"

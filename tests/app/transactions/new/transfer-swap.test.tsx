@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -87,7 +87,7 @@ describe("Transfer tab: From/To labels, currency trigger, swap", () => {
     const swap = await screen.findByRole("button", { name: "Swap accounts" });
     expect((swap as HTMLButtonElement).disabled).toBe(false);
     // Pick the To account from the sheet (Checking), then swap: From should become Checking, To Savings.
-    fireEvent.click(screen.getByTestId("txnew-row-to-account"));
+    fireEvent.click(within(screen.getByTestId("txnew-row-to-account")).getByRole("button"));
     fireEvent.click(await screen.findByRole("button", { name: /^Checking/ }));
     await waitFor(() => expect(screen.getByTestId("txnew-row-to-account").textContent).toContain("Checking"));
     expect(screen.getByTestId("txnew-row-account").textContent).toContain("Savings");

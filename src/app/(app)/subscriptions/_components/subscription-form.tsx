@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { parseSaveError } from "@/lib/save-error";
 import { TW } from "@/lib/design/tokens";
 import { FREQUENCY_LABELS, MAX_INTERVAL_DAYS, MIN_INTERVAL_DAYS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
-import { Field, type FieldComboboxOption } from "@/components/ui/field";
+import { Field, type FieldComboboxOption, FieldGroup } from "@/components/ui/field";
 import type { Subscription } from "./types";
 
 export type SubscriptionDraft = {
@@ -67,19 +66,6 @@ export interface SubscriptionFormProps {
   onCancel: () => void;
   /** Called after a successful save; the page navigates away. */
   onSaved: () => void;
-}
-
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-
-function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
 }
 
 /**
@@ -153,7 +139,7 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl border border-border bg-card">
+      <FieldGroup>
         <Field
           label="Name"
           id="sub-name"
@@ -206,7 +192,6 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           placeholder={displayCurrency}
           searchPlaceholder="Search…"
           emptyMessage="No matches"
-          className="w-full"
         />
         <Field
           label="Next payment"
@@ -228,7 +213,6 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           placeholder="None"
           searchPlaceholder="Search categories…"
           emptyMessage="No matches"
-          className="w-full"
         />
         <Field
           label="Paid from"
@@ -243,7 +227,6 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           placeholder="None"
           searchPlaceholder="Search accounts…"
           emptyMessage="No matches"
-          className="w-full"
         />
         <Field
           label="Remind me to cancel on"
@@ -258,7 +241,7 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
         />
-      </div>
+      </FieldGroup>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="flex-1" onClick={onCancel} disabled={saving}>Cancel</Button>

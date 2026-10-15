@@ -937,10 +937,10 @@ export function InboxReconcileTab({
           id="inbox-date-from"
           value={dateFrom ?? ""}
           onChange={(e) => {
-                    const v = e.target.value;
-                    setDateFrom(v ? v : null);
-                    setRejected(new Set());
-                  }}
+            const v = e.target.value;
+            setDateFrom(v ? v : null);
+            setRejected(new Set());
+          }}
           compact
         />
         <span className="text-muted-foreground">→</span>
@@ -950,10 +950,10 @@ export function InboxReconcileTab({
           id="inbox-date-to"
           value={dateTo ?? ""}
           onChange={(e) => {
-                    const v = e.target.value;
-                    setDateTo(v ? v : null);
-                    setRejected(new Set());
-                  }}
+            const v = e.target.value;
+            setDateTo(v ? v : null);
+            setRejected(new Set());
+          }}
           compact
         />
         <div

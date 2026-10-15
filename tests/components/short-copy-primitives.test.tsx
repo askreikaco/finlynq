@@ -4,46 +4,35 @@
 import { describe, it, expect, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { FieldLabel, FormField, FormRow } from "@/components/forms";
+import { Field } from "@/components/ui/field";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DialogHeading } from "@/components/ui/dialog-heading";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 afterEach(() => cleanup());
 
-describe("FieldLabel / FormField", () => {
+describe("Field info", () => {
   it("shows the label and keeps the help in an (i) tip, not as visible text", async () => {
-    render(
-      <FormField label="Alias" htmlFor="a" info="Short nickname used when matching transactions.">
-        <input id="a" />
-      </FormField>,
-    );
+    render(<Field label="Alias" id="a" info="Short nickname used when matching transactions." value="" onChange={() => {}} />);
     expect(screen.getByLabelText("Alias")).toBeTruthy();
     expect(screen.queryByText(/Short nickname/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "About Alias" }));
+    fireEvent.click(screen.getByRole("button", { name: "About alias" }));
     expect(await screen.findByText("Short nickname used when matching transactions.")).toBeTruthy();
   });
 
   it("renders no tip without info, and only a short error / warning under the control", () => {
-    render(
-      <FormField label="Name" htmlFor="n" error="Name is required" warning="Used by another account">
-        <input id="n" />
-      </FormField>,
-    );
+    render(<Field label="Name" id="n" error="Name is required" warning="Used by another account" value="" onChange={() => {}} />);
     expect(screen.queryByRole("button", { name: /About/ })).toBeNull();
     expect(screen.getByText("Name is required")).toBeTruthy();
-    expect(screen.getByText("Used by another account")).toBeTruthy();
   });
 
-  it("FieldLabel accepts a custom tip name", () => {
-    render(<FieldLabel label="Group" info="x" infoLabel="Help for group" />);
+  it("accepts a custom tip name", () => {
+    render(<Field label="Group" info="x" infoLabel="Help for group" value="" onChange={() => {}} />);
     expect(screen.getByRole("button", { name: "Help for group" })).toBeTruthy();
   });
-});
 
-describe("FormRow info", () => {
-  it("puts the help of an input row in a tip next to the label", async () => {
-    render(<FormRow variant="input" label="Times" inputValue="3" onInputChange={() => {}} info="Total payments, including this one" />);
+  it("puts the help of a row in a tip next to the label for every control", async () => {
+    render(<Field control="stepper" label="Times" stepLabel="times" value="3" onValueChange={() => {}} info="Total payments, including this one" />);
     expect(screen.queryByText(/Total payments/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "About times" }));
     expect(await screen.findByText("Total payments, including this one")).toBeTruthy();

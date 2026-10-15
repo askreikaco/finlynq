@@ -22,6 +22,7 @@ export function Surface({
   invalid,
   disabled,
   compact,
+  pill,
   row,
   multiline,
   className,
@@ -31,6 +32,7 @@ export function Surface({
   invalid?: boolean;
   disabled?: boolean;
   compact?: boolean;
+  pill?: boolean;
   row?: boolean;
   multiline?: boolean;
 }) {
@@ -44,6 +46,7 @@ export function Surface({
         row
           ? "min-h-11 dense:pointer-fine:min-h-9 w-full min-w-0 text-base regular:pointer-fine:text-sm"
           : cn(CONTROL_SURFACE, compact ? CONTROL_BOX_COMPACT : CONTROL_BOX, CONTROL_STATE, CONTROL_FOCUS_WITHIN),
+        pill && !row && "rounded-full",
         multiline && "h-auto items-start py-2",
         multiline && !row && "min-h-11",
         className,

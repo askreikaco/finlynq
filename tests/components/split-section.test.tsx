@@ -70,6 +70,13 @@ afterEach(() => {
   cleanup();
 });
 
+/** The error message of a split row's amount Field (via aria-describedby), or null when it has none. */
+function fieldError(n: number): string | null {
+  const input = screen.getByTestId(`split-amount-${n}`);
+  const id = input.getAttribute("aria-invalid") === "true" ? input.getAttribute("aria-describedby") : null;
+  return id ? (document.getElementById(id)?.textContent ?? null) : null;
+}
+
 describe("SplitSection count field", () => {
   it("shows the Splits count field instead of a switch, with no Add Split Row button", () => {
     render(<Harness />);
@@ -186,15 +193,15 @@ describe("SplitSection amounts and numpad", () => {
 describe("SplitSection validation messages", () => {
   it("hides the empty-amount message until showEmptyErrors is set", () => {
     const { rerender } = render(<Harness initialCount="2" showEmptyErrors={false} />);
-    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(fieldError(1)).toBeNull();
     rerender(<Harness initialCount="2" showEmptyErrors />);
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
+    expect(fieldError(1)).toBe("Enter an amount");
   });
 
   it("shows an amount error for zero or negative values", () => {
     render(<Harness initialCount="2" />);
     typeAmount(1, "0");
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+    expect(fieldError(1)).toBe("Amount must be more than 0");
   });
 });
 

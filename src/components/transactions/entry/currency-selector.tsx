@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Field } from "@/components/ui/field";
 import { PICKER_SHEET_CLASS, PickerCard, PickerRow } from "./grouped-picker";
 
 interface CurrencySelectorProps {
@@ -60,20 +61,14 @@ export function CurrencySelector({
       <SheetContent side="bottom" className={PICKER_SHEET_CLASS}>
         <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
           <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
-          <div className="relative mt-3">
-            <Search
-              aria-hidden="true"
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-            />
-            <input
-              type="text"
-              aria-label="Search currency..."
-              placeholder="Search currency..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-base text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
-            />
-          </div>
+          <Field
+            className="mt-3"
+            aria-label="Search currency..."
+            placeholder="Search currency..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            prefix={<Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
+          />
         </SheetHeader>
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
           {rows.length === 0 ? (

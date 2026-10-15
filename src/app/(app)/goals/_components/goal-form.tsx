@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { X } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { isLocalWriteQueueActive, queueOfflineEntityCreate, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
-import { Field } from "@/components/ui/field";
-import { FieldLabel } from "@/components/forms";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 
 export type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -288,43 +286,43 @@ export function GoalForm({
           ]}
         />
       </div>
-      <div>
-        <FieldLabel label="Linked Accounts" labelClassName="text-foreground" info="Goal progress sums transactions across every linked account. Leave empty for manual tracking." />
-        {form.accountIds.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {form.accountIds.map((id) => {
-              const a = accounts.find((x) => x.id === id);
-              return (
-                <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs font-medium border border-border/60">
-                  {a?.name ?? `#${id}`}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${a?.name ?? `#${id}`}`}
-                    onClick={() => removeAccount(id)}
-                    className="hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
+      <Field
+        label="Linked Accounts"
+        control="combobox"
+        info="Goal progress sums transactions across every linked account. Leave empty for manual tracking."
+        value=""
+        onValueChange={(v) => addAccount(v ?? "")}
+        options={sortAccount(
+          availableAccounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+          (a) => Number(a.value),
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
         )}
-        <Field
-          control="combobox"
-          value=""
-          onValueChange={(v) => addAccount(v ?? "")}
-          options={sortAccount(
-            availableAccounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-            (a) => Number(a.value),
-            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-          )}
-          placeholder={form.accountIds.length === 0 ? "Add an account…" : "Add another…"}
-          searchPlaceholder="Search accounts…"
-          emptyMessage="No matches"
-          className="w-full"
-        />
-      </div>
+        placeholder={form.accountIds.length === 0 ? "Add an account…" : "Add another…"}
+        searchPlaceholder="Search accounts…"
+        emptyMessage="No matches"
+        hint={
+          form.accountIds.length > 0 ? (
+            <span className="flex flex-wrap gap-1.5 pt-1">
+              {form.accountIds.map((id) => {
+                const a = accounts.find((x) => x.id === id);
+                return (
+                  <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs font-medium border border-border/60 text-foreground">
+                    {a?.name ?? `#${id}`}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${a?.name ?? `#${id}`}`}
+                      onClick={() => removeAccount(id)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </span>
+          ) : undefined
+        }
+      />
       <Field label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
       {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
       <div className="flex gap-2">

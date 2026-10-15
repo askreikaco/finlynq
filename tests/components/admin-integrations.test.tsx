@@ -124,7 +124,8 @@ describe("Admin Integrations page", () => {
     handlers["PUT /api/admin/integrations/email/settings"] = () => Response.json({ fields: {}, canRevert: true });
     const user = userEvent.setup();
     render(<Page />);
-    await user.selectOptions(await screen.findByLabelText("Provider"), "resend");
+    await user.click(await screen.findByRole("combobox", { name: "Provider" }));
+    await user.click(await screen.findByRole("option", { name: "Resend" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByText(/6-digit authenticator code/)).toBeTruthy();
     await user.type(document.querySelector("#email-step-up")!, "123456");
@@ -147,7 +148,7 @@ describe("Admin Integrations page", () => {
     await user.type(await screen.findByLabelText("Resend API key"), "re_newkey");
     await user.click(screen.getByRole("button", { name: "Save" }));
     await user.type(document.querySelector("#email-step-up")!, "pw");
-    await user.type(screen.getByLabelText("Send test to (optional)"), "me@example.com");
+    await user.type(screen.getByLabelText("Send test to"), "me@example.com");
     await user.click(screen.getByRole("button", { name: "Save & send test" }));
     await screen.findByText("Test email sent via Resend");
     expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ resendApiKey: "re_newkey", password: "pw", testTo: "me@example.com" });

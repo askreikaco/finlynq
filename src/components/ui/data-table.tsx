@@ -273,14 +273,13 @@ export function DataTable<T>({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium">Columns:</span>
           {hideableColumns.map((col) => (
-            <label key={col.key} className="inline-flex items-center gap-2 cursor-pointer">
-              {typeof col.header === "string" ? col.header : col.key}
-              <Field
-                control="switch"
-                checked={!hidden.has(col.key)}
-                onCheckedChange={() => toggleHidden(col.key)}
-              />
-            </label>
+            <Field
+              key={col.key}
+              label={typeof col.header === "string" ? col.header : col.key}
+              control="switch"
+              checked={!hidden.has(col.key)}
+              onCheckedChange={() => toggleHidden(col.key)}
+            />
           ))}
         </div>
       )}
@@ -364,7 +363,6 @@ export function DataTable<T>({
                       onChange={(e) => setFilter(col.key, e.target.value)}
                       placeholder="Filter…"
                       compact
-                      className="w-full"
                       controlClassName="font-normal tracking-normal text-foreground"
                     />
                   ) : col.filter === "select" ? (
@@ -373,7 +371,6 @@ export function DataTable<T>({
                       value={filters[col.key] ?? ""}
                       onValueChange={(v) => setFilter(col.key, v)}
                       compact
-                      className="w-full"
                       controlClassName="font-normal tracking-normal text-foreground"
                       options={[
                         { value: "", label: "All" },

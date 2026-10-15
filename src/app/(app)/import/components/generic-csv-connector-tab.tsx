@@ -403,24 +403,21 @@ export function GenericCsvConnectorTab() {
                 </h3>
                 <div className="grid gap-2 regular:grid-cols-2">
                   {FIELDS.map((f) => (
-                    <div key={f.key} className="flex items-center gap-2">
-                      <Field
-                        label={<>{f.label} {f.required && <span className="text-destructive"> *</span>}</>}
-                        control="select"
-                        value={mapping[f.key] ?? NONE}
-                        onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}
-                        placeholder="— Not mapped —"
-                        className={`h-8 flex-1 ${
-                            f.required && !mapping[f.key]
-                              ? "border-destructive/60"
-                              : ""
-                          }`}
-                        options={[
-                          ...(!f.required ? [{ value: NONE, label: "— Not mapped —" }] : []),
-                          ...headers.map((h) => ({ value: h, label: h })),
-                        ]}
-                      />
-                    </div>
+                    <Field
+                      key={f.key}
+                      label={f.label}
+                      required={f.required}
+                      control="select"
+                      compact
+                      value={mapping[f.key] ?? NONE}
+                      onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}
+                      placeholder="— Not mapped —"
+                      invalid={f.required && !mapping[f.key]}
+                      options={[
+                        ...(!f.required ? [{ value: NONE, label: "— Not mapped —" }] : []),
+                        ...headers.map((h) => ({ value: h, label: h })),
+                      ]}
+                    />
                   ))}
                 </div>
                 {missingRequired.length > 0 && (

@@ -19,7 +19,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -168,11 +167,11 @@ export function ColumnFilterPopover({
                   draft && draft.type === "numeric"
                     ? draft
                     : {
-                        type: "numeric" as const,
-                        columnId,
-                        op: "eq" as const,
-                        value: 0,
-                      };
+                      type: "numeric" as const,
+                      columnId,
+                      op: "eq" as const,
+                      value: 0,
+                    };
                 setDraft({ ...cur, value: n } as TableColFilter);
               }}
               onKeyDown={swallowMenuKeys}
@@ -199,7 +198,7 @@ export function ColumnFilterPopover({
         )}
         {filterType === "enum" && (
           <>
-            <Label className="text-xs">Match any of</Label>
+            <span className="text-xs font-medium">Match any of</span>
             <div className="max-h-48 overflow-y-auto space-y-1 border rounded p-2">
               {options.length === 0 && (
                 <p className="text-xs text-muted-foreground">No options.</p>
@@ -208,26 +207,22 @@ export function ColumnFilterPopover({
                 const checked =
                   draft?.type === "enum" && draft.values.includes(opt.value);
                 return (
-                  <label
+                  <Field
                     key={opt.value}
-                    className="flex items-center gap-2 text-xs cursor-pointer"
-                  >
-                    <Field
-                      control="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                                            const cur =
-                                              draft && draft.type === "enum"
-                                                ? draft
-                                                : { type: "enum" as const, columnId, values: [] };
-                                            const values = e.target.checked
-                                              ? Array.from(new Set([...cur.values, opt.value]))
-                                              : cur.values.filter((v) => v !== opt.value);
-                                            setDraft({ ...cur, values });
-                                          }}
-                    />
-                    {opt.label}
-                  </label>
+                    label={opt.label}
+                    control="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      const cur =
+                        draft && draft.type === "enum"
+                          ? draft
+                          : { type: "enum" as const, columnId, values: [] };
+                      const values = e.target.checked
+                        ? Array.from(new Set([...cur.values, opt.value]))
+                        : cur.values.filter((v) => v !== opt.value);
+                      setDraft({ ...cur, values });
+                    }}
+                  />
                 );
               })}
             </div>

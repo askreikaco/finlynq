@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) =>
@@ -154,13 +155,19 @@ describe("Apply template page (/budgets/templates/apply)", () => {
   });
 });
 
+/** Choose a category in the From / To combobox (open it, tap the option whose label starts with the name). */
+async function pickCategory(field: "From" | "To", name: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: field }));
+  await user.click(await screen.findByRole("option", { name: new RegExp(`^${name}`) }));
+}
+
 describe("Move money page (/budgets/move-money)", () => {
   it("moves funds: the source is reduced and the target increased", async () => {
     render(<MoveMoneyRoute />);
     await waitFor(() => expect(calls.some((c) => c.url.startsWith("/api/dashboard"))).toBe(true));
-    const pickers = screen.getAllByLabelText("Select category");
-    fireEvent.change(pickers[0], { target: { value: "10" } });
-    fireEvent.change(pickers[1], { target: { value: "11" } });
+    await pickCategory("From", "Food");
+    await pickCategory("To", "Fun");
     fireEvent.change(document.querySelector('input[placeholder="50.00"]') as HTMLInputElement, { target: { value: "50" } });
     fireEvent.click(screen.getByRole("button", { name: "Move Funds" }));
     await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
@@ -173,15 +180,12 @@ describe("Move money page (/budgets/move-money)", () => {
   it("does not allow moving money from a category into itself", async () => {
     render(<MoveMoneyRoute />);
     await waitFor(() => expect(calls.some((c) => c.url.startsWith("/api/dashboard"))).toBe(true));
-    const pickers = await waitFor(() => {
-      const p = screen.getAllByLabelText("Select category");
-      expect(p).toHaveLength(2);
-      return p;
-    });
-    fireEvent.change(pickers[0], { target: { value: "10" } });
+    await pickCategory("From", "Food");
     fireEvent.change(document.querySelector('input[placeholder="50.00"]') as HTMLInputElement, { target: { value: "5" } });
     // Once "From" is set, "To" no longer offers that category; the button stays disabled until a distinct To is chosen.
-    fireEvent.change(pickers[1], { target: { value: "10" } });
+    await userEvent.setup().click(screen.getByRole("combobox", { name: "To" }));
+    expect(await screen.findByRole("option", { name: /^Fun/ })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /^Food/ })).toBeNull();
     expect((screen.getByRole("button", { name: "Move Funds" }) as HTMLButtonElement).disabled).toBe(true);
     expect(postsTo("/api/budgets")).toHaveLength(0);
   });

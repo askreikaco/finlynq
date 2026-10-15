@@ -507,7 +507,6 @@ function FirePageContent() {
                   value={String(selectedSavings)}
                   onValueChange={(v) => setSensChoice(v)}
                   aria-label="Monthly savings"
-                  className="w-full"
                   options={savingsAdj.map((s) => ({ value: String(s), label: <>{formatCurrency(s, displayCurrency)}/mo</> }))}
                 />
               )}

@@ -7,11 +7,11 @@ import { useState } from "react";
 
 import {
   SplitRows,
+  stepCount,
   validateSplits,
   type SplitRowModel,
 } from "@/components/transactions/split-rows";
 import { formatCurrency } from "@/lib/currency";
-import { stepCount } from "@/components/transactions/split-rows/split-count-row";
 
 afterEach(() => {
   cleanup();
@@ -95,6 +95,13 @@ const row = (id: string, amount = "", categoryId = ""): SplitRowModel => ({
   amount,
   note: "",
 });
+
+/** The error message of a split row's amount Field (via aria-describedby), or null when it has none. */
+function fieldError(n: number): string | null {
+  const input = screen.getByTestId(`split-amount-${n}`);
+  const id = input.getAttribute("aria-invalid") === "true" ? input.getAttribute("aria-describedby") : null;
+  return id ? (document.getElementById(id)?.textContent ?? null) : null;
+}
 
 describe("SplitRows wording", () => {
   it("shows the Splits count field with a numeric keyboard and the Split icon row", () => {
@@ -237,17 +244,17 @@ describe("SplitRows errors", () => {
   it("flags zero and negative amounts on the row", () => {
     const { unmount } = render(<Harness initialCount="2" />);
     typeAmount(1, "0");
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+    expect(fieldError(1)).toBe("Amount must be more than 0");
     unmount();
 
     render(<Harness initialCount="2" />);
     typeAmount(1, "-5");
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+    expect(fieldError(1)).toBe("Amount must be more than 0");
   });
 
   it("flags an empty editable amount", () => {
     render(<Harness initialCount="2" />);
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
+    expect(fieldError(1)).toBe("Enter an amount");
   });
 
   it("hides the empty-amount message when showEmptyErrors is false (other errors still show)", () => {
@@ -269,7 +276,7 @@ describe("SplitRows errors", () => {
         showEmptyErrors={false}
       />,
     );
-    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(fieldError(1)).toBeNull();
     unmount();
   });
 
@@ -292,7 +299,7 @@ describe("SplitRows errors", () => {
         showEmptyErrors={() => false}
       />,
     );
-    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(fieldError(1)).toBeNull();
     expect(screen.getByTestId("split-status-error").textContent).toBe("Enter an amount for split 1");
   });
 
@@ -315,8 +322,8 @@ describe("SplitRows errors", () => {
         showEmptyErrors={(rowId) => rowId === "b"}
       />,
     );
-    expect(screen.queryByTestId("split-error-1")).toBeNull();
-    expect(screen.getByTestId("split-error-2").textContent).toBe("Enter an amount");
+    expect(fieldError(1)).toBeNull();
+    expect(fieldError(2)).toBe("Enter an amount");
     expect(screen.getByTestId("split-status-error").textContent).toBe("Enter an amount for split 1");
   });
 
@@ -332,7 +339,7 @@ describe("SplitRows errors", () => {
   it("shows no error for a valid split", () => {
     render(<Harness initialCount="2" />);
     typeAmount(1, "30");
-    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(fieldError(1)).toBeNull();
     expect(screen.queryByTestId("split-status-error")).toBeNull();
   });
 });
@@ -360,7 +367,7 @@ describe("SplitRows category chip", () => {
     render(<Harness initialCount="2" parentCategoryId="" />);
     const chip = screen.getByTestId("split-category-1");
     expect(chip.textContent).toBe("Choose category");
-    expect(chip.className.includes("text-warning")).toBe(true);
+    expect(chip.getAttribute("aria-invalid")).toBe("true");
   });
 
   it("calls onOpenCategory with the row id when tapped", () => {
@@ -645,9 +652,9 @@ describe("SplitRows entry variant (New Expense)", () => {
 
   it("keeps per-row amount errors", () => {
     render(<Harness variant="entry" initialCount="2" />);
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
+    expect(fieldError(1)).toBe("Enter an amount");
     typeAmount(1, "0");
-    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+    expect(fieldError(1)).toBe("Amount must be more than 0");
   });
 
   it("shows 'Choose a category first' as the status error when the parent category is empty", () => {

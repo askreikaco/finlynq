@@ -23,7 +23,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Label } from "@/components/ui/label";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import {
   Plus, Trash2, AlertTriangle, ChevronUp, ChevronDown,
@@ -287,7 +286,7 @@ export function RuleEditorForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Label>Conditions</Label>
+              <span className="text-sm font-medium">Conditions</span>
               <InfoTip label="About conditions" text="All conditions must match (AND)." />
             </span>
             <Button size="sm" variant="outline" aria-label="Add condition" onClick={() => setConditions([...conditions, blankCondition()])}>
@@ -309,7 +308,7 @@ export function RuleEditorForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Label>Actions</Label>
+              <span className="text-sm font-medium">Actions</span>
               <InfoTip label="About actions" text="Applied in order." />
             </span>
             <Button size="sm" variant="outline" aria-label="Add action" onClick={() => setActions([...actions, blankAction()])}>
@@ -334,7 +333,7 @@ export function RuleEditorForm({
         {/* Live preview */}
         <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
           <span className="flex items-center gap-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Preview</Label>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Preview</span>
             <InfoTip label="About preview" text="Pure actions only. Side-effect actions (set account, transfer, investment transaction) run only on staging-approve or reconcile, so they are not in the patch." />
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -688,13 +687,13 @@ function ActionRow({
       }`}
     >
       <div className={isInvestmentOp ? "flex items-center gap-2" : "contents"}>
-      <Field
-        control="select"
-        value={action.kind}
-        onValueChange={(v) => setKind((v ?? "set_category") as Action["kind"])}
-        className="w-56"
-        options={ACTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-      />
+        <Field
+          control="select"
+          value={action.kind}
+          onValueChange={(v) => setKind((v ?? "set_category") as Action["kind"])}
+          className="w-56"
+          options={ACTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+        />
 
       {action.kind === "set_category" && (
         <Field
@@ -872,11 +871,11 @@ function InvestmentOpFields({
             onChange(
               (v === "shares"
                 ? {
-                    settleAs: "shares",
-                    // Shares need qty + value; seed row bindings if blank.
-                    qty: action.qty ?? { from: "row_quantity" },
-                    total: action.total ?? { from: "row_amount" },
-                  }
+                  settleAs: "shares",
+                  // Shares need qty + value; seed row bindings if blank.
+                  qty: action.qty ?? { from: "row_quantity" },
+                  total: action.total ?? { from: "row_amount" },
+                }
                 : { settleAs: "cash" }) as Partial<Action>,
             )
           }
@@ -915,11 +914,11 @@ function InvestmentOpFields({
       )}
 
       {usesPosition && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="w-28 text-xs text-muted-foreground">Holding</Label>
+        <>
           <Field
-            label="Resolve from row ticker"
+            label="Resolve holding from row ticker"
             control="switch"
+            info={!isTrade && !isShares ? "Optional." : isShares ? "Required." : undefined}
             checked={action.useRowTicker ?? false}
             onCheckedChange={(v) =>
               onChange({
@@ -930,6 +929,7 @@ function InvestmentOpFields({
           />
           {!action.useRowTicker && (
             <Field
+              label="Holding"
               control="combobox"
               value={String(action.holdingId ?? "")}
               onValueChange={(v) => onChange({ holdingId: parseInt(v ?? "0") } as Partial<Action>)}
@@ -940,17 +940,7 @@ function InvestmentOpFields({
               className="flex-1 min-w-48"
             />
           )}
-          {!isTrade && !isShares && action.useRowTicker && (
-            <span className="text-xs text-muted-foreground italic">
-              optional
-            </span>
-          )}
-          {isShares && (
-            <span className="text-xs text-muted-foreground italic">
-              required
-            </span>
-          )}
-        </div>
+        </>
       )}
 
       {usesTradeBindings ? (

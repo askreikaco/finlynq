@@ -120,19 +120,19 @@ export function FilePane({
           label="Select all sendable"
           control="checkbox"
           checked={
-                      selectableRows.length > 0 &&
-                      selectableRows.every((r) => selected.has(r.id))
-                    }
+            selectableRows.length > 0 &&
+            selectableRows.every((r) => selected.has(r.id))
+          }
           onChange={() => {
-                      const everySelected = selectableRows.every((r) => selected.has(r.id));
-                      if (everySelected) {
-                        selectableRows.forEach((r) => onToggleSelect(r.id));
-                      } else {
-                        selectableRows
-                          .filter((r) => !selected.has(r.id))
-                          .forEach((r) => onToggleSelect(r.id));
-                      }
-                    }}
+            const everySelected = selectableRows.every((r) => selected.has(r.id));
+            if (everySelected) {
+              selectableRows.forEach((r) => onToggleSelect(r.id));
+            } else {
+              selectableRows
+                .filter((r) => !selected.has(r.id))
+                .forEach((r) => onToggleSelect(r.id));
+            }
+          }}
           aria-label="Select all sendable rows"
         />
         <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">

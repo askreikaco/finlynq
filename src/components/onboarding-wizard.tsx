@@ -136,8 +136,6 @@ export function OnboardingWizard({
   // the field. A fixed `pl-7` sized for `$` made JPY render as "JP¥600" with the
   // symbol sitting on top of the amount. Only reachable since the currency list
   // widened past USD/CAD, so scale the padding with the symbol instead.
-  const amountPadding =
-    currencySymbol.length >= 3 ? "pl-12" : currencySymbol.length === 2 ? "pl-9" : "pl-7";
 
   function goNext() {
     setDirection(1);
@@ -367,22 +365,17 @@ export function OnboardingWizard({
                     />
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium" htmlFor="currency">
-                      Reporting currency
-                    </label>
-                    <div className="mt-1.5">
-                      <Field
-                        control="combobox"
-                        value={currency}
-                        onValueChange={(v) => setCurrency(v || "USD")}
-                        options={currencyOptions}
-                        placeholder="Select currency"
-                        searchPlaceholder="Search currencies…"
-                        emptyMessage="No matching currency"
-                      />
-                    </div>
-                  </div>
+                  <Field
+                    label="Reporting currency"
+                    control="combobox"
+                    id="currency"
+                    value={currency}
+                    onValueChange={(v) => setCurrency(v || "USD")}
+                    options={currencyOptions}
+                    placeholder="Select currency"
+                    searchPlaceholder="Search currencies…"
+                    emptyMessage="No matching currency"
+                  />
 
                 </div>
               )}
@@ -506,24 +499,21 @@ export function OnboardingWizard({
                     {BUDGET_PRESETS.map(({ category }) => (
                       <div key={category} className="flex items-center gap-3">
                         <span className="w-36 text-sm font-medium shrink-0">{category}</span>
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            {currencySymbol}
-                          </span>
-                          <Field
-                            control="amount"
-                            min={0}
-                            step={10}
-                            value={budgetAmounts[category]}
-                            onValueChange={(nv) =>
-                              setBudgetAmounts((prev) => ({
-                                ...prev,
-                                [category]: Number(nv),
-                              }))
-                            }
-                            className={`w-full rounded-lg border bg-background ${amountPadding} pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20`}
-                          />
-                        </div>
+                        <Field
+                          control="amount"
+                          aria-label={`${category} budget`}
+                          min={0}
+                          step={10}
+                          value={budgetAmounts[category]}
+                          onValueChange={(nv) =>
+                            setBudgetAmounts((prev) => ({
+                              ...prev,
+                              [category]: Number(nv),
+                            }))
+                          }
+                          prefix={<span className="shrink-0 text-sm text-muted-foreground">{currencySymbol}</span>}
+                          className="flex-1"
+                        />
                       </div>
                     ))}
                   </div>

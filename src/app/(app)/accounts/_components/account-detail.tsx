@@ -24,7 +24,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -44,8 +43,7 @@ import {
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Field } from "@/components/ui/field";
-import { FieldLabel } from "@/components/forms";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 
 type Account = {
   id: number;
@@ -628,7 +626,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
                   checked={invisible}
                   onCheckedChange={handleInvisibleToggle}
                   disabled={savingInvisible}
-                  role="switch"
+                  aria-label="Invisible"
                 />
               }
             />
@@ -676,24 +674,19 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
             <DialogTitle>Add cash sleeve</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateSleeve} className="space-y-4">
-            <div className="space-y-1.5">
-              <FieldLabel
-                label="Currency"
-                info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
-              />
-              <Field
-                control="combobox"
-                value={newSleeveCurrency}
-                onValueChange={(v) => setNewSleeveCurrency(v || "")}
-                options={sleeveCurrencyOptions.map(
-                  (c): ComboboxItemShape => ({ value: c, label: c }),
-                )}
-                placeholder="Pick a currency"
-                searchPlaceholder="Search…"
-                emptyMessage="No matches"
-                className="w-full"
-              />
-            </div>
+            <Field
+              label="Currency"
+              control="combobox"
+              info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
+              value={newSleeveCurrency}
+              onValueChange={(v) => setNewSleeveCurrency(v || "")}
+              options={sleeveCurrencyOptions.map(
+                (c): FieldComboboxOption => ({ value: c, label: c }),
+              )}
+              placeholder="Pick a currency"
+              searchPlaceholder="Search…"
+              emptyMessage="No matches"
+            />
             {newSleeveError && (
               <p className="text-sm text-destructive">{newSleeveError}</p>
             )}

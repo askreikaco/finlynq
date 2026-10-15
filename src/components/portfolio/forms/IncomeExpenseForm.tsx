@@ -394,10 +394,10 @@ export default function IncomeExpenseForm() {
             onValueChange={(v) => setCurrency(v ?? "")}
             disabled={!selectedAccount || cashSleeves.length === 0}
             placeholder={
-                  selectedAccount && cashSleeves.length === 0
-                    ? "No cash sleeves on this account"
-                    : "Pick a sleeve"
-                }
+              selectedAccount && cashSleeves.length === 0
+                ? "No cash sleeves on this account"
+                : "Pick a sleeve"
+            }
             options={cashSleeves.map((s) => ({ value: s.currency, label: s.currency }))}
           />
         )}
@@ -451,14 +451,14 @@ export default function IncomeExpenseForm() {
           onValueChange={(v) => setRelatedHoldingId(v ?? "")}
           disabled={!selectedAccount || accountHoldings.length === 0}
           placeholder={
-                selectedAccount
-                  ? accountHoldings.length === 0
-                    ? "No non-cash holdings"
-                    : sharesMode
-                      ? "Pick the holding the shares land on"
-                      : "Optional, for attribution"
-                  : "Pick an account first"
-              }
+            selectedAccount
+              ? accountHoldings.length === 0
+                ? "No non-cash holdings"
+                : sharesMode
+                  ? "Pick the holding the shares land on"
+                  : "Optional, for attribution"
+              : "Pick an account first"
+          }
           options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`}</> }))}
         />
 
@@ -470,10 +470,10 @@ export default function IncomeExpenseForm() {
             onValueChange={(v) => setCategoryId(v ?? "")}
             disabled={categories.length === 0}
             placeholder={
-                  categories.length === 0
-                    ? "No categories available"
-                    : "Pick a category (optional)"
-                }
+              categories.length === 0
+                ? "No categories available"
+                : "Pick a category (optional)"
+            }
             options={categories.map((c) => ({ value: String(c.id), label: <>{c.name ?? `#${c.id}`} {c.group ? ` (${c.group})` : ""}</> }))}
           />
         )}

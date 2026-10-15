@@ -17,48 +17,10 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Field } from "@/components/ui/field";
 
 export type CsvMappingMode = "confirm" | "auto";
 export type OfxPayeeSource = "name" | "memo";
-
-function Radio<T extends string>({
-  name,
-  options,
-  value,
-  onChange,
-  disabled,
-}: {
-  name: string;
-  options: { value: T; label: string; hint: string }[];
-  value: T;
-  onChange: (v: T) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div role="radiogroup" className="space-y-1.5">
-      {options.map((opt) => (
-        <div key={opt.value} className="flex items-center gap-1">
-          <label
-            className={`flex min-w-0 flex-1 items-center gap-2 text-sm ${
-              disabled ? "opacity-60" : "cursor-pointer"
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              checked={value === opt.value}
-              disabled={disabled}
-              onChange={() => onChange(opt.value)}
-            />
-            <span className="font-medium">{opt.label}</span>
-          </label>
-          <InfoTip text={opt.hint} label={`About ${opt.label}`} />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function ImportPrefsPicker({
   accountId,
@@ -111,56 +73,39 @@ export function ImportPrefsPicker({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <p className="text-xs font-medium">Confirm before importing</p>
-        <Radio
-          name={`csv-mode-${accountId}`}
-          value={csvMode}
-          disabled={saving}
-          onChange={(v) => {
-            setCsvMode(v);
-            void patch({ csvMappingMode: v });
-          }}
-          options={[
-            {
-              value: "confirm",
-              label: "Ask first",
-              hint: "Show the CSV column mapping / OFX field preview before any rows are staged.",
-            },
-            {
-              value: "auto",
-              label: "Apply automatically",
-              hint: "Import silently using the detected mapping / saved payee source.",
-            },
-          ]}
-        />
-      </div>
+      <Field
+        label="Confirm before importing"
+        control="segmented"
+        info="Ask first: show the CSV column mapping / OFX field preview before any rows are staged. Apply automatically: import silently using the detected mapping / saved payee source."
+        value={csvMode}
+        disabled={saving}
+        onValueChange={(v) => {
+          setCsvMode(v as CsvMappingMode);
+          void patch({ csvMappingMode: v as CsvMappingMode });
+        }}
+        fill
+        options={[
+          { value: "confirm", label: "Ask first" },
+          { value: "auto", label: "Apply automatically" },
+        ]}
+      />
 
-      <div className="space-y-1.5">
-        <p className="text-xs font-medium">OFX/QFX payee comes from</p>
-        <Radio
-          name={`ofx-payee-${accountId}`}
-          value={payeeSource}
-          disabled={saving}
-          onChange={(v) => {
-            setPayeeSource(v);
-            void patch({ ofxPayeeSource: v });
-          }}
-          options={[
-            {
-              value: "name",
-              label: "Name field",
-              hint: "Default. The Memo becomes the transaction Note.",
-            },
-            {
-              value: "memo",
-              label: "Memo field",
-              hint: "For banks that put the merchant in Memo and a generic label in Name.",
-            },
-          ]}
-        />
-      </div>
-
+      <Field
+        label="OFX/QFX payee comes from"
+        control="segmented"
+        info="Name field (default): the Memo becomes the transaction Note. Memo field: for banks that put the merchant in Memo and a generic label in Name."
+        value={payeeSource}
+        disabled={saving}
+        onValueChange={(v) => {
+          setPayeeSource(v as OfxPayeeSource);
+          void patch({ ofxPayeeSource: v as OfxPayeeSource });
+        }}
+        fill
+        options={[
+          { value: "name", label: "Name field" },
+          { value: "memo", label: "Memo field" },
+        ]}
+      />
       {error && (
         <p className="text-xs text-destructive">{error}</p>
       )}

@@ -268,12 +268,12 @@ export default function BuyForm() {
           onValueChange={(v) => setHoldingId(v ?? "")}
           disabled={!selectedAccount}
           placeholder={
-                selectedAccount
-                  ? accountHoldings.length === 0
-                    ? "No non-cash holdings in this account"
-                    : "Pick a holding"
-                  : "Pick an account first"
-              }
+            selectedAccount
+              ? accountHoldings.length === 0
+                ? "No non-cash holdings in this account"
+                : "Pick a holding"
+              : "Pick an account first"
+          }
           options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
         />
 

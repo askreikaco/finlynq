@@ -1,4 +1,4 @@
-// Guard (CB-3): on/off options are Switch. Checkbox (<Checkbox> or native type="checkbox") is allowed only in files
+// Guard (CB-3): on/off options are Switch. Checkbox (<Checkbox>, native type="checkbox" or <Field control="checkbox">) is allowed only in files
 // listed in tests/guards/checkbox-allowlist.json: multi-row selection controls (row select, select-all, bulk-select lists).
 // Ratchet: the allowlist only shrinks. An entry whose file exists, has no checkbox and lacks "optional": true is stale
 // and fails, so it gets removed. "optional": true marks sibling-owned entries that may be converted later.
@@ -10,11 +10,12 @@ const ROOT = path.join(__dirname, "../..");
 const SRC = path.join(ROOT, "src");
 const ALLOWLIST_FILE = path.join(__dirname, "checkbox-allowlist.json");
 /** The primitive itself renders the native input. */
-const PRIMITIVE = "src/components/ui/checkbox.tsx";
+const PRIMITIVE = "src/components/ui/field/controls.tsx";
 
 const PATTERNS: { id: string; re: RegExp; sample: string }[] = [
   { id: "<Checkbox", re: /<Checkbox\b/g, sample: "<Checkbox checked={a} />" },
   { id: 'type="checkbox"', re: /type=\{?(["'])checkbox\1\}?/g, sample: '<input type="checkbox" />' },
+  { id: 'control="checkbox"', re: /control=\{?(["'])checkbox\1\}?/g, sample: '<Field control="checkbox" />' },
 ];
 
 interface AllowEntry {

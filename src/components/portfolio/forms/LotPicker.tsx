@@ -171,11 +171,10 @@ export default function LotPicker({
                     updateQty(lot.lotId, Number.isFinite(v) && v > 0 ? v : 0);
                   }}
                   placeholder="0"
-                  className={`h-7 w-20 rounded border bg-background px-2 text-right text-xs ${
-                    overflow
-                      ? "border-warning/60 text-warning"
-                      : "border-border/60"
-                  }`}
+                  compact
+                  invalid={overflow}
+                  className="w-20"
+                  controlClassName="text-right"
                 />
               </li>
             );

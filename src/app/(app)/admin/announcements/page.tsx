@@ -195,7 +195,6 @@ export default function AdminAnnouncementsPage() {
             rows={5}
             maxLength={10000}
             placeholder="What changed and why it matters."
-            className="w-full"
           />
 
           <div className="grid gap-3">
@@ -207,7 +206,6 @@ export default function AdminAnnouncementsPage() {
               onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
               controlClassName="capitalize"
               options={CATEGORIES.map((c) => ({ value: c, label: c }))}
-              className="w-full"
             />
             <Field
               label="Severity"
@@ -217,7 +215,6 @@ export default function AdminAnnouncementsPage() {
               onValueChange={(v) => setForm((f) => ({ ...f, severity: v }))}
               controlClassName="capitalize"
               options={SEVERITIES.map((s) => ({ value: s, label: s }))}
-              className="w-full"
             />
           </div>
 

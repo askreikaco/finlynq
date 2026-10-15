@@ -101,43 +101,44 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
     );
   }
   return (
-    <div data-slot="search-toggle" className="relative min-w-40 flex-1 basis-56">
-      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-      <Field
-        ref={input}
-        type="search"
-        aria-label="Search"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            onChange("");
-            setOpen(false);
-          }
-        }}
-        onBlur={() => {
-          if (value === "") setOpen(false);
-        }}
-        className={cn("h-11 rounded-full pl-10 pr-10 text-sm", CONTROL_SURFACE)}
-      />
-      {value !== "" && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Clear search"
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            onChange("");
-            input.current?.focus();
-          }}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      )}
-    </div>
+    <Field
+      ref={input}
+      type="search"
+      pill
+      aria-label="Search"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          onChange("");
+          setOpen(false);
+        }
+      }}
+      onBlur={() => {
+        if (value === "") setOpen(false);
+      }}
+      prefix={<Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
+      suffix={
+        value !== "" ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Clear search"
+            className="-mr-2 shrink-0 rounded-full"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onChange("");
+              input.current?.focus();
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        ) : undefined
+      }
+      className="min-w-40 flex-1 basis-56 [&_[data-slot=field-surface]]:dense:pointer-fine:h-11"
+    />
   );
 }
 
@@ -154,7 +155,7 @@ export function FilterButton({ href, activeCount = 0 }: NonNullable<PageToolbarP
   });
   return (
     <RoundIconButton
-            aria-label="Filter"
+      aria-label="Filter"
       title={activeCount > 0 ? `Filter (${activeCount} active)` : "Filter"}
       data-slot="filter-button"
       className="relative"

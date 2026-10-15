@@ -2,26 +2,28 @@
 
 import * as React from "react";
 
-import { StickyNote } from "lucide-react";
+import { Split, StickyNote } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { TW } from "@/lib/design/tokens";
-import { formatCurrency } from "@/lib/currency";
+import { currencyDecimals, formatCurrency } from "@/lib/currency";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { evaluateAmountExpression } from "@/lib/transactions/amount-expression";
 import {
   computeRemainder,
   ensureRows,
   fromMinor,
+  minorToText,
   parseAmountMinor,
   parseCount,
   resolveCategories,
+  MAX_SPLITS,
   toMinor,
   visibleRows,
+  type CountHint,
   type Remainder,
   type ResolvedCategory,
   type SplitRowModel,
 } from "@/lib/transactions/split-math";
-import { SplitAmountField } from "./split-amount-field";
-import { SplitCountRow } from "./split-count-row";
 
 export type { SplitRowModel } from "@/lib/transactions/split-math";
 
@@ -233,6 +235,95 @@ export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
   };
 }
 
+const COUNT_HINT_TEXT: Record<CountHint, string> = {
+  "enter-two-or-more": "Enter 2 or more to split",
+  "up-to-20": "Up to 20 splits",
+};
+
+/** Hint text under the count field. */
+export const SPLIT_COUNT_HINT_TEXT = COUNT_HINT_TEXT;
+
+/**
+ * Stepper rule for the entry variant. "+" from empty/0/1 goes to 2, otherwise +1 up to 20.
+ * "-" from 2 goes to empty ("none"), otherwise -1. Empty and 0 cannot go lower.
+ */
+export function stepCount(value: string, delta: 1 | -1): string {
+  const current = /^\d+$/.test(value) ? Number(value) : 0;
+  if (delta > 0) {
+    if (current < 2) return "2";
+    return String(Math.min(MAX_SPLITS, current + 1));
+  }
+  if (current <= 0) return "";
+  if (current === 2) return "";
+  return String(current - 1);
+}
+
+/** The shared amount Field of a split row: numpad on touch (inputMode none), expressions settle on blur. */
+function splitAmountField(args: {
+  id: string;
+  ariaLabel: string;
+  testId: string;
+  label: React.ReactNode;
+  currency: string;
+  showCurrency?: boolean;
+  value: string;
+  readOnly?: boolean;
+  invalid?: boolean;
+  active?: boolean;
+  error?: string;
+  onChange?: (value: string) => void;
+  onOpenPad?: () => void;
+  onBlur?: () => void;
+}) {
+  const { id, ariaLabel, testId, label, currency, showCurrency = true, value, readOnly = false, invalid = false, active = false, error, onChange, onOpenPad, onBlur } = args;
+  const placeholder = currencyDecimals(currency) > 0 ? "0.00" : "0";
+  const settleExpression = () => {
+    if (readOnly || !onChange) return;
+    const evaluated = evaluateAmountExpression(value);
+    if (evaluated === null) return;
+    const minor = parseAmountMinor(evaluated, currency);
+    if (minor === null) return;
+    const settled = minorToText(minor, currency);
+    if (settled !== value) onChange(settled);
+  };
+  return (
+    <Field
+      label={label}
+      id={id}
+      aria-label={ariaLabel}
+      data-testid={testId}
+      aria-readonly={readOnly || undefined}
+      readOnly={readOnly}
+      tabIndex={readOnly ? -1 : undefined}
+      inputMode="none"
+      placeholder={placeholder}
+      value={value}
+      invalid={invalid}
+      error={error}
+      onChange={(e) => onChange?.(e.target.value)}
+      onFocus={readOnly ? undefined : onOpenPad}
+      onBlur={() => {
+        settleExpression();
+        onBlur?.();
+      }}
+      controlClassName={cn("text-lg font-semibold tabular-nums", invalid && "text-neg")}
+      className={cn(active && "rounded-lg ring-1 ring-inset ring-ring")}
+      prefix={
+        showCurrency ? (
+          <span data-slot="split-currency" className="shrink-0 text-sm font-medium text-foreground">
+            {currency}
+          </span>
+        ) : undefined
+      }
+      suffix={
+        readOnly ? (
+          <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">auto</span>
+        ) : undefined
+      }
+    />
+  );
+}
+
 /**
  * Controlled split editor: count field, context line, one card per visible row, status line.
  * No Add/Delete buttons: the count creates and hides rows. The last visible row is the
@@ -312,19 +403,51 @@ export function SplitRows({
 
   return (
     <div data-testid={`${idPrefix}-rows`} className="space-y-3">
-      {!hideCount && (
-        <SplitCountRow
-          id={`${idPrefix}-count`}
-          value={count}
-          hint={parsed.hint}
-          onChange={handleCountChange}
-          onFocus={onClosePad}
-          variant={variant}
-        />
-      )}
+      {!hideCount &&
+        (entry ? (
+          <FieldGroup>
+            <Field
+              control="stepper"
+              icon={Split}
+              label="Splits"
+              id={`${idPrefix}-count`}
+              data-testid="split-count"
+              aria-label="Number of splits"
+              stepLabel="splits"
+              placeholder="0"
+              maxLength={2}
+              min={0}
+              max={MAX_SPLITS}
+              value={count}
+              hint={parsed.hint ? COUNT_HINT_TEXT[parsed.hint] : undefined}
+              onStep={(delta, current) => stepCount(current, delta)}
+              onInteract={onClosePad}
+              onValueChange={handleCountChange}
+            />
+          </FieldGroup>
+        ) : (
+          <FieldGroup>
+            <Field
+              icon={Split}
+              label="Splits"
+              id={`${idPrefix}-count`}
+              data-testid="split-count"
+              aria-label="Number of splits"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              placeholder="0"
+              value={count}
+              hint={parsed.hint ? COUNT_HINT_TEXT[parsed.hint] : undefined}
+              onChange={(e) => handleCountChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              onFocus={() => onClosePad()}
+              controlClassName="text-right tabular-nums"
+            />
+          </FieldGroup>
+        ))}
 
       {!entry && n >= 2 && (
-        <p data-testid={`${idPrefix}-context`} className="px-1 text-xs text-muted-foreground">
+        <p data-testid={`${idPrefix}-context`} data-keep="data" className="px-1 text-xs text-muted-foreground">
           {`Payee ${parentPayee || "—"} · Total ${formatCurrency(parentAbs, currency)}`}
         </p>
       )}
@@ -335,62 +458,44 @@ export function SplitRows({
         const rowError = visibleRowError(row.id);
         const amountValue = isLast ? (parentValid && result.remainder ? result.remainder.text : "—") : row.amount;
         const amountInvalid = isLast ? remainderFlag !== "ok" : rowError !== undefined;
-        const onAmountChange = isLast ? undefined : (value: string) => updateRow(row.id, { amount: value });
-        const onAmountOpenPad = isLast ? undefined : () => onOpenPad(row.id);
-        const onAmountBlur = isLast ? undefined : () => onRowBlur?.(row.id);
+        const noteId = `${idPrefix}-note-${num}`;
+        const amount = splitAmountField({
+          id: `${idPrefix}-amount-${num}`,
+          ariaLabel: `Split ${num} amount`,
+          testId: `split-amount-${num}`,
+          label: entry ? `#${num}` : "Amount",
+          currency,
+          showCurrency: !entry,
+          value: amountValue,
+          readOnly: isLast,
+          invalid: amountInvalid,
+          active: !isLast && padTargetRowId === row.id,
+          error: rowError,
+          onChange: isLast ? undefined : (value: string) => updateRow(row.id, { amount: value }),
+          onOpenPad: isLast ? undefined : () => onOpenPad(row.id),
+          onBlur: isLast ? undefined : () => onRowBlur?.(row.id),
+        });
+        const note = (
+          <Field
+            id={noteId}
+            label={entry ? `Split ${num} note` : "Note"}
+            hideLabel={entry}
+            icon={entry ? StickyNote : undefined}
+            aria-label={`Split ${num} note`}
+            data-testid={`split-note-${num}`}
+            placeholder="Note (optional)"
+            value={row.note}
+            onChange={(e) => updateRow(row.id, { note: e.target.value })}
+            onFocus={() => onClosePad()}
+          />
+        );
 
         if (entry) {
-          const noteId = `${idPrefix}-note-${num}`;
           return (
-            <section
-              key={row.id}
-              data-testid={`split-row-${num}`}
-              className={cn("rounded-group border border-border bg-card", TW.group)}
-            >
-              <div className="flex items-stretch">
-                <div
-                  className={cn("flex shrink-0 items-center pl-4 text-sm text-muted-foreground", TW.rowLabelNarrow)}
-                >
-                  {`#${num}`}
-                </div>
-                <div className="min-w-0 flex-1 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                  <SplitAmountField
-                    id={`${idPrefix}-amount-${num}`}
-                    ariaLabel={`Split ${num} amount`}
-                    testId={`split-amount-${num}`}
-                    currency={currency}
-                    showCurrency={false}
-                    className="pl-3 pr-4"
-                    value={amountValue}
-                    readOnly={isLast}
-                    invalid={amountInvalid}
-                    active={!isLast && padTargetRowId === row.id}
-                    onChange={onAmountChange}
-                    onOpenPad={onAmountOpenPad}
-                    onBlur={onAmountBlur}
-                  />
-                  <div className={cn("flex items-center gap-3 pl-3 pr-4", TW.rowTall)}>
-                    <StickyNote aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-                    <input
-                      id={noteId}
-                      type="text"
-                      data-testid={`split-note-${num}`}
-                      aria-label={`Split ${num} note`}
-                      placeholder="Note (optional)"
-                      value={row.note}
-                      onChange={(e) => updateRow(row.id, { note: e.target.value })}
-                      onFocus={() => onClosePad()}
-                      className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
-                    />
-                  </div>
-                  {rowError && (
-                    <p data-testid={`split-error-${num}`} className="px-3 py-2 text-xs text-destructive">
-                      {rowError}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
+            <FieldGroup key={row.id} data-testid={`split-row-${num}`}>
+              {amount}
+              {note}
+            </FieldGroup>
           );
         }
 
@@ -402,83 +507,28 @@ export function SplitRows({
           : resolvedCategory.inherited
             ? `${name} · same as above`
             : name;
-        const noteId = `${idPrefix}-note-${num}`;
 
         return (
-          <section
-            key={row.id}
-            data-testid={`split-row-${num}`}
-            className={cn("rounded-group border border-border bg-card", TW.group)}
-          >
-            <div className="flex items-center justify-between gap-2 px-4 pt-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              <span>{isLast ? `Split ${num} · Remaining` : `Split ${num}`}</span>
-            </div>
-
-            <SplitAmountField
-              id={`${idPrefix}-amount-${num}`}
-              ariaLabel={`Split ${num} amount`}
-              testId={`split-amount-${num}`}
-              currency={currency}
-              value={amountValue}
-              readOnly={isLast}
-              invalid={amountInvalid}
-              active={!isLast && padTargetRowId === row.id}
-              onChange={onAmountChange}
-              onOpenPad={onAmountOpenPad}
-              onBlur={onAmountBlur}
+          <FieldGroup key={row.id} data-testid={`split-row-${num}`} label={isLast ? `Split ${num} · Remaining` : `Split ${num}`}>
+            {amount}
+            {note}
+            <Field
+              control="picker"
+              label="Category"
+              data-testid={`split-category-${num}`}
+              value={chipLabel}
+              invalid={unresolved}
+              onClick={() => {
+                onClosePad();
+                onOpenCategory(row.id);
+              }}
             />
-
-            <div className={cn("flex items-center gap-3 px-4", TW.rowTall)}>
-              <label
-                htmlFor={noteId}
-                className={cn("shrink-0 text-sm text-muted-foreground", TW.rowLabelNarrow)}
-              >
-                Note
-              </label>
-              <input
-                id={noteId}
-                type="text"
-                data-testid={`split-note-${num}`}
-                aria-label={`Split ${num} note`}
-                placeholder="Note (optional)"
-                value={row.note}
-                onChange={(e) => updateRow(row.id, { note: e.target.value })}
-                onFocus={() => onClosePad()}
-                className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-              <button
-                type="button"
-                data-testid={`split-category-${num}`}
-                onClick={() => {
-                  onClosePad();
-                  onOpenCategory(row.id);
-                }}
-                className={cn(
-                  "inline-flex max-w-full items-center rounded-full border px-3 py-1 text-sm transition-colors active:bg-muted",
-                  unresolved ? "border-warning text-warning" : "border-input text-foreground",
-                )}
-              >
-                <span className="truncate">{chipLabel}</span>
-              </button>
-              {row.accountId && accounts && (
-                <span
-                  data-testid={`split-account-${num}`}
-                  className="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
-                >
-                  {`Account: ${accountName(row.accountId)}`}
-                </span>
-              )}
-            </div>
-
-            {rowError && (
-              <p data-testid={`split-error-${num}`} className="px-4 pb-2 text-xs text-destructive">
-                {rowError}
-              </p>
+            {row.accountId && accounts && (
+              <Field control="custom" label="Account" testId={`split-account-${num}`}>
+                <span className="text-base text-foreground">{accountName(row.accountId)}</span>
+              </Field>
             )}
-          </section>
+          </FieldGroup>
         );
       })}
 

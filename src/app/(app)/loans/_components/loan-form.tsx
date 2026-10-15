@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,22 +18,6 @@ const FREQUENCY_OPTIONS = [
   { value: "quarterly", label: "Quarterly" },
   { value: "annual", label: "Annual" },
 ] as const;
-
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-
-function Row({ label, htmlFor, error, children }: { label: ReactNode; htmlFor?: string; error?: string; children: ReactNode }) {
-  return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1 space-y-1">
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-      </div>
-    </div>
-  );
-}
 
 type FormState = {
   name: string; type: string; principal: string; currency: string; annualRate: string;
@@ -291,7 +274,6 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
             placeholder="None"
             searchPlaceholder="Search accounts…"
             emptyMessage="No matches"
-            className="w-full"
           />
         </FieldGroup>
         {isEdit && loan && form.currency !== loan.currency && (

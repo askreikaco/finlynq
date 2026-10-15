@@ -20,7 +20,6 @@ import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
 import { getDisplayLocale } from "@/lib/locale";
-import { FieldLabel } from "@/components/forms";
 import { Field } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
 
@@ -511,12 +510,9 @@ export function ConnectorTab() {
               </div>
             ) : (
               <div className="space-y-2">
-                <FieldLabel
-                  label="API key"
-                  htmlFor="wp-api-key"
-                  info="Paste your key from wealthposition.com → Profile → Security → Developer API."
-                />
                 <Field
+                  label="API key"
+                  info="Paste your key from wealthposition.com → Profile → Security → Developer API."
                   id="wp-api-key"
                   type="password"
                   value={apiKey}

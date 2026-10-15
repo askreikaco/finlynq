@@ -13,7 +13,7 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox"
 import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { CONTROL_BOX, CONTROL_BOX_COMPACT, CONTROL_FOCUS_VISIBLE, CONTROL_STATE, CONTROL_SURFACE } from "../control-surface"
+import { CONTROL_BOX, CONTROL_BOX_COMPACT, CONTROL_FOCUS_VISIBLE, CONTROL_STATE, CONTROL_SURFACE } from "../control-surface";
 
 export type ComboboxItemShape = {
   value: string

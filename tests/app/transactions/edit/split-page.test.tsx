@@ -142,7 +142,7 @@ describe("/transactions/[id]/split page", () => {
       { categoryId: 2, accountId: null, amount: -20, note: null, description: null, tags: null },
     ]);
     await mountReady();
-    expect(screen.getByTestId("split-account-1").textContent).toBe("Account: Chequing");
+    expect(screen.getByTestId("split-account-1").textContent).toMatch(/^Account\s*Chequing$/);
     expect(screen.queryByTestId("split-account-2")).toBeNull();
     fireEvent.click(screen.getByTestId("tx-split-save"));
     await waitFor(() => expect(posts(fn)).toHaveLength(1));

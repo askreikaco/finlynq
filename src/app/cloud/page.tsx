@@ -596,7 +596,6 @@ function CloudAuthPageInner() {
                 autoComplete="current-password"
                 autoFocus
                 aria-label="Password"
-                className="w-full"
                 controlClassName="text-foreground"
               />
             </div>
@@ -643,8 +642,7 @@ function CloudAuthPageInner() {
                     placeholder="000000"
                     aria-label="Authentication code"
                     autoFocus
-                    className="w-full"
-                    controlClassName="text-center font-mono tracking-widest text-foreground"
+                    controlClassName="text-center text-2xl font-mono tracking-widest text-foreground"
                   />
                 </>
               ) : (
@@ -661,7 +659,6 @@ function CloudAuthPageInner() {
                     autoCapitalize="characters"
                     spellCheck={false}
                     autoFocus
-                    className="w-full"
                     controlClassName="text-center font-mono tracking-wider text-foreground"
                   />
                 </>
@@ -779,7 +776,6 @@ function CloudAuthPageInner() {
                     autoComplete="username"
                     aria-label="Email or username"
                     autoFocus
-                    className="w-full"
                     controlClassName="text-foreground"
                   />
                 </div>
@@ -831,7 +827,6 @@ function CloudAuthPageInner() {
                     autoComplete="current-password"
                     aria-label="Password"
                     autoFocus
-                    className="w-full"
                     controlClassName="text-foreground"
                   />
                   <Link
@@ -903,7 +898,6 @@ function CloudAuthPageInner() {
                           autoComplete="username"
                           aria-label="Username"
                           autoFocus
-                          className="w-full"
                           controlClassName="text-foreground"
                         />
                       </div>
@@ -921,7 +915,6 @@ function CloudAuthPageInner() {
                         autoComplete="new-password"
                         aria-label="Password"
                         autoFocus={!googleSignup}
-                        className="w-full"
                         controlClassName="text-foreground"
                       />
                     </div>
@@ -937,7 +930,6 @@ function CloudAuthPageInner() {
                         minLength={12}
                         autoComplete="new-password"
                         aria-label="Confirm password"
-                        className="w-full"
                         controlClassName="text-foreground"
                       />
                     </div>

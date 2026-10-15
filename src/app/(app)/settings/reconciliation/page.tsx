@@ -278,11 +278,10 @@ function NumberKnob({
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="flex items-center gap-1">
-          <label className="text-sm font-medium">{label}</label>
-          <InfoTip label={`About ${label.toLowerCase()}`} text={description} />
-        </span>
         <Field
+          label={label}
+          info={description}
+          infoLabel={`About ${label.toLowerCase()}`}
           control="amount"
           inputMode="decimal"
           value={Number.isFinite(value) ? value : ""}

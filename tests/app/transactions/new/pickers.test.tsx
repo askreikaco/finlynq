@@ -301,7 +301,7 @@ describe("CategorySelector tile grid", () => {
     render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    expect(screen.getByPlaceholderText("Search category...").className).toContain("text-base");
+    expect(screen.getByPlaceholderText("Search category...").closest('[data-slot="field-surface"]')!.className).toContain("text-base"); // the input inherits it (16px, no iOS zoom)
   });
 
   it("collapsed state resets on the next open", () => {
@@ -523,7 +523,7 @@ describe("AccountSelector tile grid", () => {
     expect(sheetContent().className).toContain("pt-0");
     expect(sheetContent().className).toContain("max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))]");
     expect(sheetContent().querySelector(".grid-cols-2")).toBeNull();
-    expect(screen.getByPlaceholderText("Search account...").className).toContain("text-base");
+    expect(screen.getByPlaceholderText("Search account...").closest('[data-slot="field-surface"]')!.className).toContain("text-base"); // the input inherits it (16px, no iOS zoom)
   });
 });
 

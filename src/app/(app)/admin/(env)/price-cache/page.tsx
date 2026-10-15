@@ -345,34 +345,30 @@ export default function AdminPriceCachePage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          {tab === "fx" ? "Currency" : "Symbol"}
-          <Field
-            value={search}
-            onChange={(e) => {
-                        setSearch(e.target.value);
-                        resetOffset();
-                      }}
-            placeholder={tab === "fx" ? "e.g. CAD" : `e.g. VTI`}
-            compact
-            className="w-40"
-            controlClassName="text-foreground"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Date (YYYY-MM-DD)
-          <Field
-            value={date}
-            onChange={(e) => {
-                        setDate(e.target.value);
-                        resetOffset();
-                      }}
-            placeholder="exact date"
-            compact
-            className="w-40"
-            controlClassName="text-foreground"
-          />
-        </label>
+        <Field
+          label={tab === "fx" ? "Currency" : "Symbol"}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            resetOffset();
+          }}
+          placeholder={tab === "fx" ? "e.g. CAD" : `e.g. VTI`}
+          compact
+          className="w-40"
+          controlClassName="text-foreground"
+        />
+        <Field
+          label="Date (YYYY-MM-DD)"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+            resetOffset();
+          }}
+          placeholder="exact date"
+          compact
+          className="w-40"
+          controlClassName="text-foreground"
+        />
         <Field
           label="Today only"
           control="switch"
@@ -391,20 +387,18 @@ export default function AdminPriceCachePage() {
             resetOffset();
           }}
         />
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Page size
-          <Field
-            control="select"
-            value={limit}
-            onValueChange={(v) => {
-                        setLimit(Number(v));
-                        resetOffset();
-                      }}
-            compact
-            controlClassName="text-foreground"
-            options={LIMITS.map((l) => ({ value: l, label: l }))}
-          />
-        </label>
+        <Field
+          label="Page size"
+          control="select"
+          value={String(limit)}
+          onValueChange={(v) => {
+            setLimit(Number(v));
+            resetOffset();
+          }}
+          compact
+          controlClassName="text-foreground"
+          options={LIMITS.map((l) => ({ value: String(l), label: String(l) }))}
+        />
       </div>
 
       {error && (

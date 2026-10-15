@@ -15,7 +15,6 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { GroupCombobox } from "@/components/ui/group-combobox";
 import { getMonthLabel } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
@@ -196,7 +195,6 @@ export function CategoryBudgetForm({
           onValueChange={(v) => setType(v ?? "E")}
           aria-label="Type"
           placeholder="Type"
-          className="w-full"
           options={[
             { value: "E", label: "Expense" },
             { value: "I", label: "Income" },
@@ -205,7 +203,7 @@ export function CategoryBudgetForm({
         />
       )}
 
-      <GroupCombobox value={group} onChange={setGroup} options={groups} placeholder="Group" ariaLabel="Group" />
+      <Field control="group-combobox" aria-label="Group" value={group} onValueChange={setGroup} options={groups} placeholder="Group" />
 
       {canBudget && (
         <div>

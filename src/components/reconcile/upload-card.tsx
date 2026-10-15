@@ -143,42 +143,42 @@ export function ReconcileUploadCard({
   return (
     <div className="space-y-4">
       <div className="grid gap-3 regular:grid-cols-2">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            {lockedAccount ? "Account" : "Default account (required for OFX/QFX)"}
-          </label>
-          {lockedAccount ? (
-            <div className="flex h-9 items-center rounded-md border bg-muted/30 px-3 text-sm">
+        {lockedAccount ? (
+          <Field control="custom" label="Account">
+            <span className="text-base text-foreground">
               {lockedAccount.name} ({lockedAccount.currency})
-            </div>
-          ) : (
-            <Field
-              control="combobox"
-              value={selectedAccountId}
-              onValueChange={(v) => setSelectedAccountId(v ?? "")}
-              options={accountItems}
-              placeholder="— Use account column from CSV —"
-              searchPlaceholder="Search…"
-              emptyMessage="No accounts"
-              className="w-full"
-            />
-          )}
-        </div>
+            </span>
+          </Field>
+        ) : (
+          <Field
+            label="Default account"
+            info="Required for OFX/QFX statements."
+            control="combobox"
+            value={selectedAccountId}
+            onValueChange={(v) => setSelectedAccountId(v ?? "")}
+            options={accountItems}
+            placeholder="— Use account column from CSV —"
+            searchPlaceholder="Search…"
+            emptyMessage="No accounts"
+          />
+        )}
         <Field
-          label="Settlement-vs-posting fuzz (days)"
+          label="Settlement fuzz (days)"
+          info="Days of difference allowed between settlement and posting dates."
           control="number"
           min={0}
           max={30}
           value={tolerance}
           onChange={(e) => setTolerance(e.target.value)}
           compact
-          className="w-full"
         />
       </div>
 
       <div className="grid gap-3 regular:grid-cols-2">
         <Field
-          label="CSV template (optional — for non-standard formats like IBKR)"
+          label="CSV template"
+          optional
+          info="For non-standard formats like IBKR."
           control="combobox"
           value={selectedTemplateId}
           onValueChange={(v) => {
@@ -194,17 +194,17 @@ export function ReconcileUploadCard({
               ? "No saved templates yet"
               : "No matching templates"
           }
-          className="w-full"
         />
         <Field
-          label="Statement balance (optional — CSV only)"
+          label="Statement balance"
+          optional
+          info="CSV only."
           control="amount"
           step="0.01"
           value={statementBalance}
           onValueChange={(nv) => setStatementBalance(nv)}
           placeholder="e.g. 1234.56"
           compact
-          className="w-full"
         />
       </div>
 

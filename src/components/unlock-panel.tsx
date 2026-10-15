@@ -210,7 +210,6 @@ export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
           disabled={busy}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "unlock-error" : undefined}
-          className="w-full"
           controlClassName="text-foreground"
         />
         {error && (

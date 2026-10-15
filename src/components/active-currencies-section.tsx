@@ -197,11 +197,10 @@ export function ActiveCurrenciesSection() {
             {showPicker ? (
               <div className="rounded-md border border-border/50 p-3 space-y-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs font-medium">Add currency</label>
-                    <InfoTip label="About adding a currency" text="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one." />
-                  </div>
                   <Field
+                    label="Add currency"
+                    info="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one."
+                    infoLabel="About adding a currency"
                     placeholder="e.g. EUR, AED, JPY, BTC, XAU…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value.toUpperCase())}
@@ -266,7 +265,7 @@ export function ActiveCurrenciesSection() {
                 {/* Common quick-picks */}
                 {commonQuickPicks.length > 0 ? (
                   <div className="border-t border-border/50 pt-3 space-y-1.5">
-                    <label className="block text-xs font-medium">Common</label>
+                    <span className="block text-xs font-medium">Common</span>
                     <div className="flex flex-wrap gap-1.5">
                       {commonQuickPicks.map((c) => (
                         <button

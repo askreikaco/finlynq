@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
-import { DatePicker } from "@/components/date-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
@@ -137,7 +136,7 @@ export function ManagePricesPanel({
 
       {/* Add a mark */}
       <div className="grid grid-cols-1 items-end gap-3 regular:grid-cols-2">
-        <DatePicker value={date} onChange={setDate} max={todayISO()} label="Effective date" />
+        <Field control="date" label="Effective date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
         <Field
           label={<>Price ({currency})</>}
           control="amount"

@@ -388,7 +388,6 @@ export default function AdminInboxPage() {
                     maxLength={50000}
                     placeholder="Write your reply…"
                     disabled={sending}
-                    className="w-full"
                   />
                   {replyError && <p className="text-xs text-destructive">{replyError}</p>}
                   <div className="flex justify-end">

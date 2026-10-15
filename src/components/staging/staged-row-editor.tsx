@@ -22,7 +22,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { Field } from "@/components/ui/field";
-import { InfoTip } from "@/components/ui/info-tip";
 
 export interface StagedEditableRow {
   id: string;
@@ -412,13 +411,12 @@ export function StagedRowEditor({
           value={local.note ?? ""}
           onChange={(e) => setLocal({ ...local, note: e.target.value })}
           onBlur={() => {
-                    if (local.note !== row.note) {
-                      void save("note", { note: local.note ?? "" });
-                    }
-                  }}
+            if (local.note !== row.note) {
+              void save("note", { note: local.note ?? "" });
+            }
+          }}
           placeholder="Note"
           maxLength={2000}
-          className="w-full"
         />
       </div>
     </div>

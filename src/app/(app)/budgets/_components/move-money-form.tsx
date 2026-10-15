@@ -129,7 +129,6 @@ export function MoveMoneyForm({
         placeholder="Select category"
         searchPlaceholder="Search categories…"
         emptyMessage="No matches"
-        className="w-full"
       />
       <Field
         label="To"
@@ -146,7 +145,6 @@ export function MoveMoneyForm({
         placeholder="Select category"
         searchPlaceholder="Search categories…"
         emptyMessage="No matches"
-        className="w-full"
       />
       <Field
         label="Amount"

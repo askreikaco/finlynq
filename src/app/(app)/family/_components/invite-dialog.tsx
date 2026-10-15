@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
@@ -98,26 +97,16 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
               disabled={busy}
             />
 
-            <div className="flex items-center justify-between gap-3 min-h-row">
-              <div className="flex-1">
-                <span className="flex items-center gap-0.5">
-                  <Label htmlFor="family-invite-must-share-back" className="font-normal cursor-pointer">
-                    {FAMILY_STRINGS.invite_dialog_must_share_back}
-                  </Label>
-                  <InfoTip
-                    label="About requiring them to share back"
-                    text={FAMILY_STRINGS.invite_dialog_must_share_back_description}
-                  />
-                </span>
-              </div>
-              <Field
-                control="switch"
-                id="family-invite-must-share-back"
-                checked={mustShareBack}
-                onCheckedChange={(v) => setMustShareBack(v)}
-                disabled={busy}
-              />
-            </div>
+            <Field
+              label={FAMILY_STRINGS.invite_dialog_must_share_back}
+              info={FAMILY_STRINGS.invite_dialog_must_share_back_description}
+              infoLabel="About requiring them to share back"
+              control="switch"
+              id="family-invite-must-share-back"
+              checked={mustShareBack}
+              onCheckedChange={(v) => setMustShareBack(v)}
+              disabled={busy}
+            />
 
             <section
               aria-labelledby="family-invite-disclosure"

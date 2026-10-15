@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { X, Paperclip } from "lucide-react";
 import {
@@ -169,7 +168,7 @@ export function FeedbackDialog({
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <span className="text-sm font-medium">Type</span>
               <div className="flex flex-wrap gap-2">
                 {TYPES.map((t) => (
                   <button
@@ -195,38 +194,37 @@ export function FeedbackDialog({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onPaste={(e) => {
-                              const items = Array.from(e.clipboardData?.items ?? []);
-                              const imageItem = items.find(
-                                (item) => item.kind === "file" && item.type.startsWith("image/"),
-                              );
-                              if (!imageItem) return; // non-image paste → let browser handle normally
-                              const blob = imageItem.getAsFile();
-                              if (!blob) return;
-                              const pasted = new File(
-                                [blob],
-                                `screenshot-${Date.now()}.${blob.type.split("/")[1] ?? "png"}`,
-                                { type: blob.type },
-                              );
-                              setError(null);
-                              const check = validateFeedbackAttachment({
-                                filename: pasted.name,
-                                mime: pasted.type,
-                                size: pasted.size,
-                              });
-                              if ("code" in check) {
-                                setError(check.message);
-                                return;
-                              }
-                              setFile(pasted);
-                            }}
+                const items = Array.from(e.clipboardData?.items ?? []);
+                const imageItem = items.find(
+                  (item) => item.kind === "file" && item.type.startsWith("image/"),
+                );
+                if (!imageItem) return; // non-image paste → let browser handle normally
+                const blob = imageItem.getAsFile();
+                if (!blob) return;
+                const pasted = new File(
+                  [blob],
+                  `screenshot-${Date.now()}.${blob.type.split("/")[1] ?? "png"}`,
+                  { type: blob.type },
+                );
+                setError(null);
+                const check = validateFeedbackAttachment({
+                  filename: pasted.name,
+                  mime: pasted.type,
+                  size: pasted.size,
+                });
+                if ("code" in check) {
+                  setError(check.message);
+                  return;
+                }
+                setFile(pasted);
+              }}
               rows={5}
               maxLength={4000}
               placeholder="What happened, or what would you like to see?"
-              className="w-full"
             />
 
             <div className="space-y-1.5">
-              <Label>Attachment (optional)</Label>
+              <span className="text-sm font-medium">Attachment (optional)</span>
               {file && isImage && previewUrl ? (
                 <div className="relative inline-block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
