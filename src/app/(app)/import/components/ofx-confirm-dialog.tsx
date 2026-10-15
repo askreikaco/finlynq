@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export interface OfxPreviewRow {
   date: string;
@@ -144,7 +145,13 @@ export function OfxConfirmDialog({
 
           {/* Payee source toggle — the one editable field. */}
           <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
-            <div className="text-sm font-medium">Payee comes from</div>
+            <div className="flex items-center gap-0.5 text-sm font-medium">
+              Payee comes from
+              <InfoTip
+                label="About payee source"
+                text="The other field becomes the transaction Note. Some banks put the real merchant in Memo and a generic label in Name: flip this if the Payee column below looks generic."
+              />
+            </div>
             <div className="flex gap-4">
               {(["name", "memo"] as const).map((opt) => (
                 <label
@@ -162,11 +169,6 @@ export function OfxConfirmDialog({
                 </label>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">
-              The other field becomes the transaction Note. Some banks put the
-              real merchant in Memo and a generic label in Name — flip this if the
-              Payee column below looks generic.
-            </p>
           </div>
 
           {/* Preview table — how rows land in staging. */}
@@ -190,9 +192,7 @@ export function OfxConfirmDialog({
               </SectionCard>
             </div>
             {rowCount > 50 && (
-              <p className="text-xs text-muted-foreground">
-                Showing the first 50 rows — all {rowCount} will be imported.
-              </p>
+              <p data-keep="status" className="text-xs text-muted-foreground">First 50 of {rowCount} shown; all will import.</p>
             )}
           </div>
 
@@ -210,9 +210,7 @@ export function OfxConfirmDialog({
                 />
                 <span>
                   <span className="font-medium">Ask me to confirm first</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Show this preview each time (recommended).
-                  </span>
+                  <InfoTip label="About Ask me to confirm first" text="Show this preview each time (recommended)." />
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm cursor-pointer">
@@ -225,10 +223,10 @@ export function OfxConfirmDialog({
                 />
                 <span>
                   <span className="font-medium">Apply automatically</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Import silently using this Payee source — don&apos;t ask again.
-                    Reset anytime on the account&apos;s page → Import preferences.
-                  </span>
+                  <InfoTip
+                    label="About Apply automatically"
+                    text="Import silently using this Payee source: don't ask again. Reset anytime on the account's page, Import preferences."
+                  />
                 </span>
               </label>
             </div>

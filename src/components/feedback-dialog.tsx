@@ -158,8 +158,7 @@ export function FeedbackDialog({
         <DialogHeader>
           <DialogTitle>Send feedback</DialogTitle>
           <DialogDescription>
-            Report a bug or suggest an improvement. Please don&apos;t include
-            sensitive financial details.
+            No sensitive financial details, please.
           </DialogDescription>
         </DialogHeader>
 

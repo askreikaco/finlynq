@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ACCOUNT_GROUP_DEFAULTS } from "@/lib/accounts/groups";
@@ -15,8 +14,9 @@ import {
   type OpeningBalance,
 } from "@/lib/accounts/opening-balance-client";
 import { cn } from "@/lib/utils";
-import { TW } from "@/lib/design/tokens";
+import { Field, FieldGroup, type FieldComboboxOption } from "@/components/ui/field";
 import { GroupField } from "./group-field";
+
 const ACCOUNT_TYPES = [
   { value: "A", label: "Asset" },
   { value: "L", label: "Liability" },
@@ -106,97 +106,24 @@ export interface AccountFormProps {
   onComplete?: () => void;
 }
 
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabelNarrow} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-const OB_HELP =
-  "A single starting-balance entry for this account. Set the date to when the account opened so " +
-  "Balance Over Time and Net Worth history start from the right point. Clearing the amount zeroes " +
-  "the entry — it is not deleted.";
-
-function Field({
-  variant,
-  label,
-  htmlFor,
-  error,
-  hint,
-  warning,
-  children,
-}: {
-  variant: AccountFormVariant;
-  label: ReactNode;
-  htmlFor?: string;
-  error?: string;
-  hint?: ReactNode;
-  warning?: string;
-  children: ReactNode;
-}) {
-  if (variant === "stack") {
-    return (
-      <div className="space-y-1.5">
-        <Label htmlFor={htmlFor}>{label}</Label>
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {hint}
-        {warning && <p className="text-xs text-warning">{warning}</p>}
-      </div>
-    );
-  }
-  return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1 space-y-1">
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {hint}
-        {warning && <p className="text-xs text-warning">{warning}</p>}
-      </div>
-    </div>
-  );
-}
-
-function CheckField({
-  variant,
-  id,
-  label,
-  checked,
-  onChange,
-  hint,
-}: {
-  variant: AccountFormVariant;
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  hint: string;
-}) {
-  const box = (
-    <div className={cn("flex items-center justify-between gap-3", variant === "rows" && TW.row)}>
-      <Label htmlFor={id} className="flex-1 cursor-pointer">{label}</Label>
-      <Field
-        control="switch"
-        id={id}
-        checked={checked}
-        onCheckedChange={(v) => onChange(v)}
-        className="shrink-0"
-      />
-    </div>
-  );
-  if (variant === "stack") {
-    return (
-      <div className="space-y-1.5">
-        {box}
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-    );
-  }
-  return (
-    <div className="px-4 py-2">
-      {box}
-      <p className="text-xs text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
+const INFO = {
+  name: "The account's display name.",
+  alias:
+    "Optional. Short nickname used when matching transactions, e.g. the last 4 digits of a card or a receipt label. " +
+    "It must be unique: a name or alias shared with another account makes matches ambiguous.",
+  type: "Credit cards should be Liability accounts; the balance is the amount owed.",
+  group: "Free text. Pick a suggestion or type any group name, e.g. Checking or Emergency Fund.",
+  currency: "The currency this account is kept in.",
+  note: "Optional free-text note, e.g. Joint account.",
+  openingBalance:
+    "Optional. A single starting-balance entry for this account. Set the date to when the account opened so " +
+    "Balance Over Time and Net Worth history start from the right point. Clearing the amount zeroes " +
+    "the entry; it is not deleted.",
+  isInvestment:
+    'When enabled, every transaction in this account must reference a portfolio holding (a security or the auto-created "Cash" sleeve). ' +
+    "Turning this on now will reassign any unattributed transactions to this account's Cash holding.",
+  invisible: "Hidden from net worth, totals, reports and metrics. The account and its transactions stay here.",
+} as const;
 
 /**
  * Shared account form (create + edit): the same fields, validation, opening
@@ -390,181 +317,127 @@ export function AccountForm({
   const aliasMsg = aliasWarning?.(form.alias, account?.id ?? null) ?? "";
   const v = variant;
 
-  // Type + Group share a line in the stacked dialog; separate rows on the page.
-  const pair = (node: ReactNode) =>
-    v === "stack" ? <div className="grid grid-cols-2 gap-3">{node}</div> : <>{node}</>;
-  const control = (extra?: string) => (v === "rows" ? cn(ROW_CONTROL, extra) : extra);
+  // "rows" (the edit page / pane) = one divided card; "stack" (dialog) = plain stacked fields. Same Fields either way.
+  const fields = (
+    <>
+      <Field
+        label="Account Name"
+        info={INFO.name}
+        id="account-form-name"
+        error={errors.name}
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        placeholder="e.g. TD Chequing"
+        autoFocus
+      />
+
+      <Field
+        label="Alias"
+        optional
+        info={INFO.alias}
+        id="account-form-alias"
+        warning={aliasMsg || undefined}
+        value={form.alias}
+        onChange={(e) => setForm({ ...form, alias: e.target.value })}
+        placeholder="e.g. 1234 or Visa4242"
+        maxLength={64}
+      />
+
+      <Field
+        label="Type"
+        control="select"
+        info={INFO.type}
+        error={errors.type}
+        value={form.type}
+        onValueChange={(t) => setType(t || "A")}
+        options={ACCOUNT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+      />
+
+      <GroupField
+        id="account-dialog-group"
+        info={INFO.group}
+        error={errors.group}
+        type={form.type}
+        value={form.group}
+        existingGroups={existingGroups}
+        onChange={(g) => setForm({ ...form, group: g })}
+      />
+
+      <Field
+        label="Currency"
+        control="combobox"
+        info={INFO.currency}
+        value={form.currency}
+        onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
+        options={sortCurrency(
+          currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
+          (c) => c.value,
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+        )}
+        placeholder={defaultCurrency}
+        searchPlaceholder="Search…"
+        emptyMessage="No matches"
+      />
+
+      <Field
+        label="Note"
+        optional
+        info={INFO.note}
+        id="account-form-note"
+        value={form.note}
+        onChange={(e) => setForm({ ...form, note: e.target.value })}
+        placeholder="e.g. Joint account"
+      />
+
+      {/* Opening balance (FINLYNQ-206) — cash accounts only. Backed by ONE
+          kind='opening_balance' transaction; clearing zeroes it (never
+          deletes). Hidden when "Investment account" is checked. */}
+      {!form.isInvestment && (
+        <>
+          <Field
+            label="Opening balance"
+            optional
+            control="amount"
+            info={INFO.openingBalance}
+            id="account-dialog-ob-amount"
+            step="0.01"
+            value={form.obAmount}
+            onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
+            placeholder="0.00"
+          />
+          <Field
+            label="Date"
+            control="date"
+            id="account-dialog-ob-date"
+            value={form.obDate}
+            onChange={(e) => setForm({ ...form, obDate: e.target.value })}
+          />
+        </>
+      )}
+
+      <Field
+        label="Investment account"
+        control="switch"
+        info={INFO.isInvestment}
+        id="account-dialog-isInvestment"
+        checked={form.isInvestment}
+        onCheckedChange={(checked) => setForm({ ...form, isInvestment: checked })}
+      />
+
+      <Field
+        label="Invisible"
+        control="switch"
+        info={INFO.invisible}
+        id="account-dialog-invisible"
+        checked={form.invisible}
+        onCheckedChange={(checked) => setForm({ ...form, invisible: checked })}
+      />
+    </>
+  );
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
-      <div
-        className={cn(
-          v === "rows" && `[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden ${TW.group} border border-border bg-card`,
-          v === "stack" && "space-y-4",
-        )}
-      >
-        <Field variant={v} label="Account Name" htmlFor="account-form-name" error={errors.name}>
-          <Field
-            id="account-form-name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. TD Chequing"
-            autoFocus
-            className={control()}
-          />
-        </Field>
-
-        <Field
-          variant={v}
-          label={<>Alias <span className="text-muted-foreground text-xs">(optional)</span></>}
-          htmlFor="account-form-alias"
-          hint={
-            <p className="text-xs text-muted-foreground">
-              Short nickname used when matching transactions — e.g. last 4 digits of a card, or a receipt label.
-            </p>
-          }
-          warning={aliasMsg}
-        >
-          <Field
-            id="account-form-alias"
-            value={form.alias}
-            onChange={(e) => setForm({ ...form, alias: e.target.value })}
-            placeholder="e.g. 1234 or Visa4242"
-            maxLength={64}
-            className={control()}
-          />
-        </Field>
-
-        {pair(
-          <>
-            <Field
-              variant={v}
-              label="Type"
-              error={errors.type}
-              hint={<p className="text-xs text-muted-foreground">Credit cards should be Liability accounts; balance = amount owed.</p>}
-            >
-              <Field
-                control="select"
-                value={form.type}
-                onValueChange={(t) => setType(t ?? "A")}
-                options={ACCOUNT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-              />
-            </Field>
-            <Field variant={v} label="Group" htmlFor="account-dialog-group" error={errors.group}>
-              <GroupField
-                inputId="account-dialog-group"
-                type={form.type}
-                value={form.group}
-                existingGroups={existingGroups}
-                onChange={(g) => setForm({ ...form, group: g })}
-              />
-            </Field>
-          </>,
-        )}
-
-        <Field variant={v} label="Currency">
-          <Field
-            control="combobox"
-            value={form.currency}
-            onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
-            options={sortCurrency(
-              currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
-              (c) => c.value,
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder={defaultCurrency}
-            searchPlaceholder="Search…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Field>
-
-        <Field variant={v} label={<>Note <span className="text-muted-foreground text-xs">(optional)</span></>} htmlFor="account-form-note">
-          <Field
-            id="account-form-note"
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-            placeholder="e.g. Joint account"
-            className={control()}
-          />
-        </Field>
-
-        {/* Opening balance (FINLYNQ-206) — cash accounts only. Backed by ONE
-            kind='opening_balance' transaction; clearing zeroes it (never
-            deletes). Hidden when "Investment account" is checked. */}
-        {!form.isInvestment &&
-          (v === "stack" ? (
-            <div className="space-y-2 rounded-lg border border-border/60 p-3">
-              <Label>Opening balance <span className="text-muted-foreground text-xs">(optional)</span></Label>
-              <p className="text-xs text-muted-foreground">{OB_HELP}</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Field variant={v} label="Amount" htmlFor="account-dialog-ob-amount">
-                  <Field
-                    control="amount"
-                    id="account-dialog-ob-amount"
-                    step="0.01"
-                    value={form.obAmount}
-                    onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
-                    placeholder="0.00"
-                  />
-                </Field>
-                <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                  <Field
-                    control="date"
-                    id="account-dialog-ob-date"
-                    value={form.obDate}
-                    onChange={(e) => setForm({ ...form, obDate: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </div>
-          ) : (
-            <>
-              <Field
-                variant={v}
-                label="Opening balance"
-                htmlFor="account-dialog-ob-amount"
-                hint={<p className="text-xs text-muted-foreground">{OB_HELP}</p>}
-              >
-                <Field
-                  control="amount"
-                  id="account-dialog-ob-amount"
-                  step="0.01"
-                  value={form.obAmount}
-                  onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
-                  placeholder="0.00"
-                />
-              </Field>
-              <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                <Field
-                  control="date"
-                  id="account-dialog-ob-date"
-                  value={form.obDate}
-                  onChange={(e) => setForm({ ...form, obDate: e.target.value })}
-                  className={ROW_CONTROL}
-                />
-              </Field>
-            </>
-          ))}
-
-        <CheckField
-          variant={v}
-          id="account-dialog-isInvestment"
-          label="Investment account"
-          checked={form.isInvestment}
-          onChange={(checked) => setForm({ ...form, isInvestment: checked })}
-          hint={'When enabled, every transaction in this account must reference a portfolio holding (a security or the auto-created "Cash" sleeve). Turning this on now will reassign any unattributed transactions to this account\'s Cash holding.'}
-        />
-
-        <CheckField
-          variant={v}
-          id="account-dialog-invisible"
-          label="Invisible"
-          checked={form.invisible}
-          onChange={(checked) => setForm({ ...form, invisible: checked })}
-          hint="Hidden from net worth, totals, reports and metrics. The account and its transactions stay here."
-        />
-      </div>
+      {v === "rows" ? <FieldGroup>{fields}</FieldGroup> : <div className="space-y-4">{fields}</div>}
 
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
 

@@ -5,8 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -19,6 +17,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { SaveTemplateDialog } from "./save-template-dialog";
 import { Field } from "@/components/ui/field";
 import { formatPercent } from "@/lib/locale";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface PreviewRow extends RawTransaction {
   hash: string;
@@ -163,10 +162,7 @@ export function ImportPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-5xl max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Import Preview</DialogTitle>
-          <DialogDescription>
-            Review the parsed transactions before importing.
-          </DialogDescription>
+          <DialogHeading help={<>Review the parsed transactions before importing.</>}>Import Preview</DialogHeading>
         </DialogHeader>
 
         {/* Summary badges */}
@@ -357,7 +353,7 @@ export function ImportPreviewDialog({
             );
           })}
           {allRows.length > 100 && (
-            <p className="py-4 text-center text-xs text-muted-foreground">
+            <p data-keep="status" className="py-4 text-center text-xs text-muted-foreground">
               Showing first 100 of {allRows.length} rows
             </p>
           )}

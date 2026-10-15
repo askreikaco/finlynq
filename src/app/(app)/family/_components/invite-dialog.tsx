@@ -13,6 +13,7 @@ import { getSectionDescription, getSectionLabel } from "./section-labels";
 import { useStepUp } from "./use-step-up";
 import { Field } from "@/components/ui/field";
 import { errorMessage, postJson } from "./api";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface InviteDialogProps {
   onClose: () => void;
@@ -99,12 +100,15 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
             <div className="flex items-center justify-between gap-3 min-h-row">
               <div className="flex-1">
-                <Label htmlFor="family-invite-must-share-back" className="font-normal cursor-pointer">
-                  {FAMILY_STRINGS.invite_dialog_must_share_back}
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {FAMILY_STRINGS.invite_dialog_must_share_back_description}
-                </p>
+                <span className="flex items-center gap-0.5">
+                  <Label htmlFor="family-invite-must-share-back" className="font-normal cursor-pointer">
+                    {FAMILY_STRINGS.invite_dialog_must_share_back}
+                  </Label>
+                  <InfoTip
+                    label="About requiring them to share back"
+                    text={FAMILY_STRINGS.invite_dialog_must_share_back_description}
+                  />
+                </span>
               </div>
               <Field
                 control="switch"

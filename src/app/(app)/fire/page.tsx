@@ -16,6 +16,7 @@ import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Per
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type FireResult = {
   fireNumber: number;
@@ -328,12 +329,20 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Monte Carlo Analysis */}
-          <SectionCard label="Monte Carlo analysis" icon={BarChart3} tone="violet">
+          <SectionCard
+            label={
+              <>
+                Monte Carlo analysis
+                <InfoTip label="About Monte Carlo analysis" text="1,000 simulations with random market returns to stress-test your plan" />
+              </>
+            }
+            icon={BarChart3}
+            tone="violet"
+          >
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Dice5 className="h-5 w-5 text-chart-5" aria-hidden />
-                  <p className="text-xs text-muted-foreground">1,000 simulations with random market returns to stress-test your plan</p>
                 </div>
                 {mcResult && (
                   <Badge
@@ -481,9 +490,18 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Sensitivity: years to FIRE by return rate, for one monthly-savings amount */}
-          <SectionCard label="Sensitivity analysis: years to FIRE" icon={Activity} tone="amber" className="space-y-3">
+          <SectionCard
+            label={
+              <>
+                Sensitivity analysis: years to FIRE
+                <InfoTip label="About sensitivity analysis" text="How different return rates and savings amounts affect your timeline" />
+              </>
+            }
+            icon={Activity}
+            tone="amber"
+            className="space-y-3"
+          >
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">How different return rates and savings amounts affect your timeline</p>
               {savingsAdj.length > 0 && (
                 <Select value={String(selectedSavings)} onValueChange={(v) => setSensChoice(v)}>
                   <SelectTrigger className="w-full" aria-label="Monthly savings">
@@ -525,8 +543,7 @@ function FirePageContent() {
         <SectionCard>
           <div className="py-12 text-center">
             <Flame className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" aria-hidden />
-            <p className="text-muted-foreground">Enter your details and click Calculate FIRE</p>
-            <p className="text-xs text-muted-foreground mt-1">to see your path to financial independence</p>
+            <p data-keep="empty" className="text-muted-foreground">Enter your details and click Calculate FIRE</p>
           </div>
         </SectionCard>
       )}

@@ -20,6 +20,7 @@ import { List, Lock, RefreshCw, Users } from "lucide-react";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface ByUser {
   userId: string;
@@ -137,6 +138,7 @@ export default function AdminEmailInboxPage() {
     <SectionPage
       id="admin-email-inbox"
       title="Email Oversight"
+      info="Cross-user view of inbound email-import rows. Metadata is always shown; from/subject preview is available only for service-tier rows (before the owner's next login). User-tier content is encrypted with the owner's key and cannot be read here."
       width="report"
       center
       header={{
@@ -148,13 +150,6 @@ export default function AdminEmailInboxPage() {
         ),
       }}
     >
-      <p className="text-sm text-muted-foreground mt-0.5">
-        Cross-user view of inbound email-import rows. Metadata is always
-        shown; from/subject preview is available only for service-tier rows
-        (before the owner&apos;s next login). User-tier content is encrypted
-        with the owner&apos;s key and cannot be read here.
-      </p>
-
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
@@ -163,13 +158,17 @@ export default function AdminEmailInboxPage() {
 
       {/* ─── Per-user grouped counts ──────────────────────────────────────── */}
       <SectionCard
-        label="By user" icon={Users} tone="indigo"
+        label={
+          <>
+            By user
+            <InfoTip label="About user counts" text="Counts honor the action / source / date filters (not the selected user)." />
+          </>
+        }
+        icon={Users}
+        tone="indigo"
         padded={false}
         className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
       >
-        <p className="px-1 pt-3 text-xs text-muted-foreground">
-          Counts honor the action / source / date filters (not the selected user).
-        </p>
         {data?.byUser.map((g) => (
           <ListRow
             key={g.userId}
@@ -189,7 +188,7 @@ export default function AdminEmailInboxPage() {
           />
         ))}
         {data && data.byUser.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p data-keep="empty" className="py-8 text-center text-sm text-muted-foreground">
             No email-import rows match these filters.
           </p>
         )}
@@ -248,10 +247,10 @@ export default function AdminEmailInboxPage() {
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
       <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         {loading && !data && (
-          <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
+          <p data-keep="status" className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}
         {data && data.rows.length === 0 && (
-          <p className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
+          <p data-keep="empty" className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
         )}
         {data && data.rows.map((r) => (
           <div key={r.id} className="py-1">

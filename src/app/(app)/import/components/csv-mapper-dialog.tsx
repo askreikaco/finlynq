@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/ui/field";
 import { ArrowRight, FileText } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 
 const FIELD_OPTIONS = [
   { value: "", label: "Skip" },
@@ -106,7 +107,7 @@ export function CsvMapperDialog({
         </DialogHeader>
 
         <div className="overflow-auto flex-1 space-y-3 pr-1">
-          <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
+          <p data-keep="label" className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {headers.map((header) => (
             <div key={header} className="flex items-center gap-2">
               <Badge variant="outline" className="min-w-[140px] justify-center font-mono text-xs shrink-0 truncate">
@@ -127,9 +128,9 @@ export function CsvMapperDialog({
 
           {!hasAccount && (
             <div className="mt-4 space-y-1.5">
-              <p className="text-xs font-medium">Default Account</p>
-              <p className="text-xs text-muted-foreground">
-                Required when your CSV has no Account column.
+              <p className="flex items-center gap-0.5 text-xs font-medium">
+                Default Account
+                <InfoTip label="About default account" text="Required when your CSV has no Account column." />
               </p>
               {accounts.length > 0 ? (
                 <Field

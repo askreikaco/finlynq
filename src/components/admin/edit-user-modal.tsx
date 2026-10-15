@@ -4,15 +4,14 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface AdminUser {
   id: string;
@@ -120,10 +119,7 @@ export function EditUserModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.
-          </DialogDescription>
+          <DialogHeading help={<>Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.</>}>Edit User</DialogHeading>
         </DialogHeader>
 
         <div className="space-y-4">

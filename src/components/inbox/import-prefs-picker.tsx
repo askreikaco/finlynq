@@ -17,6 +17,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export type CsvMappingMode = "confirm" | "auto";
 export type OfxPayeeSource = "name" | "memo";
@@ -37,27 +38,23 @@ function Radio<T extends string>({
   return (
     <div role="radiogroup" className="space-y-1.5">
       {options.map((opt) => (
-        <label
-          key={opt.value}
-          className={`flex items-start gap-2 text-sm ${
-            disabled ? "opacity-60" : "cursor-pointer"
-          }`}
-        >
-          <input
-            type="radio"
-            name={name}
-            className="mt-0.5"
-            checked={value === opt.value}
-            disabled={disabled}
-            onChange={() => onChange(opt.value)}
-          />
-          <span>
+        <div key={opt.value} className="flex items-center gap-1">
+          <label
+            className={`flex min-w-0 flex-1 items-center gap-2 text-sm ${
+              disabled ? "opacity-60" : "cursor-pointer"
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              checked={value === opt.value}
+              disabled={disabled}
+              onChange={() => onChange(opt.value)}
+            />
             <span className="font-medium">{opt.label}</span>
-            <span className="block text-xs text-muted-foreground">
-              {opt.hint}
-            </span>
-          </span>
-        </label>
+          </label>
+          <InfoTip text={opt.hint} label={`About ${opt.label}`} />
+        </div>
       ))}
     </div>
   );
@@ -127,7 +124,7 @@ export function ImportPrefsPicker({
           options={[
             {
               value: "confirm",
-              label: "Ask me to confirm first",
+              label: "Ask first",
               hint: "Show the CSV column mapping / OFX field preview before any rows are staged.",
             },
             {

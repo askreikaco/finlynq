@@ -486,8 +486,7 @@ export default function ReportsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle icon={BarChart3} tone="indigo">{periodLabels[period]} Breakdown</CardTitle>
-                        <CardDescription>Stacked income and expenses per {period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}</CardDescription>
+                        <CardTitle icon={BarChart3} tone="indigo" info={`Stacked income and expenses per ${period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}`} infoLabel="About breakdown">{periodLabels[period]} Breakdown</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
@@ -655,13 +654,14 @@ export default function ReportsPage() {
                   />
                   <Card>
                     <CardHeader>
-                      <CardTitle icon={TrendingUp} tone="amber">Unrealized gains / losses (period change)</CardTitle>
-                      <CardDescription>
-                        How asset valuations and FX translation moved during the
-                        selected period. Computed as snapshot at period end −
-                        snapshot at period start, so the totals match what you&apos;d
-                        get reporting monthly, quarterly, or annually.
-                      </CardDescription>
+                      <CardTitle
+                        icon={TrendingUp}
+                        tone="amber"
+                        infoLabel="About unrealized gains"
+                        info="How asset valuations and FX translation moved during the selected period. Computed as snapshot at period end − snapshot at period start, so the totals match what you'd get reporting monthly, quarterly, or annually."
+                      >
+                        Unrealized gains / losses
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {/* Per-account drilldown */}
@@ -746,10 +746,7 @@ export default function ReportsPage() {
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle icon={ArrowLeftRight} tone="cyan">Cash Flow Diagram</CardTitle>
-                    <CardDescription>
-                      How income flows into expense categories ({startDate} to {endDate})
-                    </CardDescription>
+                    <CardTitle icon={ArrowLeftRight} tone="cyan" infoLabel="About cash flow" info={`How income flows into expense categories (${startDate} to ${endDate})`}>Cash Flow Diagram</CardTitle>
                   </div>
                 </div>
               </CardHeader>
@@ -799,10 +796,7 @@ export default function ReportsPage() {
                         <GitCompareArrows className="h-5 w-5" />
                       </div>
                       <div>
-                        <CardTitle icon={BarChart3} tone="rose">Monthly Spending Comparison</CardTitle>
-                        <CardDescription>
-                          {yoyData.year1} vs {yoyData.year2} expenses by month
-                        </CardDescription>
+                        <CardTitle icon={BarChart3} tone="rose" infoLabel="About spending comparison" info={`${yoyData.year1} vs ${yoyData.year2} expenses by month`}>Monthly Spending Comparison</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
@@ -842,10 +836,7 @@ export default function ReportsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle icon={BarChart3} tone="emerald">Monthly Income Comparison</CardTitle>
-                    <CardDescription>
-                      {yoyData.year1} vs {yoyData.year2} income by month
-                    </CardDescription>
+                    <CardTitle icon={BarChart3} tone="emerald" infoLabel="About income comparison" info={`${yoyData.year1} vs ${yoyData.year2} income by month`}>Monthly Income Comparison</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="h-80">
@@ -884,8 +875,7 @@ export default function ReportsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle icon={Tags} tone="violet">Category Comparison</CardTitle>
-                    <CardDescription>Expense categories year-over-year change</CardDescription>
+                    <CardTitle icon={Tags} tone="violet" infoLabel="About category comparison" info="Expense categories year-over-year change">Category Comparison</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <YoYStatementRows rows={yoyData.categories} year1={yoyData.year1} year2={yoyData.year2} currency={displayCurrency} />

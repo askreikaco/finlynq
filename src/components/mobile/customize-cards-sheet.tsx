@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
@@ -99,8 +100,12 @@ export function CustomizeCardsSheet({
         )}
       >
         <SheetHeader>
-          <SheetTitle className="text-lg font-bold">{title}</SheetTitle>
-          <SheetDescription>{description}</SheetDescription>
+          <div className="flex items-center gap-1">
+            <SheetTitle className="text-lg font-bold">{title}</SheetTitle>
+            <InfoTip text={description} label="About customizing" />
+          </div>
+          {/* Screen readers still get the description; sighted users get it in the (i) tip. */}
+          <SheetDescription className="sr-only">{description}</SheetDescription>
         </SheetHeader>
 
         <ul data-slot="customize-list" className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4">

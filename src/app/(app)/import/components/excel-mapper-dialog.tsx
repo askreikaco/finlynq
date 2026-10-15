@@ -5,8 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface SheetInfo {
   name: string;
@@ -106,13 +105,10 @@ export function ExcelMapperDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogHeading className="flex items-center gap-2" help={<>Map your spreadsheet columns to transaction fields.</>}>
             <FileSpreadsheet className="h-5 w-5 text-pos" />
             Map Excel Columns
-          </DialogTitle>
-          <DialogDescription>
-            Map your spreadsheet columns to transaction fields.
-          </DialogDescription>
+          </DialogHeading>
         </DialogHeader>
 
         {/* Sheet selector */}
@@ -142,7 +138,7 @@ export function ExcelMapperDialog({
 
         {/* Column mapping */}
         <div className="space-y-2 overflow-auto flex-1">
-          <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
+          <p data-keep="label" className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {sheet.headers.map((header) => (
             <div key={header} className="flex items-center gap-2">
               <Badge variant="outline" className="min-w-[120px] justify-center font-mono text-xs">
