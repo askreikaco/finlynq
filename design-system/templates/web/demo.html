@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REIKA DS web demo</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="../css/reika.css">
+<script src="reika-ds.js" defer></script>
+<style>
+  /* page chrome only; everything else comes from tokens + reika.css */
+  body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-ui, ui-sans-serif, system-ui, sans-serif); padding: 1rem; }
+  main { max-width: 60rem; margin: 0 auto; display: grid; gap: 1.5rem; }
+  main > * { min-width: 0; }
+  h1 { font-size: 1.5rem; margin: 0; } section > h2 { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted-foreground); margin: 0 0 .5rem; }
+  .row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+  .grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>REIKA DS web components</h1><button class="r-btn r-btn--outline" id="theme" type="button">Toggle dark</button></header>
+
+  <section><h2>Buttons (.r-btn)</h2>
+    <div class="row">
+      <button class="r-btn r-btn--primary">Primary</button><button class="r-btn">Secondary</button><button class="r-btn r-btn--outline">Outline</button>
+      <button class="r-btn r-btn--ghost">Ghost</button><button class="r-btn r-btn--danger">Delete</button><button class="r-btn r-btn--primary r-btn--lg">Large</button>
+      <button class="r-btn r-btn--outline r-btn--round" aria-label="Add">+</button>
+    </div></section>
+
+  <section><h2>r-badge, r-amount, r-tip</h2>
+    <div class="row">
+      <r-badge>Neutral</r-badge><r-badge tone="primary">Primary</r-badge><r-badge tone="success">Paid</r-badge><r-badge tone="warning">Due</r-badge><r-badge tone="danger" variant="solid">Overdue</r-badge><r-badge tone="info" variant="outline">Info</r-badge>
+      <r-amount value="1250000" currency="VND">1250000</r-amount>
+      <r-amount value="-4500000" currency="VND" tone="auto">-4500000</r-amount>
+      <r-amount value="2350000000" currency="VND" compact>2350000000</r-amount>
+      <r-amount value="1234.5" currency="USD" locale="en-US" sign tone="auto">1234.5</r-amount>
+      <span>Net worth <r-tip label="What is net worth?">Assets minus liabilities, converted to your display currency.</r-tip></span>
+    </div></section>
+
+  <section><h2>r-metric</h2>
+    <div class="grid">
+      <r-metric label="Revenue" value="1250000000" currency="VND" compact delta="+4.2%" spark="3,5,4,7,6,9,8,12"></r-metric>
+      <r-metric label="Expenses" value="-820000" currency="VND" delta="-1.8%" href="#expenses" spark="9,8,8,6,7,5,5,4"></r-metric>
+      <r-metric><span class="r-metric__label">Open tasks</span><span class="r-metric__value">42</span></r-metric>
+    </div></section>
+
+  <section><h2>r-card</h2>
+    <div class="grid">
+      <r-card label="Inside label" description="Label sits inside the surface." tip="Help text for this card.">Body content.</r-card>
+      <r-card label="Outside label" label-position="outside" description="Label sits above the surface.">Body content.</r-card>
+    </div></section>
+
+  <section><h2>r-notice</h2>
+    <div style="display:grid;gap:.5rem">
+      <r-notice tone="info" title="Info">Plain information.</r-notice>
+      <r-notice tone="success" title="Saved">All changes saved.</r-notice>
+      <r-notice tone="warning" title="Heads up" dismissible>Invoice due in 3 days.</r-notice>
+      <r-notice tone="danger" title="Failed">Could not reach the server.</r-notice>
+      <r-notice tone="neutral" no-icon>Neutral, no icon.</r-notice>
+    </div></section>
+
+  <section><h2>r-tabs (arrow keys, Home/End; scrolls horizontally on narrow screens)</h2>
+    <r-tabs label="Demo tabs">
+      <r-tab>Overview</r-tab><r-tab>Transactions</r-tab><r-tab>Budgets</r-tab><r-tab>Reports</r-tab><r-tab>Goals</r-tab><r-tab>Settings</r-tab><r-tab>Import</r-tab><r-tab>Export</r-tab>
+      <r-panel>Overview panel.</r-panel><r-panel>Transactions panel.</r-panel><r-panel>Budgets panel.</r-panel><r-panel>Reports panel.</r-panel>
+      <r-panel>Goals panel.</r-panel><r-panel>Settings panel.</r-panel><r-panel>Import panel.</r-panel><r-panel>Export panel.</r-panel>
+    </r-tabs></section>
+
+  <section><h2>r-dialog (native &lt;dialog&gt;)</h2>
+    <div class="row">
+      <button class="r-btn" data-r-dialog-open="d-confirm">Confirm</button>
+      <button class="r-btn" data-r-dialog-open="d-form">Form</button>
+      <button class="r-btn" data-r-dialog-open="d-detail">Detail</button>
+    </div>
+    <r-dialog id="d-confirm" variant="confirm" heading="Delete this account?" confirm-label="Delete" danger>This cannot be undone.</r-dialog>
+    <r-dialog id="d-form" variant="form" heading="Rename">
+      <form class="r-field" onsubmit="return false"><label for="nm">Name</label><input id="nm" name="name" value="Savings"><span class="r-field__hint">Native input.</span></form>
+    </r-dialog>
+    <r-dialog id="d-detail" variant="detail" heading="Details"><p>Detail dialogs have only a close button.</p><p>Esc and backdrop click close them (native &lt;dialog&gt;).</p></r-dialog>
+  </section>
+
+  <section><h2>.r-field, .r-listrow, .r-card</h2>
+    <div class="grid">
+      <div class="r-card">
+        <div class="r-field"><label for="a">Amount</label><input id="a" value="1.250.000" inputmode="decimal"><span class="r-field__hint">Hint text</span></div>
+        <div class="r-field" style="margin-top:.75rem" data-invalid="true"><label for="b">Invalid</label><input id="b" aria-invalid="true" value="oops"></div>
+        <div class="r-field" style="margin-top:.75rem"><label for="c">Type</label><select id="c"><option>Income</option><option>Expense</option></select></div>
+      </div>
+      <div class="r-card">
+        <a class="r-listrow" href="#r1"><span class="r-listrow__main"><div class="r-listrow__title">Rent</div><div class="r-listrow__sub">Monthly</div></span><span class="r-listrow__value"><r-amount value="-9000000" currency="VND" tone="auto"></r-amount></span></a>
+        <div class="r-listrow"><span class="r-listrow__main"><div class="r-listrow__title">Salary</div></span><span class="r-listrow__value"><r-amount value="35000000" currency="VND" tone="auto"></r-amount></span></div>
+      </div>
+    </div></section>
+</main>
+<script>document.getElementById('theme').addEventListener('click', function(){ document.documentElement.classList.toggle('dark'); });
+if (location.hash === '#dark') document.documentElement.classList.add('dark');</script>
+</body>
+</html>

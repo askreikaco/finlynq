@@ -30,7 +30,8 @@
     "test:components": "vitest run tests/components/",
     "build:web": "vite build",
     "dev:web": "vite",
-    "preview:web": "vite preview"
+    "preview:web": "vite preview",
+    "ds:export": "node scripts/export-design-system.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
