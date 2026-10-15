@@ -40,15 +40,17 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
     expect(GOALS).not.toMatch(/GoalEditForm|setAddOpen|setEditGoal|seedForm/);
   });
 
-  it("links the create and edit actions to their pages", () => {
+  it("links the create action and the goal rows to their pages (no sheet edit link)", () => {
     expect(GOALS).toContain('href: "/goals/new"');
-    expect(GOALS).toContain("href={`/goals/${detail.id}/edit`}");
+    expect(GOALS).toContain("href={`/goals/${g.id}`}");
+    expect(GOALS).not.toContain("/edit`}");
   });
 
-  it("keeps the delete confirmation as a dialog (ListPage deleteFlow renders the ConfirmDialog)", () => {
+  it("the list has no delete flow: delete is in the goal edit form (FormPage delete config)", () => {
     expect(GOALS).toContain('from "@/components/templates"');
     expect(GOALS).toContain("<ListPage");
-    expect(GOALS).toMatch(/deleteFlow=\{\{/);
+    expect(GOALS).not.toMatch(/deleteFlow=\{\{/);
+    expect(read(`${APP}/goals/_components/goal-form-panel.tsx`)).toMatch(/delete=\{\{/);
   });
 });
 

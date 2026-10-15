@@ -106,34 +106,33 @@ function expectOneLayout(container: HTMLElement, title: string, { rows = true, r
 describe("Loans: one layout at every size", () => {
   it("shared header with Add Loan, loans as shared ProgressRow buttons, no table", async () => {
     const { container } = render(<LoansPage />);
-    await screen.findByRole("button", { name: /Car loan/ });
+    await screen.findByRole("link", { name: /Car loan/ });
     expectOneLayout(container, "Loans & Debt", { rowSlot: "loan-row" });
     // A link to /loans/new on phones; at wide the same control sets ?sel=new (split view).
     expect(screen.getByRole("link", { name: /Add Loan/ })).toBeTruthy();
   });
 
-  it("a row opens the detail sheet with the next due date and the edit action", async () => {
+  it("a phone row links to the loan detail page (no sheet)", async () => {
     render(<LoansPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Car loan/ }));
-    expect(await screen.findByText("Next due (est.)")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    expect(H.push).toHaveBeenCalledWith("/loans/5/edit");
+    const row = (await screen.findByRole("link", { name: /Car loan/ })) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/loans/5");
+    expect(screen.queryByText("Next due (est.)")).toBeNull();
   });
 });
 
 describe("Subscriptions: one layout at every size", () => {
   it("shared header with Add subscription, the tracked list as ListRows, no table", async () => {
     const { container } = render(<SubscriptionsPage />);
-    await screen.findByRole("button", { name: /Netflix/ });
+    await screen.findByRole("link", { name: /Netflix/ });
     expectOneLayout(container, "Subscriptions");
     expect(screen.getByRole("link", { name: /Add subscription/ }).getAttribute("data-slot")).toBe("topbar-primary");
   });
 
-  it("a row opens the detail sheet with its actions", async () => {
+  it("a phone row links to the subscription detail page (no sheet)", async () => {
     render(<SubscriptionsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Netflix/ }));
-    expect(await screen.findByRole("button", { name: /Pause/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Delete/ })).toBeTruthy();
+    const row = (await screen.findByRole("link", { name: /Netflix/ })) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/subscriptions/7");
+    expect(screen.queryByRole("button", { name: /Pause/ })).toBeNull();
   });
 });
 
