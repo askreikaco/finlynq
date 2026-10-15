@@ -232,7 +232,6 @@ function TransactionRow({
           checked={checked}
           onChange={() => selection.onToggle(t.id)}
           aria-label={`Select ${payee}`}
-          className="ml-1 w-4 shrink-0"
         />
         <div className="min-w-0 flex-1">
           <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} />

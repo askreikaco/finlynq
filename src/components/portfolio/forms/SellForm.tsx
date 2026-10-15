@@ -403,17 +403,15 @@ export default function SellForm() {
 
         {selectedHolding && (
           <FieldGroup label="Lots">
-            <label className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm">
-              <span>Choose specific lots (advanced). FIFO by default.</span>
-              <Field
-                control="switch"
-                checked={useLotPicker}
-                onCheckedChange={(v) => {
-                  setUseLotPicker(v);
-                  if (!v) setLotSelection([]);
-                }}
-              />
-            </label>
+            <Field
+              label="Choose specific lots (advanced). FIFO by default."
+              control="switch"
+              checked={useLotPicker}
+              onCheckedChange={(v) => {
+                setUseLotPicker(v);
+                if (!v) setLotSelection([]);
+              }}
+            />
             {useLotPicker && (
               <div className="px-0 py-0">
                 <LotPicker

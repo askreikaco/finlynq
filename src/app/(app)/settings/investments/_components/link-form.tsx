@@ -10,10 +10,9 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseSaveError } from "@/lib/save-error";
-import { FormFooter, FormRow } from "./form-rows";
-import { FieldGroup } from "@/components/ui/field";
+import { FormFooter } from "./form-rows";
+import { FieldGroup, Field } from "@/components/ui/field";
 import { descriptionOf, symbolLabel, type Account, type Security } from "./shared";
 
 export type LinkMode = "account" | "security";
@@ -103,34 +102,23 @@ export function LinkForm({
       }}
     >
       <FieldGroup>
-        <FormRow
+        <Field
           label={label}
           error={error || undefined}
-          hint={
-            isAccount
-              ? "Pick the account that holds this security. Quantity and cost basis come from a transaction."
-              : "Pick a security to add to this account. Quantity and cost basis come from a transaction."
-          }
-        >
-          <Select items={items} value={value} onValueChange={(v) => setValue(v ?? "")}>
-            <SelectTrigger aria-label={label}>
-              <SelectValue placeholder={placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {eligible.length === 0 ? (
-                <SelectItem value="__none__" disabled>
-                  {isAccount ? "No eligible accounts" : "No eligible securities"}
-                </SelectItem>
-              ) : (
-                eligible.map((e) => (
-                  <SelectItem key={e.value} value={e.value}>
-                    {e.label}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </FormRow>
+          info={
+                    isAccount
+                      ? "Pick the account that holds this security. Quantity and cost basis come from a transaction."
+                      : "Pick a security to add to this account. Quantity and cost basis come from a transaction."
+                  }
+          control="select"
+          value={value}
+          onValueChange={(v) => setValue(v ?? "")}
+          aria-label={label}
+          placeholder={placeholder}
+          options={[
+            ...(eligible.length === 0 ? [{ value: "__none__", label: isAccount ? "No eligible accounts" : "No eligible securities", disabled: true }] : [...eligible.map((e) => ({ value: e.value, label: e.label }))]),
+          ]}
+        />
       </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={linking}>

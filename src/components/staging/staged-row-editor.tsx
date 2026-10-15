@@ -19,14 +19,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { Field } from "@/components/ui/field";
@@ -251,48 +243,32 @@ export function StagedRowEditor({
           </div>
           <div className="grid grid-cols-2 gap-2">
             {/* Peer staged row */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                Pair with sibling row <Spinner shown={savingField === "peerStagedId"} />
-              </Label>
-              <Select
-                value={local.peerStagedId ?? "__none__"}
-                onValueChange={(v) => {
-                  const next = v === "__none__" ? null : v;
-                  if (next != null) {
-                    // Setting a peer clears any target account.
-                    setLocal({ ...local, peerStagedId: next, targetAccountId: null });
-                    void save("peerStagedId", {
-                      peerStagedId: next,
-                      targetAccountId: null,
-                    });
-                  } else {
-                    setLocal({ ...local, peerStagedId: null });
-                    void save("peerStagedId", { peerStagedId: null });
-                  }
-                }}
-                disabled={local.targetAccountId != null}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder={local.targetAccountId != null ? "(target account set)" : "Pick sibling row"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— none —</SelectItem>
-                  {peerCandidates.length === 0 ? (
-                    <SelectItem value="__nope__" disabled>
-                      No additive-inverse siblings
-                    </SelectItem>
-                  ) : (
-                    peerCandidates.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}
-                        {s.accountName || "(unknown account)"}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            <Field
+              label={<>Pair with sibling row <Spinner shown={savingField === "peerStagedId"} /></>}
+              control="select"
+              value={local.peerStagedId ?? "__none__"}
+              onValueChange={(v) => {
+                const next = v === "__none__" ? null : v;
+                if (next != null) {
+                  // Setting a peer clears any target account.
+                  setLocal({ ...local, peerStagedId: next, targetAccountId: null });
+                  void save("peerStagedId", {
+                    peerStagedId: next,
+                    targetAccountId: null,
+                  });
+                } else {
+                  setLocal({ ...local, peerStagedId: null });
+                  void save("peerStagedId", { peerStagedId: null });
+                }
+              }}
+              disabled={local.targetAccountId != null}
+              placeholder={local.targetAccountId != null ? "(target account set)" : "Pick sibling row"}
+              compact
+              options={[
+                { value: "__none__", label: "— none —" },
+                ...(peerCandidates.length === 0 ? [{ value: "__nope__", label: "No additive-inverse siblings", disabled: true }] : [...peerCandidates.map((s) => ({ value: s.id, label: <>Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "} {s.accountName || "(unknown account)"}</> }))]),
+              ]}
+            />
 
             {/* Target account */}
             <Field

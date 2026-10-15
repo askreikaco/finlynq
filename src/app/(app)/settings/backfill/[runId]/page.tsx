@@ -453,7 +453,6 @@ function ProposalCard({
           aria-label={`Approve: ${proposal.summary}`}
           checked={isApproved}
           onChange={onToggleApprove}
-          className="shrink-0"
         />
       )}
       <div className="min-w-0 flex-1">

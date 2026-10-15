@@ -157,7 +157,6 @@ export function BankPane({
                                         if (el) el.indeterminate = someChecked;
                                       }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
-                    className="w-4"
                   />
                 </TableHead>
               )}
@@ -208,7 +207,6 @@ export function BankPane({
                         aria-label={`Select bank row ${r.date} ${r.payee ?? ""}`}
                         checked={checked}
                         onChange={() => onToggleSelect?.(r.id)}
-                        className="w-4"
                       />
                     </TableCell>
                   )}

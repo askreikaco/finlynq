@@ -220,10 +220,7 @@ export function RecoveryCodesCard() {
                 </span>
               )}
             </div>
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              <span>{STRINGS.savedLabel}</span>
-              <Field control="switch" checked={saved} onCheckedChange={(v) => setSaved(v)} />
-            </label>
+            <Field label={STRINGS.savedLabel} control="switch" checked={saved} onCheckedChange={(v) => setSaved(v)} />
             <Button size="sm" disabled={!saved} onClick={handleDone}>
               {STRINGS.done}
             </Button>

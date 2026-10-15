@@ -373,28 +373,24 @@ export default function AdminPriceCachePage() {
             controlClassName="text-foreground"
           />
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          Today only
-          <Field
-            control="switch"
-            checked={todayOnly}
-            onCheckedChange={(v) => {
-              setTodayOnly(v);
-              resetOffset();
-            }}
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          Stale today only
-          <Field
-            control="switch"
-            checked={staleOnly}
-            onCheckedChange={(v) => {
-              setStaleOnly(v);
-              resetOffset();
-            }}
-          />
-        </label>
+        <Field
+          label="Today only"
+          control="switch"
+          checked={todayOnly}
+          onCheckedChange={(v) => {
+            setTodayOnly(v);
+            resetOffset();
+          }}
+        />
+        <Field
+          label="Stale today only"
+          control="switch"
+          checked={staleOnly}
+          onCheckedChange={(v) => {
+            setStaleOnly(v);
+            resetOffset();
+          }}
+        />
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Page size
           <Field

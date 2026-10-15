@@ -206,10 +206,7 @@ export default function AdminApiLogPage() {
           },
         ],
         actions: (<>
-            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-              Auto-refresh
-              <Field control="switch" checked={auto} onCheckedChange={setAuto} />
-            </label>
+            <Field label="Auto-refresh" control="switch" checked={auto} onCheckedChange={setAuto} />
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh

@@ -43,15 +43,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { FieldLabel } from "@/components/forms";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Trash2, AlertTriangle } from "lucide-react";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { Field } from "@/components/ui/field";
@@ -415,37 +407,17 @@ export function HoldingEditForm({
       />
 
       {isCreateMode && (
-        <div className="space-y-1.5">
-          <Label>Account</Label>
-          <Select
-            items={accountLabelById}
-            value={form.accountId}
-            onValueChange={(v) => setForm({ ...form, accountId: v ?? "" })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select an account" />
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.length === 0 ? (
-                <SelectItem value="__none__" disabled>
-                  No accounts available
-                </SelectItem>
-              ) : (
-                accounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name}{" "}
-                    <span className="text-muted-foreground">({a.currency})</span>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-          {errors.accountId && (
-            <p className="text-xs text-destructive">
-              {errors.accountId}
-            </p>
-          )}
-        </div>
+        <Field
+          label="Account"
+          error={errors.accountId}
+          control="select"
+          value={form.accountId}
+          onValueChange={(v) => setForm({ ...form, accountId: v ?? "" })}
+          placeholder="Select an account"
+          options={[
+            ...(accounts.length === 0 ? [{ value: "__none__", label: "No accounts available", disabled: true }] : [...accounts.map((a) => ({ value: String(a.id), label: <>{a.name}{" "} <span className="text-muted-foreground">({a.currency})</span></> }))]),
+          ]}
+        />
       )}
 
       <div className="space-y-1.5">
@@ -512,7 +484,6 @@ export function HoldingEditForm({
         id="is-crypto"
         checked={form.isCrypto}
         onCheckedChange={(v) => setForm({ ...form, isCrypto: v })}
-        className="shrink-0"
       />
 
       <Field label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />

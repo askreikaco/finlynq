@@ -5,7 +5,6 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
@@ -503,16 +502,14 @@ function FirePageContent() {
           >
             <div className="space-y-3">
               {savingsAdj.length > 0 && (
-                <Select value={String(selectedSavings)} onValueChange={(v) => setSensChoice(v)}>
-                  <SelectTrigger className="w-full" aria-label="Monthly savings">
-                    <SelectValue>{(v: unknown) => `${formatCurrency(Number(v), displayCurrency)}/mo`}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {savingsAdj.map((s) => (
-                      <SelectItem key={s} value={String(s)}>{formatCurrency(s, displayCurrency)}/mo</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field
+                  control="select"
+                  value={String(selectedSavings)}
+                  onValueChange={(v) => setSensChoice(v)}
+                  aria-label="Monthly savings"
+                  className="w-full"
+                  options={savingsAdj.map((s) => ({ value: String(s), label: <>{formatCurrency(s, displayCurrency)}/mo</> }))}
+                />
               )}
               <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {returnRates.map((rr) => {

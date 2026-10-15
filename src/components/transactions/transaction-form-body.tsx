@@ -15,7 +15,6 @@ const NOTE_TEXTAREA_CLASS =
   "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 import { Label } from "@/components/ui/label";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
@@ -449,7 +448,6 @@ export function TransactionFormBody({
                   id="isBusiness"
                   checked={form.isBusiness}
                   onCheckedChange={(v) => setForm({ ...form, isBusiness: v })}
-                  className="shrink-0"
                 />
               </div>
             )}
@@ -511,7 +509,6 @@ export function TransactionFormBody({
                   id="alsoCreateRule"
                   checked={alsoCreateRule}
                   onCheckedChange={(v) => setAlsoCreateRule(v)}
-                  className="shrink-0"
                 />
                 <p className="text-xs text-muted-foreground pl-6">
                   Payee contains{" "}
@@ -709,7 +706,8 @@ export function TransactionFormBody({
                       <div className="space-y-1">
                         <Label className="text-xs">Destination holding (in {toAcct?.name ?? "—"})</Label>
                         {toAcct ? (
-                          <Select
+                          <Field
+                            control="select"
                             value={destSelectValue}
                             onValueChange={(v) => {
                               const val = v ?? destSentinel;
@@ -723,49 +721,20 @@ export function TransactionFormBody({
                                 setTransferForm({ ...transferForm, destHoldingName: val });
                               }
                             }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Same as source">
-                                {(v) => {
-                                  const val = v == null ? "" : String(v);
-                                  if (!val || val === destSentinel) {
-                                    if (!sourceName) return "Same as source";
-                                    const matchShares = Number(destExactMatch?.currentShares ?? 0);
-                                    return destExactMatch
-                                      ? `${sourceName} (existing · ${matchShares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
-                                      : `${sourceName} (will create)`;
-                                  }
-                                  if (val === "__custom__") return transferForm.destHoldingName || "Custom name";
-                                  const h = destHoldings.find((x) => x.name === val);
-                                  const shares = Number(h?.currentShares ?? 0);
-                                  return `${val} · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
-                                }}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={destSentinel}>
-                                {sourceName
+                            placeholder="Same as source"
+                            options={[
+                              { value: destSentinel, label: sourceName
                                   ? destExactMatch
                                     ? `Same as source — binds to existing "${sourceName}" (${Number(
                                         destExactMatch.currentShares ?? 0,
                                       ).toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
                                     : `Same as source — auto-create "${sourceName}"`
-                                  : "Same as source"}
-                              </SelectItem>
-                              {destHoldings
-                                .filter((h) => h.name !== sourceName)
-                                .map((h) => {
-                                  const shares = Number(h.currentShares ?? 0);
-                                  const qty = ` · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
-                                  return (
-                                    <SelectItem key={h.id} value={h.name}>
-                                      {h.symbol ? `${h.name} (${h.symbol})${qty}` : `${h.name}${qty}`}
-                                    </SelectItem>
-                                  );
-                                })}
-                              <SelectItem value="__custom__">+ Type a different name…</SelectItem>
-                            </SelectContent>
-                          </Select>
+                                  : "Same as source" },
+                              ...destHoldings
+                                .filter((h) => h.name !== sourceName).map((h) => { const shares = Number(h.currentShares ?? 0); const qty = ` · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`; return ({ value: h.name, label: h.symbol ? `${h.name} (${h.symbol})${qty}` : `${h.name}${qty}` }); }),
+                              { value: "__custom__", label: "+ Type a different name…" },
+                            ]}
+                          />
                         ) : (
                           <Field value="" placeholder="Pick a destination account first" disabled />
                         )}

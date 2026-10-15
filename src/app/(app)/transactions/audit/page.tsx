@@ -125,14 +125,12 @@ export default function CurrencyAuditPage() {
           },
         ],
         actions: (
-          <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-            <Field
-              control="switch"
-              checked={includeResolved}
-              onCheckedChange={(v) => setIncludeResolved(v)}
-            />
-            Show resolved
-          </label>
+          <Field
+            label="Show resolved"
+            control="switch"
+            checked={includeResolved}
+            onCheckedChange={(v) => setIncludeResolved(v)}
+          />
         ),
       }}
     >

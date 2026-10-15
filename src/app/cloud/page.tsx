@@ -677,10 +677,12 @@ function CloudAuthPageInner() {
             >
               {loading ? "Verifying..." : "Verify"}
             </button>
-            <label className="flex min-h-row items-center justify-center gap-3 text-xs text-muted-foreground">
-              This is a shared computer
-              <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
-            </label>
+            <Field
+              label="This is a shared computer"
+              control="switch"
+              checked={sharedComputer}
+              onCheckedChange={setSharedComputer}
+            />
             <div className="flex flex-col items-center gap-2 text-sm">
               {passkeySupported && (
                 <button
@@ -730,10 +732,12 @@ function CloudAuthPageInner() {
               </button>
             )}
 
-            <label className="mb-4 flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
-              This is a shared computer
-              <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
-            </label>
+            <Field
+              label="This is a shared computer"
+              control="switch"
+              checked={sharedComputer}
+              onCheckedChange={setSharedComputer}
+            />
 
             {error && (
               <p className="mb-4 text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
@@ -838,10 +842,12 @@ function CloudAuthPageInner() {
                     Forgot password?
                   </Link>
                 </div>
-                <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
-                  This is a shared computer
-                  <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
-                </label>
+                <Field
+                  label="This is a shared computer"
+                  control="switch"
+                  checked={sharedComputer}
+                  onCheckedChange={setSharedComputer}
+                />
                 {error && (
                   <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
                 )}

@@ -281,7 +281,6 @@ export function RuleEditorForm({
           id="rule-active"
           checked={isActive}
           onCheckedChange={(v) => setIsActive(v)}
-          className="shrink-0"
         />
 
         {/* Conditions */}
@@ -918,19 +917,17 @@ function InvestmentOpFields({
       {usesPosition && (
         <div className="flex flex-wrap items-center gap-2">
           <Label className="w-28 text-xs text-muted-foreground">Holding</Label>
-          <label className="flex items-center gap-2 text-xs">
-            <Field
-              control="switch"
-              checked={action.useRowTicker ?? false}
-              onCheckedChange={(v) =>
-                onChange({
-                  useRowTicker: v,
-                  ...(v ? { holdingId: undefined } : {}),
-                } as Partial<Action>)
-              }
-            />
-            Resolve from row ticker
-          </label>
+          <Field
+            label="Resolve from row ticker"
+            control="switch"
+            checked={action.useRowTicker ?? false}
+            onCheckedChange={(v) =>
+              onChange({
+                useRowTicker: v,
+                ...(v ? { holdingId: undefined } : {}),
+              } as Partial<Action>)
+            }
+          />
           {!action.useRowTicker && (
             <Field
               control="combobox"

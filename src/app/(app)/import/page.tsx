@@ -25,13 +25,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Tabs,
   TabsContent,
   TabsList,
@@ -56,6 +49,7 @@ import { InboxEmailTab } from "@/components/inbox/inbox-email-tab";
 import { ReconcileSummaryPanel } from "@/components/inbox/reconcile-summary-panel";
 import { takeHandoffFile } from "@/lib/import/file-handoff";
 import { SectionPage } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 interface Account {
@@ -378,40 +372,17 @@ function ImportPageInner() {
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
               Account
             </span>
-            <Select
+            <Field
+              control="select"
               value={accountId != null ? String(accountId) : ""}
               onValueChange={(v) => {
                 const n = parseInt(v ?? "", 10);
                 if (Number.isFinite(n)) switchAccount(n);
               }}
-            >
-              <SelectTrigger className="w-full max-w-[260px]">
-                {/* Base UI SelectValue otherwise renders the raw `value`
-                 *  (the account id as string, e.g. "768") on first render
-                 *  before items register their text. Pass an explicit
-                 *  render prop that pulls the decrypted label out of the
-                 *  accounts array so the trigger always shows the
-                 *  account name. (Inbox v4 Phase 5, 2026-05-27.) */}
-                <SelectValue placeholder="Select an account">
-                  {accountId != null
-                    ? (() => {
-                        const a = accounts.find((x) => x.id === accountId);
-                        return a
-                          ? `${safeAccountName(a)} · ${a.currency}`
-                          : "Select an account";
-                      })()
-                    : "Select an account"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {dropdownAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {safeAccountName(a)} · {a.currency}
-                    {hiddenSet.has(a.id) ? " · hidden" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select an account"
+              className="w-full max-w-[260px]"
+              options={dropdownAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency} {hiddenSet.has(a.id) ? " · hidden" : ""}</> }))}
+            />
           </div>
           <LensChip
             lens={activeLens}

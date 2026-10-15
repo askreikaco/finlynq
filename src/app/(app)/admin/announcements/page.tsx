@@ -231,22 +231,18 @@ export default function AdminAnnouncementsPage() {
           />
 
           <div className="flex flex-wrap gap-4">
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              Pinned (shows as banner)
-              <Field
-                control="switch"
-                checked={form.pinned}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, pinned: v }))}
-              />
-            </label>
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              Published
-              <Field
-                control="switch"
-                checked={form.published}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
-              />
-            </label>
+            <Field
+              label="Pinned (shows as banner)"
+              control="switch"
+              checked={form.pinned}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, pinned: v }))}
+            />
+            <Field
+              label="Published"
+              control="switch"
+              checked={form.published}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

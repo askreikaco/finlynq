@@ -23,13 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { AccordionItem } from "@/components/ui/accordion";
 import { InfoTip } from "@/components/ui/info-tip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BookTemplate, ChevronRight, Clock, Copy, Eye, EyeOff, FileCheck, FileSpreadsheet, Landmark, Link as LinkIcon, Mail, RefreshCw, Sliders, ToggleLeft, ToggleRight } from "lucide-react";
 import Link from "next/link";
 import { TemplateManager } from "@/app/(app)/import/components/template-manager";
@@ -388,24 +381,17 @@ export function ImportEmailItem() {
                   <div>
                     <p className="text-sm font-medium">Keep emails for</p>
                   </div>
-                  <Select
+                  <Field
+                    control="select"
                     value={String(retentionDays)}
                     onValueChange={(v) =>
                       v && void updateRetentionDays(parseInt(v, 10))
                     }
                     disabled={retentionLoading}
-                  >
-                    <SelectTrigger className="w-[140px] h-9">
-                      <SelectValue>{retentionDays} days</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {retentionOptions.map((d) => (
-                        <SelectItem key={d} value={String(d)}>
-                          {d} days
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    compact
+                    className="w-[140px]"
+                    options={retentionOptions.map((d) => ({ value: String(d), label: <>{d} days</> }))}
+                  />
                 </div>
               </CardContent>
             </Card>

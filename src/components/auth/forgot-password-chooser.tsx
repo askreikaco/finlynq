@@ -143,10 +143,12 @@ function BackButton({ onBack }: { onBack: () => void }) {
 
 function SharedComputer({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
-      <span>This is a shared computer</span>
-      <Field control="switch" checked={checked} onCheckedChange={(v) => onChange(v)} />
-    </label>
+    <Field
+      label="This is a shared computer"
+      control="switch"
+      checked={checked}
+      onCheckedChange={(v) => onChange(v)}
+    />
   );
 }
 

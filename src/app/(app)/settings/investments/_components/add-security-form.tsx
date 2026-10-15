@@ -185,20 +185,17 @@ export function AddSecurityForm({
           placeholder="USD"
           maxLength={4}
         />
-        <FormRow label="Crypto">
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
-            <span>Crypto asset</span>
-            <Field
-              control="switch"
-              checked={isCrypto}
-              onCheckedChange={(v) => {
-                setIsCrypto(v);
-                cryptoTouchedRef.current = true;
-                lookupTicker(symbol, v);
-              }}
-            />
-          </label>
-        </FormRow>
+        <Field
+          label="Crypto"
+          label="Crypto asset"
+          control="switch"
+          checked={isCrypto}
+          onCheckedChange={(v) => {
+            setIsCrypto(v);
+            cryptoTouchedRef.current = true;
+            lookupTicker(symbol, v);
+          }}
+        />
         <FormRow
           label="Pricing"
           hint="Auto fetches market prices. Manual is for custom holdings: add prices under Prices after creating it."

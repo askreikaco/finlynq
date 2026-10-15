@@ -274,7 +274,6 @@ export function ImportPreviewDialog({
                         checked={isForced}
                         onChange={() => toggleDuplicate(row.rowIndex)}
                         title="Force import this duplicate"
-                        className="w-4"
                       />
                     )}
                     {isProbable && (
@@ -283,7 +282,6 @@ export function ImportPreviewDialog({
                         checked={!isSkipped}
                         onChange={() => toggleSkipProbable(row.rowIndex)}
                         title="Uncheck to skip this probable duplicate"
-                        className="w-4"
                       />
                     )}
                   </div>

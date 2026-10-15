@@ -116,7 +116,6 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
                 checked={mustShareBack}
                 onCheckedChange={(v) => setMustShareBack(v)}
                 disabled={busy}
-                className="shrink-0"
               />
             </div>
 

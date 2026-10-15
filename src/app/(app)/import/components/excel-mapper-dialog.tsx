@@ -126,15 +126,12 @@ export function ExcelMapperDialog({
         )}
 
         {/* Headers toggle */}
-        <label className="flex items-center justify-between gap-3 min-h-row text-sm">
-          <span className="flex-1">First row contains headers</span>
-          <Field
-            control="switch"
-            checked={hasHeaders}
-            onCheckedChange={(v) => setHasHeaders(v)}
-            className="shrink-0"
-          />
-        </label>
+        <Field
+          label="First row contains headers"
+          control="switch"
+          checked={hasHeaders}
+          onCheckedChange={(v) => setHasHeaders(v)}
+        />
 
         {/* Column mapping */}
         <div className="space-y-2 overflow-auto flex-1">

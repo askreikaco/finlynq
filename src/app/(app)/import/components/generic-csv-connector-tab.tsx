@@ -463,18 +463,15 @@ export function GenericCsvConnectorTab() {
                   controlClassName="font-mono"
                   className="w-24"
                 />
-                <label className="flex items-center justify-between gap-3 min-h-row text-xs text-muted-foreground">
-                  <span className="flex-1">Import opening-balance rows</span>
-                  <Field
-                    control="switch"
-                    checked={includeOpening}
-                    onCheckedChange={(v) => {
-                      setIncludeOpening(v);
-                      if (mapping.date && mapping.amount && mapping.account) runPreview(mapping);
-                    }}
-                    className="shrink-0"
-                  />
-                </label>
+                <Field
+                  label="Import opening-balance rows"
+                  control="switch"
+                  checked={includeOpening}
+                  onCheckedChange={(v) => {
+                    setIncludeOpening(v);
+                    if (mapping.date && mapping.amount && mapping.account) runPreview(mapping);
+                  }}
+                />
               </div>
 
               {summary && (

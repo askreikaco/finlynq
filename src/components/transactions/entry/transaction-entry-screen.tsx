@@ -1535,7 +1535,6 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             id="txnew-business"
             checked={isBusiness}
             onCheckedChange={(checked) => setIsBusiness(checked)}
-            className="shrink-0"
           />
         </FieldGroup>
 

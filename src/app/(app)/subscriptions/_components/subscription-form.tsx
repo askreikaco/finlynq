@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -172,18 +171,13 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           onValueChange={(v) => setForm({ ...form, amount: v })}
           required
         />
-        <Row label="How often">
-          <Select value={form.frequency} onValueChange={(v) => setForm({ ...form, frequency: v ?? "monthly" })}>
-            <SelectTrigger className={ROW_CONTROL}>
-              <SelectValue>{(v: unknown) => FREQUENCY_LABELS[frequencyOrMonthly(String(v ?? ""))]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {SUBSCRIPTION_FREQUENCIES.map((f) => (
-                <SelectItem key={f} value={f}>{FREQUENCY_LABELS[f]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Row>
+        <Field
+          label="How often"
+          control="select"
+          value={form.frequency}
+          onValueChange={(v) => setForm({ ...form, frequency: v ?? "monthly" })}
+          options={SUBSCRIPTION_FREQUENCIES.map((f) => ({ value: f, label: FREQUENCY_LABELS[f] }))}
+        />
         {form.frequency === "every_n_days" && (
           <Field
             label="Every (days)"

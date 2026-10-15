@@ -181,17 +181,14 @@ export function ReconcilePreviewTable({
                   <div className="flex flex-col gap-1">
                     <StatusBadge status={row.status} match={row.match} />
                     {isProbable && (
-                      <label className="flex items-center gap-1 text-xs text-warning">
-                        <Field
-                          control="checkbox"
-                          checked={!!row.forceCommit}
-                          onChange={(e) =>
-                                                    onChange(row.rowIndex, { forceCommit: e.target.checked })
-                                                  }
-                          className="w-3"
-                        />
-                        Commit anyway
-                      </label>
+                      <Field
+                        label="Commit anyway"
+                        control="checkbox"
+                        checked={!!row.forceCommit}
+                        onChange={(e) =>
+                                                  onChange(row.rowIndex, { forceCommit: e.target.checked })
+                                                }
+                      />
                     )}
                     {row.match && (
                       <span className="text-xs text-muted-foreground">

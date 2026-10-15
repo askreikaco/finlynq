@@ -76,7 +76,6 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
               checked={selected.has(s) || isLocked(s)}
               disabled={disabled || isLocked(s)}
               onCheckedChange={(v) => toggle(s, v)}
-              className="shrink-0"
             />
           </div>
         ))}

@@ -18,13 +18,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
 import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
@@ -473,59 +466,26 @@ export function InboxEmailTab() {
 
                       {canRecord && (
                         <div className="flex flex-wrap items-end gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Account</label>
-                            <Select
-                              value={pickAccount != null ? String(pickAccount) : ""}
-                              onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
-                            >
-                              <SelectTrigger className="w-[200px] h-9">
-                                {/* Explicit render — base-ui SelectValue otherwise
-                                 *  shows the raw account id, not the name. */}
-                                <SelectValue placeholder="Pick account">
-                                  {pickAccount != null
-                                    ? (() => {
-                                        const a = recordableAccounts.find((x) => x.id === pickAccount);
-                                        return a ? `${safeAccountName(a)} · ${a.currency}` : "Pick account";
-                                      })()
-                                    : "Pick account"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {recordableAccounts.map((a) => (
-                                  <SelectItem key={a.id} value={String(a.id)}>
-                                    {safeAccountName(a)} · {a.currency}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Category</label>
-                            <Select
-                              value={pickCategory != null ? String(pickCategory) : ""}
-                              onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
-                            >
-                              <SelectTrigger className="w-[200px] h-9">
-                                <SelectValue placeholder="Pick category">
-                                  {pickCategory != null
-                                    ? safeName(
-                                        categories.find((c) => c.id === pickCategory)?.name ?? null,
-                                        "category",
-                                        pickCategory,
-                                      )
-                                    : "Pick category"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((c) => (
-                                  <SelectItem key={c.id} value={String(c.id)}>
-                                    {safeName(c.name, "category", c.id)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          <Field
+                            label="Account"
+                            control="select"
+                            value={pickAccount != null ? String(pickAccount) : ""}
+                            onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
+                            placeholder="Pick account"
+                            compact
+                            options={recordableAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency}</> }))}
+                            className="w-[200px]"
+                          />
+                          <Field
+                            label="Category"
+                            control="select"
+                            value={pickCategory != null ? String(pickCategory) : ""}
+                            onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
+                            placeholder="Pick category"
+                            compact
+                            options={categories.map((c) => ({ value: String(c.id), label: safeName(c.name, "category", c.id) }))}
+                            className="w-[200px]"
+                          />
                           <Field
                             label="Amount"
                             control="amount"

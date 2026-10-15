@@ -122,7 +122,6 @@ export function TransactionsPane({
                                         if (el) el.indeterminate = someChecked;
                                       }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
-                    className="w-4"
                   />
                 </TableHead>
               )}
@@ -162,7 +161,6 @@ export function TransactionsPane({
                           aria-label={`Select transaction ${r.date} ${r.payee ?? ""}`}
                           checked={checked}
                           onChange={() => onToggleSelect?.(r.id)}
-                          className="w-4"
                         />
                       </TableCell>
                     )}

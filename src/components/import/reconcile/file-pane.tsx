@@ -116,27 +116,25 @@ export function FilePane({
       {header}
       {/* One native list row per staged row (no table). Select, expand and actions sit beside the row. */}
       <div className="flex-1 overflow-auto">
-        <label className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-          <Field
-            control="checkbox"
-            checked={
-                        selectableRows.length > 0 &&
-                        selectableRows.every((r) => selected.has(r.id))
+        <Field
+          label="Select all sendable"
+          control="checkbox"
+          checked={
+                      selectableRows.length > 0 &&
+                      selectableRows.every((r) => selected.has(r.id))
+                    }
+          onChange={() => {
+                      const everySelected = selectableRows.every((r) => selected.has(r.id));
+                      if (everySelected) {
+                        selectableRows.forEach((r) => onToggleSelect(r.id));
+                      } else {
+                        selectableRows
+                          .filter((r) => !selected.has(r.id))
+                          .forEach((r) => onToggleSelect(r.id));
                       }
-            onChange={() => {
-                        const everySelected = selectableRows.every((r) => selected.has(r.id));
-                        if (everySelected) {
-                          selectableRows.forEach((r) => onToggleSelect(r.id));
-                        } else {
-                          selectableRows
-                            .filter((r) => !selected.has(r.id))
-                            .forEach((r) => onToggleSelect(r.id));
-                        }
-                      }}
-            aria-label="Select all sendable rows"
-          />
-          Select all sendable
-        </label>
+                    }}
+          aria-label="Select all sendable rows"
+        />
         <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {rows.map((r) => {
             const isExpanded = expanded.has(r.id);
@@ -200,7 +198,6 @@ export function FilePane({
                     disabled={isImported}
                     title={isImported ? "Already loaded into the bank ledger" : undefined}
                     aria-label={`Select row ${r.rowIndex}`}
-                    className="shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <ListRow

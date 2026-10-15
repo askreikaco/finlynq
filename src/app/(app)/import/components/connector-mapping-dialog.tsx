@@ -75,7 +75,6 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
               id="accts-auto"
               checked={s.accountAutoCreateByDefault}
               onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
-              className="shrink-0"
             />
             <Field
               label={<>Auto-create missing categories ({probe.external.categories.length} total)</>}
@@ -83,7 +82,6 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
               id="cats-auto"
               checked={s.categoryAutoCreateByDefault}
               onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
-              className="shrink-0"
             />
           </div>
 

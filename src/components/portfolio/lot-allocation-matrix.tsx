@@ -366,10 +366,12 @@ export function LotAllocationMatrix({
             />
           </label>
           <span className="text-border">|</span>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Field control="switch" checked={onlyUsedLots} onCheckedChange={(v) => setOnlyUsedLots(v)} />
-            Used lots only
-          </label>
+          <Field
+            label="Used lots only"
+            control="switch"
+            checked={onlyUsedLots}
+            onCheckedChange={(v) => setOnlyUsedLots(v)}
+          />
           {filtered && (
             <span className="text-muted-foreground/80">· {visibleSells.length}/{sells.length} sales, {visibleLots.length}/{longLots.length} lots</span>
           )}

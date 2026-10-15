@@ -1029,16 +1029,13 @@ export function TransactionsWorkspace({
                   </div>
                 )}
           {selectMode && txns.length > 0 && (
-            <label className="flex h-11 items-center gap-2 px-1 text-sm">
-              <Field
-                control="checkbox"
-                title="Select all"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="w-4"
-              />
-              <span>Select all</span>
-            </label>
+            <Field
+              label="Select all"
+              control="checkbox"
+              title="Select all"
+              checked={allSelected}
+              onChange={toggleAll}
+            />
           )}
           <MobileTxList
             transactions={txns}

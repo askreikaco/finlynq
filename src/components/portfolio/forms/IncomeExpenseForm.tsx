@@ -15,13 +15,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
@@ -33,7 +26,7 @@ import { Field, FieldGroup } from "@/components/ui/field";
 
 type Direction = "income" | "expense";
 
-import { OpFooter, OpNote, OpPage, OpRow, OP_SELECT, safeReturnHref } from "./op-page";
+import { OpFooter, OpNote, OpPage, safeReturnHref } from "./op-page";
 
 export default function IncomeExpenseForm() {
   const router = useRouter();
@@ -419,33 +412,17 @@ export default function IncomeExpenseForm() {
           />
         )}
 
-        <OpRow label="Entry type">
-          <Select
-            items={incomeTypeLabels}
-            value={incomeType}
-            onValueChange={(v) =>
-              setIncomeType((v ?? "other") as "dividend" | "interest" | "fee" | "other")
-            }
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {direction === "income" ? (
-                <>
-                  <SelectItem value="dividend">Dividend</SelectItem>
-                  <SelectItem value="interest">Interest</SelectItem>
-                  <SelectItem value="other">Other income</SelectItem>
-                </>
-              ) : (
-                <>
-                  <SelectItem value="fee">Fee</SelectItem>
-                  <SelectItem value="other">Other expense</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
-        </OpRow>
+        <Field
+          label="Entry type"
+          control="select"
+          value={incomeType}
+          onValueChange={(v) =>
+            setIncomeType((v ?? "other") as "dividend" | "interest" | "fee" | "other")
+          }
+          options={[
+            ...(direction === "income" ? [{ value: "dividend", label: "Dividend" }, { value: "interest", label: "Interest" }, { value: "other", label: "Other income" }] : [{ value: "fee", label: "Fee" }, { value: "other", label: "Other expense" }]),
+          ]}
+        />
 
         <Field
           label={sharesMode ? "Dollar value" : "Amount"}
