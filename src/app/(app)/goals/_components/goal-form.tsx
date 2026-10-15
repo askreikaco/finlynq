@@ -289,7 +289,7 @@ export function GoalForm({
         </div>
       </div>
       <div>
-        <FieldLabel label="Linked Accounts" info="Goal progress sums transactions across every linked account. Leave empty for manual tracking." />
+        <FieldLabel label="Linked Accounts" labelClassName="text-foreground" info="Goal progress sums transactions across every linked account. Leave empty for manual tracking." />
         {form.accountIds.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {form.accountIds.map((id) => {

@@ -15,13 +15,15 @@ export interface FieldLabelProps {
   /** Accessible name of the (i) button. Default "About <label>" when `label` is a string. */
   infoLabel?: string;
   className?: string;
+  /** Extra classes for the label text (the default is the muted small form-label look). */
+  labelClassName?: string;
 }
 
 /** A form label with its (i) InfoTip: the one place field help lives (never a paragraph under the input). */
-export function FieldLabel({ label, htmlFor, info, infoLabel, className }: FieldLabelProps) {
+export function FieldLabel({ label, htmlFor, info, infoLabel, className, labelClassName }: FieldLabelProps) {
   return (
     <span data-slot="field-label" className={cn("flex min-w-0 items-center gap-0.5", className)}>
-      <Label htmlFor={htmlFor} className="min-w-0 text-sm text-muted-foreground">
+      <Label htmlFor={htmlFor} className={cn("min-w-0 text-sm text-muted-foreground", labelClassName)}>
         <span className="truncate">{label}</span>
       </Label>
       {info ? (
