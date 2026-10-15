@@ -180,11 +180,10 @@ export function CategoryBudgetForm({
 
       <div>
         <Field
-          aria-label="Name"
+          label="Name"
           aria-invalid={!!nameError || undefined}
           value={name}
           onChange={(e) => { setName(e.target.value); setNameError(""); }}
-          placeholder="Name"
           autoFocus={!isEdit}
         />
         {nameError && <p className="mt-1 text-xs text-destructive">{nameError}</p>}
@@ -195,8 +194,8 @@ export function CategoryBudgetForm({
           control="select"
           value={type}
           onValueChange={(v) => setType(v ?? "E")}
-          aria-label="Type"
-          placeholder="Type"
+          label="Type"
+          info="Spending or income. Fixed once the category exists."
           options={[
             { value: "E", label: "Expense" },
             { value: "I", label: "Income" },
@@ -205,19 +204,27 @@ export function CategoryBudgetForm({
         />
       )}
 
-      <Field control="group-combobox" aria-label="Group" value={group} onValueChange={setGroup} options={groups} placeholder="Group" />
+      <Field
+        control="group-combobox"
+        label="Group"
+        info="Sections the category is listed under, e.g. Housing. Pick one or type a new name. Blank = no group."
+        value={group}
+        onValueChange={setGroup}
+        options={groups}
+      />
 
       {canBudget && (
         <div>
           <Field
             control="number"
-            aria-label="Budget"
+            label="Budget"
+            info={`Spending limit for ${getMonthLabel(month)} in ${currency}. Blank = no budget for this month.`}
             inputMode="decimal"
             min="0"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder={`Budget · ${getMonthLabel(month)}`}
+            placeholder="0.00"
           />
         </div>
       )}
