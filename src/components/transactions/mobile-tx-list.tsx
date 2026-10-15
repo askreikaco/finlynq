@@ -19,8 +19,10 @@ export interface TxListSelection {
 interface MobileTxListProps {
   transactions: Transaction[];
   isLoading?: boolean;
-  /** Row tap (opens the row's detail sheet, or the edit page for a queued row). */
+  /** Row tap: selects the row in the split-view pane, or opens a queued / investment row's own editor. */
   onOpen: (t: Transaction) => void;
+  /** Link target of a row (the edit page). null / omitted = the row uses `onOpen` instead. */
+  hrefFor?: (t: Transaction) => string | null;
   showAccountName?: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
@@ -47,6 +49,7 @@ export function MobileTxList({
   transactions,
   isLoading,
   onOpen,
+  hrefFor,
   showAccountName = false,
   onLoadMore,
   hasMore = false,
@@ -93,6 +96,7 @@ export function MobileTxList({
               key={t.id}
               transaction={t}
               onOpen={onOpen}
+              href={hrefFor?.(t) ?? undefined}
               showAccountName={showAccountName}
               peer={transferPeers?.get(t.id) ?? null}
               selection={selection}
@@ -189,6 +193,7 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; tile:
 function TransactionRow({
   transaction: t,
   onOpen,
+  href,
   showAccountName,
   peer,
   selection,
@@ -197,6 +202,7 @@ function TransactionRow({
   selected?: boolean;
   transaction: Transaction;
   onOpen: (t: Transaction) => void;
+  href?: string;
   showAccountName: boolean;
   peer: TransferPeer | null;
   selection?: TxListSelection;
@@ -220,5 +226,8 @@ function TransactionRow({
   const select = selection && t.id > 0 && !t.pendingSync
     ? { checked: selection.selected.has(t.id), onToggle: () => selection.onToggle(t.id), label: `Select ${payee}` }
     : undefined;
-  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} select={select} selected={select ? undefined : selected} onPress={select ? undefined : () => onOpen(t)} />;
+  // A queued edit or delete waiting to sync has nothing to open: a calm, non-interactive row (the badge says why).
+  const inert = t.pendingSync?.status === "pending" && t.pendingSync.kind !== "create";
+  const press = select || inert || href ? undefined : () => onOpen(t);
+  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} select={select} selected={select ? undefined : selected} href={select ? undefined : href} onPress={press} />;
 }

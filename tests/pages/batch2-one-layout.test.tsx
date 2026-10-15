@@ -130,18 +130,17 @@ function expectOneLayout(container: HTMLElement, title: string, rowSlot = "list-
 describe("Goals: one layout at every size", () => {
   it("shared header with Add Goal, goals as shared ProgressRows, no table, Customize registered", async () => {
     const { container } = render(<><GoalsPage /><CustomizeProbe /></>);
-    await screen.findByRole("button", { name: /Emergency fund/ });
+    await screen.findByRole("link", { name: /Emergency fund/ });
     expectOneLayout(container, "Goals", "goal-row");
     expect(screen.getByRole("link", { name: "Add Goal" })).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
   });
 
-  it("a row opens the detail sheet with Edit, mark complete and Delete", async () => {
+  it("a phone row links to the goal detail page (no sheet)", async () => {
     render(<GoalsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Emergency fund/ }));
-    expect((await screen.findByRole("link", { name: "Edit goal Emergency fund" })).getAttribute("href")).toBe("/goals/3/edit");
-    expect(screen.getByRole("button", { name: "Mark goal Emergency fund complete" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Delete goal Emergency fund" })).toBeTruthy();
+    const row = (await screen.findByRole("link", { name: /Emergency fund/ })) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/goals/3");
+    expect(screen.queryByRole("button", { name: "Mark goal Emergency fund complete" })).toBeNull();
   });
 });
 

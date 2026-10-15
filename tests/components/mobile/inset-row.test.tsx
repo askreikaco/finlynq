@@ -8,7 +8,7 @@ import { render, screen, cleanup, fireEvent, within } from "@testing-library/rea
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Inbox } from "lucide-react";
-import { InsetRow, AccountCard, ThemePicker } from "@/components/mobile/inset-row";
+import { InsetRow, ThemePicker } from "@/components/mobile/inset-row";
 import { Card } from "@/components/ui/card";
 
 const SRC = readFileSync(join(__dirname, "../../../src/components/mobile/inset-row.tsx"), "utf8");
@@ -92,40 +92,6 @@ describe("InsetRow", () => {
     expect(rows[0].className).toContain("not-last:shadow-[var(--list-divider)]");
     expect(rows[0].className).not.toMatch(/before:/);
     expect(container.querySelector("[data-slot='card-body']")!.className).toContain("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
-  });
-});
-
-describe("AccountCard", () => {
-  it("shows the avatar initials, title, subtitle icon and chevron; taps through onClick", () => {
-    const onClick = vi.fn();
-    render(
-      <AccountCard
-        initials="MD"
-        title="me@example.com"
-        subtitle="Current"
-        subtitleIcon={Inbox}
-        current
-        onClick={onClick}
-        data-testid="card"
-      />,
-    );
-    const card = screen.getByTestId("card");
-    expect(card.tagName).toBe("BUTTON");
-    expect(card).toHaveAttribute("aria-current", "true");
-    expect(card.textContent).toContain("MD");
-    expect(card.textContent).toContain("me@example.com");
-    expect(card.textContent).toContain("Current");
-    expect(card.querySelector("svg.size-3\\.5")).not.toBeNull();
-    expect(card.querySelector("svg.size-4")).not.toBeNull();
-    fireEvent.click(card);
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("without an action it is a plain row (no button, no chevron)", () => {
-    render(<AccountCard initials="X" title="Other" data-testid="plain" />);
-    const el = screen.getByTestId("plain");
-    expect(el.tagName).toBe("DIV");
-    expect(el.querySelector("svg.size-4")).toBeNull();
   });
 });
 

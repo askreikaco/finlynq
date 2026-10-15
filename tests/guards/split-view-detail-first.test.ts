@@ -44,9 +44,11 @@ describe.each(ENTITIES)("split view detail first: $name", (e) => {
     expect(src).toContain("<DetailList");
   });
 
-  it("only the list page opens the phone detail Overlay (phones keep the sheet; the pane never does)", () => {
-    expect(code(read(detailFile))).not.toMatch(/<Overlay\b/);
-    expect(code(read(`${APP}/${e.dir}/page.tsx`))).toMatch(/<Overlay\b/);
+  it("no detail sheet: the list page has no Overlay or DetailSheet, and its phone rows link to /x/[id]", () => {
+    const list = code(read(`${APP}/${e.dir}/page.tsx`));
+    expect(list).not.toMatch(/<Overlay\b|<DetailSheet\b/);
+    expect(list).toMatch(new RegExp(`href=\\{\`/${e.dir}/\\$\\{`));
+    expect(code(read(detailFile))).not.toMatch(/<Overlay\b|<DetailSheet\b/);
   });
 });
 
@@ -55,8 +57,8 @@ describe("split view detail first: loans amortization", () => {
     const amort = code(read(`${APP}/loans/_components/loan-amortization.tsx`));
     expect(amort).toContain("export function LoanAmortization");
     expect(amort).toMatch(/compact/);
-    expect(code(read(`${APP}/loans/page.tsx`))).toContain("<LoanAmortization");
     expect(code(read(`${APP}/loans/_components/loan-detail.tsx`))).toContain("<LoanAmortization");
+    expect(code(read(`${APP}/loans/page.tsx`))).not.toMatch(/<LoanAmortization\b/);
     expect(code(read(`${APP}/loans/page.tsx`))).not.toMatch(/<ResponsiveContainer\b/);
   });
 });

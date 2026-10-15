@@ -4,7 +4,6 @@
  * Rows for iOS-style grouped lists. The container + its title is Card (`list`, label inside or outside).
  *  - InsetRow: 56px row with optional outline icon, label, muted value, badge, chevron, or a switch.
  *    Variants: default, accent (primary text), destructive, toggle.
- *  - AccountCard: an avatar row for the signed-in account and the account list.
  *  - ThemePicker: Light / Dark / System preview thumbnails as a radiogroup (roving tabindex, arrows).
  * Design tokens only: no palette colours, no breakpoint tokens, no text-[Npx].
  */
@@ -150,97 +149,6 @@ export function InsetRow({
   return (
     <div data-slot="inset-row" data-variant={variant} className={cls} data-testid={testId}>
       {content}
-    </div>
-  );
-}
-
-/* ---------- account card row ---------- */
-
-export interface AccountCardProps {
-  /** Avatar text, e.g. "MD". */
-  initials: string;
-  title: React.ReactNode;
-  subtitle?: React.ReactNode;
-  subtitleIcon?: LucideIcon;
-  /** Highlights the avatar ring (current account). */
-  current?: boolean;
-  href?: string;
-  onClick?: () => void;
-  chevron?: boolean;
-  trailing?: React.ReactNode;
-  disabled?: boolean;
-  "aria-label"?: string;
-  "data-testid"?: string;
-  className?: string;
-}
-
-export function AccountCard({
-  initials,
-  title,
-  subtitle,
-  subtitleIcon: SubIcon,
-  current = false,
-  href,
-  onClick,
-  chevron,
-  trailing,
-  disabled = false,
-  className,
-  ...rest
-}: AccountCardProps) {
-  const interactive = !!href || !!onClick;
-  const showChevron = chevron ?? interactive;
-  const body = (
-    <>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-          current ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground",
-        )}
-      >
-        {initials}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-base font-medium text-foreground">{title}</span>
-        {subtitle ? (
-          <span className="flex items-center gap-1 truncate text-sm text-muted-foreground">
-            {SubIcon ? <SubIcon aria-hidden="true" className="size-3.5 shrink-0" /> : null}
-            <span className="truncate">{subtitle}</span>
-          </span>
-        ) : null}
-      </span>
-      {trailing}
-      {showChevron ? <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /> : null}
-    </>
-  );
-  const cls = cn(ROW_BASE, DIVIDER, "py-2.5", className);
-  if (href) {
-    return (
-      <Link href={href} data-slot="account-card" className={cls} aria-label={rest["aria-label"]} data-testid={rest["data-testid"]}>
-        {body}
-      </Link>
-    );
-  }
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        data-slot="account-card"
-        onClick={onClick}
-        disabled={disabled}
-        aria-current={current ? "true" : undefined}
-        aria-label={rest["aria-label"]}
-        className={cls}
-        data-testid={rest["data-testid"]}
-      >
-        {body}
-      </button>
-    );
-  }
-  return (
-    <div data-slot="account-card" className={cls} data-testid={rest["data-testid"]}>
-      {body}
     </div>
   );
 }

@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { Card, type CardProps } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Chart } from "@/components/chart";
 import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
 import { localDateISO } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
+import { CheckCircle2, PiggyBank, Plus, Target } from "lucide-react";
 import { MetricGrid, ListRow, type ProgressTone, useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, CardLayoutEditor } from "@/components/mobile";
-import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
 import { GOAL_FILTER_KEYS, GOAL_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
 import { GoalFormPanel } from "./_components/goal-form-panel";
-import { GoalDetail, goalDetailItems, goalTypeConfig, progressTextClass, toggleGoalStatus } from "./_components/goal-detail";
+import { GoalDetail } from "./_components/goal-detail";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -27,8 +24,6 @@ import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
 import { useGoalsLoad } from "./_components/use-goals-load";
 import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
-import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
-import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
 /** Cards of the goals page, default order (Customize). */
 const GOAL_CARDS: readonly PageCard[] = [
@@ -42,7 +37,7 @@ function progressTone(progress: number): ProgressTone {
 }
 
 /** One goal row: status dot, name + deadline, saved / target progress. No per-goal history exists, so no chart. */
-function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; displayCurrency: string; today: string; selected: boolean; onOpen: () => void }) {
+function GoalRow({ g, displayCurrency, today, selected, href, onPress }: { g: Goal; displayCurrency: string; today: string; selected: boolean; href: string; onPress: (e: MouseEvent<HTMLElement>) => void }) {
   const currency = g.currency || displayCurrency;
   const status = goalStatus(g, today);
   const done = status === "completed";
@@ -62,7 +57,8 @@ function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; dis
       strike={done}
       chevron={false}
       selected={selected}
-      onPress={onOpen}
+      href={href}
+      onPress={onPress}
     />
   );
 }
@@ -102,18 +98,22 @@ const emptyGoals = (
 );
 
 /**
- * The centred body under the ListPage header: summary tiles, the active and completed goals as ListRows, and the
- * row detail sheet (edit, mark complete / reactivate, delete). Mounted only when goals exist (ListPage renders the
- * empty state otherwise), so the Customize registration lives here.
+ * The centred body under the ListPage header: summary tiles and the active and completed goals as ListRows. A row
+ * navigates to /goals/[id] on phones and selects into the split pane on wide screens. Mounted only when goals exist
+ * (ListPage renders the empty state otherwise), so the Customize registration lives here.
  */
 function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency: string; tb: ListToolbarState }) {
-  const { records: goals, reload, openDelete } = ctx;
+  const { records: goals, reload } = ctx;
   const cardLayout = useCardLayout("goals", GOAL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [detailId, setDetailId] = useState<number | null>(null);
-  // Split view (regular+): a row selects it into the pane (?sel=<id>) instead of opening the sheet.
+  // Wide (split view): a row selects it into the pane (?sel=<id>) instead of navigating. Phone: the row link goes to /goals/[id].
   const detailApi = useListDetail();
-  const openGoal = (id: number) => (detailApi.split ? detailApi.select(id) : setDetailId(id));
+  const rowPress = (id: number) => (e: MouseEvent<HTMLElement>) => {
+    if (detailApi.split) {
+      e.preventDefault();
+      detailApi.select(id);
+    }
+  };
   usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
 
   const today = localDateISO();
@@ -133,7 +133,6 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
   );
   const activeList = shownGoals.filter((g) => g.status === "active");
   const completedList = shownGoals.filter((g) => g.status === "completed");
-  const detail = goals.find((g) => g.id === detailId) ?? null;
   const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
   const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
   const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
@@ -171,7 +170,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
     active: activeList.length > 0 ? (
       <Card title="Active" icon={Target} tone="indigo" frame="list" className="[&>*]:min-w-0">
         {activeList.map((g) => (
-          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
+          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} href={`/goals/${g.id}`} onPress={rowPress(g.id)} />
         ))}
       </Card>
     ) : tb.activeCount > 0 || needle ? (
@@ -186,7 +185,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
     completed: completedList.length > 0 ? (
       <Card title="Completed" icon={CheckCircle2} tone="emerald" frame="list" className="[&>*]:min-w-0">
         {completedList.map((g) => (
-          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
+          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} href={`/goals/${g.id}`} onPress={rowPress(g.id)} />
         ))}
       </Card>
     ) : null,
@@ -219,44 +218,6 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       />
       {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
       </ListDetailLayout>
-
-      <Overlay
-        open={detail !== null}
-        onClose={() => setDetailId(null)}
-        title={detail?.name ?? "Goal"}
-        subtitle={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
-        items={detail ? goalDetailItems(detail, displayCurrency) : []}
-      >
-        {detail && (
-          <>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>{formatCurrency(detail.currentAmount, detail.currency || displayCurrency)} saved</span>
-                <span className={`font-bold ${progressTextClass(detail.progress)}`}>{detail.progress}%</span>
-              </div>
-              <Chart kind="progress" size="lg" value={detail.progress} tone={progressTone(detail.progress)} ariaLabel={`${detail.name} progress`} />
-            </div>
-            <Button variant="outline" render={<Link href={`/goals/${detail.id}/edit`} />} aria-label={`Edit goal ${detail.name}`}>
-              <Pencil className="h-4 w-4 mr-1" /> Edit
-            </Button>
-            <Button
-              variant="outline"
-              aria-label={detail.status === "completed" ? `Reactivate goal ${detail.name}` : `Mark goal ${detail.name} complete`}
-              onClick={() => { const g = detail; setDetailId(null); void toggleGoalStatus(g).then(() => reload()); }}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" /> {detail.status === "completed" ? "Reactivate" : "Mark complete"}
-            </Button>
-            <Button
-              variant="outline"
-              className="text-destructive"
-              aria-label={`Delete goal ${detail.name}`}
-              onClick={() => { const g = detail; setDetailId(null); openDelete(g); }}
-            >
-              <Trash2 className="h-4 w-4 mr-1" /> Delete
-            </Button>
-          </>
-        )}
-      </Overlay>
 
       <CardLayoutEditor
         open={customizeOpen}
@@ -301,31 +262,6 @@ export default function GoalsPage() {
         header={{
           filter: { href: tb.filterHref, activeCount: tb.activeCount },
           primary: { kind: "add", label: "Add Goal", href: "/goals/new", onSelect: detailApi.split ? detailApi.selectNew : undefined },
-        }}
-        deleteFlow={{
-          label: "Delete goal",
-          confirmTitle: "Delete goal",
-          describe: (goal) => (
-            <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
-          ),
-          request: async (goal) => {
-            try {
-              return await fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" });
-            } catch (netErr) {
-              // Offline queue (local-first L3): a network failure keeps the delete on this device. Flag off = rethrow.
-              if (isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
-                const g = goal as unknown as Record<string, string | number | null | undefined>;
-                const queued = await queueOfflineEntityDelete(
-                  "goal",
-                  goal.id,
-                  { name: g.name ?? null, type: g.type ?? null, targetAmount: g.targetAmount ?? null, currency: g.currency ?? null, deadline: g.deadline ?? null, priority: g.priority ?? null, note: g.note ?? null, updatedAt: (g.updatedAt as string | undefined) ?? null },
-                );
-                if (queued) return new Response(null, { status: 200 });
-              }
-              throw netErr;
-            }
-          },
-          ignoreStatus: true,
         }}
       />
     </div>

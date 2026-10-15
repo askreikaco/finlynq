@@ -249,12 +249,12 @@ describe("/subscriptions list: navigation, not dialogs", () => {
     expect(H.push).toHaveBeenCalledWith("/subscriptions/new");
   });
 
-  it("tapping a row opens its detail sheet; Edit in the sheet navigates to the edit page with a validated returnTo", async () => {
+  it("a phone row links to the subscription detail page (no sheet; Edit lives on that page)", async () => {
     render(<SubscriptionsPage />);
-    fireEvent.click(await screen.findByText("Netflix"));
+    const row = (await screen.findByRole("link", { name: /Netflix/ })) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/subscriptions/7");
+    expect(screen.queryByRole("button", { name: /Pause/ })).toBeNull();
     expect(H.push).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole("button", { name: /Edit/ }));
-    expect(H.push).toHaveBeenCalledWith("/subscriptions/7/edit?returnTo=%2Fsubscriptions");
   });
 
   it("Review on a detected payment navigates to /subscriptions/new with the draft in the query", async () => {

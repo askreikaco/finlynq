@@ -1,20 +1,16 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, type MouseEvent } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
 import { Card, type CardProps } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2, Percent, Plus, TrendingDown } from "lucide-react";
-import { Overlay, type DetailItem } from "@/components/ui/overlay";
-import { MetricGrid, ListRow, ListDetailLayout, useListDetail, TxRow } from "@/components/mobile";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks } from "lucide-react";
+import { MetricGrid, ListRow, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { Notice } from "@/components/notice";
-import { Chart } from "@/components/chart";
 import { LoanFormPanel } from "./_components/loan-form-panel";
-import { LoanDetail, LoanProgress, FREQUENCY_LABELS, loanDetailItems } from "./_components/loan-detail";
-import { LoanAmortization } from "./_components/loan-amortization";
+import { LoanDetail, FREQUENCY_LABELS } from "./_components/loan-detail";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { LOAN_FILTER_KEYS, LOAN_SORTS } from "@/lib/toolbar/list-configs";
@@ -27,9 +23,7 @@ import { STATUS_DOT } from "@/lib/status-colour";
 import { SectionPage } from "@/components/templates/section-page";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
-import { localDateISO } from "@/lib/utils/date";
 import type { Loan } from "./_components/loan-types";
-import { loanNextDue } from "./_components/loan-next-due";
 
 function LoansSkeleton() {
   return (
@@ -64,7 +58,7 @@ const DEBT_CHART_COLOR = "#f43f5e";
 type LoanTrend = { values: number[]; labels: string[] };
 
 /** One loan row (the shared ListRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
-function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean; trend?: LoanTrend | null }) {
+function LoanRow({ loan, paidOff, displayCurrency, href, onPress, selected, trend }: { loan: Loan; paidOff: boolean; displayCurrency: string; href: string; onPress: (e: MouseEvent<HTMLElement>) => void; selected?: boolean; trend?: LoanTrend | null }) {
   const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
   const freq = FREQUENCY_LABELS[loan.paymentFrequency];
   const shown = loan.remainingBalanceDisplay;
@@ -87,7 +81,8 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
       strike={paidOff}
       chevron={false}
       selected={selected}
-      onPress={onOpen}
+      href={href}
+      onPress={onPress}
     />
   );
 }
@@ -95,41 +90,18 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
 function LoansPageContent() {
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
-  // Split view (regular+): a row opens the edit form in the pane (?sel=<id>); phones keep the detail sheet.
+  // Wide (split view): a row selects it into the pane (?sel=<id>). Phone: the row link goes to /loans/[id].
   const detail = useListDetail();
+  const rowPress = (id: number) => (e: MouseEvent<HTMLElement>) => {
+    if (detail.split) {
+      e.preventDefault();
+      detail.select(id);
+    }
+  };
   // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
   const { data: loansData, loading, error: loadError, reload: load } = useCacheFirstJson<Loan[]>("/api/loans");
   const loans = useMemo(() => (Array.isArray(loansData) ? loansData : []), [loansData]);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [detailId, setDetailId] = useState<number | null>(null);
-  const openLoan = (id: number) => (detail.split ? detail.select(id) : setDetailId(id));
-  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  // Phones: "View schedule" in the detail sheet opens the amortization panel below the list. Split view: the pane's detail has its own.
-  function viewAmortization(loan: Loan) {
-    setDetailId(null);
-    setSelectedLoan(loan);
-  }
-
-  // Create and edit are full pages (iOS navigation), not dialogs.
-  function editLoan(loan: Loan) {
-    router.push(`/loans/${loan.id}/edit`);
-  }
-
-  async function handleDelete() {
-    if (deleteId == null) return;
-    setDeleting(true);
-    try {
-      await fetch(`/api/loans?id=${deleteId}`, { method: "DELETE" });
-      setDeleteId(null);
-      load();
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  const deletingLoan = loans.find((l) => l.id === deleteId) ?? null;
-  const detailLoan = loans.find((l) => l.id === detailId) ?? null;
+  // Create and edit are full pages (iOS navigation); delete lives in the loan form (/loans/[id]/edit).
 
   // FINLYNQ-123: totals sum the server's converted figures, NOT the native
   // ones. Adding a ₽8,116,000 balance to a USD book and labelling the result
@@ -157,7 +129,6 @@ function LoansPageContent() {
   // Whether any loan is booked in something other than the display currency —
   // drives the "converted at today's rate" caveat on the two total tiles.
   const hasForeignLoan = loans.some((l) => l.currency && l.currency !== displayCurrency);
-  const today = localDateISO();
   const caveat = hasForeignLoan ? "converted at today's rates" : undefined;
 
   // Metric cards: current value for the selected period, % + signed difference vs the previous period, and the
@@ -203,9 +174,6 @@ function LoansPageContent() {
 
   if (loading) return <LoansSkeleton />;
   if (loadError) return <Notice variant="error" title="Couldn't load loans" retry={load}>{"We couldn't load your loans. Please try again."}</Notice>;
-
-  const detailPaidOff = detailLoan ? isLoanCompleted(detailLoan) : false;
-  const detailNextDue = detailLoan ? loanNextDue(detailLoan, detailPaidOff, today) : null;
 
   return (
     <SectionPage
@@ -255,7 +223,7 @@ function LoansPageContent() {
           {activeList.length > 0 && (
             <Card title="Active" icon={Landmark} tone="indigo" frame="list" className="[&>*]:min-w-0">
               {activeList.map((loan) => (
-                <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
+                <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} href={`/loans/${loan.id}`} onPress={rowPress(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
               ))}
             </Card>
           )}
@@ -271,48 +239,16 @@ function LoansPageContent() {
               >
                 <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   {completedList.map((loan) => (
-                    <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
+                    <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} href={`/loans/${loan.id}`} onPress={rowPress(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
                   ))}
                 </div>
               </AccordionItem>
             </Accordion>
           )}
 
-          {/* Amortization panel (phones; in the split view the pane's detail has the schedule). */}
-          {selectedLoan && !detail.split && (
-            <Card title={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
-              <LoanAmortization loan={selectedLoan} />
-            </Card>
-          )}
             </div>
       </ListDetailLayout>
 
-      {detailLoan && (
-        <Overlay
-          variant="detail"
-          open
-          onClose={() => setDetailId(null)}
-          title={detailLoan.name}
-          subtitle={`${detailLoan.currency} loan`}
-          items={loanDetailItems(detailLoan, displayCurrency, detailNextDue, detailPaidOff)}
-        >
-          <LoanProgress loan={detailLoan} />
-          <Button variant="outline" onClick={() => viewAmortization(detailLoan)}>View schedule</Button>
-          <Button variant="outline" onClick={() => { setDetailId(null); editLoan(detailLoan); }}>Edit</Button>
-          <Button variant="outline" className="text-destructive" onClick={() => { setDetailId(null); setDeleteId(detailLoan.id); }}>Delete</Button>
-        </Overlay>
-      )}
-
-      <Overlay
-        variant="confirm"
-        open={deleteId !== null}
-        onClose={() => { setDeleteId(null); }}
-        title="Delete loan"
-        message={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
-        confirmLabel="Delete loan"
-        busy={deleting}
-        onConfirm={handleDelete}
-      />
     </SectionPage>
   );
 }

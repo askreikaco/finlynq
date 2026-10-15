@@ -10,6 +10,8 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { GoalForm } from "./goal-form";
 import { useGoalEditLoad } from "./use-goal-edit-load";
 import { useGoalNewLoad } from "./use-goal-new-load";
+import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
 export interface GoalFormPanelProps {
   mode: "create" | "edit";
@@ -82,7 +84,23 @@ function EditGoal(props: GoalFormPanelProps) {
         describe: (goal) => (
           <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
         ),
-        request: (goal) => fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" }),
+        request: async (goal) => {
+          try {
+            return await fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" });
+          } catch (netErr) {
+            // Offline queue (local-first L3): a network failure keeps the delete on this device. Flag off = rethrow.
+            if (isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
+              const g = goal as unknown as Record<string, string | number | null | undefined>;
+              const queued = await queueOfflineEntityDelete(
+                "goal",
+                goal.id,
+                { name: g.name ?? null, type: g.type ?? null, targetAmount: g.targetAmount ?? null, currency: g.currency ?? null, deadline: g.deadline ?? null, priority: g.priority ?? null, note: g.note ?? null, updatedAt: (g.updatedAt as string | undefined) ?? null },
+              );
+              if (queued) return new Response(null, { status: 200 });
+            }
+            throw netErr;
+          }
+        },
         after: "returnTo",
         ignoreStatus: true,
       }}

@@ -148,13 +148,14 @@ describe("Transactions: one layout at every size", () => {
     });
   }
 
-  it("a row tap opens the sheet; Edit leads to the edit page", () => {
+  it("a phone row is a link to the edit page; no sheet opens", () => {
     H.SIZE.current = "compact";
     const { container } = render(<TransactionsWorkspace />);
-    fireEvent.click(rows(container)[0]);
-    const dialog = screen.getByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Edit" }));
-    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/1\/edit\?returnTo=/));
+    const row = rows(container)[0];
+    expect(row.tagName).toBe("A");
+    expect(row.getAttribute("href")).toMatch(/^\/transactions\/1\/edit\?returnTo=/);
+    fireEvent.click(row);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 
