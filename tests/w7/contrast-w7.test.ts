@@ -42,8 +42,8 @@ describe("W7 contrast class strings", () => {
     const shell = read("src/components/settings-shell.tsx");
     expect(shell).not.toContain("border-primary/40 bg-primary/10 text-primary-text");
     // The title is the page's PageHeader h1 (plain foreground, shared title classes); the shell draws none.
-    expect(shell).not.toContain("PHONE_BAR_TITLE");
-    expect(read("src/components/mobile/page-header.tsx")).toContain("className={PHONE_BAR_TITLE}");
+    expect(shell).not.toContain("PHONE_BAR");
+    expect(read("src/components/mobile/page-header.tsx")).toMatch(/<h1 data-slot="page-header-title" className="[^"]*text-base font-semibold/);
   });
 
   it("settings theme Light/Dark selected state uses text-primary-text", () => {

@@ -4,7 +4,8 @@ import { Fragment, useState, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  TrendingUp, Plus, Coins,
+  TrendingUp,
+  Coins,
 } from "lucide-react";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -13,7 +14,6 @@ import {
   type HoldingEditFormHolding,
 } from "@/components/holdings/holding-edit-form";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LazyView } from "@/components/ui/lazy-view";
 
@@ -35,7 +35,7 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingAccountGroups, accountHoldingTitle, type AccountHoldingGroup } from "./_components/holding-account-groups";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -303,35 +303,13 @@ export default function PortfolioPage() {
       info={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
       header={{
-        overflow: [
+        more: [
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
           { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
         ],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
-        actions: <>
-          <Link
-            href="/portfolio/realized-gains"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-          >
-            Realized gains
-          </Link>
-          <Link
-            href="/portfolio/dividends"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-          >
-            Dividends
-          </Link>
-          {/* Add holding → the consolidated /settings/investments page (the old
-              inline create dialog was removed; securities are defined + linked
-              to accounts there). Per-row edit-in-place stays on the dialog below. */}
-          <Link
-            href="/settings/investments"
-            className={buttonVariants({ size: "sm" })}
-            aria-label="Add holding"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> holding</span>
-          </Link>
-        </>,
+        // Add holding → the consolidated /settings/investments page (securities are defined + linked to accounts there).
+        primary: { kind: "add", label: "Add holding", href: "/settings/investments" },
       }}
     >
 

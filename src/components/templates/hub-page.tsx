@@ -23,7 +23,7 @@ import { ChevronRight, type LucideIcon } from "lucide-react";
 import { getEntriesBySurface, type Surface } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
-import { PageHeader } from "@/components/mobile/page-header";
+import { PageHeader, type PageHeaderProps } from "@/components/mobile/page-header";
 import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
 import { CardLabel } from "@/components/mobile/card-label";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
@@ -86,8 +86,8 @@ export interface HubPageVariants {
   width?: "section" | "form-report";
   /** Default true = TW.formPad bottom padding on the root. false = none. */
   padBottom?: boolean;
-  /** Back button in the header (passed to PageHeader backHref/backLabel). Omitted = PageHeader default. */
-  back?: { href: string; label?: string };
+  /** Back control (PageHeader `back`). Omitted = the nav-registry auto-back; `false` = root destination. */
+  back?: PageHeaderProps["back"];
   /** Hook run inside the root. true = render null (e.g. a legacy `?op=` redirect). */
   useRedirect?: () => boolean;
   /** Wrap the whole hub in its own Suspense boundary (for hooks such as useSearchParams). */
@@ -110,7 +110,7 @@ export interface HubPageVariants {
 
 interface HubPageBase extends HubPageVariants {
   id: string;
-  title: React.ReactNode;
+  title: string;
   /** Rendered between the header and the groups, e.g. an account card. */
   header?: React.ReactNode;
   /** Rendered after the groups. */
@@ -315,7 +315,7 @@ function HubPageBody(props: HubPageProps) {
       data-slot="hub-page"
       className={cn("w-full space-y-6", padBottom ? TW.formPad : undefined, className)}
     >
-      <PageHeader title={title} backHref={back?.href} backLabel={back?.label} />
+      <PageHeader title={title} back={back} />
       <React.Suspense fallback={null}>
         {header ? <div data-slot="hub-header">{header}</div> : null}
         <div data-slot="hub-columns" className={TW.grid3}>

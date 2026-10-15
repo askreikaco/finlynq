@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   Briefcase,
   CalendarDays,
-  Check,
   Calculator,
   CheckCircle2,
   Copy,
@@ -83,8 +82,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PageHeader, OverflowMenu, HEADER_SAVE } from "@/components/mobile";
-import type { OverflowAction } from "@/components/mobile/page-header";
+import { PageHeader, MoreActionsMenu, type MoreItem } from "@/components/mobile";
 
 export type { EntryMode } from "@/lib/transactions/entry-mode";
 
@@ -1138,7 +1136,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       setDeleting(false);
     }
   }
-  const editOverflow: OverflowAction[] | undefined = !editMode
+  const editMore: MoreItem[] | undefined = !editMode
     ? undefined
     : editMode.kind === "edit-transfer"
       ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
@@ -1207,41 +1205,28 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
         !embedded && "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
       )}
     >
-      {/* Global page bar (PageHeader): back = history back, else /transactions. The spinner shows while saving. */}
+      {/* Global page bar (PageHeader): back = history back, else /transactions. The primary shows a spinner while saving. */}
       {/* This page is a full-screen fixed root with no page gutter, so the bar must not bleed (-mx-4) past its edges:
           the root class below keeps the bar's own 16px gutter, the same as every other page. */}
       {embedded ? (
         <div data-slot="entry-pane-header" className="flex shrink-0 items-center justify-between gap-2 px-4 pb-1">
           <h2 className="truncate text-base font-semibold text-foreground">{editMode ? `Edit ${txType.toLowerCase()}` : `New ${txType}`}</h2>
-          {editOverflow ? <OverflowMenu items={editOverflow} /> : null}
+          {editMore ? <MoreActionsMenu items={editMore} /> : null}
         </div>
       ) : (
       <PageHeader
-        className="shrink-0"
         title={editMode ? `Edit ${txType.toLowerCase()}` : `New ${txType}`}
-        {...(editMode
-          ? { backHref: returnTo, backLabel: "Back" }
-          : { onBack: goBack, backLabel: "Back to transactions" })}
-        overflow={editOverflow}
-        actions={
-          // The page Save: a round yellow check beside the capsule (iOS Notes "Done"); a labelled primary from
-          // regular up. Same handler and guards as the Save button under the fields.
-          <Button
-            type="button"
-            data-testid="txnew-header-save"
-            aria-label={saving ? "Saving transaction" : done ? "Transaction saved" : "Save transaction"}
-            disabled={saving || done || splitBlocked}
-            onClick={() => void handleSave()}
-            className={HEADER_SAVE}
-          >
-            {saving ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Check className="size-4" aria-hidden="true" />
-            )}
-            <span>{saving ? "Saving…" : done ? "Saved" : "Save"}</span>
-          </Button>
-        }
+        back={editMode ? { href: returnTo } : { onBack: goBack, label: "Back to transactions" }}
+        more={editMore}
+        // The page Save: the bar's one primary (round yellow check). Same handler and guards as the Save button under the fields.
+        primary={{
+          kind: "save",
+          label: saving ? "Saving transaction" : done ? "Transaction saved" : "Save transaction",
+          onSelect: () => void handleSave(),
+          busy: saving,
+          disabled: saving || done || splitBlocked,
+          testId: "txnew-header-save",
+        }}
       />
       )}
 

@@ -10,16 +10,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RefreshCw, Trash2 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface Row {
   id: number;
@@ -213,19 +210,12 @@ export default function AdminDiagnosticsPage() {
   return (
     <SectionPage
       id="admin-diagnostics"
-      title={<>
-            Diagnostics
-            {data?.meta.env && (
-              <Badge variant="outline" className="ml-1 uppercase">
-                {data.meta.env}
-              </Badge>
-            )}
-          </>}
+      title="Diagnostics"
       width="report"
       center
       header={{
-        className: "flex flex-wrap items-center justify-between gap-3",
-        overflow: [
+        more: [
+          { label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading },
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {
             label: "Clear",
@@ -235,28 +225,13 @@ export default function AdminDiagnosticsPage() {
             disabled: rows.length === 0 || clearing,
           },
         ],
-        actions: (<>
-            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-              Auto-refresh
-              <Switch checked={auto} onCheckedChange={setAuto} />
-            </label>
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`${HEADER_DESKTOP_ONLY} border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive`}
-              onClick={() => setClearOpen(true)}
-              disabled={rows.length === 0 || clearing}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Clear
-            </Button>
-          </>),
       }}
     >
+      {data?.meta.env && (
+        <Badge variant="outline" className="uppercase">
+          {data.meta.env}
+        </Badge>
+      )}
       <p className={`mt-0.5 text-sm text-muted-foreground ${TW.prose}`}>
         Persistent log of slow queries (≥ {(data?.meta.slowQueryMs ?? 2000).toLocaleString()}ms),
         database errors, API 5xx errors, and outbound provider failures for{" "}

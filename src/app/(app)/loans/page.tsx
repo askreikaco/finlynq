@@ -9,12 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Table2, TrendingDown } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -295,11 +295,9 @@ function LoansPageContent() {
       title="Loans & Debt"
       info="Track balances, amortization schedules, and payoff strategies"
       width="report"
-            header={{
+      header={{
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
-        actions: (
-          <ListDetailNewButton href="/loans/new" label="Add Loan" />
-        ),
+        primary: { kind: "add", label: "Add Loan", href: "/loans/new", onSelect: detail.split ? detail.selectNew : undefined },
       }}
     >
       <ListDetailLayout

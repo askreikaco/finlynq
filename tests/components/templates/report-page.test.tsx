@@ -51,10 +51,10 @@ describe("ReportPage", () => {
     setApi({});
   });
 
-  it("renders the root testid, the global header title and subtitle", () => {
+  it("renders the root testid, the global header title and info", () => {
     setApi({ data: { total: 1 } });
     render(
-      <ReportPage id="reports" title="Reports" subtitle="Income and expenses" load={{ key: "/api/x" }}>
+      <ReportPage id="reports" title="Reports" info="Income and expenses" load={{ key: "/api/x" }}>
         {() => <p>body</p>}
       </ReportPage>,
     );

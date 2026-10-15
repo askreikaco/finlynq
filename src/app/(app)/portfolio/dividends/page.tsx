@@ -19,11 +19,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
 import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
-  HEADER_DESKTOP_ONLY,
   Amount,
   DetailSheet,
   ListRow,
@@ -200,25 +198,14 @@ export default function DividendsPage() {
       id="dividends"
       title="Dividend income"
       info={periodLabel}
-      backFallback="/portfolio"
-      backLabel="Back to portfolio"
+      back={{ href: "/portfolio", label: "Back to portfolio" }}
       width="none"
       minW0={false}
       padBottom="none"
       stack="4"
       className="regular:space-y-6"
       header={{
-        actions: (
-          <>
-            <a
-              href={csvHref}
-              className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
-            >
-              <Download className="mr-2 h-4 w-4" /> CSV
-            </a>
-          </>
-        ),
-        overflow: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
+        more: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >

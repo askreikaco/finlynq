@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, Settings, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { MetricCard } from "@/components/metric-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
@@ -34,7 +34,6 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
-import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS, EMPTY_CELL_CLASS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -601,20 +600,10 @@ export default function DashboardPage() {
           ============================================ */}
       <motion.div variants={itemVariants} className="contents">
         <PageHeader
-          className="flex flex-wrap items-center justify-between gap-3"
           title="Dashboard"
           info="Your financial overview"
-          overflow={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
-          actions={
-            <Button
-              render={<Link href="/transactions/new" />}
-              aria-label="Add transaction"
-              title="Add transaction"
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add
-            </Button>
-          }
+          more={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
+          primary={{ kind: "add", label: "Add transaction", href: "/transactions/new" }}
         />
       </motion.div>
 

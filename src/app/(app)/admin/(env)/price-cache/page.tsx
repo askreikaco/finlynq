@@ -296,11 +296,7 @@ export default function AdminPriceCachePage() {
       width="report"
       center
       header={{
-        className: "flex items-start justify-between gap-4",
-        actions: (<Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>),
+        more: [{ label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading }],
       }}
     >
       <p className={`text-sm text-muted-foreground mt-0.5 ${TW.prose}`}>

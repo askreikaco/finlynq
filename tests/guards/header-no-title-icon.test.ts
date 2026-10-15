@@ -29,9 +29,9 @@ describe("top bar title has no icon", () => {
     expect(src).toMatch(/title="FIRE Calculator"/);
   });
 
-  it("PageHeader's title block holds only the h1, subtitle and belowTitle (no icon slot)", () => {
+  it("PageHeader's title block holds only the h1 and the (i) tip (no icon slot)", () => {
     const src = fs.readFileSync("src/components/mobile/page-header.tsx", "utf8");
-    const block = /const titleBlock = \(([\s\S]*?)\n  \);/.exec(src)![1];
+    const block = /data-slot="page-header-title-block"([\s\S]*?)<\/div>/.exec(src)![1];
     expect(block).not.toMatch(/icon/i);
     expect(block).not.toMatch(/<[A-Z][A-Za-z]*Icon\b/);
   });

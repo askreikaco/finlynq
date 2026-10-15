@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark, Layers, Loader2, PlusCircle, Receipt, RefreshCw, ShieldCheck, Undo2, Wallet } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -309,18 +309,14 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       width="report"
       center
       header={{
-        actions: (
-          <>
-            <Button variant="outline" onClick={() => router.push("/settings/backfill")} className={HEADER_DESKTOP_ONLY}>
-              <RefreshCw className="size-4 mr-2" /> New run
-            </Button>
-            <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
-              {!applying && <CheckCircle2 className="hidden size-4 max-regular:block" aria-hidden />}
-              {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
-            </Button>
-          </>
-        ),
-        overflow: [{ label: "New run", onSelect: () => router.push("/settings/backfill") }],
+        more: [{ label: "New run", icon: RefreshCw, onSelect: () => router.push("/settings/backfill") }],
+        primary: {
+          kind: "save",
+          label: `Apply ${approvedCount} approved`,
+          onSelect: applyAll,
+          busy: applying,
+          disabled: applying || approvedCount === 0,
+        },
       }}
     >
       {error && <div className="border border-destructive bg-destructive/10 text-destructive rounded p-3 text-sm">{error}</div>}

@@ -13,8 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
@@ -37,7 +36,7 @@ import type { RangeSelection } from "@/lib/metrics/period";
 import type { SortPref } from "../_types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
-import { PageHeader, HEADER_DESKTOP_ONLY, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { PageHeader, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { TransactionFormScreen } from "./transaction-form-screen";
 import { withSel } from "@/lib/list-detail/selection";
 import { EmptyState } from "@/components/empty-state";
@@ -654,102 +653,27 @@ export function TransactionsWorkspace({
        horizontally rather than truncate. */
     <div className="space-y-6">
       {showHeader && (
-        <>
-          <PageHeader
-            className="flex flex-wrap items-center justify-between gap-3"
-            title="Transactions"
-            info="Manage and track all your financial transactions"
-            filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
-            bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
-            overflow={[
-          { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
-          { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
-          { label: "Sell", icon: Banknote, onSelect: () => router.push("/portfolio/new/sell") },
-          { label: "Swap", icon: Repeat, onSelect: () => router.push("/portfolio/new/swap") },
-          { label: "In-kind transfer", icon: Send, onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
-          { label: "Income / expense", icon: HandCoins, onSelect: () => router.push("/portfolio/new/income-expense") },
-          { label: "FX conversion", icon: CircleDollarSign, onSelect: () => router.push("/portfolio/new/fx-conversion") },
-          { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
-          { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
-          { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
-          { label: exporting ? "Exporting…" : "Export CSV", icon: Download, onSelect: handleExport, disabled: exporting || total === 0 },
-            ]}
-            actions={
-            <>
-              {/* Split button: main click → /transactions/new page. Chevron →
-                  dropdown with every kind (Transfer + the 6 portfolio operations).
-                  Phase 2 portfolio-ops UX (2026-05-25). */}
-              <Button
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-                onClick={() => (splitView ? listDetail.selectNew() : router.push("/transactions/new"))}
-                aria-label="Add Transaction"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add<span className="max-regular:sr-only"> Transaction</span>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className={HEADER_DESKTOP_ONLY}
-                      aria-label="More transaction types"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="min-w-56">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Quick add</DropdownMenuLabel>
-                    <DropdownMenuItem icon={<Receipt />} onClick={() => router.push("/transactions/new")}>
-                      Transaction
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowRightLeft />} onClick={() => router.push("/transactions/new?kind=transfer")}>
-                      Transfer
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Investment operations</DropdownMenuLabel>
-                    <DropdownMenuItem icon={<ShoppingCart />} onClick={() => router.push("/portfolio/new/buy")}>
-                      Buy
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Banknote />} onClick={() => router.push("/portfolio/new/sell")}>
-                      Sell
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Repeat />} onClick={() => router.push("/portfolio/new/swap")}>
-                      Swap
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Send />} onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
-                      In-kind transfer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<HandCoins />} onClick={() => router.push("/portfolio/new/income-expense")}>
-                      Income / expense
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<CircleDollarSign />} onClick={() => router.push("/portfolio/new/fx-conversion")}>
-                      FX conversion
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowDownToLine />} onClick={() => router.push("/portfolio/new/deposit")}>
-                      Brokerage deposit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowUpFromLine />} onClick={() => router.push("/portfolio/new/withdrawal")}>
-                      Brokerage withdrawal
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="outline"
-                className={HEADER_DESKTOP_ONLY}
-                onClick={() => router.push("/portfolio/new")}
-              >
-                <TrendingUp className="h-4 w-4 mr-2" /> Investment Transactions
-              </Button>
-            </>
-            }
-          />
-        </>
+        <PageHeader
+          title="Transactions"
+          info="Manage and track all your financial transactions"
+          filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
+          bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
+          more={[
+            { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
+            { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
+            { label: "Sell", icon: Banknote, onSelect: () => router.push("/portfolio/new/sell") },
+            { label: "Swap", icon: Repeat, onSelect: () => router.push("/portfolio/new/swap") },
+            { label: "In-kind transfer", icon: Send, onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
+            { label: "Income / expense", icon: HandCoins, onSelect: () => router.push("/portfolio/new/income-expense") },
+            { label: "FX conversion", icon: CircleDollarSign, onSelect: () => router.push("/portfolio/new/fx-conversion") },
+            { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
+            { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
+            { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
+            { label: exporting ? "Exporting…" : "Export CSV", icon: Download, onSelect: handleExport, disabled: exporting || total === 0 },
+          ]}
+          // Add: the full page on a phone, the new-record pane in the split view.
+          primary={{ kind: "add", label: "Add Transaction", href: "/transactions/new", onSelect: splitView ? () => listDetail.selectNew() : undefined }}
+        />
       )}
       <ListDetailLayout
         entity="transaction"

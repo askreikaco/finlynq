@@ -157,7 +157,7 @@ export function FilterSortPage({ config }: { config: FilterSortConfig }) {
 
   return (
     <div data-testid="filter-sort-page" className="flex min-h-screen flex-col bg-background pb-[var(--mobile-bar-clearance)]">
-      <PageHeader title={config.title ?? "Filter"} backHref={returnTo} backLabel="Back" />
+      <PageHeader title={config.title ?? "Filter"} back={{ href: returnTo }} />
 
       <div className="flex-1 space-y-5 px-4 py-4">
         {sorts.length > 0 && (

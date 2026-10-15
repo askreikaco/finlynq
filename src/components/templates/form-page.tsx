@@ -4,7 +4,7 @@
  * FormPage: the chrome of every create, edit and manage form route.
  *
  * It owns the Suspense wrapper, the returnTo handling, the PageHeader (Back, title,
- * subtitle, Save in the bar or the overflow and desktop Delete), the load states
+ * (i) info, Save in the bar and Delete in More), the load states
  * (skeleton, error with retry, not found), the submit state (useSubmit, 423 message),
  * the delete flow (overflow plus ConfirmDialog, then `after`) and the optional
  * unsaved-changes guard. A page passes config plus `children(ctx)` for its fields.
@@ -38,14 +38,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Check, Trash2, X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { PageHeader, HEADER_SECONDARY, type OverflowAction } from "@/components/mobile";
-import { PHONE_PRIMARY_CLASS } from "@/components/mobile/page-header";
+import { PageHeader, type MoreItem, type PageHeaderProps, type TopBarPrimary } from "@/components/mobile";
 import { FormFooter, FormNote } from "@/components/forms";
 import { useDeleteFlow } from "@/lib/forms/use-delete-flow";
 import { useRecord } from "@/lib/forms/use-record";
@@ -67,7 +66,7 @@ export interface FormPageLoad<T, R> {
 }
 
 export interface FormPageDelete<R> {
-  /** Overflow item and desktop button label, e.g. "Delete goal". */
+  /** More-menu item label, e.g. "Delete goal". */
   label: string;
   confirmTitle: string;
   confirmLabel?: string;
@@ -75,12 +74,8 @@ export interface FormPageDelete<R> {
   request: (record: R) => Promise<Response>;
   /** "returnTo" goes to the validated returnTo, any other string is an app path. */
   after: "returnTo" | string;
-  /** Desktop header button text. Default: `label`. */
+  /** Delete button text in the split-pane header. Default: `label`. */
   headerLabel?: string;
-  /** "desktop" (default) shows the header button; "none" keeps only the overflow item. */
-  button?: "desktop" | "none";
-  /** While the record is missing: "hide" (default) renders no header button; "disabled" renders it disabled. */
-  whenMissing?: "hide" | "disabled";
   /** Failure copy: "note" (default, FormNote) or "inline" (plain alert paragraph). */
   errorStyle?: "note" | "inline";
   /** Passed to useDeleteFlow. `false` closes the dialog on failure and keeps the error. */
@@ -101,8 +96,6 @@ export interface FormPageEmbedded {
   onSaved?: (res?: Response | null) => void;
   onCancel?: () => void;
   onDeleted?: () => void;
-  /** Extra header controls (e.g. a Delete that the host page confirms itself). */
-  actions?: React.ReactNode;
 }
 
 export interface FormPageContext<R, V, X = unknown> {
@@ -172,17 +165,11 @@ export interface FormPageStates {
   } & FormPageStateKnobs;
 }
 
-export interface FormPageHeaderOptions<R> {
-  /** Replaces the default "flex items-center justify-between". */
-  className?: string;
-  /** Replaces the default actions (desktop Delete and bar Save). */
-  actions?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
-  /** Under the title. (No `lead` passthrough: tests/ios/header-actions.test.ts cannot prove a phone-hidden lead.) */
-  belowTitle?: React.ReactNode;
-  /** Back label. Default "Back". */
-  backLabel?: string;
-  /** Back target only. ctx.returnTo and the post-save target are unchanged. */
-  backHref?: string;
+export interface FormPageHeaderOptions {
+  /** Replaces the default Save primary; null = no primary in the bar (the page saves some other way). */
+  primary?: TopBarPrimary | null;
+  /** Back target; default the validated returnTo. */
+  back?: PageHeaderProps["back"];
 }
 
 export interface FormPageProps<T, R, V, X = unknown> {
@@ -193,12 +180,10 @@ export interface FormPageProps<T, R, V, X = unknown> {
   embedded?: FormPageEmbedded;
   /** Testid of the root element. Default `${id}-root`. */
   rootTestId?: string;
-  /** A node, or a function of the loaded record (undefined until loaded). */
-  title: React.ReactNode | ((record: R | undefined) => React.ReactNode);
+  /** A string, or a function of the loaded record (undefined until loaded). */
+  title: string | ((record: R | undefined) => string);
   /** Help text, shown only in the (i) InfoTip after the title. A node, or a function of the loaded record. */
   info?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
-  /** @deprecated Alias of `info`. */
-  subtitle?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
   /** Back, Cancel and the post-save target when no valid ?returnTo= is given. */
   fallbackReturn: string | ((params: Record<string, string | undefined>) => string);
   /** "bar": Save in the header. "bottom": Cancel and Save in a footer. */
@@ -215,8 +200,8 @@ export interface FormPageProps<T, R, V, X = unknown> {
   /** Required in owned mode (Save calls it). External pages may omit it. */
   onSubmit?: (values: V) => Response | Promise<Response>;
   delete?: FormPageDelete<R>;
-  /** Extra overflow items, shown before the delete item. */
-  overflow?: OverflowAction[];
+  /** Extra More-menu items, shown before the delete item. */
+  more?: MoreItem[];
   /** Ask before leaving with unsaved changes (Back, Cancel, browser unload). Default off. */
   dirtyGuard?: boolean;
   /** Max width token. Default "form". */
@@ -228,7 +213,7 @@ export interface FormPageProps<T, R, V, X = unknown> {
   /** Disables Save (ORed with saving). */
   saveDisabled?: (ctx: FormPageContext<R, V, X>) => boolean;
   states?: FormPageStates;
-  header?: FormPageHeaderOptions<R>;
+  header?: FormPageHeaderOptions;
   children: (ctx: FormPageContext<R, V, X>) => React.ReactNode;
 }
 
@@ -276,7 +261,6 @@ function FormPageBody<T, R, V, X>({
   rootTestId,
   title: titleProp,
   info,
-  subtitle,
   fallbackReturn,
   savePlacement: savePlacementProp = "bar",
   saveLabel = "Save",
@@ -286,7 +270,7 @@ function FormPageBody<T, R, V, X>({
   useLoad,
   onSubmit,
   delete: deleteCfg,
-  overflow,
+  more,
   dirtyGuard = false,
   width = "form",
   padBottom,
@@ -403,8 +387,8 @@ function FormPageBody<T, R, V, X>({
   });
 
   const openDelete = record !== undefined ? () => del.open(record) : undefined;
-  const overflowItems: OverflowAction[] = [
-    ...(overflow ?? []),
+  const moreItems: MoreItem[] = [
+    ...(more ?? []),
     ...(deleteCfg && openDelete
       ? [{ label: deleteCfg.label, icon: Trash2, destructive: true, onSelect: openDelete }]
       : []),
@@ -432,46 +416,23 @@ function FormPageBody<T, R, V, X>({
   const formReady = !loading && !failed && !notFound;
   const showSave = !external && savePlacement === "bar" && formReady;
 
+  const saveDisabledNow = submitState.saving || (saveDisabled ? saveDisabled(ctx) : false);
+  // Footer Save ("bottom" placement and the pane). The bar's Save is the typed primary below.
   const saveButton = (
-    <Button
-      type="submit"
-      form={formId}
-      disabled={submitState.saving || (saveDisabled ? saveDisabled(ctx) : false)}
-      className={savePlacement === "bar" ? PHONE_PRIMARY_CLASS : undefined}
-    >
-      {savePlacement === "bar" ? <Check className="h-4 w-4 mr-1" aria-hidden /> : null}
+    <Button type="submit" form={formId} disabled={saveDisabledNow}>
       {saveLabel}
     </Button>
   );
 
-  const showDeleteButton = !!deleteCfg && (!!openDelete || deleteCfg.whenMissing === "disabled") && (deleteCfg.button ?? "desktop") === "desktop";
-  const deleteButton = showDeleteButton ? (
-    <Button
-      variant="outline"
-      size="sm"
-      className={cn(HEADER_SECONDARY, "text-destructive")}
-      onClick={openDelete}
-      disabled={!openDelete}
-    >
-      <Trash2 className="h-4 w-4 mr-1" aria-hidden /> {deleteCfg?.headerLabel ?? deleteCfg?.label}
-    </Button>
-  ) : null;
-
-  const actionsOpt = header?.actions;
-  const headerActions: React.ReactNode =
-    actionsOpt === undefined ? (
-      <>
-        {deleteButton}
-        {showSave ? saveButton : null}
-      </>
-    ) : typeof actionsOpt === "function" ? (
-      (actionsOpt as (rec: R | undefined) => React.ReactNode)(record)
-    ) : (
-      (actionsOpt as React.ReactNode)
-    );
+  const barPrimary: TopBarPrimary | undefined =
+    header?.primary !== undefined
+      ? (header.primary ?? undefined)
+      : showSave
+        ? { kind: "save", label: saveLabel, form: formId, busy: submitState.saving, disabled: saveDisabledNow }
+        : undefined;
 
   const titleNode = typeof titleProp === "function" ? titleProp(record) : titleProp;
-  const infoSrc = info ?? subtitle;
+  const infoSrc = info;
   const infoNode = typeof infoSrc === "function" ? infoSrc(record) : infoSrc;
   const embeddedHeader = (
     <div data-slot="form-pane-header" className="flex items-start justify-between gap-2 pb-3">
@@ -482,7 +443,6 @@ function FormPageBody<T, R, V, X>({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {embedded?.actions}
         {deleteCfg && openDelete ? (
           <Button type="button" variant="outline" size="sm" className="text-destructive" onClick={openDelete}>
             <Trash2 className="mr-1 h-4 w-4" aria-hidden /> {deleteCfg.headerLabel ?? deleteCfg.label}
@@ -500,13 +460,9 @@ function FormPageBody<T, R, V, X>({
     <PageHeader
       title={titleNode}
       info={infoNode}
-      backHref={dirtyGuard ? undefined : (header?.backHref ?? returnTo)}
-      onBack={dirtyGuard ? () => leave(returnTo) : undefined}
-      backLabel={header?.backLabel ?? "Back"}
-      className={header?.className}
-      belowTitle={header?.belowTitle}
-      overflow={overflowItems.length > 0 ? overflowItems : undefined}
-      actions={headerActions}
+      back={header?.back ?? (dirtyGuard ? { onBack: () => leave(returnTo) } : { href: returnTo })}
+      primary={barPrimary}
+      more={moreItems.length > 0 ? moreItems : undefined}
     />
   );
 

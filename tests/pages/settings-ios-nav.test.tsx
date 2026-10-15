@@ -7,7 +7,6 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { resolvedDecls } from "../helpers/css-tokens";
 import { render, screen, cleanup } from "@testing-library/react";
-import { Plus } from "lucide-react";
 
 let mockPath = "/settings/general";
 vi.mock("next/navigation", () => ({
@@ -74,7 +73,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
     mockPath = "/settings/investments";
     const { container } = render(
       <SettingsShell>
-        <PageHeader title="Investments" subtitle="Your securities" />
+        <PageHeader title="Investments" info="Your securities" />
       </SettingsShell>
     );
     const bar = container.querySelector('[data-slot="page-header"]');
@@ -89,7 +88,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
     const title = screen.getByRole("heading", { level: 1, name: "Investments" });
     expect(bar?.contains(title)).toBe(true);
     expect(cls(title)).toEqual(expect.arrayContaining(["text-base", "text-left"]));
-    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("items-start");
+    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("justify-start");
   });
 
   it("the page header is never hidden at any size (no viewport-only display classes)", () => {
@@ -111,7 +110,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
     mockPath = "/settings/general";
     const { container } = render(
       <SettingsShell>
-        <PageHeader title="General" subtitle="Preferences" />
+        <PageHeader title="General" info="Preferences" />
       </SettingsShell>
     );
     const bar = container.querySelector('[data-slot="page-header"]');
@@ -127,7 +126,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
     mockPath = "/settings/import/reconcile-visibility";
     const { container } = render(
       <SettingsShell>
-        <PageHeader title="Reconcile dropdown visibility" backHref="/settings/import" backLabel="Back to Import settings" />
+        <PageHeader title="Reconcile dropdown visibility" back={{ href: "/settings/import", label: "Back to Import settings" }} />
       </SettingsShell>
     );
     expect(container.querySelectorAll('[data-slot="back-button"]')).toHaveLength(1);
@@ -137,7 +136,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
 
 describe("PageHeader with backHref: phone glass header row", () => {
   it("renders a round glass back button and a left-aligned title in the glass bar, with the h1 still present", () => {
-    const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
+    const { container } = render(<PageHeader title="Currency Review" back={{ href: "/transactions", label: "Back to Transactions" }} />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "size-11", "rounded-full"]));
@@ -152,22 +151,12 @@ describe("PageHeader with backHref: phone glass header row", () => {
     expect(row?.contains(h1)).toBe(true);
   });
 
-  it("puts action buttons in the right column with equal glass material on phones", () => {
+  it("puts the primary action in the right column as its own round button", () => {
     const { container } = render(
-      <PageHeader
-        title="Accounts"
-        backHref="/settings"
-        actions={
-          <>
-            <button type="button" aria-label="Add">
-              <Plus aria-hidden />
-            </button>
-          </>
-        }
-      />
+      <PageHeader title="Accounts" back={{ href: "/settings" }} primary={{ kind: "add", label: "Add", onSelect: () => {} }} />
     );
-    // a lone primary is the single neutral cell of the capsule (no accent circle beside it)
-    expect(container.querySelector('[data-slot="header-capsule"]')?.querySelector('[aria-label="Add"]')).not.toBeNull();
+    // a lone primary is its own control beside nothing: no capsule around it
+    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
     expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
@@ -176,7 +165,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     render(
       <PageHeader
         title="Groups"
-        overflow={[
+        more={[
           { label: "Export", onSelect: () => {} },
           { label: "Import", onSelect: () => {} },
         ]}

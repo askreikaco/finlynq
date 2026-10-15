@@ -58,7 +58,7 @@ describe("top bar: sticky on every PageHeader row (every width)", () => {
   it("every PageHeader row (title only, back, actions) renders the shared bar", () => {
     const openers = pageHeader.match(/data-slot="page-header"/g) ?? [];
     expect(openers.length).toBe(1);
-    expect(pageHeader).toMatch(/data-slot="page-header" className=\{cn\(className, PHONE_BAR\)\}/);
+    expect(pageHeader).toMatch(/data-slot="page-header" className=\{PHONE_BAR\}/);
   });
 
   it("the bar adds no top safe-area padding (body already pads it in flow)", () => {
@@ -96,8 +96,7 @@ describe("elements under the header offset by sat + header height", () => {
   it("settings shell draws no bar of its own: the page PageHeader (sticky, shared bar) is the one top bar", () => {
     expect(settingsShell).not.toMatch(/PHONE_BAR|settings-detail-bar/);
     expect(settingsShell).not.toContain("max-md:pt-[var(--sat)]");
-    expect(pageHeader).toContain('export const PHONE_BAR_STICKY =');
-    expect(pageHeader).toContain('data-slot="page-header" className={cn(className, PHONE_BAR)}');
+    expect(pageHeader).toContain('data-slot="page-header" className={PHONE_BAR}');
   });
 
   it("settings sub-pages: no static override, no sr-only title; the content wrapper keeps the no-scroll rule", () => {

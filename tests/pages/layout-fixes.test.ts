@@ -42,7 +42,7 @@ describe("no fixed-px text on touched pages (system font sizes only)", () => {
 describe("settings/general at 390", () => {
   it("PageHeader is the bare global header (no lead hack): the back control comes from the registry", () => {
     const src = read(SETTINGS_GENERAL);
-    // The page header comes from the SectionPage template (single PageHeader, back from the registry when backFallback is omitted).
+    // The page header comes from the SectionPage template (single PageHeader, back from the registry when `back` is omitted).
     expect(src).toContain("<SectionPage");
     expect(src).not.toContain('lead={<span aria-hidden className="hidden" />}');
     expect(read("src/components/templates/section-page.tsx")).not.toMatch(/\blead=/);
@@ -118,17 +118,18 @@ describe("portfolio performance controls at 390", () => {
 describe("accounts/[id] at 390", () => {
   it("header actions capsule is not 100% wide (it ran off the right edge)", () => {
     const src = read(ACCOUNT_DETAIL);
-    // The right group is the fixed bar layout (PHONE_BAR_RIGHT: col 3, min-w-0, shrink-0); the page passes no override.
+    // The right group is the fixed bar layout (col 3, min-w-0, shrink-0); the page passes no override.
     expect(src).not.toMatch(/actionsClassName=/);
     const bar = read("src/components/mobile/page-header.tsx");
-    expect(bar).toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*min-w-0/);
-    expect(bar).not.toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*\bw-full/);
+    expect(bar).toMatch(/data-slot="page-header-actions"\s+className="[^"]*min-w-0/);
+    expect(bar).not.toMatch(/data-slot="page-header-actions"\s+className="[^"]*\bw-full/);
   });
 
-  it("type / currency badge row can wrap inside the header and is capped to the viewport", () => {
+  it("type / currency badge row sits under the bar (not in it), can wrap and is capped to the viewport", () => {
     const src = read(ACCOUNT_DETAIL);
-    const row = src.slice(src.indexOf("belowTitle={"), src.indexOf("belowTitle={") + 200);
-    expect(row).toContain("max-w-full flex-wrap");
+    expect(src).not.toContain("belowTitle");
+    const at = src.indexOf("account.currency}</Badge>");
+    expect(src.slice(at - 200, at)).toContain("max-w-full flex-wrap");
   });
 
   it("bottom clearance comes from the (app) layout <main> (clearance + 16px below md), which every page inherits", () => {

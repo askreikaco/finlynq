@@ -2,13 +2,11 @@
 
 
 import { Fragment, Suspense, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { SectionCard } from "@/components/mobile/section-card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -29,10 +27,9 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
-  Plus,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, useListDetail, metricGridClass, useCardLayout, usePageCustomize, type TopBarPrimary } from "@/components/mobile";
 import { AccountFormPanel } from "./_components/account-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
@@ -316,16 +313,12 @@ function AccountsPage() {
   const liabilitiesCard = card(runningTotal(series.liabilities, thisMonth), "last", totalLiabilitiesConverted);
 
   // Create account is its own page (/accounts/new), not a dialog.
-  const createAccountLink = (
-    <ListDetailNewButton
-      href="/accounts/new"
-      label="Create Account"
-      size="sm"
-      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-    >
-      <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
-    </ListDetailNewButton>
-  );
+  const createAccount: TopBarPrimary = {
+    kind: "add",
+    label: "Create Account",
+    href: "/accounts/new",
+    onSelect: detail.split ? detail.selectNew : undefined,
+  };
 
   const cardLayout = useCardLayout("accounts", ACCOUNT_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -348,7 +341,7 @@ function AccountsPage() {
         title="Accounts"
         info="Overview of your assets, liabilities, and net worth"
         width="report"
-        header={{ actions: createAccountLink }}
+        header={{ primary: createAccount }}
       >
         <OnboardingTips page="accounts" />
         <EmptyState
@@ -368,24 +361,9 @@ function AccountsPage() {
       info="Overview of your assets, liabilities, and net worth"
       width="report"
       header={{
-        className: "flex items-center justify-between",
-        overflow: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
+        more: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
-        actions: (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className={HEADER_DESKTOP_ONLY}
-              render={<Link href="/accounts/groups" />}
-              title="Rename, reorder, or merge account groups"
-            >
-              <FolderCog className="h-4 w-4 mr-1.5" />
-              Manage groups
-            </Button>
-            {createAccountLink}
-          </>
-        ),
+        primary: createAccount,
       }}
     >
       <ListDetailLayout

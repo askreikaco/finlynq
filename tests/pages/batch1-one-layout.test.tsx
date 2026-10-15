@@ -126,7 +126,7 @@ describe("Subscriptions: one layout at every size", () => {
     const { container } = render(<SubscriptionsPage />);
     await screen.findByRole("button", { name: /Netflix/ });
     expectOneLayout(container, "Subscriptions");
-    expect(screen.getByRole("button", { name: /Add subscription/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Add subscription/ }).getAttribute("data-slot")).toBe("topbar-primary");
   });
 
   it("a row opens the detail sheet with its actions", async () => {

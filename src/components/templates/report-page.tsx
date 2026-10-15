@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { useRecord } from "@/lib/forms/use-record";
 import type { LoadState, LoadStatus, UseLoad } from "@/lib/forms/load-state";
-import { PageHeader, type OverflowAction } from "@/components/mobile/page-header";
+import { PageHeader, type PageHeaderProps } from "@/components/mobile/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -43,22 +43,15 @@ export type ReportWidth = "report" | "doc" | "none";
 /** Vertical rhythm between body blocks: "6" (default), "5", or "4-6" (space-y-4, regular:space-y-6). */
 export type ReportStack = "6" | "5" | "4-6";
 
-export interface ReportHeader {
-  backHref?: string;
-  backLabel?: string;
-  overflow?: OverflowAction[];
-  actions?: React.ReactNode;
-  className?: string;
-}
+/** Top bar slots of a report page (PageHeader's typed props; title and info are ReportPage props). */
+export type ReportHeader = Pick<PageHeaderProps, "back" | "primary" | "more" | "filter" | "bulkEdit">;
 
 export interface ReportPageProps<TRaw, T> {
   /** Page id. The root element gets `data-testid="<id>-root"`. */
   id: string;
-  title: React.ReactNode;
+  title: string;
   /** Help text, shown only in the (i) InfoTip after the title. */
   info?: React.ReactNode;
-  /** @deprecated Alias of `info` (rendered in the InfoTip, never as a visible line). */
-  subtitle?: React.ReactNode;
   /** Period or account filters, rendered under the header. */
   filters?: React.ReactNode;
   /** One useApi request + select. Exclusive with `useLoad`. */
@@ -78,7 +71,7 @@ export interface ReportPageProps<TRaw, T> {
   padBottom?: boolean;
   /** Body spacing. Default "6". */
   stack?: ReportStack;
-  /** Passed through to PageHeader (back link, overflow menu, actions). */
+  /** Top bar slots (back, primary, more, filter, bulkEdit). */
   header?: ReportHeader;
   /** Renders the report body from the loaded data. */
   children: (data: T) => React.ReactNode;
@@ -109,7 +102,6 @@ export function ReportPage<TRaw, T>({
   id,
   title,
   info,
-  subtitle,
   filters,
   load,
   useLoad,
@@ -183,12 +175,12 @@ export function ReportPage<TRaw, T>({
     >
       <PageHeader
         title={title}
-        info={info ?? subtitle}
-        backHref={header?.backHref}
-        backLabel={header?.backLabel}
-        overflow={header?.overflow}
-        actions={header?.actions}
-        className={header?.className}
+        info={info}
+        back={header?.back}
+        primary={header?.primary}
+        more={header?.more}
+        filter={header?.filter}
+        bulkEdit={header?.bulkEdit}
       />
       {filters ? <div data-slot="report-filters">{filters}</div> : null}
       <Suspense fallback={loadingNode}>{body}</Suspense>

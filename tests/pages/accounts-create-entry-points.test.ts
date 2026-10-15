@@ -15,7 +15,8 @@ describe("account create entry points", () => {
     const src = read(ACCOUNTS);
     expect(src).not.toContain("AccountDialog");
     expect(src).not.toContain('usePageFab("accounts.create"');
-    expect(src).toContain('href="/accounts/new"');
+    // The create entry point is the top bar's typed primary (a link to the page; the pane at wide).
+    expect(src).toContain('href: "/accounts/new"');
   });
 
   it("portfolio Add Account links to /accounts/new with returnTo=/portfolio", () => {

@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/mobile";
 export default function ReconcileVisibilityPage() {
   return (
     <div className="w-full space-y-6">
-      <PageHeader title="Reconcile picker" backHref="/settings/import" backLabel="Back" />
+      <PageHeader title="Reconcile picker" back={{ href: "/settings/import" }} />
 
       <ReconcileHideAccountsCard />
     </div>

@@ -35,7 +35,7 @@ function CreateSubscription(props: SubscriptionFormPanelProps) {
       fallbackReturn={SUBSCRIPTIONS_FALLBACK}
       form="external"
       useLoad={useSubscriptionNewLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) =>
         ctx.extra ? (

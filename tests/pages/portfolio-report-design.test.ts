@@ -21,7 +21,7 @@ describe("portfolio report pages: PageHeader page below and above md", () => {
   it.each(PAGES)("%s uses the shared PageHeader (via SectionPage) with a back link to /portfolio", (f) => {
     const src = read(f);
     expect(src).toMatch(/<SectionPage\b/);
-    expect(src).toMatch(/backFallback="\/portfolio"/);
+    expect(src).toMatch(/back=\{\{ href: "\/portfolio"/);
     expect(src).toMatch(/from "@\/components\/templates\/section-page"/);
   });
 

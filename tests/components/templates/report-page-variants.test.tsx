@@ -79,19 +79,19 @@ describe("ReportPage variants", () => {
     });
   });
 
-  describe("title and subtitle", () => {
-    it("renders a ReactNode title inside the h1", () => {
+  describe("title and info", () => {
+    it("renders the string title inside the h1", () => {
       render(
-        <ReportPage id="t" title={<span data-testid="icon-title">Fire</span>} load={{ key: "/k" }}>
+        <ReportPage id="t" title="Fire" load={{ key: "/k" }}>
           {() => <p>body</p>}
         </ReportPage>,
       );
-      expect(screen.getByRole("heading", { level: 1 }).querySelector('[data-testid="icon-title"]')).toBeTruthy();
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Fire");
     });
 
-    it("renders a ReactNode subtitle inside the InfoTip only", async () => {
+    it("renders a ReactNode info inside the InfoTip only", async () => {
       render(
-        <ReportPage id="s" title="S" subtitle={<em>as of today</em>} load={{ key: "/k" }}>
+        <ReportPage id="s" title="S" info={<em>as of today</em>} load={{ key: "/k" }}>
           {() => <p>body</p>}
         </ReportPage>,
       );
@@ -175,12 +175,12 @@ describe("ReportPage variants", () => {
   });
 
   describe("header passthrough", () => {
-    it("renders header actions in the page header", () => {
+    it("renders the header primary in the page header", () => {
       render(
         <ReportPage
           id="h1"
           title="H"
-          header={{ actions: <button type="button">export-csv</button> }}
+          header={{ primary: { kind: "add", label: "export-csv", onSelect: () => {} } }}
           load={{ key: "/k" }}
         >
           {() => <p>body</p>}
@@ -191,7 +191,7 @@ describe("ReportPage variants", () => {
 
     it("renders a back link when header.backHref is given", () => {
       render(
-        <ReportPage id="h2" title="H" header={{ backHref: "/settings", backLabel: "Settings" }} load={{ key: "/k" }}>
+        <ReportPage id="h2" title="H" header={{ back: { href: "/settings", label: "Settings" } }} load={{ key: "/k" }}>
           {() => <p>body</p>}
         </ReportPage>,
       );

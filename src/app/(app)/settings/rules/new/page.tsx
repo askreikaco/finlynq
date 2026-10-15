@@ -110,7 +110,7 @@ function NewRuleForm() {
       width="report"
       padBottom="none"
       bodyClassName={cn("space-y-4", TW.formPad)}
-      header={{ actions: null }}
+      header={{ primary: null }}
       useLoad={() => loadState}
       states={{
         loading: { node: <p className="mt-6 text-sm text-muted-foreground" data-keep="status">Loading…</p> },

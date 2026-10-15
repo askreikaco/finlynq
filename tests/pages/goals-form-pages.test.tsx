@@ -214,7 +214,8 @@ describe("Edit goal page", () => {
   it("deletes after the confirm dialog and returns to the goals list", async () => {
     const { container } = render(<EditGoalRoute />);
     await waitFor(() => expect(nameInput(container)?.value).toBe("Trip"));
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Delete goal" }));
     fireEvent.click(await screen.findByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(H.push).toHaveBeenCalledWith("/goals"));
     expect(calls.some((c) => c.url === "/api/goals?id=7" && c.init?.method === "DELETE")).toBe(true);
@@ -224,6 +225,6 @@ describe("Edit goal page", () => {
     H.goalId = "404";
     render(<EditGoalRoute />);
     expect(await screen.findByText(/no longer exists/)).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
   });
 });

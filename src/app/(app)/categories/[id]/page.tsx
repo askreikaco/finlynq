@@ -7,14 +7,14 @@
  * the same month last year, share of all spending, top payees and recent
  * transactions. Data: GET /api/reports/category (math in
  * lib/reports/category-detail.ts). Reached from the Reports category tables and
- * the Budgets page; the switcher in the header moves between categories.
+ * the Budgets page; the Edit button opens the shared form.
  */
 
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   Bar,
   CartesianGrid,
@@ -29,20 +29,17 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { type CategoryDetail } from "@/lib/reports/category-detail";
-import { ArrowLeftRight, BarChart3, CalendarClock, Pencil, Percent, Receipt, Scale, Store, Users, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeftRight, BarChart3, CalendarClock, Percent, Receipt, Scale, Store, Users, Wallet } from "lucide-react";
 import {
-  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
+  Amount, CustomizeCardsSheet, ListRow, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
@@ -68,7 +65,6 @@ type CategoryResponse = CategoryDetail & {
   payeesLocked: boolean;
 };
 
-type CategoryOption = { id: number; name: string | null; type: string };
 
 function monthLabel(key: string, style: "short" | "long" = "short"): string {
   const [y, m] = key.split("-").map(Number);
@@ -101,7 +97,6 @@ export default function CategoryPage() {
 
 function CategoryPageContent() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const categoryId = Number(params.id);
 
   // The toolbar range (?range=&from=&to=&month=) drives the data: the report query is keyed on the selected period.
@@ -116,26 +111,9 @@ function CategoryPageContent() {
     ? (catRes.errorStatus === 404 || catRes.errorStatus === 400 ? "not_found" : "failed")
     : null;
   const load = catRes.reload;
-  const categoriesRes = useCacheFirstJson<CategoryOption[]>("/api/categories");
-  const categories = useMemo<CategoryOption[]>(() => (Array.isArray(categoriesRes.data) ? categoriesRes.data : []), [categoriesRes.data]);
-  const sortCategory = useDropdownOrder("category");
   const cardLayout = useCardLayout("category-detail", CATEGORY_DETAIL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
-
-
-
-  const switcherItems = useMemo(
-    () =>
-      sortCategory(
-        categories
-          .filter((c) => c.type === "E" || c.type === "I")
-          .map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name ?? `Category #${c.id}` })),
-        (c) => Number(c.value),
-        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-      ),
-    [categories, sortCategory],
-  );
 
   if (loading && !data) return <PageSkeleton variant="list" rows={4} />;
   if (error === "not_found") {
@@ -325,45 +303,17 @@ function CategoryPageContent() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
       <PageHeader
-        className="flex flex-wrap items-start justify-between gap-3"
         title={category.name ?? "Category"}
-        backHref={categoriesBackHref}
-        backLabel="Back to Categories"
-        belowTitle={
-          <div className="mt-0.5 flex max-w-full flex-wrap justify-center gap-2 regular:justify-start" data-testid="category-type-chip">
-            <Badge variant="outline" className="text-xs">{typeLabel}</Badge>
-            {category.group && category.group.toLowerCase() !== typeLabel.toLowerCase() && <Badge variant="secondary" className="text-xs">{category.group}</Badge>}
-          </div>
-        }
-        actions={
-          <>
-          {switcherItems.length > 0 ? (
-            <span className={HEADER_DESKTOP_ONLY}>
-              <Combobox
-                value={String(categoryId)}
-                onValueChange={(v) => {
-                  if (v && v !== String(categoryId)) router.push(`/categories/${v}${typeof window !== "undefined" ? window.location.search : ""}`);
-                }}
-                items={switcherItems}
-                placeholder="Switch category"
-                searchPlaceholder="Search categories…"
-                emptyMessage="No matches"
-                className="w-56 max-regular:w-40"
-              />
-            </span>
-          ) : null}
-          {/* Edit: the one shared category + budget form on /categories (slot for the toolbar's Filter button stays in the capsule) */}
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Edit" render={<Link href={`/categories?edit=${categoryId}`} />}>
-            <Pencil className="mr-1 h-4 w-4" /> Edit
-          </Button>
-          </>
-        }
-        overflow={[
-          { label: "All categories", href: "/categories" },
-        ]}
+        back={{ href: categoriesBackHref, label: "Back to Categories" }}
+        // Edit: the one shared category + budget form on /categories.
+        primary={{ kind: "edit", label: "Edit", href: `/categories?edit=${categoryId}` }}
+        more={[{ label: "All categories", href: "/categories" }]}
       />
+      <div className="flex max-w-full flex-wrap gap-2" data-testid="category-type-chip">
+        <Badge variant="outline" className="text-xs">{typeLabel}</Badge>
+        {category.group && category.group.toLowerCase() !== typeLabel.toLowerCase() && <Badge variant="secondary" className="text-xs">{category.group}</Badge>}
+      </div>
 
       {/* Cards: summary and recent span the row, the chart takes 2 of 3 columns at wide, payees 1. */}
       <div data-slot="category-detail-cards" className={TW.grid3}>

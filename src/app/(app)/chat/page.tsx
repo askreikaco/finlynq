@@ -11,7 +11,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
-import { PageHeader, HEADER_CELL, ListRow } from "@/components/mobile";
+import { PageHeader, ListRow } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -369,23 +369,9 @@ function ChatPageContent() {
   return (
     <div data-chat-shell className="flex flex-col max-regular:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-regular:-mb-20 regular:h-[calc(100dvh-4rem)]">
       <PageHeader
-        className="shrink-0"
         title="AI Chat"
         info="Ask about your finances"
-        actions={
-          messages.length > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearHistory}
-              aria-label="Clear chat"
-              className={`${HEADER_CELL} text-muted-foreground hover:text-destructive text-xs gap-1.5`}
-            >
-              <Trash2 className="h-4 w-4 regular:h-3.5 regular:w-3.5" aria-hidden="true" />
-              <span className="max-regular:sr-only">Clear</span>
-            </Button>
-          ) : undefined
-        }
+        more={messages.length > 0 ? [{ label: "Clear chat", icon: Trash2, destructive: true, onSelect: clearHistory }] : undefined}
       />
 
       {/* Messages area */}

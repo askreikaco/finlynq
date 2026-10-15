@@ -37,7 +37,7 @@ export default function NewCashSleeveRoute() {
       form="external"
       width="form"
       padBottom="none"
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => <CashSleeveBody returnTo={ctx.returnTo} router={ctx.router} />}
     </FormPage>

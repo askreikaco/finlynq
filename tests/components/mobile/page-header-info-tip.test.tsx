@@ -17,14 +17,11 @@ afterEach(cleanup);
 
 /** Owner 2026-10-14: the top bar never shows a subtitle/description line; page help is the (i) InfoTip. */
 describe("PageHeader: no subtitle line, help goes through InfoTip", () => {
-  it("renders no subtitle element for `subtitle` or `info`, and no help text in the DOM until the tip opens", () => {
-    for (const props of [{ subtitle: "Legacy help text" }, { info: "New help text" }]) {
-      const { container } = render(<PageHeader title="Goals" {...props} />);
-      expect(container.querySelector("[data-slot=page-header-subtitle]")).toBeNull();
-      expect(container.textContent).not.toMatch(/help text/);
-      expect(container.querySelectorAll("[data-slot=info-tip]")).toHaveLength(1);
-      cleanup();
-    }
+  it("renders no subtitle element for `info`, and no help text in the DOM until the tip opens", () => {
+    const { container } = render(<PageHeader title="Goals" info="New help text" />);
+    expect(container.querySelector("[data-slot=page-header-subtitle]")).toBeNull();
+    expect(container.textContent).not.toMatch(/help text/);
+    expect(container.querySelectorAll("[data-slot=info-tip]")).toHaveLength(1);
   });
 
   it("the (i) button is a labelled, focusable button placed right after the title inside the title block", () => {
@@ -45,7 +42,7 @@ describe("PageHeader: no subtitle line, help goes through InfoTip", () => {
     await vi.waitFor(() => expect(screen.queryByText("Track targets")).toBeNull());
   });
 
-  it("without info/subtitle there is no (i) button", () => {
+  it("without info there is no (i) button", () => {
     const { container } = render(<PageHeader title="Goals" />);
     expect(container.querySelector("[data-slot=info-tip]")).toBeNull();
   });

@@ -213,11 +213,11 @@ describe("budget tools in More", () => {
     vi.unstubAllGlobals();
   });
 
-  it("source: the tools row under the cards is deleted; the page hands the items to PageHeader overflow", () => {
+  it("source: the tools row under the cards is deleted; the page hands the items to PageHeader more", () => {
     const src = read(PAGE);
     expect(src).not.toContain("budget-tools");
     expect(src).not.toContain("{budgetTools}");
-    expect(src).toContain("overflow={isIncome && !twoCol ? undefined : overflow}");
+    expect(src).toContain("more={isIncome && !twoCol ? undefined : budgetMore}");
   });
 });
 
