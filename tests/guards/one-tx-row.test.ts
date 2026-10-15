@@ -16,7 +16,7 @@ describe("one transaction row", () => {
   });
 
   it("loan amortization / payment rows (inside loan detail) still use TxRow", () => {
-    expect(read("src/app/(app)/loans/page.tsx")).toContain("<TxRow");
+    expect(read("src/app/(app)/loans/_components/loan-amortization.tsx")).toContain("<TxRow");
   });
 
   it("subscriptions and loans do not hand-roll a ListRow for their entity rows", () => {

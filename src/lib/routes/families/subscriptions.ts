@@ -23,4 +23,10 @@ export const ROUTES: RouteDef[] = [
     fab: { kind: "hidden", reason: "is the edit flow" },
     fullScreen: true,
   },
+  {
+    pattern: "/subscriptions/[id]",
+    family: "subscriptions",
+    kind: "detail",
+    fab: { kind: "hidden", reason: "read-only detail; Edit is in the header" },
+  },
 ];

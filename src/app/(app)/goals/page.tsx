@@ -21,6 +21,7 @@ import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-to
 import { GOAL_FILTER_KEYS, GOAL_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
 import { GoalFormPanel } from "./_components/goal-form-panel";
+import { GoalDetail, goalDetailItems, goalTypeConfig, progressTextClass, toggleGoalStatus } from "./_components/goal-detail";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -31,13 +32,6 @@ import { useGoalsLoad } from "./_components/use-goals-load";
 import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
 import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
-
-const goalTypeConfig: Record<string, { label: string }> = {
-  savings: { label: "Savings" },
-  debt_payoff: { label: "Debt Payoff" },
-  investment: { label: "Investment" },
-  emergency_fund: { label: "Emergency Fund" },
-};
 
 /** Cards of the goals page, default order (Customize). */
 const GOAL_CARDS: readonly PageCard[] = [
@@ -84,12 +78,6 @@ function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; dis
   );
 }
 
-function progressTextClass(progress: number): string {
-  if (progress < 33) return "text-destructive";
-  if (progress <= 66) return "text-warning";
-  return "text-pos";
-}
-
 /** Prefilled create links for the empty-state chips (name + type go in the query, read by /goals/new). */
 const EMPTY_STATE_CHIPS = [
   { label: "Emergency Fund", type: "emergency_fund" },
@@ -99,11 +87,6 @@ const EMPTY_STATE_CHIPS = [
 ];
 
 type GoalCtx = ListPageContext<Goal>;
-
-async function toggleStatus(goal: Goal, reload: () => void) {
-  await fetch("/api/goals", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: goal.id, status: goal.status === "active" ? "completed" : "active" }) });
-  reload();
-}
 
 /** Empty state: no goals at all. */
 const emptyGoals = (
@@ -130,23 +113,6 @@ const emptyGoals = (
     </CardContent>
   </Card>
 );
-
-/** One goal's detail sheet items: every field a row leaves out. */
-function goalDetailItems(g: Goal, displayCurrency: string): DetailItem[] {
-  const currency = g.currency || displayCurrency;
-  const items: DetailItem[] = [
-    { label: "Type", value: goalTypeConfig[g.type]?.label ?? "Savings" },
-    { label: "Target", value: formatCurrency(g.targetAmount, currency) },
-    { label: "Saved", value: formatCurrency(g.currentAmount, currency) },
-    { label: "Remaining", value: formatCurrency(g.remaining, currency) },
-  ];
-  if (g.monthlyNeeded > 0) items.push({ label: "Needed per month", value: formatCurrency(g.monthlyNeeded, currency) });
-  items.push({ label: "Deadline", value: g.deadline ?? "—" });
-  const accounts = (g.accounts ?? []).filter((n) => n);
-  if (accounts.length > 0) items.push({ label: "Accounts", value: accounts.join(", ") });
-  if (g.currency && g.currency !== displayCurrency) items.push({ label: "Currency", value: g.currency });
-  return items;
-}
 
 /**
  * The centred body under the ListPage header: summary tiles, the active and completed goals as ListRows, and the
@@ -248,13 +214,16 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       <ListDetailLayout
         entity="goal"
         newLabel="Add Goal"
-        pane={(api) => (
+        detailTitle="Goal"
+        detailHref={(id) => `/goals/${id}`}
+        renderDetail={(id) => <GoalDetail id={id} onChanged={reload} />}
+        renderForm={(api) => (
           <GoalFormPanel
             embedded
             mode={api.isNew ? "create" : "edit"}
             id={api.selectedId ?? undefined}
             onSaved={() => { reload(); api.afterSaved(); }}
-            onCancel={api.clear}
+            onCancel={api.cancel}
             onDeleted={() => { reload(); api.afterDeleted(); }}
           />
         )}
@@ -288,7 +257,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
             <Button
               variant="outline"
               aria-label={detail.status === "completed" ? `Reactivate goal ${detail.name}` : `Mark goal ${detail.name} complete`}
-              onClick={() => { const g = detail; setDetailId(null); void toggleStatus(g, reload); }}
+              onClick={() => { const g = detail; setDetailId(null); void toggleGoalStatus(g).then(() => reload()); }}
             >
               <CheckCircle2 className="h-4 w-4 mr-1" /> {detail.status === "completed" ? "Reactivate" : "Mark complete"}
             </Button>

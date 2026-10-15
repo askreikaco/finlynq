@@ -114,7 +114,8 @@ describe("split view: shared layout", () => {
     for (const { f, first } of pages) {
       const src = code(read(f));
       const open = src.indexOf("<ListDetailLayout");
-      expect(src.slice(open, src.indexOf("pane=", open)), f).not.toMatch(/\blist=\{/);
+      const formAt = Math.min(...["renderForm=", "pane="].map((k) => src.indexOf(k, open)).filter((i) => i > -1));
+      expect(src.slice(open, formAt), f).not.toMatch(/\blist=\{/);
       const close = src.indexOf("</ListDetailLayout>");
       expect(open, f).toBeGreaterThan(-1);
       expect(close, f).toBeGreaterThan(open);

@@ -8,7 +8,7 @@ export { ProgressRow, ProgressRowButton, PROGRESS_ROW_LINK, PROGRESS_ROW_PRESS, 
 export { TxRow, TX_ROW_PRESS, TX_ROW_TILE, type TxRowProps, type TxRowTile } from "./tx-row";
 export { Amount, amountToneClass, type AmountSize, type AmountTone } from "./amount";
 export { PillButton } from "./pill-button";
-export { DetailSheet, type DetailItem } from "./detail-sheet";
+export { DetailSheet, DetailList, type DetailItem } from "./detail-sheet";
 export { NetWorthHero } from "./net-worth-hero";
 export { AccountRow } from "./account-row";
 export { HoldingRow } from "./holding-row";
