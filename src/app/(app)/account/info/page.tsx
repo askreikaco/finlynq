@@ -8,8 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { AlertCircle, AtSign, Check, Mail, Phone, Trash2, User } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 
@@ -271,34 +270,38 @@ export default function InfoPage() {
   }
 
   if (loading) {
-    return <PageSkeleton variant="list" rows={4} />;
+    return <Notice variant="skeleton" skeleton="list" rows={4} />;
   }
 
   if (error) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load your profile"
-        message="Please try again."
-        onRetry={() => {
+        retry={() => {
           setError("");
           setLoading(true);
           setReloadKey((k) => k + 1);
         }}
-      />
+      >
+        Please try again.
+      </Notice>
     );
   }
 
   if (!profile) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load your profile"
-        message="Please try again."
-        onRetry={() => {
+        retry={() => {
           setError("");
           setLoading(true);
           setReloadKey((k) => k + 1);
         }}
-      />
+      >
+        Please try again.
+      </Notice>
     );
   }
 

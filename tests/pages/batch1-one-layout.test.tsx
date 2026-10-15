@@ -20,13 +20,13 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/dev-mode-guard", () => ({ DevModeGuard: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 vi.mock("recharts", () => {
   const Leaf = () => null;
   const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
   return {
-    ResponsiveContainer: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap,
-    Line: Leaf, Area: Leaf, Bar: Leaf, XAxis: Leaf, YAxis: Leaf, Tooltip: Leaf, Legend: Leaf, ReferenceLine: Leaf,
+    ResponsiveContainer: Wrap, ComposedChart: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap,
+    Line: Leaf, Area: Leaf, Bar: Leaf, XAxis: Leaf, YAxis: Leaf, Tooltip: Leaf, Legend: Leaf, ReferenceLine: Leaf, CartesianGrid: Leaf, Cell: Leaf,
   };
 });
 

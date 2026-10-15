@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { Loader2, Users } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { useStepUp } from "./use-step-up";
@@ -42,9 +42,7 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
 
   if (!token && !result) {
     return missing ? (
-      <Alert role="alert">
-        <AlertDescription>{FAMILY_STRINGS.accept_link_missing}</AlertDescription>
-      </Alert>
+      <Notice tone="warning" role="alert">{FAMILY_STRINGS.accept_link_missing}</Notice>
     ) : null;
   }
 
@@ -86,12 +84,10 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
         </CardHeader>
         <CardContent className="space-y-3">
           <div aria-live="polite" className="space-y-3">
-            {result === "accepted" && <Alert><AlertDescription>{FAMILY_STRINGS.accept_success}</AlertDescription></Alert>}
-            {result === "declined" && <Alert><AlertDescription>{FAMILY_STRINGS.accept_declined}</AlertDescription></Alert>}
+            {result === "accepted" && <Notice tone="success">{FAMILY_STRINGS.accept_success}</Notice>}
+            {result === "declined" && <Notice tone="neutral">{FAMILY_STRINGS.accept_declined}</Notice>}
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Notice tone="danger">{error}</Notice>
             )}
           </div>
           {!result && (

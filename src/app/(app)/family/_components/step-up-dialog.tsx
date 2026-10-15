@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 
@@ -70,9 +70,7 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
           </div>
 
           {shownError && (
-            <Alert variant="destructive" id="family-step-up-error">
-              <AlertDescription>{shownError}</AlertDescription>
-            </Alert>
+            <Notice tone="danger" id="family-step-up-error">{shownError}</Notice>
           )}
 
           <div className="flex gap-2 pt-2">

@@ -3,17 +3,11 @@
 import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SectionCard } from "@/components/mobile/section-card";
-import {
-  XAxis, YAxis, Tooltip, ResponsiveContainer,
-  AreaChart, Area,
-} from "recharts";
+import { Chart } from "@/components/chart";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { formatCompactNumber } from "@/lib/utils/number";
-import { ChartTooltip } from "./chart-tooltip";
 import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
-import { StackedChartLegend } from "@/components/chart-stack-legend";
 import { motion } from "framer-motion";
 import type { MonthlyData } from "./types";
 import { useAnimations } from "@/hooks/use-animations";
@@ -64,49 +58,11 @@ function StackedSideChart({
       ),
     [data, valueKey, breakdownKey],
   );
-  const animationsEnabled = useAnimations();
 
   return (
     <div>
       <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
-      <ResponsiveContainer width="100%" height={170}>
-        <AreaChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
-          <XAxis
-            dataKey="date"
-            fontSize={10}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "var(--color-muted-foreground)" }}
-          />
-          <YAxis
-            fontSize={10}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "var(--color-muted-foreground)" }}
-            tickFormatter={(v) => formatCompactNumber(Number(v))}
-          />
-          <Tooltip
-            formatter={(v, n) => [formatCurrency(Number(v), currency), n]}
-            cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
-          />
-          {legend.map((b) => (
-            <Area
-              key={b.key}
-              type="monotone"
-              dataKey={b.key}
-              name={b.name}
-              stackId={valueKey}
-              stroke={b.color}
-              strokeWidth={1}
-              fill={b.color}
-              fillOpacity={0.55}
-              dot={false}
-              isAnimationActive={animationsEnabled}
-            />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
-      <StackedChartLegend legend={legend} />
+      <Chart kind="stacked-area" data={rows} series={legend} height={170} currency={currency} legend />
     </div>
   );
 }
@@ -166,67 +122,18 @@ export function IncomeExpenseChart({
             </div>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
-                  <defs>
-                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.2} />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#f43f5e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="month"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: "var(--color-muted-foreground)" }}
-                  />
-                  <YAxis
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: "var(--color-muted-foreground)" }}
-                    tickFormatter={(v) => formatCompactNumber(Number(v))}
-                  />
-                  <Tooltip content={<ChartTooltip currency={resolvedCurrency} />} cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }} />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fill="url(#incomeGrad)"
-                    name="Income"
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
-                    isAnimationActive={animationsEnabled}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    stroke="#f43f5e"
-                    strokeWidth={2}
-                    fill="url(#expenseGrad)"
-                    name="Expenses"
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
-                    isAnimationActive={animationsEnabled}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-5 mt-2">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-pos" /> Income
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-destructive" /> Expenses
-                </div>
-              </div>
+              <Chart
+                kind="area"
+                data={data}
+                xKey="month"
+                height={260}
+                currency={resolvedCurrency}
+                series={[
+                  { key: "income", name: "Income", color: CHART_COLORS.positive, breakdownKey: "incomeBreakdown" },
+                  { key: "expenses", name: "Expenses", color: CHART_COLORS.negative, breakdownKey: "expenseBreakdown" },
+                ]}
+                legend
+              />
             </>
           )}
         </div>

@@ -15,10 +15,8 @@ import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { DetailSheet } from "@/components/mobile/detail-sheet";
 import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricTone } from "@/components/metric-card";
-import { Sparkline } from "@/components/sparkline";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Chart } from "@/components/chart";
+import { ChartDemos, NoticeDemos } from "./chart-notice-demos";
 import { TW } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,8 +28,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DollarSign, Inbox, PiggyBank, Plus, TrendingUp, Wallet } from "lucide-react";
+import { DollarSign, PiggyBank, Plus, TrendingUp, Wallet } from "lucide-react";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 
 const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
@@ -155,7 +151,7 @@ function GalleryContent() {
                   <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
                   <MetricCardSkeleton />
                   <MetricCard label="Budget" icon={PiggyBank} tone="amber" value={800} sub="of $1,000">
-                    <Progress value={80} className="mt-2" />
+                    <Chart kind="progress" value={80} className="mt-2" ariaLabel="Budget used" />
                   </MetricCard>
                 </div>
               </Item>
@@ -345,26 +341,12 @@ function GalleryContent() {
             </SectionCard>
           </Group>
 
-          <Group id="charts" title="Sparkline / Progress" file="components/sparkline.tsx · ui/progress.tsx">
-            <Item name="Sparkline (hover tooltip)">
-              <Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />
-            </Item>
-            <Item name="Sparkline tall">
-              <Sparkline data={SPARK} color="#10b981" height={80} className="h-[80px] w-full" />
-            </Item>
-            <Progress value={65}><ProgressLabel>Progress</ProgressLabel><ProgressValue /></Progress>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="h-8 flex-1 rounded-md" style={{ background: `var(--chart-${n})` }} />
-              ))}
-            </div>
+          <Group id="charts" title="Chart" file="components/chart/ (sparkline · line · area · bar · stacked-bar · stacked-area · donut · sankey · progress)" span>
+            <ChartDemos />
           </Group>
 
-          <Group id="states" title="Empty / Error / Alert" file="empty-state.tsx · error-state.tsx · ui/alert.tsx">
-            <SectionCard><EmptyState icon={Inbox} title="Nothing here" description="Add your first item." action={{ label: "Add", onClick: () => {} }} /></SectionCard>
-            <SectionCard><ErrorState onRetry={() => {}} /></SectionCard>
-            <Alert><AlertTitle>Alert</AlertTitle><AlertDescription>Default alert.</AlertDescription></Alert>
-            <Alert variant="destructive"><AlertTitle>Alert</AlertTitle><AlertDescription>Destructive alert.</AlertDescription></Alert>
+          <Group id="states" title="Notice" file="components/notice/ (inline · banner · card · empty · error · skeleton)" span>
+            <NoticeDemos />
           </Group>
 
           <Group id="controls" title="Tabs / Toggles / Accordion" file="ui/tabs.tsx · switch.tsx · accordion.tsx · separator.tsx">
@@ -391,12 +373,6 @@ function GalleryContent() {
                 <InfoTip label="About label" text="Tap, click or focus the icon to read the help text." />
               </div>
             </SectionCard>
-          </Group>
-
-          <Group id="skeleton" title="Skeleton / Shimmer" file="page-skeleton.tsx · .animate-shimmer">
-            <div className="h-6 w-2/3 animate-shimmer rounded-md" />
-            <div className="h-16 w-full animate-shimmer rounded-xl" />
-            <PageSkeleton variant="list" rows={2} />
           </Group>
 
           <Group id="colors" title="Color tokens" file="app/globals.css :root / .dark" span>

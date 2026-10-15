@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { AlertCircle, Loader2, RefreshCw, Users } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import type { MemberDto, OverviewResponse } from "./types";
@@ -286,9 +286,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Notice tone="danger">{error}</Notice>
       )}
 
       {/* Unified overview section */}
@@ -304,9 +302,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       </p>
 
       {data.members.some((m) => m.genericLabels) && (
-        <Alert>
-          <AlertDescription>{FAMILY_STRINGS.overview_generic_label_hint}</AlertDescription>
-        </Alert>
+        <Notice tone="info">{FAMILY_STRINGS.overview_generic_label_hint}</Notice>
       )}
     </div>
   );
@@ -364,7 +360,6 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
               currency={cur}
               period="all"
               name={FAMILY_STRINGS.overview_household_title}
-              gradientId="nw-household"
             />
           )}
           {chartFlows.included > 0 && (
@@ -373,7 +368,6 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
               period="all"
               currency={cur}
               asOf={data.asOf}
-              idPrefix="ie-household-"
             />
           )}
         </div>

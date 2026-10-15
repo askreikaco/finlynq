@@ -15,26 +15,13 @@ import { TW } from "@/lib/design/tokens";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Bar,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Chart } from "@/components/chart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
-import { formatCompactNumber } from "@/lib/utils/number";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
@@ -93,7 +80,7 @@ function changeVs(value: number, base: number | null): { text: string; up: boole
 
 export default function CategoryPage() {
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={4} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={4} />}>
       <CategoryPageContent />
     </Suspense>
   );
@@ -137,12 +124,12 @@ function CategoryPageContent() {
     [categories, sortCategory],
   );
 
-  if (loading && !data) return <PageSkeleton variant="list" rows={4} />;
+  if (loading && !data) return <Notice variant="skeleton" skeleton="list" rows={4} />;
   if (error === "not_found") {
-    return <ErrorState title="Category not found" message="This category doesn't exist or isn't yours." />;
+    return <Notice variant="error" title="Category not found">{"This category doesn't exist or isn't yours."}</Notice>;
   }
   if (error || !data) {
-    return <ErrorState title="Couldn't load this category" message="Please try again." onRetry={load} />;
+    return <Notice variant="error" title="Couldn't load this category" retry={load}>Please try again.</Notice>;
   }
 
   const { category, stats, displayCurrency: cur } = data;
@@ -233,48 +220,26 @@ function CategoryPageContent() {
           {data.hasBudget && " · budget in amber"}
           {currentMonth?.partial && " · the last month is still running"}
         </p>
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -6 }}>
-            <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-            <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" />
-            <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} tickFormatter={(v) => formatCompactNumber(Number(v))} />
-            <Tooltip
-              cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const m = payload[0].payload as (typeof chartData)[number];
-                return (
-                  <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
-                    <p className="font-semibold">{monthLabel(m.month, "long")}{m.partial ? " (so far)" : ""}</p>
-                    <p className="tabular-nums">{formatCurrency(m.amount, cur)} · {m.count} transaction{m.count === 1 ? "" : "s"}</p>
-                    {m.budget != null && <p className="text-muted-foreground tabular-nums">Budget {formatCurrency(m.budget, cur)}</p>}
-                  </div>
-                );
-              }}
-            />
-            <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={44} isAnimationActive={false}>
-              {chartData.map((m) => (
-                <Cell key={m.month} fill={barColor} fillOpacity={m.partial ? 0.45 : 0.85} />
-              ))}
-            </Bar>
-            {data.hasBudget && (
-              <Line
-                type="stepAfter"
-                dataKey="budget"
-                stroke={CHART_COLORS.categories[1]}
-                strokeWidth={2}
-                strokeDasharray="5 4"
-                // Dots too: a budget set for a single month is one point, which a line alone never draws.
-                dot={{ r: 3, fill: CHART_COLORS.categories[1], strokeWidth: 0 }}
-                connectNulls
-                isAnimationActive={false}
-              />
-            )}
-            {stats.averageMonthly != null && (
-              <ReferenceLine y={stats.averageMonthly} stroke="var(--color-muted-foreground)" strokeDasharray="4 4" />
-            )}
-          </ComposedChart>
-        </ResponsiveContainer>
+        <Chart
+          kind="bar"
+          data={chartData}
+          xKey="label"
+          height={280}
+          currency={cur}
+          grid
+          series={[
+            { key: "amount", name: isIncome ? "Income" : "Spending", color: barColor, barStyle: (m: (typeof chartData)[number]) => ({ opacity: m.partial ? 0.45 : 0.85 }) },
+            ...(data.hasBudget ? [{ key: "budget", name: "Budget", as: "line" as const, step: true, dashed: true, dots: true, connectNulls: true, color: CHART_COLORS.categories[1] }] : []),
+          ]}
+          lines={stats.averageMonthly != null ? [{ y: stats.averageMonthly }] : undefined}
+          renderTooltip={(m: (typeof chartData)[number]) => (
+            <>
+              <p className="font-semibold">{monthLabel(m.month, "long")}{m.partial ? " (so far)" : ""}</p>
+              <p className="tabular-nums">{formatCurrency(m.amount, cur)} · {m.count} transaction{m.count === 1 ? "" : "s"}</p>
+              {m.budget != null && <p className="text-muted-foreground tabular-nums">Budget {formatCurrency(m.budget, cur)}</p>}
+            </>
+          )}
+        />
       </SectionCard>
     ) : null,
     payees: hasData ? (

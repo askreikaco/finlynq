@@ -28,6 +28,16 @@ export interface BreakdownMember {
   value: number;
 }
 
+/**
+ * One ranked row of a chart tooltip's "top-N" breakdown (names + currency values). `color` is optional: when present a
+ * coloured dot is drawn before the name so the tooltip, band and legend chip agree.
+ */
+export interface BreakdownRow {
+  name: string;
+  value: number;
+  color?: string;
+}
+
 export interface RankBreakdownOptions {
   /** Max named rows before collapsing into "Other". Default 10. */
   maxMembers?: number;

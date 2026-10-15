@@ -38,8 +38,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/dev-mode-guard", () => ({ DevModeGuard: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
-vi.mock("@/components/sankey-chart", () => ({ SankeyChart: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
+vi.mock("@/components/chart/sankey", () => ({ SankeyView: () => null }));
 vi.mock("@/components/reports/income-expense-trend-card", () => ({ IncomeExpenseTrendCard: () => null }));
 vi.mock("@/app/(app)/reports/_components/account-filter", () => ({ AccountFilter: () => null }));
 vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: () => <div data-testid="perf-chart" /> }));
@@ -59,7 +59,7 @@ vi.mock("recharts", () => {
   const Leaf = () => null;
   const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
   return {
-    ResponsiveContainer: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, PieChart: Wrap,
+    ResponsiveContainer: Wrap, ComposedChart: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, PieChart: Wrap,
     Line: Leaf, Area: Leaf, Bar: Leaf, Pie: Leaf, Cell: Leaf, XAxis: Leaf, YAxis: Leaf, Tooltip: Leaf, Legend: Leaf,
     CartesianGrid: Leaf, ReferenceLine: Leaf,
   };

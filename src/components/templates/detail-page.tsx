@@ -12,8 +12,7 @@
  */
 
 import { Suspense, type ReactNode } from "react";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { PageHeader, type OverflowAction } from "@/components/mobile";
 import { useRecord } from "@/lib/forms/use-record";
 import { useReturnTo } from "@/lib/forms/use-return-to";
@@ -82,7 +81,7 @@ function DetailShell({
   return (
     <div data-testid={`${id}-root`} className={cn("w-full space-y-6", TW.formPad)}>
       <PageHeader title={placeholderTitle ?? ""} backHref={backFallback} backLabel={backLabel ?? "Back"} />
-      {children ?? <PageSkeleton variant="list" rows={3} />}
+      {children ?? <Notice variant="skeleton" skeleton="list" rows={3} />}
     </div>
   );
 }
@@ -105,17 +104,19 @@ function DetailContent<D, R>({
     if (error !== undefined && error !== null) {
       return (
         <DetailShell id={id} backFallback={returnTo} backLabel={backLabel} placeholderTitle={placeholderTitle}>
-          <ErrorState title="Couldn't load this record" message="Please try again." onRetry={() => void mutate()} />
+          <Notice variant="error" title="Couldn't load this record" retry={() => void mutate()}>Please try again.</Notice>
         </DetailShell>
       );
     }
     if (notFound) {
       return (
         <DetailShell id={id} backFallback={returnTo} backLabel={backLabel} placeholderTitle={placeholderTitle}>
-          <ErrorState
+          <Notice
+            variant="error"
             title={load.notFound?.title ?? "Not found"}
-            message={load.notFound?.message ?? "This doesn't exist, or it isn't one of yours."}
-          />
+          >
+            {load.notFound?.message ?? "This doesn't exist, or it isn't one of yours."}
+          </Notice>
         </DetailShell>
       );
     }

@@ -12,9 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { OnboardingTips } from "@/components/onboarding-tips";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import {
   orderGroups,
@@ -336,7 +334,7 @@ function AccountsPage() {
   if (error) {
     return (
       <div className="w-full">
-        <ErrorState title="Couldn't load accounts" message="We had trouble loading your account data." onRetry={loadAccounts} />
+        <Notice variant="error" title="Couldn't load accounts" retry={loadAccounts}>We had trouble loading your account data.</Notice>
       </div>
     );
   }
@@ -350,13 +348,15 @@ function AccountsPage() {
         width="report"
         header={{ actions: createAccountLink }}
       >
-        <OnboardingTips page="accounts" />
-        <EmptyState
+        <Notice source="tips:accounts" />
+        <Notice
+          variant="empty"
           icon={Wallet}
           title="No accounts yet"
-          description="Create your first account or import bank data to start tracking your net worth."
           action={{ label: "Import data", href: "/import" }}
-        />
+        >
+          Create your first account or import bank data to start tracking your net worth.
+        </Notice>
       </SectionPage>
     );
   }
@@ -402,7 +402,7 @@ function AccountsPage() {
                 />
               )}
       >
-      <OnboardingTips page="accounts" />
+      <Notice source="tips:accounts" />
 
       <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}

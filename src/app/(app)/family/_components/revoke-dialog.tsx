@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { errorMessage, postJson } from "./api";
@@ -52,9 +52,7 @@ export function RevokeDialog({ shareId, role, onClose, onSuccess }: RevokeDialog
         <div className="space-y-4">
           <div aria-live="polite">
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Notice tone="danger">{error}</Notice>
             )}
           </div>
           <div className="flex gap-2 pt-2">

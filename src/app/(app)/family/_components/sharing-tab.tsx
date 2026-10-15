@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { AlertCircle, Loader2, Plus } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { InviteDialog } from "./invite-dialog";
-import { SharesList, type Notice } from "./shares-list";
+import { SharesList, type Notice as FlashNotice } from "./shares-list";
 import { ReconsentBanner } from "./reconsent-banner";
 import { errorMessage } from "./api";
 import { fill } from "./section-labels";
@@ -19,11 +19,11 @@ export function SharingTab({ reloadKey = 0, onSharesChanged }: { reloadKey?: num
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shares, setShares] = useState<SharesResponse | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<FlashNotice | null>(null);
   const [version, setVersion] = useState(0);
 
   const reload = useCallback(
-    (n?: Notice) => {
+    (n?: FlashNotice) => {
       if (n) setNotice(n);
       setVersion((v) => v + 1);
       onSharesChanged?.();
@@ -93,14 +93,10 @@ export function SharingTab({ reloadKey = 0, onSharesChanged }: { reloadKey?: num
       <div className="space-y-6">
         <div aria-live="polite" className="space-y-3">
           {notice && (
-            <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-              <AlertDescription>{notice.text}</AlertDescription>
-            </Alert>
+            <Notice tone={notice.kind === "error" ? "danger" : "success"}>{notice.text}</Notice>
           )}
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <Notice tone="danger">{error}</Notice>
           )}
         </div>
 

@@ -1,3 +1,5 @@
+import type { BreakdownRow } from "@/lib/chart-breakdown";
+
 export type Balance = {
   accountId: number;
   accountName: string;
@@ -26,8 +28,6 @@ export type CategorySpend = {
 
 export type NetWorthPoint = { month: string; currency: string; cumulative: number };
 
-/** One ranked member in a tooltip breakdown (top-10 + "Other"). FINLYNQ-128. */
-export type BreakdownRow = { name: string; value: number };
 
 /** Per-month income/expense category breakdown, keyed by "YYYY-MM". */
 export type IncomeExpenseBreakdown = Record<

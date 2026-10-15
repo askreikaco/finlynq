@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { FAMILY_SECTIONS_V1 } from "@/lib/family/sections";
 import { fill, getSectionLabel } from "./section-labels";
@@ -58,20 +56,19 @@ export function ReconsentBanner({ parent, reciprocal, onChanged }: Props) {
 
   return (
     <>
-      <Alert className="border-warning/30 bg-warning/10 text-warning">
-        <AlertTitle>{fill(FAMILY_STRINGS.reconsent_title, { name })}</AlertTitle>
-        <AlertDescription className="space-y-2 mt-1">
-          <p>{fill(FAMILY_STRINGS.reconsent_message, { name, sections: sectionsText })}</p>
-          {reciprocal ? (
-            <Button size="sm" onClick={widen} disabled={busy} className="gap-2">
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              {FAMILY_STRINGS.reconsent_button_share_back}
-            </Button>
-          ) : (
-            <p>{fill(FAMILY_STRINGS.reconsent_no_reciprocal, { name, sections: sectionsText })}</p>
-          )}
-        </AlertDescription>
-      </Alert>
+      <Notice
+        tone="warning"
+        icon={null}
+        title={fill(FAMILY_STRINGS.reconsent_title, { name })}
+        action={
+          reciprocal
+            ? { label: FAMILY_STRINGS.reconsent_button_share_back, onClick: widen, busy }
+            : undefined
+        }
+      >
+        <p>{fill(FAMILY_STRINGS.reconsent_message, { name, sections: sectionsText })}</p>
+        {!reciprocal && <p className="mt-2">{fill(FAMILY_STRINGS.reconsent_no_reciprocal, { name, sections: sectionsText })}</p>}
+      </Notice>
       {stepUp.dialog}
     </>
   );

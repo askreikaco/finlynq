@@ -18,7 +18,7 @@ describe("accounts/page: OnboardingTips source-order guard", () => {
     }
 
     idx = 0;
-    while ((idx = source.indexOf("<OnboardingTips page=\"accounts\"", idx)) !== -1) {
+    while ((idx = source.indexOf("<Notice source=\"tips:accounts\"", idx)) !== -1) {
       onboardingTipsIndices.push(idx);
       idx += 1;
     }

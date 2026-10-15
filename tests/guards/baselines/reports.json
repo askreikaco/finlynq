@@ -4,9 +4,6 @@
     "src/app/(app)/dashboard/page.tsx"
   ],
   "chrome": {
-    "src/app/(app)/dashboard/_components/chart-tooltip.tsx": {
-      "backdrop-blur": 2
-    },
     "src/app/(app)/dashboard/page.tsx": {
       "rounded-2xl": 5
     },

@@ -24,7 +24,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/family",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import { MetricGrid } from "@/components/mobile/metric-grid";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
@@ -135,7 +135,6 @@ describe("Batch 6: family overview cards render through SectionCard", () => {
         period="all"
         currency="USD"
         asOf="2026-10-01"
-        idPrefix="t-"
       />,
     );
     expect(container.querySelector('[data-slot="section-card"]')).not.toBeNull();

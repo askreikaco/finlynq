@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup, waitFor } from "@testing-library/react";
-import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
+import { Notice } from "@/components/notice";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -16,7 +16,7 @@ import { usePathname } from "next/navigation";
 
 afterEach(cleanup);
 
-describe("ReportingRecomputeIndicator", () => {
+describe("Notice source=reporting-recompute", () => {
   beforeEach(() => {
     // Default mock for fetch
     global.fetch = vi.fn((): Promise<Response> =>
@@ -44,7 +44,7 @@ describe("ReportingRecomputeIndicator", () => {
     async (path) => {
       vi.mocked(usePathname).mockReturnValue(path);
 
-      const { container } = render(<ReportingRecomputeIndicator />);
+      const { container } = render(<Notice source="reporting-recompute" />);
 
       await waitFor(() => {
         const indicator = container.querySelector("div.fixed");
@@ -63,7 +63,7 @@ describe("ReportingRecomputeIndicator", () => {
   it("displays running state with progress", async () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard");
 
-    const { getByText } = render(<ReportingRecomputeIndicator />);
+    const { getByText } = render(<Notice source="reporting-recompute" />);
 
     await waitFor(() => {
       expect(getByText(/Recalculating reports/)).toBeTruthy();
@@ -89,7 +89,7 @@ describe("ReportingRecomputeIndicator", () => {
       } as unknown as Response),
     );
 
-    const { getByText } = render(<ReportingRecomputeIndicator />);
+    const { getByText } = render(<Notice source="reporting-recompute" />);
 
     await waitFor(() => {
       expect(getByText(/Reports updated/)).toBeTruthy();
@@ -114,7 +114,7 @@ describe("ReportingRecomputeIndicator", () => {
       } as unknown as Response),
     );
 
-    const { container } = render(<ReportingRecomputeIndicator />);
+    const { container } = render(<Notice source="reporting-recompute" />);
 
     await waitFor(() => {
       const indicators = container.querySelectorAll("div.fixed");

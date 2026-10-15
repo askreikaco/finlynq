@@ -5,9 +5,9 @@ import { readFileSync } from "fs";
 
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|ring-offset|shadow|decoration|accent|caret|placeholder|border-[trblxy]|border-[se])-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/g;
 const FILES: string[] = [
-  "src/components/onboarding-tips.tsx",
+  "src/components/notice/body.tsx",
+  "src/components/notice/feeds.tsx",
   "src/components/onboarding-wizard.tsx",
-  "src/components/reporting-recompute-indicator.tsx",
 ];
 const ARIA: [string, string, number][] = [
 ];

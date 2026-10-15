@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),
   useSessionUserId: () => ({ userId: "mc-user", ready: true }),
@@ -39,7 +39,6 @@ vi.mock("@/components/portfolio/PerformanceChart", async (orig) => ({
   ...(await orig<typeof import("@/components/portfolio/PerformanceChart")>()),
   PerformanceChart: () => null,
 }));
-vi.mock("@/components/currency-audit-banner", () => ({ CurrencyAuditBanner: () => null }));
 vi.mock("@/components/onboarding-wizard", () => ({ OnboardingWizard: () => null }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/lib/utils/date", async (orig) => ({

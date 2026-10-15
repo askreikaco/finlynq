@@ -94,7 +94,7 @@ describe("desktop columns: card grids", () => {
     expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
     expect(src).toMatch(/Found in your transactions" icon=\{Search\} tone="cyan" padded=\{false\} className="col-span-full/);
     expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
-    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
+    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><Notice/);
   });
 
   it("dashboard: the 3-card row is a counted grid (columns follow rendered cards: 1 / 2 / 3)", () => {

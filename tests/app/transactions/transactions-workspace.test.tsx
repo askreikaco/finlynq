@@ -75,7 +75,7 @@ describe("workspace", () => {
     const srcPath = path.resolve(__dirname, "../../../src/app/(app)/transactions/_components/transactions-workspace.tsx");
     const source = fs.readFileSync(srcPath, "utf-8");
     const pageHeaderIndex = source.indexOf("<PageHeader");
-    const onboardingTipsIndex = source.indexOf("<OnboardingTips page=\"transactions\"");
+    const onboardingTipsIndex = source.indexOf("<Notice source=\"tips:transactions\"");
     expect(pageHeaderIndex).toBeGreaterThan(-1);
     expect(onboardingTipsIndex).toBeGreaterThan(-1);
     expect(pageHeaderIndex).toBeLessThan(onboardingTipsIndex);

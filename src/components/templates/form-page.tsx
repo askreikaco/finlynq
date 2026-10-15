@@ -42,8 +42,7 @@ import { Check, Trash2, X } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { PageHeader, HEADER_SECONDARY, type OverflowAction } from "@/components/mobile";
 import { PHONE_PRIMARY_CLASS } from "@/components/mobile/page-header";
 import { FormFooter, FormNote } from "@/components/forms";
@@ -162,7 +161,7 @@ export interface FormPageStates {
   } & FormPageStateKnobs;
   notFound?: {
     chrome?: boolean;
-    /** "note" (default, FormNote), "text" (muted paragraph), "error" (ErrorState). */
+    /** "note" (default, FormNote), "text" (muted paragraph), "error" (a Notice error state). */
     kind?: "note" | "error" | "text";
     title?: string;
     message?: string;
@@ -519,7 +518,7 @@ function FormPageBody<T, R, V, X>({
     piece = {
       node: wrapState(
         cfg,
-        <PageSkeleton variant={cfg?.variant ?? "list"} rows={cfg?.rows ?? 3} />,
+        <Notice variant="skeleton" skeleton={cfg?.variant ?? "list"} rows={cfg?.rows ?? 3} />,
         { retry: () => void retry(), message: hookMessage },
       ),
       chrome: cfg?.chrome !== false,
@@ -530,11 +529,13 @@ function FormPageBody<T, R, V, X>({
     piece = {
       node: wrapState(
         cfg,
-        <ErrorState
+        <Notice
+          variant="error"
           title={cfg?.title ?? "Couldn't load this page"}
-          message={cfg?.message ?? "We couldn't load this record. Please try again."}
-          onRetry={onRetry}
-        />,
+          retry={onRetry}
+        >
+          {cfg?.message ?? "We couldn't load this record. Please try again."}
+        </Notice>,
         { retry: onRetry, message: hookMessage },
       ),
       chrome: cfg?.chrome !== false,
@@ -549,11 +550,13 @@ function FormPageBody<T, R, V, X>({
       node: wrapState(
         cfg,
         kind === "error" ? (
-          <ErrorState
+          <Notice
+            variant="error"
             title={cfg?.title ?? "Not found"}
-            message={message}
-            onRetry={cfg?.retry === "returnTo" ? () => router.push(returnTo) : undefined}
-          />
+            retry={cfg?.retry === "returnTo" ? () => router.push(returnTo) : undefined}
+          >
+            {message}
+          </Notice>
         ) : kind === "text" ? (
           <p className="mt-6 text-sm text-muted-foreground">
             {message}{" "}

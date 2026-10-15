@@ -21,6 +21,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Chart, type ChartTone } from "@/components/chart";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
@@ -118,10 +119,10 @@ interface ApiResponse {
 
 const POLL_MS = 5000;
 
-function barColor(p: number): string {
-  if (p >= 85) return "bg-destructive";
-  if (p >= 60) return "bg-warning";
-  return "bg-pos";
+function barTone(p: number): ChartTone {
+  if (p >= 85) return "destructive";
+  if (p >= 60) return "warning";
+  return "pos";
 }
 function fmtDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "";
@@ -156,35 +157,28 @@ function hourLabel(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/** CSP-safe inline-SVG sparkline (presentation attributes, no style=). */
+/** Live metric strip: a sparkline over the last samples, scaled 0..max. */
 function MiniSpark({ values, max, stroke }: { values: number[]; max: number; stroke: string }) {
-  const W = 240;
-  const H = 36;
   if (values.length < 2) {
     return <div className="text-xs text-muted-foreground">collecting…</div>;
   }
-  const n = values.length;
-  const top = Math.max(max, 1);
-  const pts = values
-    .map((v, i) => {
-      const x = (i / (n - 1)) * W;
-      const y = H - Math.max(0, Math.min(1, v / top)) * H;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const areaPts = `0,${H} ${pts} ${W},${H}`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-9 w-full" aria-hidden>
-      <polygon points={areaPts} fill={stroke} fillOpacity={0.12} />
-      <polyline points={pts} fill="none" stroke={stroke} strokeWidth={1.5} />
-    </svg>
+    <Chart
+      kind="area"
+      data={values.map((v, i) => ({ i, v }))}
+      xKey="i"
+      series={[{ key: "v", color: stroke, strokeWidth: 1.5, fillOpacity: 0.12 }]}
+      yDomain={[0, Math.max(max, 1)]}
+      axes={false}
+      tooltip={false}
+      height={36}
+      ariaLabel="Recent samples"
+    />
   );
 }
 
 /** Durable 24h CPU chart: avg (filled red) + peak (amber line), 0-100%. */
 function History24Chart({ points }: { points: Hist24[] }) {
-  const W = 800;
-  const H = 90;
   if (points.length < 2) {
     return (
       <div className="py-6 text-center text-xs text-muted-foreground">
@@ -192,35 +186,24 @@ function History24Chart({ points }: { points: Hist24[] }) {
       </div>
     );
   }
-  const n = points.length;
-  const xy = (v: number, i: number) => {
-    const x = (i / (n - 1)) * W;
-    const y = H - Math.max(0, Math.min(1, v / 100)) * H;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  };
-  const avgPts = points.map((p, i) => xy(p.cpuAvg, i)).join(" ");
-  const maxPts = points.map((p, i) => xy(p.cpuMax, i)).join(" ");
-  const area = `0,${H} ${avgPts} ${W},${H}`;
   const peak = Math.max(...points.map((p) => p.cpuMax));
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-24 w-full text-muted-foreground" aria-hidden>
-        {[25, 50, 75].map((gp) => (
-          <line
-            key={gp}
-            x1={0}
-            x2={W}
-            y1={H - (gp / 100) * H}
-            y2={H - (gp / 100) * H}
-            stroke="currentColor"
-            strokeOpacity={0.1}
-            strokeWidth={1}
-          />
-        ))}
-        <polygon points={area} fill="#ef4444" fillOpacity={0.1} />
-        <polyline points={maxPts} fill="none" stroke="#f59e0b" strokeWidth={1} strokeOpacity={0.7} />
-        <polyline points={avgPts} fill="none" stroke="#ef4444" strokeWidth={1.5} />
-      </svg>
+      <Chart
+        kind="area"
+        data={points}
+        xKey="at"
+        height={96}
+        yDomain={[0, 100]}
+        axes={false}
+        grid
+        formatValue={(v) => `${v.toFixed(0)}%`}
+        formatLabel={hourLabel}
+        series={[
+          { key: "cpuAvg", name: "avg", color: "#ef4444", strokeWidth: 1.5, fillOpacity: 0.1 },
+          { key: "cpuMax", name: "peak", as: "line", color: "#f59e0b", strokeWidth: 1 },
+        ]}
+      />
       <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
         <span>{hourLabel(points[0].at)}</span>
         <span className="flex items-center gap-3">
@@ -235,21 +218,13 @@ function History24Chart({ points }: { points: Hist24[] }) {
 }
 
 function Bar({ pct, label, value }: { pct: number; label: string; value: string }) {
-  const clamped = Math.max(0, Math.min(100, pct));
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-semibold tabular-nums">{value}</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          ref={(el) => {
-            if (el) el.style.width = `${clamped}%`;
-          }}
-          className={`h-full rounded-full ${barColor(pct)}`}
-        />
-      </div>
+      <Chart kind="progress" size="sm" value={pct} tone={barTone(pct)} ariaLabel={label} />
     </div>
   );
 }

@@ -10,16 +10,12 @@
  */
 
 import { useState } from "react";
-import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-} from "recharts";
 import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
-import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
-import { ExposurePieTooltip } from "./portfolio-ui";
+import { Chart } from "@/components/chart";
 import { exportStocksToCSV } from "./csv";
 import { type EtfXrayTab, type OverviewData } from "../_types";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
@@ -196,44 +192,7 @@ export function EtfXrayCard({
         {etfXrayTab === "regions" && (
           <div className="space-y-4">
             {regionData.length > 0 ? (
-              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
-                <div className="w-48 h-48 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={regionData}
-                        dataKey="pct"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={85}
-                        strokeWidth={2}
-                        stroke="var(--color-card)"
-                      >
-                        {regionData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ExposurePieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2 min-w-0">
-                  {regionData.map(d => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <ColorDot color={d.color} className="h-3 w-3" />
-                      <span className="text-sm text-muted-foreground flex-1">{d.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                          <CspSafeColorBar percent={d.pct} color={d.color} />
-                        </div>
-                        <span className="text-sm font-mono font-semibold w-12 text-right">{d.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Chart kind="donut" data={regionData} valueKey="pct" size="lg" formatValue={(v) => `${v}%`} breakdownList breakdownBars />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">No region data available.</p>
             )}
@@ -244,44 +203,7 @@ export function EtfXrayCard({
         {etfXrayTab === "sectors" && (
           <div className="space-y-4">
             {sectorData.length > 0 ? (
-              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
-                <div className="w-48 h-48 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={sectorData}
-                        dataKey="pct"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={85}
-                        strokeWidth={2}
-                        stroke="var(--color-card)"
-                      >
-                        {sectorData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ExposurePieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2 min-w-0">
-                  {sectorData.map(d => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <ColorDot color={d.color} className="h-3 w-3" />
-                      <span className="text-sm text-muted-foreground flex-1">{d.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                          <CspSafeColorBar percent={d.pct} color={d.color} />
-                        </div>
-                        <span className="text-sm font-mono font-semibold w-12 text-right">{d.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Chart kind="donut" data={sectorData} valueKey="pct" size="lg" formatValue={(v) => `${v}%`} breakdownList breakdownBars />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">No sector data available.</p>
             )}

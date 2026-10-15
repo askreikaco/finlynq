@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
@@ -323,10 +323,12 @@ export default function AccountDetailPage() {
   if (!account && loadFailed) return (
     <div className="w-full space-y-6">
       <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />
-      <ErrorState
+      <Notice
+        variant="error"
         title="Account not found"
-        message="This account doesn't exist, or it isn't one of yours."
-      />
+      >
+        {"This account doesn't exist, or it isn't one of yours."}
+      </Notice>
     </div>
   );
 

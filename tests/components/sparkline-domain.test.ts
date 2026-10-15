@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sparkDomain } from "@/components/sparkline";
+import { sparkDomain } from "@/components/chart";
 
 describe("sparkDomain: padded domain for sparkline charts", () => {
   it("adds padding to regular data ranges", () => {

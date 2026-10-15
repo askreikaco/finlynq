@@ -5,7 +5,7 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import { Chart } from "@/components/chart";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
@@ -13,8 +13,7 @@ import { AmountInput } from "@/components/amount-input";
 import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -60,9 +59,9 @@ function TaxPageContent() {
     setComparison(await res.json());
   }
 
-  if (loadError) return <ErrorState title="Couldn't load tax data" message="We couldn't load your tax data. Please try again." onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load tax data" retry={() => { setLoadError(false); setReloadKey((k) => k + 1); }}>{"We couldn't load your tax data. Please try again."}</Notice>;
 
-  if (!data) return <PageSkeleton variant="cards" rows={3} />;
+  if (!data) return <Notice variant="skeleton" skeleton="cards" rows={3} />;
 
   const tfsaPct = data.tfsa.totalRoom > 0 ? (data.tfsa.used / data.tfsa.totalRoom) * 100 : 0;
   const advice = openAdvice !== null ? data.assetLocationAdvice[openAdvice] ?? null : null;
@@ -87,7 +86,7 @@ function TaxPageContent() {
       <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false} className="px-3">
         <div className="space-y-3 pt-3">
           <div className="px-1">
-            <Progress value={tfsaPct} className="h-2.5" />
+            <Chart kind="progress" value={tfsaPct} ariaLabel="TFSA room used" />
           </div>
           <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             <ListRow title="Used" value={formatCurrency(data.tfsa.used, displayCurrency)} secondary={`${Math.round(tfsaPct)}% of room`} />

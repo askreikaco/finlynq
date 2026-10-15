@@ -33,8 +33,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { PageHeader, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile/page-header";
 import { MetricGrid, type MetricItem } from "@/components/mobile/metric-grid";
 import { DataView } from "@/components/adaptive/data-view";
@@ -204,7 +203,7 @@ export function ListPage<T, D = T[], X = unknown>({
   const ctx: ListPageContext<T, X> = { records, openDelete: (rec) => del.open(rec), reload, extra: ext.extra };
   const renderView = (view: ListPageView<T, X>): ReactNode => (typeof view === "function" ? view(ctx) : view);
   const summaryMetrics = typeof summary === "function" ? summary(records) : summary;
-  const skeletonNode = loadingNode ?? <PageSkeleton variant={skeleton} rows={skeletonRows} />;
+  const skeletonNode = loadingNode ?? <Notice variant="skeleton" skeleton={skeleton} rows={skeletonRows} />;
 
   const toggleNode = body === undefined && toolbarPlacement !== "none" ? <ViewModeToggle viewKey={viewKey} /> : null;
   let toolbarRegion: ReactNode = null;
@@ -233,11 +232,13 @@ export function ListPage<T, D = T[], X = unknown>({
     bodyNode = skeletonNode;
   } else if (failed) {
     const errorNode = (
-      <ErrorState
+      <Notice
+        variant="error"
         title={error?.title ?? `Couldn't load ${typeof title === "string" ? title.toLowerCase() : "this list"}`}
-        message={error?.message ?? "We couldn't load this list. Please try again."}
-        onRetry={reload}
-      />
+        retry={reload}
+      >
+        {error?.message ?? "We couldn't load this list. Please try again."}
+      </Notice>
     );
     if (bareError) return errorNode;
     bodyNode = errorNode;
@@ -283,7 +284,7 @@ export function ListPage<T, D = T[], X = unknown>({
   ) : undefined;
 
   return (
-    <Suspense fallback={loadingNode ?? <PageSkeleton variant={skeleton} rows={suspenseRows} />}>
+    <Suspense fallback={loadingNode ?? <Notice variant="skeleton" skeleton={skeleton} rows={suspenseRows} />}>
       <div data-testid={`${id}-root`} className={STACK_CLASS[stack]}>
         <PageHeader
           className={header?.className}

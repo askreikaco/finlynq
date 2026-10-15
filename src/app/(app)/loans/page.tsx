@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CspSafeBar } from "@/components/csp-safe-bar";
+import { Chart } from "@/components/chart";
 import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -154,6 +152,12 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
   );
 }
 
+/** At most ~60 schedule points for the amortization charts. */
+function thinSchedule<T>(rows: T[]): T[] {
+  const step = Math.max(1, Math.floor(rows.length / 60));
+  return rows.filter((_, i) => i % step === 0);
+}
+
 function LoanProgress({ loan }: { loan: Loan }) {
   const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
   return (
@@ -162,7 +166,7 @@ function LoanProgress({ loan }: { loan: Loan }) {
         <span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span>
         <span>{Math.round(paidPct)}%</span>
       </div>
-      <CspSafeBar percent={paidPct} className="bg-destructive/10" fillClassName="bg-pos" ariaLabel={`Loan ${loan.name} paid`} />
+      <Chart kind="progress" value={paidPct} tone="pos" trackTone="destructive" ariaLabel={`Loan ${loan.name} paid`} />
     </div>
   );
 }
@@ -284,7 +288,7 @@ function LoansPageContent() {
   ];
 
   if (loading) return <LoansSkeleton />;
-  if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={load} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load loans" retry={load}>{"We couldn't load your loans. Please try again."}</Notice>;
 
   const detailPaidOff = detailLoan ? isLoanCompleted(detailLoan) : false;
   const detailNextDue = detailLoan ? loanNextDue(detailLoan, detailPaidOff, today) : null;
@@ -334,12 +338,14 @@ function LoansPageContent() {
 
             <div className="space-y-6">
               {loans.length === 0 && (
-                <EmptyState
+                <Notice
+                  variant="empty"
                   icon={Landmark}
                   title="No loans tracked yet"
-                  description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
                   action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
-                />
+                >
+                  Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections.
+                </Notice>
               )}
           {activeList.length > 0 && (
             <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
@@ -378,19 +384,27 @@ function LoansPageContent() {
                   <TabsTrigger value="whatif">What-If</TabsTrigger>
                 </TabsList>
                 <TabsContent value="chart">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip /><Legend />
-                      <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <ResponsiveContainer width="100%" height={200} className="mt-4">
-                    <LineChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip />
-                      <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <Chart
+                    kind="stacked-bar"
+                    data={thinSchedule(amort.schedule)}
+                    xKey="date"
+                    height={300}
+                    currency={selectedLoan.currency}
+                    series={[
+                      { key: "principal", name: "Principal", color: "#10b981" },
+                      { key: "interest", name: "Interest", color: "#f43f5e" },
+                    ]}
+                    legend
+                  />
+                  <Chart
+                    kind="line"
+                    className="mt-4"
+                    data={thinSchedule(amort.schedule)}
+                    xKey="date"
+                    height={200}
+                    currency={selectedLoan.currency}
+                    series={[{ key: "balance", name: "Balance" }]}
+                  />
                 </TabsContent>
                 <TabsContent value="table">
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">

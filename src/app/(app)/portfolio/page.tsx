@@ -29,7 +29,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { HOLDING_FILTER_KEYS, HOLDING_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { TopMoversCard } from "./_components/top-movers-card";
 import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
@@ -120,7 +120,7 @@ export default function PortfolioPage() {
   usePageCustomize(data?.summary && data.summary.totalHoldings > 0 ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   if (loading) return <PortfolioSkeleton />;
-  if (!data || !data.summary) return <ErrorState title="Couldn't load investments" message="We couldn't load your investments. Please try again." onRetry={reload} />;
+  if (!data || !data.summary) return <Notice variant="error" title="Couldn't load investments" retry={reload}>{"We couldn't load your investments. Please try again."}</Notice>;
 
   // Empty state — no holdings yet
   if (data.summary.totalHoldings === 0) {

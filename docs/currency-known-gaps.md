@@ -27,8 +27,6 @@ Remaining display fallbacks using `||` and `??` patterns:
 - **src/components/inbox/inbox-reconcile-tab.tsx**: line 668
 - **src/components/inbox/inbox-to-approve-tab.tsx**: line 500
 - **src/components/inbox/inbox-to-categorize-tab.tsx**: line 451
-- **src/components/sankey-chart.tsx**: line 39 (default parameter)
-- **src/app/(app)/chat/page.tsx**: lines 84, 147, 182 (skip per WP1)
 
 All require fix to `?.trim() ? currency : displayCurrency` pattern. Form defaults (`currency: "CAD"` in state, default parameters) are intentional and out of scope.
 

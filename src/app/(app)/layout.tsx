@@ -1,7 +1,7 @@
 import { AppTabs } from "@/components/nav";
 import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 import { UnlockGate } from "@/components/unlock-gate";
-import { AnnouncementBanner } from "@/components/announcement-banner";
+import { Notice } from "@/components/notice";
 import { PromptGate } from "@/components/prompt-gate";
 import { NavHistoryTracker } from "@/components/nav-history-tracker";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -9,7 +9,6 @@ import { DropdownOrderProvider } from "@/components/dropdown-order-provider";
 import { LanguageProvider } from "@/components/language-provider";
 import { FontProvider } from "@/components/font-provider";
 import { AnimationProvider } from "@/components/animation-provider";
-import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
 import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { PageFabProvider } from "@/components/mobile/page-fab";
@@ -32,9 +31,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <PageFabProvider>
         <AppSizeClassProvider>
         <div className="relative flex min-h-screen flex-col">
-          <AnnouncementBanner />
+          <Notice source="announcement" />
           <PromptGate />
-          <ReportingRecomputeIndicator />
+          <Notice source="reporting-recompute" />
           <div className="flex flex-1">
             <AppTabs categoriesMerged={isCategoriesMergedEnabled()} />
             {/* overflow-x-clip, not overflow-x-hidden: hidden forces overflow-y to auto, which makes <main> a scroll container.

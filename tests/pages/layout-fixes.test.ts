@@ -163,7 +163,7 @@ describe("holdings rows at every width (one layout)", () => {
 
 describe("reporting toast on phones", () => {
   it("sits above the tab bar via the clearance var, not over content rows", () => {
-    const src = read("src/components/reporting-recompute-indicator.tsx");
+    const src = read("src/components/notice/body.tsx");
     expect(src).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
     expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+16px)]");
   });

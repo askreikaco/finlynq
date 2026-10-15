@@ -5,8 +5,7 @@
   ],
   "chrome": {
     "src/app/(app)/portfolio/_components/portfolio-ui.tsx": {
-      "min-h": 2,
-      "backdrop-blur": 2
+      "min-h": 2
     },
     "src/app/(app)/portfolio/new/page.tsx": {
       "rounded-2xl": 1,

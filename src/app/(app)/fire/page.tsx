@@ -10,10 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend,
-} from "recharts";
+import { Chart } from "@/components/chart";
 import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
@@ -272,42 +269,24 @@ function FirePageContent() {
 
           {/* Net Worth Projection Chart */}
           <SectionCard label="Projected net worth vs FIRE number" icon={TrendingUp} tone="emerald">
-            <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={result.projections}>
-                <XAxis dataKey="age" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                  labelFormatter={(label) => `Age ${label}`}
-                />
-                <Legend />
-                <ReferenceLine
-                  y={result.fireNumber}
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  strokeDasharray="8 4"
-                  label={{ value: `FIRE: ${formatCurrency(result.fireNumber, displayCurrency)}`, position: "insideTopRight", fill: "#f97316", fontSize: 12 }}
-                />
-                {result.fireAge <= parseInt(form.targetRetirementAge) + 10 && (
-                  <ReferenceLine
-                    x={result.fireAge}
-                    stroke="#10b981"
-                    strokeWidth={1}
-                    strokeDasharray="4 4"
-                    label={{ value: `FIRE Age ${result.fireAge}`, position: "top", fill: "#10b981", fontSize: 11 }}
-                  />
-                )}
-                <Area
-                  type="monotone"
-                  dataKey="netWorth"
-                  stroke="#6366f1"
-                  fill="#6366f1"
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                  name="Projected Net Worth"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Chart
+              kind="area"
+              data={result.projections}
+              xKey="age"
+              height={350}
+              currency={displayCurrency}
+              series={[{ key: "netWorth", name: "Projected Net Worth", strokeWidth: 2, gradient: false, fillOpacity: 0.15 }]}
+              legend
+              formatX={(v) => v}
+              formatY={(v) => `$${(v / 1000).toFixed(0)}k`}
+              formatLabel={(l) => `Age ${l}`}
+              lines={[
+                { y: result.fireNumber, color: "#f97316", width: 2, label: `FIRE: ${formatCurrency(result.fireNumber, displayCurrency)}` },
+                ...(result.fireAge <= parseInt(form.targetRetirementAge) + 10
+                  ? [{ x: result.fireAge, color: "#10b981", width: 1, label: `FIRE Age ${result.fireAge}` }]
+                  : []),
+              ]}
+            />
           </SectionCard>
 
           {/* Monte Carlo Analysis */}
@@ -367,82 +346,26 @@ function FirePageContent() {
               {mcResult && (
                 <>
                   {/* Fan chart with percentile bands */}
-                  <ResponsiveContainer width="100%" height={320}>
-                    <AreaChart data={mcChartData}>
-                      <XAxis
-                        dataKey="year"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => `Yr ${v}`}
-                      />
-                      <YAxis
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => {
-                          if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-                          return `$${(v / 1000).toFixed(0)}k`;
-                        }}
-                      />
-                      <Tooltip
-                        formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                        labelFormatter={(label) => `Year ${label}`}
-                      />
-                      <Legend />
-                      <ReferenceLine
-                        y={mcResult.fireNumber}
-                        stroke="#f97316"
-                        strokeWidth={2}
-                        strokeDasharray="8 4"
-                        label={{ value: "FIRE Target", position: "insideTopRight", fill: "#f97316", fontSize: 11 }}
-                      />
-                      {/* p10-p90 band (lightest) */}
-                      <Area
-                        type="monotone"
-                        dataKey="p90"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.08}
-                        name="90th Percentile"
-                        stackId="band"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="p10"
-                        stroke="none"
-                        fill="transparent"
-                        name="10th Percentile"
-                      />
-                      {/* p25-p75 band (medium) */}
-                      <Area
-                        type="monotone"
-                        dataKey="p75"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.15}
-                        name="75th Percentile"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="p25"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.08}
-                        name="25th Percentile"
-                      />
-                      {/* Median line */}
-                      <Area
-                        type="monotone"
-                        dataKey="p50"
-                        stroke="#6366f1"
-                        strokeWidth={2.5}
-                        fill="#6366f1"
-                        fillOpacity={0.05}
-                        name="Median (50th)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <Chart
+                    kind="area"
+                    data={mcChartData}
+                    xKey="year"
+                    height={320}
+                    currency={displayCurrency}
+                    legend
+                    formatX={(v) => `Yr ${v}`}
+                    formatY={(v) => (v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}k`)}
+                    formatLabel={(l) => `Year ${l}`}
+                    lines={[{ y: mcResult.fireNumber, color: "#f97316", width: 2, label: "FIRE Target" }]}
+                    series={[
+                      // p10-p90 band (lightest), p25-p75 band (medium), median line
+                      { key: "p90", name: "90th Percentile", color: "#6366f1", fillOpacity: 0.08, strokeWidth: 0, stackId: "band" },
+                      { key: "p10", name: "10th Percentile", color: "#6366f1", fillOpacity: 0, strokeWidth: 0 },
+                      { key: "p75", name: "75th Percentile", color: "#6366f1", fillOpacity: 0.15, strokeWidth: 0 },
+                      { key: "p25", name: "25th Percentile", color: "#6366f1", fillOpacity: 0.08, strokeWidth: 0 },
+                      { key: "p50", name: "Median (50th)", color: "#6366f1", fillOpacity: 0.05, strokeWidth: 2.5 },
+                    ]}
+                  />
 
                   {/* Final value percentiles */}
                   <MetricGrid

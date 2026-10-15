@@ -17,10 +17,9 @@ import { HealthScoreCard } from "./_components/health-score-card";
 import { KeyMetrics } from "./_components/key-metrics";
 import { ActionCenter } from "./_components/action-center";
 import { WeeklyRecap } from "./_components/weekly-recap";
-import { OnboardingTips } from "@/components/onboarding-tips";
 import { DueCard } from "@/components/subscriptions/due-card";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { QuickImport } from "./_components/quick-import";
 import { IncomeExpenseChart } from "./_components/income-expense-chart";
 import { SpendingCategoryChart } from "./_components/spending-category-chart";
@@ -31,7 +30,6 @@ import { LazyView } from "@/components/ui/lazy-view";
 import { CountedGrid } from "./_components/counted-grid";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
@@ -183,7 +181,7 @@ export default function DashboardPage() {
     e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
   }, []);
 
-  if (loadError && !data) return <ErrorState onRetry={() => { dashboardRes.reload(); healthRes.reload(); setReloadKey((k) => k + 1); }} />;
+  if (loadError && !data) return <Notice variant="error" retry={() => { dashboardRes.reload(); healthRes.reload(); setReloadKey((k) => k + 1); }} />;
 
   if (!data || !layoutReady) return <DashboardSkeleton />;
 
@@ -444,7 +442,7 @@ export default function DashboardPage() {
       // Onboarding tips for first-time users
       render: () => (
         <motion.div key="onboarding-tips" variants={itemVariants}>
-          <OnboardingTips page="dashboard" />
+          <Notice source="tips:dashboard" />
         </motion.div>
       ),
     },
@@ -625,7 +623,7 @@ export default function DashboardPage() {
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}
       <motion.div variants={itemVariants}>
-        <CurrencyAuditBanner />
+        <Notice source="currency-audit" />
       </motion.div>
 
       {/* Cards, in the user's saved order (default = the original dashboard order). */}

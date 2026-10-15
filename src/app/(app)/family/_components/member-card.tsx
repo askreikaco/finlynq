@@ -1,7 +1,6 @@
 "use client";
 
 import { Landmark } from "lucide-react";
-import { useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -83,7 +82,6 @@ export function MemberCard({
   asOf: string;
   ownMovers?: OwnMovers;
 }) {
-  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const money = (v: number | null | undefined) => (v == null ? NONE : formatCurrency(v, displayCurrency));
   const s = member.sections;
   const cs = chartMember?.sections ?? s; // Use chartMember sections for charts (lifetime data)
@@ -166,7 +164,6 @@ export function MemberCard({
                     currency={displayCurrency}
                     period="all"
                     name={member.name}
-                    gradientId={`nw-${uid}`}
                     note={
                       cs.net_worth.historyFxApproximation && cs.net_worth.history.length > 1
                         ? FAMILY_STRINGS.overview_history_fx_note
@@ -180,7 +177,6 @@ export function MemberCard({
                     period="all"
                     currency={displayCurrency}
                     asOf={asOf}
-                    idPrefix={`ie-${uid}-`}
                   />
                 )}
               </div>

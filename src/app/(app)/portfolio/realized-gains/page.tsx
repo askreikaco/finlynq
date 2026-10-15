@@ -35,9 +35,7 @@ import {
   type MetricItem,
 } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { monthLabel, signedPercent } from "../_components/report-controls";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -427,16 +425,18 @@ export default function RealizedGainsPage() {
 
       <section aria-label="Closed lots" className="space-y-2">
         {loading ? (
-          <PageSkeleton variant="list" rows={3} />
+          <Notice variant="skeleton" skeleton="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={reloadGains} />
+          <Notice variant="error" title="Couldn't load realized gains" retry={reloadGains}>{"We couldn't load your realized gains. Please try again."}</Notice>
         ) : !data || data.rows.length === 0 ? (
-          <EmptyState
+          <Notice
+            variant="empty"
             icon={Coins}
             title="No closed lots yet"
-            description="Lots are created on every new sell or in-kind transfer. Pre-Phase-1 history is filled in by the lot backfill admin script."
             action={{ label: "Record a sale", href: "/portfolio/new?op=sell" }}
-          />
+          >
+            Lots are created on every new sell or in-kind transfer. Pre-Phase-1 history is filled in by the lot backfill admin script.
+          </Notice>
         ) : visibleCount === 0 ? (
           <div className="flex flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4">
             <p className="text-sm text-muted-foreground">

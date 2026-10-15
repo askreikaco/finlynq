@@ -4,7 +4,9 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { Sparkline, sparkDomain } from "@/components/sparkline";
+import { Chart, sparkDomain } from "@/components/chart";
+
+const Sparkline = ({ data, color }: { data: number[]; color: string }) => <Chart kind="sparkline" values={data} color={color} />;
 
 // Store YAxis props to verify sparkDomain is applied
 let yaxisProps: any = null;
@@ -18,22 +20,23 @@ vi.mock("@/components/ui/lazy-view", () => ({
   ),
 }));
 
-// Mock the hooks
-vi.mock("@/hooks/use-animations", () => ({
-  useAnimations: () => true,
-}));
-
 vi.mock("@/components/currency-provider", () => ({
   useDisplayCurrency: () => ({ displayCurrency: "USD" }),
 }));
 
 // Mock recharts: render YAxis to capture props, render SVG structure for gradient
 vi.mock("recharts", () => ({
-  AreaChart: ({ children, ...props }: any) => (
+  ComposedChart: ({ children, ...props }: any) => (
     <svg data-testid="area-chart" {...props}>
       {children}
     </svg>
   ),
+  ReferenceLine: () => null,
+  CartesianGrid: () => null,
+  XAxis: (props: any) => React.createElement("g", { "data-testid": "xaxis", "data-hide": String(props.hide) }),
+  Bar: () => null,
+  Line: () => null,
+  Cell: () => null,
   Area: (props: any) => (
     // Render SVG path for area
     React.createElement("path", { "data-testid": "area", ...props })
