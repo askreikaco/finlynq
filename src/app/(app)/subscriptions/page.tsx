@@ -32,6 +32,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
+import { DueActions, STATUS_BADGE, SubscriptionDetail, SubscriptionStatusActions, dueLabel, isDue, relativeDue, subDetailItems } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -74,54 +75,6 @@ type SeriesRow = { month: string; monthly: number; annual: number; active: numbe
 
 const SUGGESTIONS_PREVIEW = 3;
 const DUE_SOON_DAYS = 30;
-
-const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  paused: {
-    label: "Paused",
-    className: "bg-warning/10 text-warning border-warning/30",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
-  },
-  ended: {
-    label: "Ended",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-};
-
-/** An active subscription with an occurrence on/before today (server-computed). */
-function isDue(sub: Subscription): boolean {
-  return dueSubscriptions([sub]).length > 0;
-}
-
-function dueLabel(sub: Subscription): string {
-  const n = sub.dueCount ?? 0;
-  return n > 1 ? `${n} due` : "Due";
-}
-
-/** Post now / Skip for a due subscription (Repeat + Installment phase 2a). */
-function DueActions({ sub, busy, onPost, onSkip }: { sub: Subscription; busy: boolean; onPost: () => void; onSkip: () => void }) {
-  return (
-    <>
-      <Button size="sm" data-testid={`sub-post-${sub.id}`} disabled={busy} onClick={onPost}>
-        Post now
-      </Button>
-      <Button size="sm" variant="ghost" data-testid={`sub-skip-${sub.id}`} disabled={busy} onClick={onSkip}>
-        Skip
-      </Button>
-    </>
-  );
-}
-
-/** "today" / "tomorrow" / "in 5 days" for near dates, else null. */
-function relativeDue(date: string, today: string): string | null {
-  const d = daysBetween(today, date);
-  if (d === 0) return "today";
-  if (d === 1) return "tomorrow";
-  if (d > 1 && d <= 14) return `in ${d} days`;
-  return null;
-}
 
 export default function SubscriptionsPage() {
   return (
@@ -364,40 +317,6 @@ function SubscriptionsPageContent() {
   const openSub = subs.find((s) => s.id === openSubId) ?? null;
   const closeSheet = () => setOpenSubId(null);
 
-  /** Reminder / pause / cancel / resume buttons for one subscription (the phone sheet and the split pane share them). */
-  function statusActions(sub: Subscription, before: () => void) {
-    const openSub = sub;
-    const closeSheet = before;
-    return (
-      <>
-        {openSub.status === "active" && (
-            <>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); toggleReminder(openSub); }}>
-              {openSub.cancelReminderDate ? <><BellOff className="h-4 w-4" /> Remove cancel reminder</> : <><Bell className="h-4 w-4" /> Remind me to cancel</>}
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "paused"); }}>
-                <Pause className="h-4 w-4" /> Pause
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "cancelled"); }}>
-                <XCircle className="h-4 w-4" /> Mark cancelled
-              </Button>
-            </>
-          )}
-        {openSub.status === "paused" && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <Play className="h-4 w-4" /> Resume
-            </Button>
-          )}
-          {(openSub.status === "cancelled" || openSub.status === "ended") && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <RotateCcw className="h-4 w-4" /> Reactivate
-            </Button>
-          )}
-      </>
-    );
-  }
-
-
   return (
     <SectionPage
       id="subscriptions"
@@ -417,26 +336,19 @@ function SubscriptionsPageContent() {
       <ListDetailLayout
         entity="subscription"
         newLabel="Add subscription"
-        pane={(api) => {
-          const open = subs.find((x) => String(x.id) === api.selectedId) ?? null;
-          return (
-            <div className="space-y-3">
-              {open && (
-                <div className="flex flex-wrap gap-2" data-slot="subscription-status-actions">
-                  {statusActions(open, () => undefined)}
-                </div>
-              )}
-              <SubscriptionFormPanel
-                embedded
-                mode={api.isNew ? "create" : "edit"}
-                id={api.selectedId ?? undefined}
-                onSaved={() => { loadSubs(); api.afterSaved(); }}
-                onCancel={api.clear}
-                onDeleted={() => { loadSubs(); api.afterDeleted(); }}
-              />
-            </div>
-          );
-        }}
+        detailTitle="Subscription"
+        detailHref={(id) => `/subscriptions/${id}`}
+        renderDetail={(id) => <SubscriptionDetail id={id} onChanged={loadSubs} />}
+        renderForm={(api) => (
+          <SubscriptionFormPanel
+            embedded
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            onSaved={() => { loadSubs(); api.afterSaved(); }}
+            onCancel={api.cancel}
+            onDeleted={() => { loadSubs(); api.afterDeleted(); }}
+          />
+        )}
       >
       <MetricGrid metrics={summaryMetrics} />
 
@@ -557,7 +469,7 @@ function SubscriptionsPageContent() {
           <Button variant="outline" onClick={() => { closeSheet(); openEditById(openSub.id); }}>
             <Pencil className="h-4 w-4" /> Edit
           </Button>
-          {statusActions(openSub, closeSheet)}
+          <SubscriptionStatusActions sub={openSub} today={today} before={closeSheet} onChanged={loadSubs} />
           <Button variant="outline" className="text-destructive" onClick={() => { closeSheet(); setDeleteId(openSub.id); }}>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
@@ -575,28 +487,6 @@ function SubscriptionsPageContent() {
       />
     </SectionPage>
   );
-}
-
-/** Fields a list row leaves out. Money is in the subscription's own currency; the monthly figure in the display one. */
-function subDetailItems(sub: Subscription, today: string, displayCurrency: string): DetailItem[] {
-  const freq = frequencyOrMonthly(sub.frequency);
-  const next = effectiveNextDate(sub, today);
-  const rel = next && sub.status === "active" ? relativeDue(next, today) : null;
-  const monthly = monthlyEquivalent(Math.abs(subDisplayAmount(sub)), freq, sub.intervalDays);
-  const showMonthly = freq !== "monthly" || sub.currency !== displayCurrency;
-  const items: DetailItem[] = [
-    { label: "Amount", value: `${formatCurrency(sub.amount, sub.currency)} / ${frequencySuffix(sub.frequency, sub.intervalDays)}` },
-    { label: "Frequency", value: frequencyLabel(sub.frequency, sub.intervalDays) },
-  ];
-  if (showMonthly) items.push({ label: "Monthly equivalent", value: `≈ ${formatCurrency(monthly, displayCurrency)}` });
-  items.push({
-    label: "Next payment",
-    value: sub.status === "active" && next ? `${formatDate(next)}${rel ? ` (${rel})` : ""}` : "—",
-  });
-  if (sub.cancelReminderDate) items.push({ label: "Cancel reminder", value: formatDate(sub.cancelReminderDate) });
-  items.push({ label: "Account", value: sub.accountName ?? "—" });
-  items.push({ label: "Category", value: sub.categoryName ?? "—" });
-  return items;
 }
 
 /** One subscription in a status group: tap opens the detail sheet; due payments get their actions under the row. */
