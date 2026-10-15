@@ -5,17 +5,16 @@ import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
+import { LoanDetail, LoanProgress, FREQUENCY_LABELS, loanDetailItems } from "./_components/loan-detail";
+import { LoanAmortization } from "./_components/loan-amortization";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { LOAN_FILTER_KEYS, LOAN_SORTS } from "@/lib/toolbar/list-configs";
@@ -31,30 +30,6 @@ import { isLoanCompleted } from "@/lib/loan-status";
 import { localDateISO } from "@/lib/utils/date";
 import type { Loan } from "./_components/loan-types";
 import { loanNextDue } from "./_components/loan-next-due";
-
-type AmortRow = { period: number; date: string; payment: number; principal: number; interest: number; balance: number };
-type AccrualRow = { month: string; interest: number };
-type AmortResult = { monthlyPayment: number; totalPayments: number; totalInterest: number; payoffDate: string; residualValue: number; schedule: AmortRow[]; monthlyAccrual: AccrualRow[] };
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  weekly: "Weekly",
-  biweekly: "Biweekly",
-  semi_monthly: "Semi-monthly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  annual: "Annual",
-};
-
-const PERIODS_PER_YEAR: Record<string, number> = { weekly: 52, biweekly: 26, semi_monthly: 24, monthly: 12, quarterly: 4, annual: 1 };
-
-// What-if is term-driven; for payment-driven loans (termMonths null) derive an
-// equivalent term in months from the solved periods remaining.
-function equivalentTermMonths(loan: Loan): number {
-  if (loan.termMonths != null) return loan.termMonths;
-  const perYear = PERIODS_PER_YEAR[loan.paymentFrequency] ?? 12;
-  return Math.max(1, Math.round((loan.periodsRemaining / perYear) * 12));
-}
-type WhatIf = { extraPayment: number; monthsSaved: number; interestSaved: number; newPayoffDate: string; totalInterest: number };
 
 function LoansSkeleton() {
   return (
@@ -88,34 +63,6 @@ function LoansSkeleton() {
       </div>
     </div>
   );
-}
-
-/** Label/value rows for the loan detail sheet. Every money figure is in the loan's own currency. */
-function loanDetailItems(loan: Loan, displayCurrency: string, nextDue: string | null, paidOff: boolean): DetailItem[] {
-  const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
-  const shownRemaining = loan.remainingBalanceDisplay;
-  const converted = loan.currency !== displayCurrency && shownRemaining != null;
-  const items: DetailItem[] = [
-    { label: "Type", value: loan.type.replace("_", " ") },
-    { label: "Principal", value: formatCurrency(loan.principal, loan.currency) },
-    {
-      label: "Remaining",
-      value: converted
-        ? `${formatCurrency(loan.remainingBalance, loan.currency)} (≈ ${formatCurrency(shownRemaining, displayCurrency)})`
-        : formatCurrency(loan.remainingBalance, loan.currency),
-    },
-    { label: "Rate", value: `${loan.annualRate}%` },
-    { label: FREQUENCY_LABELS[loan.paymentFrequency] ?? "Payment", value: formatCurrency(payment, loan.currency) },
-    { label: "Next due (est.)", value: nextDue ?? (paidOff ? "Paid off" : "—") },
-    { label: "Total interest", value: formatCurrency(loan.totalInterest, loan.currency) },
-    {
-      label: loan.type === "lease" ? "Term end" : "Payoff",
-      value: loan.type === "lease" && loan.residualValue != null && loan.residualValue > 0
-        ? `${loan.payoffDate} (residual ${formatCurrency(loan.residualValue, loan.currency)})`
-        : loan.payoffDate,
-    },
-  ];
-  return items;
 }
 
 /** Same rose as the Total debt card sparkline (a literal colour: SVG gradient stops cannot resolve var()). */
@@ -154,19 +101,6 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
   );
 }
 
-function LoanProgress({ loan }: { loan: Loan }) {
-  const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span>
-        <span>{Math.round(paidPct)}%</span>
-      </div>
-      <CspSafeBar percent={paidPct} className="bg-destructive/10" fillClassName="bg-pos" ariaLabel={`Loan ${loan.name} paid`} />
-    </div>
-  );
-}
-
 function LoansPageContent() {
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
@@ -180,17 +114,10 @@ function LoansPageContent() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const openLoan = (id: number) => (detail.split ? detail.select(id) : setDetailId(id));
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  const [amort, setAmort] = useState<AmortResult | null>(null);
-  const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
-  async function viewAmortization(loan: Loan) {
+  // Phones: "View schedule" in the detail sheet opens the amortization panel below the list. Split view: the pane's detail has its own.
+  function viewAmortization(loan: Loan) {
     setDetailId(null);
     setSelectedLoan(loan);
-    const [amortRes, whatIfRes] = await Promise.all([
-      fetch("/api/loans", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "amortization", principal: loan.principal, annualRate: loan.annualRate, termMonths: loan.termMonths, startDate: loan.startDate, paymentAmount: loan.paymentAmount, extraPayment: loan.extraPayment, paymentFrequency: loan.paymentFrequency, residualValue: loan.residualValue }) }).then((r) => r.json()),
-      fetch("/api/loans", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "what-if", principal: loan.principal, annualRate: loan.annualRate, termMonths: equivalentTermMonths(loan), startDate: loan.startDate, extraAmounts: [100, 200, 500, 1000] }) }).then((r) => r.json()),
-    ]);
-    setAmort(amortRes);
-    setWhatIf(Array.isArray(whatIfRes) ? whatIfRes : []);
   }
 
   // Create and edit are full pages (iOS navigation), not dialogs.
@@ -305,26 +232,19 @@ function LoansPageContent() {
       <ListDetailLayout
           entity="loan"
           newLabel="Add Loan"
-          pane={(api) => {
-            const open = loans.find((l) => String(l.id) === api.selectedId) ?? null;
-            return (
-              <div className="space-y-3">
-                {open && (
-                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void viewAmortization(open)}>
-                    <Table2 className="mr-1 h-4 w-4" /> View schedule
-                  </Button>
-                )}
-                <LoanFormPanel
-                  embedded
-                  mode={api.isNew ? "create" : "edit"}
-                  id={api.selectedId ?? undefined}
-                  onSaved={() => { load(); api.afterSaved(); }}
-                  onCancel={api.clear}
-                  onDeleted={() => { load(); api.afterDeleted(); }}
-                />
-              </div>
-            );
-          }}
+          detailTitle="Loan"
+          detailHref={(id) => `/loans/${id}`}
+          renderDetail={(id) => <LoanDetail id={id} compact />}
+          renderForm={(api) => (
+            <LoanFormPanel
+              embedded
+              mode={api.isNew ? "create" : "edit"}
+              id={api.selectedId ?? undefined}
+              onSaved={() => { load(); api.afterSaved(); }}
+              onCancel={api.cancel}
+              onDeleted={() => { load(); api.afterDeleted(); }}
+            />
+          )}
       >
       <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
@@ -367,80 +287,10 @@ function LoansPageContent() {
             </Accordion>
           )}
 
-          {/* Amortization panel. Every figure comes from the schedule the server computed in the loan's OWN currency. */}
-          {selectedLoan && amort && (
+          {/* Amortization panel (phones; in the split view the pane's detail has the schedule). */}
+          {selectedLoan && !detail.split && (
             <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
-              <Tabs defaultValue="chart">
-                <TabsList className="h-auto flex-wrap">
-                  <TabsTrigger value="chart">Chart</TabsTrigger>
-                  <TabsTrigger value="table">Schedule</TabsTrigger>
-                  <TabsTrigger value="monthly">Monthly Interest</TabsTrigger>
-                  <TabsTrigger value="whatif">What-If</TabsTrigger>
-                </TabsList>
-                <TabsContent value="chart">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip /><Legend />
-                      <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <ResponsiveContainer width="100%" height={200} className="mt-4">
-                    <LineChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip />
-                      <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </TabsContent>
-                <TabsContent value="table">
-                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {amort.schedule.map((r) => (
-                      <TxRow
-                        key={r.period}
-                        icon={CalendarClock}
-                        title={`#${r.period} · ${r.date}`}
-                        subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
-                        amount={-r.payment}
-                        currency={selectedLoan.currency}
-                        meta={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-                <TabsContent value="monthly">
-                  <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
-                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {(amort.monthlyAccrual ?? []).map((m) => (
-                      <TxRow
-                        key={m.month}
-                        icon={Percent}
-                        tile="neg"
-                        title={m.month}
-                        amount={m.interest}
-                        currency={selectedLoan.currency}
-                        amountTone="neg"
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-                <TabsContent value="whatif">
-                  <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {whatIf.map((w) => (
-                      <TxRow
-                        key={w.extraPayment}
-                        icon={TrendingDown}
-                        tile="pos"
-                        title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
-                        subtitle={`New payoff ${w.newPayoffDate}`}
-                        value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
-                        meta={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
-                        metaTone="pos"
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <LoanAmortization loan={selectedLoan} />
             </SectionCard>
           )}
             </div>

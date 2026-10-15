@@ -71,12 +71,14 @@ Pages with PageSkeleton: `/categories/[id]`, `/categories`, `/goals`, `/reports`
 | `/feedback` | `src/app/(app)/feedback/page.tsx` | app | yes (page.tsx:350) | no | no | - |
 | `/fire` | `src/app/(app)/fire/page.tsx` | app | yes (page.tsx:204) | no | no | - |
 | `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:95) | yes (page.tsx:91) | yes (page.tsx:90) | - |
+| `/goals/[id]` | `src/app/(app)/goals/[id]/page.tsx` | app | yes (DetailPage) | yes (DetailPage) | no | detail: _components/goal-detail.tsx |
 | `/goals/[id]/edit` | `src/app/(app)/goals/[id]/edit/page.tsx` | app | yes (page.tsx:75) | yes (page.tsx:71) | yes (page.tsx:70) | - |
 | `/goals/new` | `src/app/(app)/goals/new/page.tsx` | app | yes (page.tsx:45) | no | no | - |
 | `/import` | `src/app/(app)/import/page.tsx` | app | yes (page.tsx:324) | no | no | - |
 | `/import/pending` | `src/app/(app)/import/pending/page.tsx` | app | via import (import/pending/_components/staged-list-view.tsx:103) | no | no | header from import/pending/_components/reconcile-header.tsx:66 (reachable) |
 | `/loans` | `src/app/(app)/loans/page.tsx` | app | yes | no | yes | - |
 | `/loans/new` | `src/app/(app)/loans/new/page.tsx` | app | yes | no | no | form: _components/loan-form.tsx |
+| `/loans/[id]` | `src/app/(app)/loans/[id]/page.tsx` | app | yes (DetailPage) | yes (DetailPage) | no | detail: _components/loan-detail.tsx |
 | `/loans/[id]/edit` | `src/app/(app)/loans/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/loan-form.tsx; delete in overflow |
 | `/manage-accounts` | `src/app/(app)/manage-accounts/page.tsx` | app | no | no | no | UNVERIFIED: no header/error/skeleton in depth-3 imports |
 | `/more` | `src/app/(app)/more/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
@@ -111,6 +113,7 @@ Pages with PageSkeleton: `/categories/[id]`, `/categories`, `/goals`, `/reports`
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
 | `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |
+| `/subscriptions/[id]` | `src/app/(app)/subscriptions/[id]/page.tsx` | app | yes (DetailPage) | yes (DetailPage) | no | detail: _components/subscription-detail.tsx |
 | `/subscriptions/[id]/edit` | `src/app/(app)/subscriptions/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/subscription-form.tsx; delete in overflow |
 | `/tax` | `src/app/(app)/tax/page.tsx` | app | yes (page.tsx:65) | no | no | - |
 | `/transactions/audit` | `src/app/(app)/transactions/audit/page.tsx` | app | yes (page.tsx:111); backHref + backLabel | no | no | titleClassName text-xl font-semibold tracking-tight |
