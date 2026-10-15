@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
+import { ArrowRight, Table2 } from "lucide-react";
 
 interface SheetInfo {
   name: string;
@@ -106,8 +106,7 @@ export function ExcelMapperDialog({
       open={open}
       onClose={() => onOpenChange(false)}
       size="xl"
-      title={<><FileSpreadsheet className="h-5 w-5 text-pos" />
-            Map Excel Columns</>}
+      title="Map Excel Columns"
       info={<>Map your spreadsheet columns to transaction fields.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },

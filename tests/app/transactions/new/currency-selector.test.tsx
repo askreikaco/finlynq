@@ -11,7 +11,7 @@ afterEach(() => cleanup());
 const currencies = ["EUR", "USD", "VND"];
 
 function sheetContent(): HTMLElement {
-  const el = document.querySelector('[data-slot="sheet-content"]');
+  const el = document.querySelector('[data-slot="overlay"]');
   expect(el).not.toBeNull();
   return el as HTMLElement;
 }
@@ -28,7 +28,7 @@ describe("CurrencySelector", () => {
     render(
       <CurrencySelector open onOpenChange={() => {}} currencies={currencies} onSelect={() => {}} selected="USD" />,
     );
-    expect(sheetContent().getAttribute("data-side")).toBe("bottom");
+    expect(sheetContent().getAttribute("data-variant")).toBe("picker");
     expect(screen.getByRole("heading", { name: "Select Currency" })).toBeTruthy();
     expect(rowNames()).toEqual([
       expect.stringMatching(/^EUR/),
@@ -75,6 +75,6 @@ describe("CurrencySelector", () => {
     render(
       <CurrencySelector open={false} onOpenChange={() => {}} currencies={currencies} onSelect={() => {}} />,
     );
-    expect(document.querySelector('[data-slot="sheet-content"]')).toBeNull();
+    expect(document.querySelector('[data-slot="overlay"]')).toBeNull();
   });
 });

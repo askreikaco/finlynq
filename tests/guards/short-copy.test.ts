@@ -72,7 +72,6 @@ const FORM_FILES = [
 const DESCRIPTION_ALLOWLIST: Record<string, string> = {
   "src/app/(app)/transactions/audit/page.tsx": "record data (recorded amount and account currency)",
   "src/app/(app)/reports/page.tsx": "data lines (group counts and totals)",
-  "src/app/(app)/dev/gallery/page.tsx": "component gallery showing the primitives",
 };
 
 describe("short copy: help text lives in (i) tips", () => {

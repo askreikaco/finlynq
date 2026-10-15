@@ -55,7 +55,7 @@ describe("codemod-14b: family folders", () => {
 
   it("mapped classes are in place (regular / wide / max-regular / pointer-coarse)", () => {
     const dialog = read("src/app/(app)/family/_components/invite-dialog.tsx");
-    expect(dialog).toContain('className="regular:max-w-md"');
+    expect(dialog).toContain('size="md"');
 
     const cards = read("src/app/(app)/family/_components/overview-cards.tsx");
     // Batch 5: the headline cards stack in one column at every width (no regular/wide grid).

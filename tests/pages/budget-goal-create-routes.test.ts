@@ -30,7 +30,7 @@ describe("budgets list: openers navigate, no create/edit dialog", () => {
   });
 
   it("keeps the category delete confirmation as a dialog (inside the shared form)", () => {
-    expect(read(`${APP}/categories/_components/category-budget-form.tsx`)).toContain("<ConfirmDialog");
+    expect(read(`${APP}/categories/_components/category-budget-form.tsx`)).toContain('variant="confirm"');
   });
 });
 
@@ -87,6 +87,6 @@ describe("route pages render the shared form components", () => {
     const src = read(`${APP}/goals/_components/goal-form-panel.tsx`);
     expect(src).toMatch(/delete=\{\{\s*label: "Delete goal"/);
     expect(read("src/components/templates/form-page.tsx")).toMatch(/destructive: true/);
-    expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");
+    expect(read("src/components/templates/form-page.tsx")).toContain('variant="confirm"');
   });
 });

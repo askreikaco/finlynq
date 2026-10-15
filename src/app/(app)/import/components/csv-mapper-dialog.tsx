@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 
 const FIELD_OPTIONS = [
@@ -97,8 +97,7 @@ export function CsvMapperDialog({
       open={open}
       onClose={() => onOpenChange(false)}
       size="xl"
-      title={<><FileText className="h-5 w-5 text-primary" />
-            Map CSV Columns</>}
+      title="Map CSV Columns"
       info={<>Map the columns in <span className="font-medium">{file.name}</span> to transaction fields.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },

@@ -210,6 +210,17 @@ export function Overlay({
         ]
       : actions;
 
+  const popupRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  // Initial focus: the first control in the body (then the popup itself), never the header's (i) tip, which would
+  // open its popover on focus and swallow the first Escape.
+  const initialFocus = React.useCallback(
+    () =>
+      bodyRef.current?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled), a[href]',
+      ) ?? popupRef.current,
+    [],
+  );
   const hasHeader = title != null || info != null || headerAction != null || showClose;
   const hasFooter = footer != null || (footerActions != null && footerActions.length > 0);
 
@@ -227,6 +238,8 @@ export function Overlay({
           className="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
         />
         <DialogPrimitive.Popup
+          ref={popupRef}
+          initialFocus={initialFocus}
           data-slot="overlay"
           data-variant={variant}
           data-presentation={presentation}
@@ -282,6 +295,7 @@ export function Overlay({
             {toolbar != null && <div data-slot="overlay-toolbar" className="px-4 pb-2">{toolbar}</div>}
 
             <div
+              ref={bodyRef}
               data-slot="overlay-body"
               className={cn(
                 "flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-2",

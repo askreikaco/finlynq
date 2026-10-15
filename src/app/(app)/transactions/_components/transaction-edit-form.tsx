@@ -5,14 +5,14 @@
  * (PKG1 tx-edit). Logic: useTransactionForm (moved out of TransactionDialog).
  * Fields: TransactionFormBody with variant "page". Chrome: glass PageHeader
  * with one phone primary (Save, icon-only check, submits the form by id),
- * Duplicate/Split/Delete in the overflow menu. Delete asks first in a confirm dialog.
+ * Duplicate/Delete in the overflow menu. Delete asks first in a confirm dialog.
  * Back, save and delete all navigate to returnTo (validated) or /transactions.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check, Copy, Split, Trash2 } from "lucide-react";
+import { Check, Copy, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import type {
 } from "@/components/transactions/transaction-dialog";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { buildPrefill, canDuplicate, writePrefill } from "@/lib/transactions/prefill";
-import { transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
+import { transactionEditHref } from "@/lib/transactions/edit-flow";
 import type { EditInitialState } from "./use-edit-source";
 
 const FORM_ID = "transaction-edit-form";
@@ -114,12 +114,6 @@ export function TransactionEditForm({
           icon: Copy,
           disabled: !editingTx || !canDuplicate(editingTx, editingTx.currency),
           onSelect: onDuplicate,
-        },
-        {
-          label: "Split",
-          icon: Split,
-          disabled: !editingTx,
-          onSelect: () => editingTx && router.push(transactionSplitHref(editingTx.id, returnTo)),
         },
         { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
       ];
