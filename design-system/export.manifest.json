@@ -1,0 +1,447 @@
+{
+  "$comment": "Input of scripts/export-design-system.mjs. To export another component: add its source file(s) to an entry (or a new entry). Every listed path MUST exist or the export fails, listing all missing files. An entry with retiredWhenPresent is skipped (with a printed note) once that sentinel path exists, so the file list survives a merge refactor without edits.",
+  "package": {
+    "name": "@reika/ui",
+    "baseVersion": "0.1.0",
+    "description": "REIKA global UI: design tokens + React components (generated from the Finlynq source, do not edit)",
+    "peerRanges": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0",
+      "tailwindcss": "^4.0.0"
+    },
+    "extraPeers": [
+      "tailwindcss"
+    ]
+  },
+  "destMap": [
+    {
+      "from": "src/components/",
+      "to": ""
+    },
+    {
+      "from": "src/lib/",
+      "to": "lib/"
+    }
+  ],
+  "adapters": {
+    "template": "design-system/templates/adapters.tsx.tpl",
+    "dest": "adapters.tsx"
+  },
+  "tsconfigTemplate": "design-system/templates/tsconfig.json.tpl",
+  "reikaCss": "design-system/templates/reika.css",
+  "tokens": {
+    "css": "src/app/globals.css",
+    "vendorCss": [
+      {
+        "label": "shadcn/tailwind.css (data-open/closed/checked variants, accordion keyframes)",
+        "path": "node_modules/shadcn/dist/tailwind.css"
+      }
+    ],
+    "peerImports": [
+      "tw-animate-css"
+    ],
+    "plain": [
+      {
+        "id": "palette",
+        "from": "/* Finlynq design tokens",
+        "to": "   DESIGN TOKENS (spec"
+      },
+      {
+        "id": "chrome-material",
+        "from": ":root {\n  /* chrome */",
+        "to": "@layer base {"
+      },
+      {
+        "id": "safe-area",
+        "from": "/* ── Safe-area insets",
+        "to": "/* Regular+: PageHeader"
+      }
+    ],
+    "tailwind": [
+      {
+        "id": "variants-theme",
+        "from": "@custom-variant dark",
+        "to": "/* Finlynq design tokens"
+      },
+      {
+        "id": "spacing-radius-containers",
+        "from": "@theme {\n  --spacing-row:",
+        "to": ":root {\n  /* chrome */"
+      }
+    ],
+    "base": [
+      {
+        "id": "base-fonts",
+        "from": "@layer base {",
+        "to": "   BACKGROUND TEXTURES"
+      },
+      {
+        "id": "surface-card",
+        "from": "/* Top-level surface (Card",
+        "to": "/* iOS 26-style liquid glass"
+      },
+      {
+        "id": "glass-menu",
+        "from": "/* Glass menu:",
+        "to": "/* Mobile bottom tab bar"
+      },
+      {
+        "id": "reduced-motion",
+        "from": "/* G3B reduced motion",
+        "to": "/* Keyboard open"
+      },
+      {
+        "id": "effects-skeleton-card",
+        "from": "/* Hero number styling",
+        "to": "   LANDING PAGE ANIMATIONS"
+      },
+      {
+        "id": "tooltips-scrollbar",
+        "from": ".recharts-tooltip-wrapper .recharts-default-tooltip {\n  background",
+        "to": "/* ── Safe-area insets"
+      },
+      {
+        "id": "safe-area-utilities",
+        "from": "/* Regular+: PageHeader",
+        "to": null
+      }
+    ]
+  },
+  "entries": [
+    {
+      "id": "lib",
+      "title": "Helpers",
+      "src": [
+        "src/lib/utils.ts",
+        "src/lib/utils/number.ts",
+        "src/lib/locale.ts",
+        "src/lib/currency.ts",
+        "src/lib/chart-colors.ts",
+        "src/lib/chart-breakdown.ts",
+        "src/lib/status-colour.ts",
+        "src/lib/parse-amount.ts"
+      ],
+      "public": [
+        "src/lib/utils.ts",
+        "src/lib/utils/number.ts",
+        "src/lib/locale.ts",
+        "src/lib/currency.ts",
+        "src/lib/chart-colors.ts",
+        "src/lib/parse-amount.ts"
+      ],
+      "usage": [
+        "import { cn, formatCurrency, setActiveDisplayLocale } from '@reika/ui/lib';",
+        "setActiveDisplayLocale('vi-VN');",
+        "formatCurrency(1234567, 'VND'); // 1.234.567 ₫"
+      ]
+    },
+    {
+      "id": "control-surface",
+      "title": "CONTROL_SURFACE",
+      "src": [
+        "src/components/ui/control-surface.ts",
+        "src/components/ui/size-class.ts"
+      ],
+      "public": [
+        "src/components/ui/control-surface.ts",
+        {
+          "file": "src/components/ui/size-class.ts",
+          "only": [
+            "SizeClass",
+            "sizeClassFor",
+            "SIZE_CLASS_REGULAR_MIN",
+            "SIZE_CLASS_WIDE_ABOVE"
+          ]
+        }
+      ],
+      "usage": [
+        "import { CONTROL_SURFACE, CONTROL_BOX, cn } from '@reika/ui';",
+        "<div className={cn(CONTROL_SURFACE, CONTROL_BOX)}>...</div>",
+        "// the one border + inner-shadow surface of every interactive control"
+      ]
+    },
+    {
+      "id": "button",
+      "title": "Button, RoundIconButton",
+      "src": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/round-icon-button.tsx"
+      ],
+      "public": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/round-icon-button.tsx"
+      ],
+      "usage": [
+        "import { Button, RoundIconButton } from '@reika/ui';",
+        "<Button variant=\"default\" size=\"lg\">Save</Button>",
+        "<RoundIconButton aria-label=\"Add\"><Plus /></RoundIconButton>"
+      ]
+    },
+    {
+      "id": "badge",
+      "title": "Badge",
+      "src": [
+        "src/components/ui/badge.tsx"
+      ],
+      "public": [
+        "src/components/ui/badge.tsx"
+      ],
+      "usage": [
+        "import { Badge } from '@reika/ui';",
+        "<Badge variant=\"secondary\">Paid</Badge>",
+        "// variants: default secondary destructive outline ghost link"
+      ]
+    },
+    {
+      "id": "info-tip",
+      "title": "InfoTip",
+      "src": [
+        "src/components/ui/info-tip.tsx"
+      ],
+      "public": [
+        "src/components/ui/info-tip.tsx"
+      ],
+      "usage": [
+        "import { InfoTip } from '@reika/ui';",
+        "<InfoTip label=\"About fees\" text=\"One short sentence of help.\" />",
+        "// the one place for help text longer than a line"
+      ]
+    },
+    {
+      "id": "tabs",
+      "title": "Tabs",
+      "src": [
+        "src/components/ui/tabs.tsx"
+      ],
+      "public": [
+        "src/components/ui/tabs.tsx"
+      ],
+      "usage": [
+        "import { Tabs, TabsList, TabsTrigger, TabsContent } from '@reika/ui';",
+        "<Tabs defaultValue=\"a\"><TabsList><TabsTrigger value=\"a\">A</TabsTrigger></TabsList>",
+        "<TabsContent value=\"a\">...</TabsContent></Tabs>"
+      ]
+    },
+    {
+      "id": "overlay",
+      "title": "Overlay",
+      "src": [
+        "src/components/ui/overlay.tsx"
+      ],
+      "public": [
+        "src/components/ui/overlay.tsx"
+      ],
+      "usage": [
+        "import { Overlay } from '@reika/ui';",
+        "<Overlay variant=\"confirm\" open={open} onClose={close} title=\"Delete item\" message=\"This cannot be undone.\" onConfirm={del} />",
+        "// variants: confirm | form | detail | picker; presentation: auto | dialog | sheet-right"
+      ]
+    },
+    {
+      "id": "field",
+      "title": "Field, FieldGroup and controls",
+      "src": [
+        "src/components/ui/field",
+        "src/components/ui/switch.tsx"
+      ],
+      "public": [
+        "src/components/ui/field/index.ts",
+        "src/components/ui/switch.tsx"
+      ],
+      "usage": [
+        "import { Field, FieldGroup } from '@reika/ui';",
+        "<Field label=\"Name\" value={v} onChange={(e) => setV(e.target.value)} />",
+        "<Field control=\"amount\" label=\"Price\" value={n} onValueChange={setN} />"
+      ]
+    },
+    {
+      "id": "chart",
+      "title": "Chart",
+      "src": [
+        "src/components/chart"
+      ],
+      "public": [
+        "src/components/chart/index.tsx"
+      ],
+      "usage": [
+        "import { Chart } from '@reika/ui';",
+        "<Chart kind=\"line\" data={rows} xKey=\"label\" series={[{ key: 'v', name: 'Value' }]} />",
+        "// kinds: sparkline line area bar stacked-bar stacked-area donut sankey progress"
+      ]
+    },
+    {
+      "id": "notice",
+      "title": "Notice",
+      "src": [
+        "src/components/notice/body.tsx",
+        "src/components/notice/index.tsx",
+        "src/components/notice/types.ts",
+        "src/components/adaptive/disclosure.tsx"
+      ],
+      "public": [
+        "src/components/notice/index.tsx"
+      ],
+      "usage": [
+        "import { Notice } from '@reika/ui';",
+        "<Notice tone=\"warning\" title=\"Heads up\" dismissible>Short body</Notice>",
+        "// variants inline banner card empty error skeleton; tones info success warning danger neutral"
+      ]
+    },
+    {
+      "id": "card-support",
+      "title": "Amount, ListRow, CardLabel, Sparkline",
+      "src": [
+        "src/components/mobile/amount.tsx",
+        "src/components/mobile/card-label.tsx",
+        "src/components/mobile/list-row.tsx",
+        "src/components/sparkline.tsx",
+        "src/components/animated-number.tsx",
+        "src/components/ui/lazy-view.tsx"
+      ],
+      "public": [
+        "src/components/mobile/amount.tsx",
+        "src/components/mobile/card-label.tsx",
+        "src/components/mobile/list-row.tsx",
+        "src/components/sparkline.tsx",
+        "src/components/animated-number.tsx"
+      ],
+      "usage": [
+        "import { Amount, ListRow } from '@reika/ui';",
+        "<Amount value={-1250.5} currency=\"USD\" />",
+        "<ListRow title=\"Rent\" value={<Amount value={-900} />} icon={Wallet} href=\"/rent\" />"
+      ]
+    },
+    {
+      "id": "card",
+      "title": "Card family (shadcn Card)",
+      "src": [
+        "src/components/ui/card.tsx"
+      ],
+      "public": [
+        "src/components/ui/card.tsx"
+      ],
+      "usage": [
+        "import { Card, CardHeader, CardTitle, CardContent } from '@reika/ui';",
+        "<Card><CardHeader><CardTitle>Title</CardTitle></CardHeader>",
+        "<CardContent>...</CardContent></Card>"
+      ]
+    },
+    {
+      "id": "card-legacy",
+      "title": "MetricCard, SectionCard (retired by the one-Card merge)",
+      "retiredWhenPresent": [
+        "tests/guards/one-card.test.ts"
+      ],
+      "src": [
+        "src/components/metric-card.tsx",
+        "src/components/mobile/section-card.tsx"
+      ],
+      "public": [
+        "src/components/metric-card.tsx",
+        "src/components/mobile/section-card.tsx"
+      ],
+      "usage": [
+        "import { MetricCard, SectionCard } from '@reika/ui';",
+        "<MetricCard label=\"Net worth\" icon={Wallet} tone=\"indigo\" value={125000} />",
+        "<SectionCard label=\"Accounts\" list>...</SectionCard>"
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "id": "next-link",
+      "match": "next/link",
+      "kind": "default-to-named",
+      "name": "Link",
+      "to": "adapters",
+      "why": "next/link is a Next-only import. Components get Link from the adapter (default <a>; Next consumers pass next/link to configureReikaUi)."
+    },
+    {
+      "id": "currency-provider",
+      "match": "@/components/currency-provider",
+      "kind": "module",
+      "to": "adapters",
+      "why": "useDisplayCurrency fetches /api/auth/session in the app. Adapter hook useDisplayCurrency replaces it."
+    },
+    {
+      "id": "language-provider",
+      "match": "@/components/language-provider",
+      "kind": "module",
+      "to": "adapters",
+      "why": "useLanguage reads the app language provider. Adapter hook useLanguage returns { locale }."
+    },
+    {
+      "id": "money-format",
+      "match": "@/lib/currency",
+      "kind": "module",
+      "to": "adapters",
+      "why": "Components format money/months through adapters.formatCurrency/getMonthLabel so a host can swap the formatter (formatMoney). lib/currency.ts is still shipped as the default implementation."
+    },
+    {
+      "id": "user-storage",
+      "match": "@/lib/client/user-storage",
+      "kind": "module",
+      "to": "adapters",
+      "why": "user-storage fetches /api/auth/session for the user id. Adapter exposes useSessionUserId/readUserItem/writeUserItem (config.useUserId, config.storage)."
+    },
+    {
+      "id": "adaptive-barrel",
+      "match": "@/components/adaptive",
+      "kind": "module-file",
+      "to": "src/components/adaptive/disclosure.tsx",
+      "why": "The adaptive barrel pulls data-view/view-mode (app coupled). Only Disclosure is used by exported components."
+    },
+    {
+      "id": "size-class-context",
+      "match": "./size-class-context",
+      "kind": "module",
+      "to": "adapters",
+      "files": [
+        "src/components/adaptive/disclosure.tsx"
+      ],
+      "why": "AppSizeClassProvider needs a mounted provider. Adapter useAppSizeClass (= useSizeClass) is provider-free."
+    },
+    {
+      "id": "notice-feeds",
+      "match": "./feeds",
+      "kind": "module",
+      "to": "adapters",
+      "files": [
+        "src/components/notice/index.tsx"
+      ],
+      "why": "feeds.tsx holds app banners (passkey lock, announcements, tips). <Notice source> renders adapters.NoticeFeed (configureReikaUi({ NoticeFeed }))."
+    }
+  ],
+  "excluded": [
+    {
+      "path": "PageHeader, nav registry, route registry, ColumnShell, templates",
+      "why": "Bound to the Finlynq app shell and routing; reach their needs only through adapters (Link/useNavigate/useSizeClass)."
+    },
+    {
+      "path": "AccountRow, HoldingRow, TxRow",
+      "why": "Finlynq domain rows (invisible-mark, holdings); generic part is ListRow."
+    },
+    {
+      "path": "notice/feeds.tsx",
+      "why": "Self-fetching app banners; replaced by the NoticeFeed adapter."
+    },
+    {
+      "path": "DropdownMenu, DataTable, Table, Pagination, Accordion",
+      "why": "Not requested for v1; add to an entry when needed."
+    }
+  ],
+  "web": [
+    {
+      "template": "design-system/templates/web/reika-ds.js",
+      "dest": "web/reika-ds.js"
+    },
+    {
+      "template": "design-system/templates/web/demo.html",
+      "dest": "web/demo.html"
+    },
+    {
+      "template": "design-system/templates/web/README.md",
+      "dest": "web/README.md"
+    }
+  ]
+}

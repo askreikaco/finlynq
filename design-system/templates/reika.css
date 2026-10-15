@@ -1,0 +1,196 @@
+/* REIKA DS plain-CSS primitives + styling for the reika-ds.js custom elements.
+   Built ONLY on tokens/tokens.css (--card, --border, --primary, --control-border, ...). No build step, no framework.
+   Load order: tokens.css, then reika.css. Dark mode: add class "dark" to <html> (same switch as the app). */
+
+:where(.r-scope, .r-btn, .r-card, .r-field, .r-notice, .r-listrow, r-tip, r-tabs, r-dialog, r-notice, r-amount, r-badge, r-metric, r-card) {
+  --r-font: var(--font-ui, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --r-mono: var(--font-stack-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  --r-radius: var(--radius, 0.5rem);
+  --r-radius-card: calc(var(--radius, 0.5rem) * 1.8);
+  box-sizing: border-box;
+  font-family: var(--r-font);
+}
+:where(.r-btn, .r-card, .r-field, .r-notice, .r-listrow, r-tip, r-tabs, r-dialog, r-notice, r-amount, r-badge, r-metric, r-card) *,
+:where(.r-btn, .r-card, .r-field, .r-notice, .r-listrow, r-tip, r-tabs, r-dialog, r-notice, r-amount, r-badge, r-metric, r-card) *::before,
+:where(.r-btn, .r-card, .r-field, .r-notice, .r-listrow, r-tip, r-tabs, r-dialog, r-notice, r-amount, r-badge, r-metric, r-card) *::after { box-sizing: border-box; }
+
+/* ── Button ─────────────────────────────────────────────── */
+.r-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .375rem;
+  min-height: 2.75rem; padding: 0 1rem; border: 1px solid transparent; border-radius: var(--r-radius);
+  background: var(--secondary); color: var(--secondary-foreground);
+  font: 500 .875rem/1.25 var(--r-font); white-space: nowrap; text-decoration: none; cursor: pointer;
+  transition: background-color .15s, opacity .15s, box-shadow .15s; user-select: none;
+}
+.r-btn:hover { background: var(--muted); }
+.r-btn:active { opacity: .9; transform: translateY(1px); }
+.r-btn:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+.r-btn:disabled, .r-btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+.r-btn--primary { background: var(--primary); color: var(--primary-foreground); }
+.r-btn--primary:hover { background: color-mix(in oklab, var(--primary) 88%, black); }
+.r-btn--outline { background: var(--card); color: var(--foreground); border-color: var(--control-border); box-shadow: var(--control-shadow); }
+.r-btn--outline:hover { background: var(--muted); }
+.r-btn--ghost { background: transparent; color: var(--foreground); }
+.r-btn--ghost:hover { background: var(--muted); }
+.r-btn--danger { background: color-mix(in oklab, var(--destructive) 12%, transparent); color: var(--destructive); }
+.r-btn--danger:hover { background: color-mix(in oklab, var(--destructive) 22%, transparent); }
+.r-btn--lg { min-height: 3rem; padding: 0 1.25rem; font-size: 1rem; }
+/* sm is compact only for a fine pointer; touch keeps the 44px target */
+.r-btn--sm { min-height: 2.75rem; padding: 0 .75rem; font-size: .8125rem; }
+@media (pointer: fine) { .r-btn--sm { min-height: 2rem; } }
+.r-btn--round { width: 2.75rem; min-height: 2.75rem; padding: 0; border-radius: 9999px; }
+
+/* ── Card ───────────────────────────────────────────────── */
+.r-card, r-card .r-card__surface {
+  background: var(--card); color: var(--card-foreground); border-radius: var(--r-radius-card);
+  box-shadow: var(--shadow-card); padding: 1rem;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .r-card, r-card .r-card__surface { background: var(--glass-card-bg, var(--card)); -webkit-backdrop-filter: blur(var(--glass-card-blur, 14px)) saturate(var(--glass-card-sat, 1.4)); backdrop-filter: blur(var(--glass-card-blur, 14px)) saturate(var(--glass-card-sat, 1.4)); }
+}
+@media (prefers-reduced-transparency: reduce) { .r-card, r-card .r-card__surface { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* ── Field (native inputs stay native) ──────────────────── */
+.r-field { display: grid; gap: .375rem; }
+.r-field > label, .r-field__label { font: 500 .8125rem/1.2 var(--r-font); color: var(--foreground); }
+.r-field__hint { font-size: .75rem; color: var(--muted-foreground); }
+.r-field :is(input:not([type=checkbox],[type=radio],[type=range]), select, textarea) {
+  width: 100%; min-width: 0; min-height: 2.75rem; padding: 0 .75rem; border-radius: var(--r-radius);
+  border: 1px solid var(--control-border); background: var(--card); color: var(--foreground);
+  box-shadow: var(--control-shadow); font: 400 1rem/1.4 var(--r-font); transition: border-color .15s, box-shadow .15s;
+}
+.r-field textarea { padding: .625rem .75rem; min-height: 5.5rem; }
+.r-field :is(input, select, textarea)::placeholder { color: var(--muted-foreground); }
+.r-field :is(input, select, textarea):focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+.r-field :is(input, select, textarea)[aria-invalid="true"], .r-field[data-invalid="true"] :is(input, select, textarea) { border-color: var(--destructive); box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent); }
+.r-field :is(input, select, textarea):disabled { opacity: .5; cursor: not-allowed; }
+@media (min-width: 40rem) and (pointer: fine) { .r-field :is(input:not([type=checkbox],[type=radio],[type=range]), select) { font-size: .875rem; } }
+
+/* ── Notice ─────────────────────────────────────────────── */
+.r-notice, r-notice {
+  --r-tone: var(--muted-foreground);
+  display: flex; gap: .625rem; align-items: flex-start; padding: .75rem .875rem; border-radius: var(--r-radius);
+  border: 1px solid color-mix(in oklab, var(--r-tone) 35%, transparent);
+  background: color-mix(in oklab, var(--r-tone) 10%, var(--card)); color: var(--foreground);
+  font: 400 .875rem/1.4 var(--r-font);
+}
+:is(.r-notice, r-notice)[data-tone="info"], r-notice[tone="info"] { --r-tone: var(--info); }
+:is(.r-notice, r-notice)[data-tone="success"], r-notice[tone="success"] { --r-tone: var(--pos); }
+:is(.r-notice, r-notice)[data-tone="warning"], r-notice[tone="warning"] { --r-tone: var(--warning); }
+:is(.r-notice, r-notice)[data-tone="danger"], r-notice[tone="danger"] { --r-tone: var(--destructive); }
+r-notice .r-notice__icon { flex: none; width: 1.25rem; height: 1.25rem; color: var(--r-tone); margin-top: .0625rem; }
+r-notice .r-notice__main { flex: 1; min-width: 0; }
+r-notice .r-notice__title { display: block; font-weight: 600; }
+r-notice .r-notice__close { flex: none; border: 0; background: transparent; color: var(--muted-foreground); cursor: pointer; border-radius: var(--r-radius); width: 2.75rem; height: 2.75rem; margin: -.625rem -.75rem -.625rem 0; font-size: 1.25rem; line-height: 1; }
+r-notice .r-notice__close:hover { background: color-mix(in oklab, var(--r-tone) 15%, transparent); color: var(--foreground); }
+r-notice[hidden] { display: none; }
+
+/* ── ListRow ────────────────────────────────────────────── */
+.r-listrow { display: flex; align-items: center; gap: .75rem; min-height: var(--spacing-row, 2.75rem); padding: .5rem .25rem; box-shadow: var(--list-divider); color: var(--foreground); text-decoration: none; }
+a.r-listrow:hover, button.r-listrow:hover { background: var(--muted); }
+.r-listrow__main { flex: 1; min-width: 0; }
+.r-listrow__title { font: 500 .9375rem/1.3 var(--r-font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.r-listrow__sub { font-size: .75rem; color: var(--muted-foreground); }
+.r-listrow__value { font: 500 .9375rem/1.3 var(--r-font); font-variant-numeric: tabular-nums lining-nums; text-align: right; }
+
+/* ── r-amount ───────────────────────────────────────────── */
+r-amount { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; white-space: nowrap; }
+r-amount[data-tone="neg"] { color: var(--destructive); }
+r-amount[data-tone="pos"] { color: var(--pos); }
+
+/* ── r-badge ────────────────────────────────────────────── */
+r-badge {
+  --r-tone: var(--muted-foreground);
+  display: inline-flex; align-items: center; gap: .25rem; height: 1.25rem; padding: 0 .5rem; border-radius: 9999px;
+  font: 500 .75rem/1 var(--r-font); white-space: nowrap;
+  background: color-mix(in oklab, var(--r-tone) 14%, transparent); color: var(--r-tone);
+}
+r-badge[tone="primary"] { --r-tone: var(--primary-text, var(--primary)); }
+r-badge[tone="success"] { --r-tone: var(--pos); }
+r-badge[tone="warning"] { --r-tone: var(--warning); }
+r-badge[tone="danger"] { --r-tone: var(--destructive); }
+r-badge[tone="info"] { --r-tone: var(--info); }
+r-badge[variant="solid"] { background: var(--r-tone); color: var(--card); }
+r-badge[variant="outline"] { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--r-tone) 45%, transparent); }
+
+/* ── r-tip ──────────────────────────────────────────────── */
+r-tip { position: relative; display: inline-block; vertical-align: middle; }
+r-tip:not([data-ready]) { font-size: .75rem; color: var(--muted-foreground); }
+/* 44x44 hit area (negative margin keeps the layout footprint at the 18px glyph) */
+r-tip .r-tip__btn {
+  display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: -.8125rem; padding: 0; border: 0; background: transparent; cursor: help; color: var(--muted-foreground); vertical-align: middle;
+}
+r-tip .r-tip__glyph { display: grid; place-items: center; width: 1.125rem; height: 1.125rem; border-radius: 9999px; border: 1px solid var(--control-border); background: var(--card); font: 600 .6875rem/1 var(--r-font); }
+r-tip .r-tip__btn:hover, r-tip .r-tip__btn[aria-expanded="true"] { color: var(--foreground); }
+r-tip .r-tip__btn:hover .r-tip__glyph, r-tip .r-tip__btn[aria-expanded="true"] .r-tip__glyph { border-color: var(--ring); }
+r-tip .r-tip__btn:focus-visible { outline: none; }
+r-tip .r-tip__btn:focus-visible .r-tip__glyph { box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+r-tip .r-tip__bubble {
+  position: absolute; z-index: 50; top: calc(100% + 1rem); left: 50%; width: max-content; max-width: min(18rem, calc(100vw - 1rem));
+  transform: translateX(calc(-50% + var(--r-tip-shift, 0px))); padding: .5rem .625rem; border-radius: var(--r-radius);
+  background: var(--popover); color: var(--popover-foreground); box-shadow: 0 8px 24px oklch(0 0 0 / 18%), inset 0 0 0 1px var(--border);
+  font: 400 .8125rem/1.4 var(--r-font); text-align: left; white-space: normal;
+}
+r-tip .r-tip__bubble[hidden] { display: none; }
+
+/* ── r-tabs ─────────────────────────────────────────────── */
+r-tabs { display: block; min-width: 0; max-width: 100%; }
+r-tabs .r-tabs__list {
+  display: flex; gap: .25rem; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  padding: .25rem; border-radius: calc(var(--r-radius) * 1.4); background: var(--muted);
+}
+r-tabs .r-tabs__list::-webkit-scrollbar { display: none; }
+r-tab { flex: none; scroll-snap-align: center; display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 .875rem; border-radius: var(--r-radius); cursor: pointer;
+  font: 500 .875rem/1 var(--r-font); color: var(--muted-foreground); white-space: nowrap; user-select: none; }
+r-tab:hover { color: var(--foreground); }
+r-tab[aria-selected="true"], r-tabs:not([data-ready]) r-tab[selected] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-card); }
+r-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+r-panel { display: block; padding-top: .75rem; }
+r-panel[hidden] { display: none; }
+r-tabs:not([data-ready]) r-tab { display: inline-flex; margin-right: .25rem; }
+
+/* ── r-dialog (native <dialog> inside) ──────────────────── */
+r-dialog:not([data-ready]) { display: none; }
+r-dialog dialog {
+  padding: 0; border: 0; border-radius: var(--r-radius-card); background: var(--popover); color: var(--popover-foreground);
+  width: min(26rem, calc(100vw - 2rem)); max-height: min(85dvh, 40rem); box-shadow: 0 24px 64px oklch(0 0 0 / 35%), inset 0 0 0 1px var(--border);
+  overflow: hidden; font-family: var(--r-font);
+}
+r-dialog[variant="form"] dialog { width: min(32rem, calc(100vw - 2rem)); }
+r-dialog[variant="detail"] dialog { width: min(44rem, calc(100vw - 2rem)); }
+r-dialog dialog[open] { display: flex; flex-direction: column; }
+r-dialog dialog::backdrop { background: oklch(0 0 0 / 45%); }
+r-dialog .r-dialog__head { display: flex; align-items: center; gap: .5rem; padding: 1rem 1rem .5rem; }
+r-dialog .r-dialog__title { flex: 1; margin: 0; font: 600 1.0625rem/1.3 var(--r-font); }
+r-dialog .r-dialog__x { border: 0; background: transparent; color: var(--muted-foreground); width: 2.75rem; height: 2.75rem; margin: -.375rem -.5rem -.375rem 0; border-radius: 9999px; cursor: pointer; font-size: 1.25rem; line-height: 1; }
+r-dialog .r-dialog__x:hover { background: var(--muted); color: var(--foreground); }
+r-dialog .r-dialog__body { padding: .25rem 1rem 1rem; overflow-y: auto; font-size: .9375rem; line-height: 1.5; }
+r-dialog .r-dialog__foot { display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 1rem 1rem; box-shadow: var(--list-divider); }
+@media (max-width: 39.99rem) { r-dialog[variant="form"] dialog, r-dialog[variant="detail"] dialog { width: 100vw; max-width: 100vw; margin-block-end: 0; border-end-start-radius: 0; border-end-end-radius: 0; } }
+
+/* ── r-metric ───────────────────────────────────────────── */
+r-metric { display: block; position: relative; background: var(--card); color: var(--card-foreground); border-radius: var(--r-radius-card); box-shadow: var(--shadow-card); padding: 1rem; min-width: 0; }
+r-metric:not([data-ready])::before { content: attr(label) ": " attr(value) " " attr(currency); font-size: .875rem; }
+r-metric .r-metric__link { color: inherit; text-decoration: none; display: block; }
+r-metric .r-metric__link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+r-metric .r-metric__link:focus-visible::after { box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent); }
+r-metric .r-metric__label { display: block; font: 600 .6875rem/1.2 var(--r-font); text-transform: uppercase; letter-spacing: .02em; color: var(--muted-foreground); }
+r-metric .r-metric__value { display: block; margin-top: .375rem; font: 600 1.625rem/1.1 var(--r-font); font-variant-numeric: tabular-nums lining-nums; letter-spacing: -.01em; }
+r-metric .r-metric__delta { display: inline-flex; margin-top: .375rem; font: 500 .75rem/1 var(--r-font); font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
+r-metric .r-metric__delta[data-tone="pos"] { color: var(--pos); }
+r-metric .r-metric__delta[data-tone="neg"] { color: var(--destructive); }
+r-metric .r-metric__spark { display: block; margin-top: .5rem; height: 2rem; width: 100%; color: var(--primary); }
+r-metric .r-metric__spark svg { width: 100%; height: 100%; overflow: visible; }
+
+/* ── r-card ─────────────────────────────────────────────── */
+r-card { display: block; min-width: 0; }
+r-card:not([data-ready]) { background: var(--card); border-radius: var(--r-radius-card); box-shadow: var(--shadow-card); padding: 1rem; }
+r-card:not([data-ready])::before { content: attr(label); display: block; font-weight: 600; margin-bottom: .5rem; }
+r-card .r-card__label { display: flex; align-items: center; gap: .375rem; font: 600 .6875rem/1.2 var(--r-font); text-transform: uppercase; letter-spacing: .02em; color: var(--muted-foreground); }
+r-card[label-position="outside"] > .r-card__label { padding: 0 .25rem .5rem; }
+r-card .r-card__desc { margin: .25rem 0 0; font-size: .8125rem; line-height: 1.4; color: var(--muted-foreground); }
+r-card .r-card__body { margin-top: .75rem; }
+r-card .r-card__label + .r-card__body, r-card .r-card__desc + .r-card__body { margin-top: .75rem; }
+r-card[label-position="outside"] > .r-card__surface > .r-card__desc:first-child { margin-top: 0; }
+
+@media (prefers-reduced-motion: reduce) { .r-btn, .r-field :is(input, select, textarea) { transition: none; } }

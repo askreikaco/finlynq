@@ -116,3 +116,7 @@ Spec: `e2e/visual/size-classes.spec.ts`; config: `playwright.visual.config.ts`; 
 - `more: MoreItem[]` (the ⋯ menu), `filter`, `bulkEdit`: the secondary group is one glass capsule of at most 2 cells, `[More][bulk edit | Filter]`. With a `bulkEdit`, Filter moves inside More. "Customize cards" (`usePageCustomize`) is always appended to More by the bar.
 - Layout: no `regular:`/`wide:` classes, no desktop branch: a sticky glass bar (`glass-bar`, `top-[var(--sat,0px)]`, z-30 under the rail), three-column grid `[auto | 1fr | auto]`, no top border or inset top shadow. `page-header-bleed` spans the full main area right of the rail. Templates (SectionPage, ListPage, FormPage, HubPage, ReportPage, DetailPage) forward the same typed slots as `header={{ primary, more, filter, bulkEdit }}` and `back`.
 - Enforced by `tests/components/mobile/top-bar.test.tsx` (anatomy, order, back, tooltip, max 2), `tests/components/mobile/top-bar-types.test.tsx` (the type system), `tests/guards/top-bar-single-component.test.ts` (no other header component). Gallery: `/dev/gallery#topbar`.
+
+## Global export (@reika/ui)
+
+The stable, app-agnostic part of this design system is exported to reika-ai `shared/ds/` (tokens, plain CSS, web components, React package `@reika/ui` with adapters). Source of truth stays here: `design-system/export.manifest.json` lists the files and rewrite rules; run `npm run ds:export -- --out ../reika-ai/shared/ds`; guard `tests/guards/design-system-export.test.ts`. Add a component to the export by adding its path to the manifest.
