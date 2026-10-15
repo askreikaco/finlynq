@@ -1,45 +1,11 @@
 "use client"
 
 /**
- * Combobox — type-ahead-filterable single-select dropdown.
+ * Internal to Field: a type-ahead-filterable single-select dropdown on the shared control surface, built on
+ * `@base-ui/react/combobox` (single-selection mode; filtering is automatic when `items` are passed). Pages never
+ * import this file (tests/guards/one-field.test.ts); they render <Field control="combobox" options={...} />.
  *
- * Visually matches `<Select>` (same Tailwind tokens, same trigger metrics).
- * Built on `@base-ui/react/combobox` (single-selection mode). Filtering is
- * automatic when `items` are passed.
- *
- * Two ways to use:
- *
- *   1) High-level (recommended for migrations from <Select>):
- *
- *        <Combobox
- *          value={form.categoryId}
- *          onValueChange={(v) => setForm({ ...form, categoryId: v ?? "" })}
- *          items={categories.map((c) => ({ value: String(c.id), label: `${c.group} / ${c.name}` }))}
- *          placeholder="Select category"
- *          searchPlaceholder="Search categories…"
- *          emptyMessage="No categories"
- *        />
- *
- *   2) Low-level (for grouped lists / custom rendering):
- *
- *        <ComboboxRoot value={...} onValueChange={...} items={items}>
- *          <ComboboxTrigger>
- *            <ComboboxValue placeholder="…" />
- *          </ComboboxTrigger>
- *          <ComboboxContent>
- *            <ComboboxInput />
- *            <ComboboxList>
- *              <ComboboxEmpty>No matches</ComboboxEmpty>
- *              {items.map((item) => (
- *                <ComboboxItem key={item.value} value={item.value}>{item.label}</ComboboxItem>
- *              ))}
- *            </ComboboxList>
- *          </ComboboxContent>
- *        </ComboboxRoot>
- *
- * CLAUDE.md "Select Components" rule: base-ui's `onValueChange` may pass `null`.
- * The high-level wrapper coerces to `string` with `?? ""` before invoking the
- * caller's handler.
+ * base-ui's `onValueChange` may pass `null`: the wrapper coerces to a string with `?? ""` before invoking the caller.
  */
 
 import * as React from "react"
@@ -47,6 +13,7 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox"
 import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { CONTROL_BOX, CONTROL_BOX_COMPACT, CONTROL_FOCUS_VISIBLE, CONTROL_STATE, CONTROL_SURFACE } from "../control-surface"
 
 export type ComboboxItemShape = {
   value: string
@@ -54,28 +21,23 @@ export type ComboboxItemShape = {
   disabled?: boolean
 }
 
-// ---------------------------------------------------------------------------
-// Low-level primitives (mirror Select primitives 1:1).
-
-function ComboboxRoot<T extends string | number = string>(
-  props: React.ComponentProps<typeof ComboboxPrimitive.Root<T, false>>
-) {
-  // Single-selection mode is the default when `multiple` is omitted.
-  return <ComboboxPrimitive.Root<T, false> {...props} />
-}
-
 function ComboboxTrigger({
   className,
-  size = "default",
+  compact = false,
+  invalid = false,
   children,
   ...props
-}: ComboboxPrimitive.Trigger.Props & { size?: "sm" | "default" }) {
+}: ComboboxPrimitive.Trigger.Props & { compact?: boolean; invalid?: boolean }) {
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
-      data-size={size}
+      data-invalid={invalid || undefined}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 pointer-coarse:data-[size=default]:h-11 dense:pointer-fine:data-[size=default]:h-7 data-[size=sm]:h-7 pointer-coarse:data-[size=sm]:h-11 data-[size=sm]:rounded-[min(var(--radius-md),10px)] active:bg-muted/50 *:data-[slot=combobox-value]:line-clamp-1 *:data-[slot=combobox-value]:flex *:data-[slot=combobox-value]:items-center *:data-[slot=combobox-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        CONTROL_SURFACE,
+        compact ? CONTROL_BOX_COMPACT : CONTROL_BOX,
+        CONTROL_STATE,
+        CONTROL_FOCUS_VISIBLE,
+        "flex items-center justify-between gap-1.5 whitespace-nowrap select-none data-placeholder:text-muted-foreground active:bg-muted/50 *:data-[slot=combobox-value]:line-clamp-1 *:data-[slot=combobox-value]:flex *:data-[slot=combobox-value]:items-center *:data-[slot=combobox-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -145,8 +107,6 @@ function ComboboxContent({
  * /settings/general: `document.activeElement` was `BUTTON[role=combobox]`
  * after opening). Keyboard users were unaffected either way (base-ui forwards
  * printable keys from the trigger), but pointer users had to click twice.
- *
- * The caller can still pass `autoFocus={false}` to opt out.
  */
 function ComboboxInput({
   className,
@@ -203,32 +163,6 @@ function ComboboxEmpty({
   )
 }
 
-function ComboboxGroup({
-  className,
-  ...props
-}: ComboboxPrimitive.Group.Props) {
-  return (
-    <ComboboxPrimitive.Group
-      data-slot="combobox-group"
-      className={cn("scroll-my-1", className)}
-      {...props}
-    />
-  )
-}
-
-function ComboboxGroupLabel({
-  className,
-  ...props
-}: ComboboxPrimitive.GroupLabel.Props) {
-  return (
-    <ComboboxPrimitive.GroupLabel
-      data-slot="combobox-group-label"
-      className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
 function ComboboxItem({
   className,
   children,
@@ -239,6 +173,7 @@ function ComboboxItem({
       data-slot="combobox-item"
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "pointer-coarse:min-h-11",
         className
       )}
       {...props}
@@ -255,21 +190,8 @@ function ComboboxItem({
   )
 }
 
-function ComboboxSeparator({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="combobox-separator"
-      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
-  )
-}
-
 // ---------------------------------------------------------------------------
-// High-level convenience component (drop-in for many <Select> sites).
+// The wrapper Field renders.
 
 export type ComboboxProps = {
   value?: string
@@ -280,19 +202,22 @@ export type ComboboxProps = {
   emptyMessage?: string
   disabled?: boolean
   required?: boolean
+  invalid?: boolean
+  compact?: boolean
+  /** Extra classes for the trigger (the control surface). */
   className?: string
-  contentClassName?: string
-  size?: "sm" | "default"
-  /** Renders a custom item body. Defaults to `item.label`. */
-  renderItem?: (item: ComboboxItemShape) => React.ReactNode
+  /** Trigger adornments rendered before / after the value. */
+  prefix?: React.ReactNode
+  suffix?: React.ReactNode
   /** Optional id forwarded to the trigger button. */
   id?: string
-  /** Forwarded to the input in case form labels rely on aria attrs. */
   "aria-label"?: string
   "aria-labelledby"?: string
+  "aria-describedby"?: string
+  "data-testid"?: string
 }
 
-function Combobox({
+export function Combobox({
   value,
   onValueChange,
   items,
@@ -301,13 +226,16 @@ function Combobox({
   emptyMessage = "No matches",
   disabled,
   required,
+  invalid,
+  compact,
   className,
-  contentClassName,
-  size = "default",
-  renderItem,
+  prefix,
+  suffix,
   id,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
+  "data-testid": testId,
 }: ComboboxProps) {
   // base-ui passes objects ({value,label}) through onValueChange; we use the
   // raw string IDs as item values so handlers stay simple, and pass the items
@@ -358,10 +286,6 @@ function Combobox({
         if (typeof item === "object" && item !== null) {
           return (item as { label?: string }).label ?? ""
         }
-        // Defensive fallback for plain-string `items` arrays. The
-        // high-level <Combobox> always passes objects today, but the
-        // primitive `<ComboboxRoot>` accepts string items too — keep
-        // this branch correct for them.
         return (
           items.find((it) => it.value === String(item))?.label ??
           String(item ?? "")
@@ -370,43 +294,34 @@ function Combobox({
     >
       <ComboboxTrigger
         id={id}
-        size={size}
+        compact={compact}
+        invalid={invalid}
         className={className}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={invalid || undefined}
+        data-testid={testId}
       >
+        {prefix}
         <ComboboxValue>
           {selectedLabel ?? (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </ComboboxValue>
+        {suffix}
       </ComboboxTrigger>
-      <ComboboxContent className={contentClassName}>
+      <ComboboxContent>
         <ComboboxInput placeholder={searchPlaceholder} />
         <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
         <ComboboxList>
           {(item: ComboboxItemShape) => (
             <ComboboxItem key={item.value} value={item.value} disabled={item.disabled}>
-              {renderItem ? renderItem(item) : item.label}
+              {item.label}
             </ComboboxItem>
           )}
         </ComboboxList>
       </ComboboxContent>
     </ComboboxPrimitive.Root>
   )
-}
-
-export {
-  Combobox,
-  ComboboxRoot,
-  ComboboxTrigger,
-  ComboboxValue,
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxList,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxGroupLabel,
-  ComboboxItem,
-  ComboboxSeparator,
 }

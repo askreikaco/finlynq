@@ -1,15 +1,15 @@
 "use client"
 
 /**
- * GroupCombobox — free-text input + listbox of existing values.
- * Typing filters `options`; when the text is not an exact match an
- * `Add "<text>"` row appears; a "No group" row clears the value.
- * Keys: ArrowUp/Down move, Enter picks, Escape closes. Rows are 44px below md.
+ * Internal to Field (control="group-combobox"): free-text input + listbox of existing values.
+ * Typing filters `options`; when the text is not an exact match an `Add "<text>"` row appears; a "No group" row
+ * clears the value. Keys: ArrowUp/Down move, Enter picks, Escape closes. Rows are 44px on touch.
  */
 
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { BARE_INPUT, FieldRowContext, Surface } from "./surface"
 
 type Row = { key: string; kind: "none" | "existing" | "add"; value: string; label: string }
 
@@ -21,7 +21,14 @@ export function GroupCombobox({
   ariaLabel = "Group",
   noneLabel = "No group",
   invalid,
+  compact,
+  disabled,
+  id,
+  prefix,
+  suffix,
   className,
+  "aria-describedby": describedBy,
+  "data-testid": testId,
 }: {
   value: string
   onChange: (value: string) => void
@@ -30,10 +37,18 @@ export function GroupCombobox({
   ariaLabel?: string
   noneLabel?: string
   invalid?: boolean
+  compact?: boolean
+  disabled?: boolean
+  id?: string
+  prefix?: React.ReactNode
+  suffix?: React.ReactNode
   className?: string
+  "aria-describedby"?: string
+  "data-testid"?: string
 }) {
   const uid = React.useId()
   const listId = `${uid}-list`
+  const row = React.useContext(FieldRowContext)
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(0)
   const rootRef = React.useRef<HTMLDivElement>(null)
@@ -60,8 +75,8 @@ export function GroupCombobox({
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
 
-  function pick(row: Row) {
-    onChange(row.value)
+  function pick(r: Row) {
+    onChange(r.value)
     setOpen(false)
   }
 
@@ -76,8 +91,8 @@ export function GroupCombobox({
     } else if (e.key === "Enter") {
       if (open) {
         e.preventDefault()
-        const row = rows[active]
-        if (row) pick(row)
+        const r = rows[active]
+        if (r) pick(r)
       }
     } else if (e.key === "Escape") {
       if (open) { e.preventDefault(); setOpen(false) }
@@ -85,24 +100,32 @@ export function GroupCombobox({
   }
 
   return (
-    <div ref={rootRef} className={cn("relative", className)}>
-      <input
-        role="combobox"
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        aria-invalid={invalid || undefined}
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={open && rows[active] ? `${uid}-${active}` : undefined}
-        autoComplete="off"
-        onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(0) }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
-        className="h-8 pointer-coarse:h-11 dense:pointer-fine:h-7 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-base regular:pointer-fine:text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30"
-      />
+    <div ref={rootRef} className={cn("relative min-w-0", className)}>
+      <Surface row={row} compact={compact} invalid={invalid} disabled={disabled}>
+        {prefix}
+        <input
+          id={id}
+          role="combobox"
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && rows[active] ? `${uid}-${active}` : undefined}
+          autoComplete="off"
+          disabled={disabled}
+          data-testid={testId}
+          onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(0) }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          className={BARE_INPUT}
+        />
+        {suffix}
+      </Surface>
       {open && (
         <ul
           id={listId}
@@ -110,22 +133,22 @@ export function GroupCombobox({
           aria-label={ariaLabel}
           className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
         >
-          {rows.map((row, i) => (
+          {rows.map((r, i) => (
             <li
-              key={row.key}
+              key={r.key}
               id={`${uid}-${i}`}
               role="option"
-              aria-selected={row.kind !== "add" && row.value === value}
+              aria-selected={r.kind !== "add" && r.value === value}
               data-highlighted={i === active ? "" : undefined}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => pick(row)}
+              onClick={() => pick(r)}
               onMouseEnter={() => setActive(i)}
               className={cn(
                 "flex min-h-8 pointer-coarse:min-h-11 cursor-default items-center rounded-md px-2 text-sm select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                row.kind === "none" && "text-muted-foreground",
+                r.kind === "none" && "text-muted-foreground",
               )}
             >
-              {row.label}
+              {r.label}
             </li>
           ))}
         </ul>
