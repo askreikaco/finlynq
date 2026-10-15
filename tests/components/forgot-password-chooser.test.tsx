@@ -197,7 +197,7 @@ describe("this device", () => {
     await waitFor(() => expect(dev).toBeEnabled());
     await user.click(dev);
     expect(screen.getByText("a***@example.com")).toBeInTheDocument();
-    expect(screen.queryByRole("radio")).toBeNull(); // no picker for one account
+    expect(screen.queryByRole("combobox")).toBeNull(); // no picker for one account
     const submit = screen.getByRole("button", { name: /reset password/i });
     expect(submit).toBeDisabled();
     await user.type(screen.getByLabelText(/authenticator code/i), "123456");
@@ -244,12 +244,13 @@ describe("this device", () => {
     const dev = await screen.findByRole("button", { name: /this device/i });
     await waitFor(() => expect(dev).toBeEnabled());
     await user.click(dev);
-    const radios = screen.getAllByRole("radio");
-    expect(radios).toHaveLength(3);
-    expect(radios[2]).toBeDisabled();
-    expect(radios[0]).toBeChecked();
-    expect(screen.queryByText(/@example\.com$/)?.textContent).toBe("a***@example.com");
-    await user.click(radios[1]);
+    const picker = screen.getByRole("combobox", { name: /which account/i });
+    expect(picker).toHaveTextContent("a***@example.com");
+    await user.click(picker);
+    const options = await screen.findAllByRole("option");
+    expect(options).toHaveLength(3);
+    expect(options[2]).toHaveAttribute("aria-disabled", "true");
+    await user.click(options[1]);
     await user.type(screen.getByLabelText(/^recovery code$/i), "AAAAA-BBBBB-CCCCC-DDDDD");
     await fillNewPassword(user, "dev");
     await user.click(screen.getByRole("button", { name: /reset password/i }));

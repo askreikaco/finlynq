@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
 import type { Budget } from "./budget-types";
 
 /** Save the month's current budget rows as a named template. Rendered by /budgets/templates/new. */
@@ -41,14 +40,12 @@ export function SaveTemplateForm({ budgets, onSaved }: { budgets: Budget[]; onSa
         void handleSaveTemplate();
       }}
     >
-      <div>
-        <Label>Template Name</Label>
-        <Input
-          value={templateName}
-          onChange={(e) => setTemplateName(e.target.value)}
-          placeholder="e.g. Monthly Essentials"
-        />
-      </div>
+      <Field
+        label="Template Name"
+        value={templateName}
+        onChange={(e) => setTemplateName(e.target.value)}
+        placeholder="e.g. Monthly Essentials"
+      />
       <p className="text-sm text-muted-foreground">
         This will save all {budgets.length} budget items as a reusable template.
       </p>

@@ -11,7 +11,7 @@ import { ListOrdered, Rows3 } from "lucide-react";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { DENSITY_OPTIONS, useDensity, type Density } from "@/components/adaptive/density-provider";
-import { cn } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 import { DropdownOrderSection } from "./dropdown-order-section";
 
 const OPEN_SECTIONS = {
@@ -21,35 +21,17 @@ const OPEN_SECTIONS = {
 
 const DENSITY_LABEL: Record<Density, string> = { comfortable: "Comfortable", compact: "Compact" };
 
-/** Comfortable (default) | Compact. Same segmented style as the Cards / List toggle. */
+/** Comfortable (default) | Compact. */
 function DensityRow() {
   const { density, setDensity } = useDensity();
   return (
-    <div
-      role="radiogroup"
+    <Field
+      control="segmented"
       aria-label="Density"
-      className="inline-grid grid-cols-2 gap-0.5 rounded-lg border border-border bg-card p-0.5"
-    >
-      {DENSITY_OPTIONS.map((option) => {
-        const selected = option === density;
-        return (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => setDensity(option)}
-            className={cn(
-              "inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-semibold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-              "pointer-coarse:h-11 pointer-coarse:px-4",
-              selected ? "bg-muted text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {DENSITY_LABEL[option]}
-          </button>
-        );
-      })}
-    </div>
+      value={density}
+      onValueChange={(v) => setDensity(v as Density)}
+      options={DENSITY_OPTIONS.map((option) => ({ value: option, label: DENSITY_LABEL[option] }))}
+    />
   );
 }
 

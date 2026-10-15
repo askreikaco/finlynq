@@ -8,10 +8,9 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
 import { DialogHeading } from "@/components/ui/dialog-heading";
 
@@ -108,10 +107,14 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
         </DialogHeader>
 
         <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-1.5">
-            <Label className="text-xs">Reconcile as of</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />
-          </div>
+          <Field
+            label="Reconcile as of"
+            control="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            compact
+            className="flex-1"
+          />
           <Button onClick={fetchReconciliation} disabled={loading}>
             {loading && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
             Check

@@ -19,19 +19,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
-import { AmountInput } from "@/components/amount-input";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Field } from "@/components/ui/field";
 
 export interface StagedEditableRow {
   id: string;
@@ -196,65 +186,52 @@ export function StagedRowEditor({
 
       <div className="grid grid-cols-2 gap-3">
         {/* Type */}
-        <div className="space-y-1">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Type <Spinner shown={savingField === "txType"} />
-          </Label>
-          <Select
-            value={local.txType}
-            onValueChange={(v) => {
-              const t = (v ?? "E") as "E" | "I" | "R";
-              setLocal({ ...local, txType: t });
-              void save("txType", { txType: t });
-            }}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="E">Expense</SelectItem>
-              <SelectItem value="I">Income</SelectItem>
-              <SelectItem value="R">Transfer</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Field
+          label={<>Type <Spinner shown={savingField === "txType"} /></>}
+          control="select"
+          value={local.txType}
+          onValueChange={(v) => {
+            const t = (v ?? "E") as "E" | "I" | "R";
+            setLocal({ ...local, txType: t });
+            void save("txType", { txType: t });
+          }}
+          compact
+          options={[
+            { value: "E", label: "Expense" },
+            { value: "I", label: "Income" },
+            { value: "R", label: "Transfer" },
+          ]}
+        />
 
         {/* Category — text field for now; the live UI uses a typeahead
             but staging keeps it simple. */}
-        <div className="space-y-1">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Category <Spinner shown={savingField === "category"} />
-          </Label>
-          <Input
-            value={local.category ?? ""}
-            onChange={(e) => setLocal({ ...local, category: e.target.value })}
-            onBlur={() => {
-              if (local.category !== row.category) {
-                void save("category", { category: local.category ?? "" });
-              }
-            }}
-            className="h-8"
-            placeholder="e.g. Groceries"
-          />
-        </div>
+        <Field
+          label={<>Category <Spinner shown={savingField === "category"} /></>}
+          value={local.category ?? ""}
+          onChange={(e) => setLocal({ ...local, category: e.target.value })}
+          onBlur={() => {
+            if (local.category !== row.category) {
+              void save("category", { category: local.category ?? "" });
+            }
+          }}
+          placeholder="e.g. Groceries"
+          compact
+        />
 
         {/* Payee */}
-        <div className="space-y-1 col-span-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Payee <Spinner shown={savingField === "payee"} />
-          </Label>
-          <Input
-            value={local.payee ?? ""}
-            onChange={(e) => setLocal({ ...local, payee: e.target.value })}
-            onBlur={() => {
-              if (local.payee !== row.payee) {
-                void save("payee", { payee: local.payee ?? "" });
-              }
-            }}
-            className="h-8"
-            placeholder="Merchant or counterparty"
-          />
-        </div>
+        <Field
+          label={<>Payee <Spinner shown={savingField === "payee"} /></>}
+          value={local.payee ?? ""}
+          onChange={(e) => setLocal({ ...local, payee: e.target.value })}
+          onBlur={() => {
+            if (local.payee !== row.payee) {
+              void save("payee", { payee: local.payee ?? "" });
+            }
+          }}
+          placeholder="Merchant or counterparty"
+          compact
+          className="col-span-2"
+        />
       </div>
 
       {/* Transfer pair editors — visible only for tx_type='R'. */}
@@ -265,87 +242,60 @@ export function StagedRowEditor({
           </div>
           <div className="grid grid-cols-2 gap-2">
             {/* Peer staged row */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                Pair with sibling row <Spinner shown={savingField === "peerStagedId"} />
-              </Label>
-              <Select
-                value={local.peerStagedId ?? "__none__"}
-                onValueChange={(v) => {
-                  const next = v === "__none__" ? null : v;
-                  if (next != null) {
-                    // Setting a peer clears any target account.
-                    setLocal({ ...local, peerStagedId: next, targetAccountId: null });
-                    void save("peerStagedId", {
-                      peerStagedId: next,
-                      targetAccountId: null,
-                    });
-                  } else {
-                    setLocal({ ...local, peerStagedId: null });
-                    void save("peerStagedId", { peerStagedId: null });
-                  }
-                }}
-                disabled={local.targetAccountId != null}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder={local.targetAccountId != null ? "(target account set)" : "Pick sibling row"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— none —</SelectItem>
-                  {peerCandidates.length === 0 ? (
-                    <SelectItem value="__nope__" disabled>
-                      No additive-inverse siblings
-                    </SelectItem>
-                  ) : (
-                    peerCandidates.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}
-                        {s.accountName || "(unknown account)"}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            <Field
+              label={<>Pair with sibling row <Spinner shown={savingField === "peerStagedId"} /></>}
+              control="select"
+              value={local.peerStagedId ?? "__none__"}
+              onValueChange={(v) => {
+                const next = v === "__none__" ? null : v;
+                if (next != null) {
+                  // Setting a peer clears any target account.
+                  setLocal({ ...local, peerStagedId: next, targetAccountId: null });
+                  void save("peerStagedId", {
+                    peerStagedId: next,
+                    targetAccountId: null,
+                  });
+                } else {
+                  setLocal({ ...local, peerStagedId: null });
+                  void save("peerStagedId", { peerStagedId: null });
+                }
+              }}
+              disabled={local.targetAccountId != null}
+              placeholder={local.targetAccountId != null ? "(target account set)" : "Pick sibling row"}
+              compact
+              options={[
+                { value: "__none__", label: "— none —" },
+                ...(peerCandidates.length === 0 ? [{ value: "__nope__", label: "No additive-inverse siblings", disabled: true }] : [...peerCandidates.map((s) => ({ value: s.id, label: <>Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "} {s.accountName || "(unknown account)"}</> }))]),
+              ]}
+            />
 
             {/* Target account */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                Or target account <Spinner shown={savingField === "targetAccountId"} />
-              </Label>
-              <Select
-                items={targetAccountLabelById}
-                value={local.targetAccountId != null ? String(local.targetAccountId) : "__none__"}
-                onValueChange={(v) => {
-                  const next = v === "__none__" ? null : Number(v);
-                  if (next != null) {
-                    setLocal({ ...local, targetAccountId: next, peerStagedId: null });
-                    void save("targetAccountId", {
-                      targetAccountId: next,
-                      peerStagedId: null,
-                    });
-                  } else {
-                    setLocal({ ...local, targetAccountId: null });
-                    void save("targetAccountId", { targetAccountId: null });
-                  }
-                }}
-                disabled={local.peerStagedId != null}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder={local.peerStagedId != null ? "(peer set)" : "Pick destination"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— none —</SelectItem>
-                  {accounts
-                    .filter((a) => a.id !== acct?.id)
-                    .map((a) => (
-                      <SelectItem key={a.id} value={String(a.id)}>
-                        {a.name} ({a.currency})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Field
+              label={<>Or target account <Spinner shown={savingField === "targetAccountId"} /></>}
+              control="select"
+              value={local.targetAccountId != null ? String(local.targetAccountId) : "__none__"}
+              onValueChange={(v) => {
+                const next = v === "__none__" ? null : Number(v);
+                if (next != null) {
+                  setLocal({ ...local, targetAccountId: next, peerStagedId: null });
+                  void save("targetAccountId", {
+                    targetAccountId: next,
+                    peerStagedId: null,
+                  });
+                } else {
+                  setLocal({ ...local, targetAccountId: null });
+                  void save("targetAccountId", { targetAccountId: null });
+                }
+              }}
+              disabled={local.peerStagedId != null}
+              placeholder={local.peerStagedId != null ? "(peer set)" : "Pick destination"}
+              compact
+              options={[
+                { value: "__none__", label: "— none —" },
+                ...accounts
+                  .filter((a) => a.id !== acct?.id).map((a) => ({ value: String(a.id), label: <>{a.name} ({a.currency})</> })),
+              ]}
+            />
           </div>
         </div>
       )}
@@ -355,131 +305,109 @@ export function StagedRowEditor({
           the in-kind path elsewhere. */}
       {isInvestmentAcct && local.txType !== "R" && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Holding <Spinner shown={savingField === "portfolioHoldingId"} />
-              <InfoTip label="About holding" text="Cash sleeve is used automatically when left blank." />
-            </Label>
-            <Select
-              items={holdingLabelById}
-              value={
-                local.portfolioHoldingId != null
-                  ? String(local.portfolioHoldingId)
-                  : "__none__"
+          <Field
+            label={<>Holding <Spinner shown={savingField === "portfolioHoldingId"} /></>}
+            info="Cash sleeve is used automatically when left blank."
+            infoLabel="About holding"
+            control="select"
+            value={
+              local.portfolioHoldingId != null
+                ? String(local.portfolioHoldingId)
+                : "__none__"
+            }
+            onValueChange={(v) => {
+              const next = v === "__none__" ? null : Number(v);
+              setLocal({ ...local, portfolioHoldingId: next });
+              void save("portfolioHoldingId", { portfolioHoldingId: next });
+            }}
+            placeholder="Pick holding"
+            compact
+            options={[
+              { value: "__none__", label: "— Cash (auto) —" },
+              ...accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.name} {h.symbol && <span className="text-muted-foreground"> · {h.symbol}</span>}</> })),
+            ]}
+          />
+          <Field
+            label={<>Quantity <Spinner shown={savingField === "quantity"} /></>}
+            control="amount"
+            step="any"
+            value={local.quantity ?? ""}
+            onValueChange={(nv) => {
+              const v = nv === "" ? null : Number(nv);
+              setLocal({ ...local, quantity: Number.isFinite(v as number) || v == null ? v : local.quantity });
+            }}
+            onBlur={() => {
+              if (local.quantity !== row.quantity) {
+                void save("quantity", { quantity: local.quantity });
               }
-              onValueChange={(v) => {
-                const next = v === "__none__" ? null : Number(v);
-                setLocal({ ...local, portfolioHoldingId: next });
-                void save("portfolioHoldingId", { portfolioHoldingId: next });
-              }}
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Pick holding" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">— Cash (auto) —</SelectItem>
-                {accountHoldings.map((h) => (
-                  <SelectItem key={h.id} value={String(h.id)}>
-                    {h.name}
-                    {h.symbol && <span className="text-muted-foreground"> · {h.symbol}</span>}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Quantity <Spinner shown={savingField === "quantity"} />
-            </Label>
-            <AmountInput
-              step="any"
-              value={local.quantity ?? ""}
-              onValueChange={(nv) => {
-                const v = nv === "" ? null : Number(nv);
-                setLocal({ ...local, quantity: Number.isFinite(v as number) || v == null ? v : local.quantity });
-              }}
-              onBlur={() => {
-                if (local.quantity !== row.quantity) {
-                  void save("quantity", { quantity: local.quantity });
-                }
-              }}
-              className="h-8"
-              placeholder="Shares (signed)"
-            />
-          </div>
+            }}
+            placeholder="Shares (signed)"
+            compact
+          />
         </div>
       )}
 
       {/* Cross-currency override + tags + note */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Entered amount <Spinner shown={savingField === "enteredAmount"} />
-            <InfoTip label="About entered amount" text="Override only when the row currency differs." />
-          </Label>
-          <AmountInput
-            step="any"
-            value={local.enteredAmount ?? ""}
-            onValueChange={(nv) => {
-              const v = nv === "" ? null : Number(nv);
-              setLocal({ ...local, enteredAmount: Number.isFinite(v as number) || v == null ? v : local.enteredAmount });
-            }}
-            onBlur={() => {
-              if (local.enteredAmount !== row.enteredAmount) {
-                void save("enteredAmount", { enteredAmount: local.enteredAmount });
-              }
-            }}
-            className="h-8"
-            placeholder="Amount"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Entered currency <Spinner shown={savingField === "enteredCurrency"} />
-          </Label>
-          <Input
-            value={local.enteredCurrency ?? ""}
-            onChange={(e) =>
-              setLocal({ ...local, enteredCurrency: e.target.value.toUpperCase() })
-            }
-            onBlur={() => {
-              if (local.enteredCurrency !== row.enteredCurrency) {
-                void save("enteredCurrency", {
-                  enteredCurrency: local.enteredCurrency || null,
-                });
-              }
-            }}
-            className="h-8"
-            placeholder="ISO 4217 (USD, EUR…)"
-            maxLength={4}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-          Tags <Spinner shown={savingField === "tags"} />
-          <InfoTip label="About tags" text="Comma-separated." />
-        </Label>
-        <Input
-          value={local.tags ?? ""}
-          onChange={(e) => setLocal({ ...local, tags: e.target.value })}
+        <Field
+          label={<>Entered amount <Spinner shown={savingField === "enteredAmount"} /></>}
+          info="Override only when the row currency differs."
+          infoLabel="About entered amount"
+          control="amount"
+          step="any"
+          value={local.enteredAmount ?? ""}
+          onValueChange={(nv) => {
+            const v = nv === "" ? null : Number(nv);
+            setLocal({ ...local, enteredAmount: Number.isFinite(v as number) || v == null ? v : local.enteredAmount });
+          }}
           onBlur={() => {
-            if (local.tags !== row.tags) {
-              void save("tags", { tags: local.tags ?? "" });
+            if (local.enteredAmount !== row.enteredAmount) {
+              void save("enteredAmount", { enteredAmount: local.enteredAmount });
             }
           }}
-          className="h-8"
-          placeholder="Tags"
+          placeholder="Amount"
+          compact
+        />
+        <Field
+          label={<>Entered currency <Spinner shown={savingField === "enteredCurrency"} /></>}
+          value={local.enteredCurrency ?? ""}
+          onChange={(e) =>
+            setLocal({ ...local, enteredCurrency: e.target.value.toUpperCase() })
+          }
+          onBlur={() => {
+            if (local.enteredCurrency !== row.enteredCurrency) {
+              void save("enteredCurrency", {
+                enteredCurrency: local.enteredCurrency || null,
+              });
+            }
+          }}
+          placeholder="ISO 4217 (USD, EUR…)"
+          maxLength={4}
+          compact
         />
       </div>
 
+      <Field
+        label={<>Tags <Spinner shown={savingField === "tags"} /></>}
+        info="Comma-separated."
+        infoLabel="About tags"
+        value={local.tags ?? ""}
+        onChange={(e) => setLocal({ ...local, tags: e.target.value })}
+        onBlur={() => {
+          if (local.tags !== row.tags) {
+            void save("tags", { tags: local.tags ?? "" });
+          }
+        }}
+        placeholder="Tags"
+        compact
+      />
+
       <div className="space-y-1">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-          Note <Spinner shown={savingField === "note"} />
-          <InfoTip label="About note" text="Free-form notes (max 2000 characters)." />
-        </Label>
-        <textarea
+        <Field
+          label={<>Note <Spinner shown={savingField === "note"} /></>}
+          info="Free-form notes (max 2000 characters)."
+          infoLabel="About note"
+          control="textarea"
           value={local.note ?? ""}
           onChange={(e) => setLocal({ ...local, note: e.target.value })}
           onBlur={() => {
@@ -487,7 +415,6 @@ export function StagedRowEditor({
               void save("note", { note: local.note ?? "" });
             }
           }}
-          className="w-full text-xs px-2 py-1.5 border rounded-md bg-background min-h-[60px] resize-y"
           placeholder="Note"
           maxLength={2000}
         />

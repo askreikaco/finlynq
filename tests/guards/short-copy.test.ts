@@ -5,7 +5,7 @@ import { join, resolve, relative } from "path";
 /**
  * Short-copy guard: visible copy is a label, a value/input and at most a very short hint. Explanations, field
  * descriptions and helper paragraphs live in the shared (i) InfoTip (src/components/ui/info-tip.tsx), reached through
- * `FieldLabel` / `FormField` (field help), `DialogHeading` (dialog help), `CardTitle info` (card help),
+ * `Field info` (field help), `DialogHeading` (dialog help), `CardTitle info` (card help),
  * `SectionPage info` / `PageHeader info` (page help) or a bare `<InfoTip>`.
  *
  * Source-level and pragmatic (same approach as tests/settings-no-descriptions.test.ts, which covers settings).
@@ -40,8 +40,7 @@ const FORM_FILES = [
   "src/components/holdings/holding-edit-form.tsx",
   "src/components/inbox/mode-picker.tsx",
   "src/components/inbox/import-prefs-picker.tsx",
-  "src/components/forms/field-label.tsx",
-  "src/components/forms/form-row.tsx",
+  "src/components/ui/field/field.tsx",
   "src/components/onboarding-tips.tsx",
   "src/components/reports/income-expense-trend-card.tsx",
   "src/app/(app)/tax/page.tsx",
@@ -99,7 +98,7 @@ describe("short copy: help text lives in (i) tips", () => {
     expect(missing).toEqual([]);
   });
 
-  it("has no unmarked muted <p> in form / panel files (use FieldLabel info, DialogHeading, CardTitle info)", () => {
+  it("has no unmarked muted <p> in form / panel files (use Field info, DialogHeading, CardTitle info)", () => {
     const bad: string[] = [];
     for (const f of FORM_FILES) {
       const src = read(f);
@@ -137,8 +136,7 @@ describe("short copy: help text lives in (i) tips", () => {
 
   it("account form: every field label carries its help in an InfoTip, no hint paragraph under an input", () => {
     const src = read(join(ROOT, "src/app/(app)/accounts/_components/account-form.tsx"));
-    expect(src).toContain("FormField");
-    expect(src).toContain("FieldLabel");
+    expect(src).toContain("<Field");
     expect(src).not.toMatch(/hint=/);
     expect(src).not.toMatch(/<p\b[^>]*muted/);
     for (const key of ["name", "alias", "type", "group", "currency", "note", "openingBalance", "isInvestment", "invisible"]) {

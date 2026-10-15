@@ -5,8 +5,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 import type { CardLayout, PageCard } from "@/lib/card-layout";
 
 const MOVE_BTN =
@@ -114,7 +114,12 @@ export function CustomizeCardsSheet({
             const label = name(id);
             return (
               <li key={id} data-card-id={id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pl-3">
-                <Switch checked={!isHidden} onCheckedChange={() => toggle(id)} aria-label={label} />
+                <Field
+                  control="switch"
+                  checked={!isHidden}
+                  onCheckedChange={() => toggle(id)}
+                  aria-label={label}
+                />
                 <span className={cn("min-w-0 flex-1 truncate text-sm font-medium", isHidden && "text-muted-foreground")}>{label}</span>
                 <button type="button" className={MOVE_BTN} disabled={i === 0} onClick={() => move(id, -1)} aria-label={`Move ${label} up`}>
                   <ChevronUp className="size-4" aria-hidden />

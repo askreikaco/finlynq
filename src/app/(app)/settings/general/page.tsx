@@ -12,9 +12,7 @@
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +25,13 @@ import { Loader2, Monitor, Moon, Palette, Settings2, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
-import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
 import { DisplaySection } from "@/components/settings/sections/display-section";
 import { SectionPage } from "@/components/templates";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import { useAnimationPreference } from "@/hooks/use-animations";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
@@ -124,99 +121,58 @@ export default function GeneralSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-4">
-            <div className="min-w-0 wide:flex-1">
-              <div className="flex items-center gap-1">
-                <Label>Currency</Label>
-                <InfoTip label="About currency" text="Totals are converted to this currency. Row amounts keep their own currency." />
-              </div>
-            </div>
-            {/* Shared `useDisplayCurrencyOptions` rather than the bare built-in
-                list: it also offers any currency the user has a custom rate
-                for. Without that, the PUT route's own rejection message ("Add a
-                custom rate via Settings → Custom exchange rates first") was a
-                dead end — after adding the rate, no picker listed the currency. */}
-            <div className="w-full wide:w-56 wide:shrink-0">
-              <Combobox
-                value={displayCurrency}
-                onValueChange={handleCurrencySelect}
-                items={currencyOptions}
-                placeholder="Select currency"
-                searchPlaceholder="Search currencies…"
-                emptyMessage="No matching currency"
-              />
-            </div>
-          </div>
+          {/* Shared `useDisplayCurrencyOptions` rather than the bare built-in
+              list: it also offers any currency the user has a custom rate
+              for. Without that, the PUT route's own rejection message ("Add a
+              custom rate via Settings → Custom exchange rates first") was a
+              dead end — after adding the rate, no picker listed the currency. */}
+          <Field
+            label="Currency"
+            labelPlacement="inline"
+            control="combobox"
+            info="Totals are converted to this currency. Row amounts keep their own currency."
+            controlWidth="w-44 regular:w-56"
+            value={displayCurrency}
+            onValueChange={handleCurrencySelect}
+            options={currencyOptions}
+            placeholder="Select currency"
+            searchPlaceholder="Search currencies…"
+            emptyMessage="No matching currency"
+          />
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <Label>Font</Label>
-                <InfoTip label="About font" text="This browser only." />
-              </div>
-            </div>
-            <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>
-              <SelectTrigger className="w-44 shrink-0 regular:w-48"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FONT_OPTIONS.map((o) => (
-                  <SelectItem key={o.key} value={o.key}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Field
+            label="Font"
+            labelPlacement="inline"
+            control="select"
+            info="This browser only."
+            controlWidth="w-44 regular:w-48"
+            value={font}
+            onValueChange={(v) => setFont(v as FontKey)}
+            options={FONT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+          />
 
-          <div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">
-            <div className="min-w-0 wide:flex-1">
-              <Label id="appearance-label">Theme</Label>
-            </div>
-            <div
-              role="radiogroup"
-              aria-labelledby="appearance-label"
-              className="inline-flex max-w-full self-start rounded-lg border p-0.5 wide:self-auto"
-            >
-              {([
-                { value: "system", label: "System", icon: Monitor },
-                { value: "light", label: "Light", icon: Sun },
-                { value: "dark", label: "Dark", icon: Moon },
-              ] as const).map(({ value, label, icon: Icon }) => {
-                const selected = (theme ?? "system") === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setTheme(value)}
-                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
-                      selected
-                        ? "bg-primary/10 text-primary-text"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <Field
+            label="Theme"
+            labelPlacement="inline"
+            control="segmented"
+            value={theme ?? "system"}
+            onValueChange={(v) => setTheme(v)}
+            options={[
+              { value: "system", label: "System", icon: Monitor },
+              { value: "light", label: "Light", icon: Sun },
+              { value: "dark", label: "Dark", icon: Moon },
+            ]}
+          />
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <Label htmlFor="animation-toggle">Animations</Label>
-                <InfoTip label="About animations" text="Smooth number and chart transitions. Off is faster." />
-              </div>
-            </div>
-            <Switch
-              id="animation-toggle"
-              checked={animationsEnabled}
-              onCheckedChange={setAnimationsEnabled}
-              aria-label="Animations"
-            />
-          </div>
+          <Field
+            label="Animations"
+            labelPlacement="inline"
+            control="switch"
+            info="Smooth number and chart transitions. Off is faster."
+            id="animation-toggle"
+            checked={animationsEnabled}
+            onCheckedChange={setAnimationsEnabled}
+          />
 
           {currencyError ? (
             <p className="text-sm text-destructive">{currencyError}</p>

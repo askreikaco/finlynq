@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertCircle,
@@ -22,7 +20,7 @@ import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
 import { getDisplayLocale } from "@/lib/locale";
-import { FieldLabel } from "@/components/forms";
+import { Field } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
 
 interface PreviewRow extends RawTransaction {
@@ -512,12 +510,9 @@ export function ConnectorTab() {
               </div>
             ) : (
               <div className="space-y-2">
-                <FieldLabel
+                <Field
                   label="API key"
-                  htmlFor="wp-api-key"
                   info="Paste your key from wealthposition.com → Profile → Security → Developer API."
-                />
-                <Input
                   id="wp-api-key"
                   type="password"
                   value={apiKey}

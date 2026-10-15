@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { MetricGrid } from "@/components/mobile";
@@ -26,6 +25,7 @@ import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AlertTriangle, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Database, Layers, RefreshCw, Trash2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 
 type Tab = "price" | "fx";
 
@@ -339,69 +339,60 @@ export default function AdminPriceCachePage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          {tab === "fx" ? "Currency" : "Symbol"}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              resetOffset();
-            }}
-            placeholder={tab === "fx" ? "e.g. CAD" : `e.g. VTI`}
-            className="h-8 w-40 rounded-md border bg-background px-2 text-sm text-foreground"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Date (YYYY-MM-DD)
-          <input
-            type="text"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-              resetOffset();
-            }}
-            placeholder="exact date"
-            className="h-8 w-40 rounded-md border bg-background px-2 text-sm text-foreground"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          Today only
-          <Switch
-            checked={todayOnly}
-            onCheckedChange={(v) => {
-              setTodayOnly(v);
-              resetOffset();
-            }}
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          Stale today only
-          <Switch
-            checked={staleOnly}
-            onCheckedChange={(v) => {
-              setStaleOnly(v);
-              resetOffset();
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Page size
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              resetOffset();
-            }}
-            className="h-8 rounded-md border bg-background px-2 text-sm text-foreground"
-          >
-            {LIMITS.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Field
+          label={tab === "fx" ? "Currency" : "Symbol"}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            resetOffset();
+          }}
+          placeholder={tab === "fx" ? "e.g. CAD" : `e.g. VTI`}
+          compact
+          className="w-40"
+          controlClassName="text-foreground"
+        />
+        <Field
+          label="Date (YYYY-MM-DD)"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+            resetOffset();
+          }}
+          placeholder="exact date"
+          compact
+          className="w-40"
+          controlClassName="text-foreground"
+        />
+        <Field
+          label="Today only"
+          control="switch"
+          checked={todayOnly}
+          onCheckedChange={(v) => {
+            setTodayOnly(v);
+            resetOffset();
+          }}
+        />
+        <Field
+          label="Stale today only"
+          control="switch"
+          checked={staleOnly}
+          onCheckedChange={(v) => {
+            setStaleOnly(v);
+            resetOffset();
+          }}
+        />
+        <Field
+          label="Page size"
+          control="select"
+          value={String(limit)}
+          onValueChange={(v) => {
+            setLimit(Number(v));
+            resetOffset();
+          }}
+          compact
+          controlClassName="text-foreground"
+          options={LIMITS.map((l) => ({ value: String(l), label: String(l) }))}
+        />
       </div>
 
       {error && (

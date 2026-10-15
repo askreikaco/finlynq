@@ -8,25 +8,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ListRow, SectionCard } from "@/components/mobile";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 // Pure, dependency-free module — importing parseAmount from "@/lib/csv-parser"
 // would drag its server-only `@/db` (pg → dns/fs) import into this client bundle.
 import { parseAmount } from "@/lib/parse-amount";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { DialogHeading } from "@/components/ui/dialog-heading";
-import { FieldLabel } from "@/components/forms";
 import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -367,83 +357,66 @@ export function ColumnMappingDialog({
             </summary>
             <div className="mt-3 space-y-3">
               <div className="grid gap-3 regular:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="map-skip-h" className="text-xs">Skip N header rows</Label>
-                  <Input
-                    id="map-skip-h"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipHeaderRows}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSkipHeaderRows(v);
-                      scheduleReparse(v, skipFooterRows);
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="map-skip-f" className="text-xs">Skip N footer rows</Label>
-                  <Input
-                    id="map-skip-f"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipFooterRows}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSkipFooterRows(v);
-                      scheduleReparse(skipHeaderRows, v);
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="map-date-fmt" className="text-xs">Date format</Label>
-                  <select
-                    id="map-date-fmt"
-                    value={dateFormatOverride}
-                    onChange={(e) => setDateFormatOverride(e.target.value as DateFormatUi)}
-                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-                  >
-                    <option value="auto">Auto-detect</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Default currency (rows missing one)</Label>
-                  <Select
-                    value={defaultCurrency || NONE}
-                    onValueChange={(v) => setDefaultCurrency(!v || v === NONE ? "" : v)}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="— None —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>— None —</SelectItem>
-                      {SUPPORTED_CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
-                <span className="flex-1">
-                  <span className="block text-sm font-medium">Flip sign of amounts</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Multiply every amount by -1 on import — for sources that
-                    export expenses as positive (or income as negative). The
-                    sample below updates to match.
-                  </span>
-                </span>
-                <Switch
-                  checked={mapping.flipSign === true}
-                  onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
-                  className="shrink-0"
+                <Field
+                  label="Skip N header rows"
+                  control="number"
+                  id="map-skip-h"
+                  min={0}
+                  max={100}
+                  value={skipHeaderRows}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSkipHeaderRows(v);
+                    scheduleReparse(v, skipFooterRows);
+                  }}
                 />
-              </label>
+                <Field
+                  label="Skip N footer rows"
+                  control="number"
+                  id="map-skip-f"
+                  min={0}
+                  max={100}
+                  value={skipFooterRows}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSkipFooterRows(v);
+                    scheduleReparse(skipHeaderRows, v);
+                  }}
+                />
+                <Field
+                  label="Date format"
+                  control="select"
+                  id="map-date-fmt"
+                  value={dateFormatOverride}
+                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                  compact
+                  options={[
+                    { value: "auto", label: "Auto-detect" },
+                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                  ]}
+                />
+                <Field
+                  label="Default currency (rows missing one)"
+                  control="select"
+                  value={defaultCurrency || NONE}
+                  onValueChange={(v) => setDefaultCurrency(!v || v === NONE ? "" : v)}
+                  placeholder="— None —"
+                  compact
+                  options={[
+                    { value: NONE, label: "— None —" },
+                    ...SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
+                  ]}
+                />
+              </div>
+              <Field
+                label="Flip sign of amounts"
+                control="switch"
+                info="Multiply every amount by -1 on import, for sources that export expenses as positive (or income as negative). The sample below updates to match."
+                checked={mapping.flipSign === true}
+                onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
+              />
               {redetecting && (
                 <p data-keep="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -464,32 +437,23 @@ export function ColumnMappingDialog({
           )}
 
           {/* Mapping table */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Column Mapping</Label>
-            <div className="rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-              {MAPPING_FIELDS.map((field) => (
-                <div key={field} className="flex items-center gap-3 px-3 py-2">
-                  <span className="w-36 text-xs text-muted-foreground shrink-0">
-                    {FIELD_LABELS[field]}
-                  </span>
-                  <Select
-                    value={mapping[field] ?? NONE}
-                    onValueChange={(v) => setField(field, (!v || v === NONE) ? "" : v)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>— not mapped —</SelectItem>
-                      {localHeaders.map((h) => (
-                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FieldGroup label="Column mapping">
+            {MAPPING_FIELDS.map((field) => (
+              <Field
+                key={field}
+                label={FIELD_LABELS[field]}
+                control="select"
+                value={mapping[field] ?? NONE}
+                onValueChange={(v) => setField(field, (!v || v === NONE) ? "" : v)}
+                placeholder="—"
+                compact
+                options={[
+                  { value: NONE, label: "— not mapped —" },
+                  ...localHeaders.map((h) => ({ value: h, label: h })),
+                ]}
+              />
+            ))}
+          </FieldGroup>
 
           {/* FINLYNQ-195 — investment-account-only column mappings. Shown ONLY
               when the import target is an investment account; a cash account
@@ -497,64 +461,43 @@ export function ColumnMappingDialog({
               v1 captures ticker/name/qty into staging / bank_transactions —
               it does NOT yet materialize lot-aware portfolio operations. */}
           {isInvestment && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-0.5">
-                <Label className="text-sm font-medium">Investment columns</Label>
-                <InfoTip
-                  label="About investment columns"
-                  text="This is an investment account. Map the security ticker/symbol, name, and quantity from your brokerage export. These are captured with the imported rows for now; they aren't yet turned into buy/sell positions."
+            <FieldGroup label="Investment columns" info="This is an investment account. Map the security ticker/symbol, name, and quantity from your brokerage export. These are captured with the imported rows for now; they aren't yet turned into buy/sell positions.">
+              {INVESTMENT_FIELDS.map((field) => (
+                <Field
+                  key={field}
+                  label={INVESTMENT_FIELD_LABELS[field]}
+                  control="select"
+                  value={mapping[field] ?? NONE}
+                  onValueChange={(v) =>
+                    setInvestmentField(field, !v || v === NONE ? "" : v)
+                  }
+                  placeholder="—"
+                  compact
+                  options={[
+                    { value: NONE, label: "— not mapped —" },
+                    ...localHeaders.map((h) => ({ value: h, label: h })),
+                  ]}
                 />
-              </div>
-              <div className="rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                {INVESTMENT_FIELDS.map((field) => (
-                  <div key={field} className="flex items-center gap-3 px-3 py-2">
-                    <span className="w-36 text-xs text-muted-foreground shrink-0">
-                      {INVESTMENT_FIELD_LABELS[field]}
-                    </span>
-                    <Select
-                      value={mapping[field] ?? NONE}
-                      onValueChange={(v) =>
-                        setInvestmentField(field, !v || v === NONE ? "" : v)
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="—" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>— not mapped —</SelectItem>
-                        {localHeaders.map((h) => (
-                          <SelectItem key={h} value={h}>{h}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-            </div>
+              ))}
+            </FieldGroup>
           )}
 
           {/* Default account */}
-          <div className="space-y-1.5">
-            <FieldLabel
-              label="Default Account"
-              info="Used when the Account column is not mapped, or when a row's account cell is empty."
-            />
-            <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="— none —" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a} value={a}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Field
+            label="Default Account"
+            info="Used when the Account column is not mapped, or when a row's account cell is empty."
+            control="select"
+            value={defaultAccount}
+            onValueChange={(v) => setDefaultAccount(v ?? "")}
+            placeholder="— none —"
+            compact
+            options={accounts.map((a) => ({ value: a, label: a }))}
+          />
 
           {/* Live sample — how rows land in staging with the current mapping. */}
           {mappedSample.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-sm">Sample (first {mappedSample.length} rows)</Label>
+              <h3 className="text-sm font-medium">Sample (first {mappedSample.length} rows)</h3>
               <div className="max-h-64 overflow-y-auto">
                 <SectionCard list>
                   {mappedSample.map((r, i) => {
@@ -576,58 +519,31 @@ export function ColumnMappingDialog({
           )}
 
           {/* Template name */}
-          <div className="space-y-1.5">
-            <FieldLabel
-              label="Template name"
-              htmlFor="col-map-tpl-name"
-              info="Save this mapping as a template. Future uploads with the same columns will use this mapping automatically."
-            />
-            <Input
-              id="col-map-tpl-name"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="e.g. CIBC Mastercard"
-              className="h-8 text-sm"
-            />
-          </div>
+          <Field
+            label="Template name"
+            info="Save this mapping as a template. Future uploads with the same columns will use this mapping automatically."
+            id="col-map-tpl-name"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="e.g. CIBC Mastercard"
+            compact
+          />
 
           {/* §B — per-account auto-vs-ask choice. Shown in BOTH modes (the
               saved template auto-applies via header-match next time; this
               controls whether that match is confirmed or applied silently). */}
-          <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
-            <Label className="text-sm font-medium">On future uploads to this account</Label>
-            <div className="space-y-1.5">
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="csv-future-mode"
-                  className="mt-0.5"
-                  checked={!dontAskAgain}
-                  onChange={() => setDontAskAgain(false)}
-                />
-                <span>
-                  <span className="font-medium">Ask me to confirm first</span>
-                  <InfoTip label="About Ask me to confirm first" text="Show this mapping for review each time (recommended)." />
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="csv-future-mode"
-                  className="mt-0.5"
-                  checked={dontAskAgain}
-                  onChange={() => setDontAskAgain(true)}
-                />
-                <span>
-                  <span className="font-medium">Apply this mapping automatically</span>
-                  <InfoTip
-                    label="About Apply this mapping automatically"
-                    text="Import silently: don't ask again for this account. Reset anytime on the account's page, Import preferences."
-                  />
-                </span>
-              </label>
-            </div>
-          </div>
+          <Field
+            label="On future uploads to this account"
+            control="segmented"
+            info="Ask me to confirm first: show this mapping for review each time (recommended). Apply automatically: import silently and don't ask again for this account; reset anytime on the account's page, Import preferences."
+            value={dontAskAgain ? "auto" : "ask"}
+            onValueChange={(v) => setDontAskAgain(v === "auto")}
+            fill
+            options={[
+              { value: "ask", label: "Ask me to confirm first" },
+              { value: "auto", label: "Apply this mapping automatically" },
+            ]}
+          />
 
           {error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">

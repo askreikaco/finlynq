@@ -8,16 +8,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type {
   ColumnMapping,
   DateFormatOverride,
@@ -26,6 +16,7 @@ import type {
 } from "@/lib/import-templates";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
 import { DialogHeading } from "@/components/ui/dialog-heading";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -165,134 +156,73 @@ export function EditTemplateDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
           <div className="grid gap-3 regular:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-tpl-name">Template Name</Label>
-              <Input
-                id="edit-tpl-name"
-                placeholder="e.g. TD Chequing, RBC Visa"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+            <Field
+              label="Template Name"
+              id="edit-tpl-name"
+              placeholder="e.g. TD Chequing, RBC Visa"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-            <div className="space-y-1.5">
-              <Label>Default Account</Label>
-              <Select
-                value={defaultAccount || NONE_ACCOUNT}
-                onValueChange={(v) =>
-                  setDefaultAccount(!v || v === NONE_ACCOUNT ? "" : v)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Per row" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_ACCOUNT}>— none —</SelectItem>
-                  {accounts.map((a) => (
-                    <SelectItem key={a} value={a}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 min-h-row rounded-lg border px-3 py-2.5">
-            <div className="flex-1">
-              <span className="flex items-center gap-0.5">
-                <Label htmlFor="edit-tpl-default" className="cursor-pointer text-sm font-medium">
-                  Default template
-                </Label>
-                <InfoTip label="About default template" text="Auto-apply this template when headers match." />
-              </span>
-            </div>
-            <Switch
-              id="edit-tpl-default"
-              checked={isDefault}
-              onCheckedChange={(v) => setIsDefault(v)}
-              className="shrink-0"
+            <Field
+              label="Default Account"
+              control="select"
+              value={defaultAccount || NONE_ACCOUNT}
+              onValueChange={(v) =>
+                setDefaultAccount(!v || v === NONE_ACCOUNT ? "" : v)
+              }
+              placeholder="Per row"
+              options={[
+                { value: NONE_ACCOUNT, label: "— none —" },
+                ...accounts.map((a) => ({ value: a, label: a })),
+              ]}
             />
           </div>
+
+          <Field
+            label="Default template"
+            control="switch"
+            info="Auto-apply this template when headers match."
+            id="edit-tpl-default"
+            checked={isDefault}
+            onCheckedChange={(v) => setIsDefault(v)}
+          />
 
           {/* Phase 2 of import-modes refactor (2026-05-25) — per-template
               upload mode. Defaults to 'detailed' for safety; 'simplified'
               lands rows directly in the bank ledger, skipping staged review. */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Upload Mode</Label>
-            <div className="grid gap-2 regular:grid-cols-2">
-              <label
-                className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${
-                  importMode === "detailed"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="import-mode"
-                    value="detailed"
-                    checked={importMode === "detailed"}
-                    onChange={() => setImportMode("detailed")}
-                    className="h-4 w-4"
-                  />
-                  <span className="font-medium">Detailed</span>
-                  <InfoTip label="About Detailed" text="Review the parse on /import/pending before rows land. Recommended for new or messy formats." />
-                </div>
-              </label>
-              <label
-                className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${
-                  importMode === "simplified"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="import-mode"
-                    value="simplified"
-                    checked={importMode === "simplified"}
-                    onChange={() => setImportMode("simplified")}
-                    className="h-4 w-4"
-                  />
-                  <span className="font-medium">Simplified</span>
-                  <InfoTip label="About Simplified" text="Rows land directly in the bank ledger. Categorize on /reconcile. Use only for trusted, clean formats." />
-                </div>
-              </label>
-            </div>
-          </div>
+          <Field
+            label="Upload Mode"
+            control="segmented"
+            info="Detailed: review the parse on /import/pending before rows land (recommended for new or messy formats). Simplified: rows land directly in the bank ledger; categorize on /reconcile (use only for trusted, clean formats)."
+            value={importMode}
+            onValueChange={(v) => setImportMode(v as typeof importMode)}
+            fill
+            options={[
+              { value: "detailed", label: "Detailed" },
+              { value: "simplified", label: "Simplified" },
+            ]}
+          />
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-0.5">
-              <Label className="text-sm font-medium">Column Mapping</Label>
-              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
-            </div>
-            <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
-              {MAPPING_FIELDS.map((field) => (
-                <div key={field} className="flex items-center gap-2 px-2 py-1.5">
-                  <span className="w-row-label text-xs text-muted-foreground shrink-0">
-                    {FIELD_LABELS[field]}
-                  </span>
-                  <Select
-                    value={mapping[field] ?? "__none__"}
-                    onValueChange={(v) =>
-                      setMappingField(field, (!v || v === "__none__") ? "" : v)
-                    }
-                  >
-                    <SelectTrigger className="h-7 text-xs flex-1">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— not mapped —</SelectItem>
-                      {csvHeaders.map((h) => (
-                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FieldGroup label="Column mapping" info="Map CSV columns to transaction fields.">
+            {MAPPING_FIELDS.map((field) => (
+              <Field
+                key={field}
+                label={FIELD_LABELS[field]}
+                control="select"
+                value={mapping[field] ?? "__none__"}
+                onValueChange={(v) =>
+                  setMappingField(field, (!v || v === "__none__") ? "" : v)
+                }
+                placeholder="—"
+                compact
+                options={[
+                  { value: "__none__", label: "— not mapped —" },
+                  ...csvHeaders.map((h) => ({ value: h, label: h })),
+                ]}
+              />
+            ))}
+          </FieldGroup>
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
@@ -304,75 +234,58 @@ export function EditTemplateDialog({
             </summary>
             <div className="mt-3 space-y-3">
               <div className="grid gap-3 regular:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="edit-tpl-skip-h" className="text-xs">Skip N header rows</Label>
-                  <Input
-                    id="edit-tpl-skip-h"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipHeaderRows}
-                    onChange={(e) => setSkipHeaderRows(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-tpl-skip-f" className="text-xs">Skip N footer rows</Label>
-                  <Input
-                    id="edit-tpl-skip-f"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipFooterRows}
-                    onChange={(e) => setSkipFooterRows(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Date format</Label>
-                  <select
-                    value={dateFormatOverride}
-                    onChange={(e) => setDateFormatOverride(e.target.value as DateFormatUi)}
-                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-                  >
-                    <option value="auto">Auto-detect</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Default currency (rows missing one)</Label>
-                  <Select
-                    value={defaultCurrency || "__none__"}
-                    onValueChange={(v) =>
-                      setDefaultCurrency(!v || v === "__none__" ? "" : v)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="— None —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— None —</SelectItem>
-                      {SUPPORTED_CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
-                <span className="flex-1">
-                  <span className="block text-sm font-medium">Flip sign of amounts</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Multiply every amount by -1 on import. Use when this source
-                    exports expenses as positive (or income as negative).
-                  </span>
-                </span>
-                <Switch
-                  checked={mapping.flipSign === true}
-                  onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
-                  className="shrink-0"
+                <Field
+                  label="Skip N header rows"
+                  control="number"
+                  id="edit-tpl-skip-h"
+                  min={0}
+                  max={100}
+                  value={skipHeaderRows}
+                  onChange={(e) => setSkipHeaderRows(e.target.value)}
                 />
-              </label>
+                <Field
+                  label="Skip N footer rows"
+                  control="number"
+                  id="edit-tpl-skip-f"
+                  min={0}
+                  max={100}
+                  value={skipFooterRows}
+                  onChange={(e) => setSkipFooterRows(e.target.value)}
+                />
+                <Field
+                  label="Date format"
+                  control="select"
+                  value={dateFormatOverride}
+                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                  compact
+                  options={[
+                    { value: "auto", label: "Auto-detect" },
+                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                  ]}
+                />
+                <Field
+                  label="Default currency (rows missing one)"
+                  control="select"
+                  value={defaultCurrency || "__none__"}
+                  onValueChange={(v) =>
+                    setDefaultCurrency(!v || v === "__none__" ? "" : v)
+                  }
+                  placeholder="— None —"
+                  options={[
+                    { value: "__none__", label: "— None —" },
+                    ...SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
+                  ]}
+                />
+              </div>
+              <Field
+                label="Flip sign of amounts"
+                control="switch"
+                info="Multiply every amount by -1 on import. Use when this source exports expenses as positive (or income as negative)."
+                checked={mapping.flipSign === true}
+                onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
+              />
             </div>
           </details>
 

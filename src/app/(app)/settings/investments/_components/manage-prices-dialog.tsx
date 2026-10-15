@@ -14,15 +14,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { InfoTip } from "@/components/ui/info-tip";
-import { DatePicker } from "@/components/date-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import { todayISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import { Loader2, Trash2 } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
 import { ListRow } from "@/components/mobile/list-row";
 
 type Mark = { id: number; date: string; price: number; currency: string };
@@ -144,18 +142,17 @@ export function ManagePricesPanel({
 
       {/* Add a mark */}
       <div className="grid grid-cols-1 items-end gap-3 regular:grid-cols-2">
-        <DatePicker value={date} onChange={setDate} max={todayISO()} label="Effective date" />
-        <div className="space-y-1">
-          <Label>Price ({currency})</Label>
-          <AmountInput
-            inputMode="decimal"
-            step="any"
-            min="0"
-            value={price}
-            onValueChange={(nv) => setPrice(nv)}
-            placeholder="0.00"
-          />
-        </div>
+        <Field control="date" label="Effective date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+        <Field
+          label={<>Price ({currency})</>}
+          control="amount"
+          inputMode="decimal"
+          step="any"
+          min="0"
+          value={price}
+          onValueChange={(nv) => setPrice(nv)}
+          placeholder="0.00"
+        />
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
 

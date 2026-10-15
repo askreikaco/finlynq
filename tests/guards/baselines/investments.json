@@ -2,14 +2,6 @@
   "family": "investments",
   "unmigrated": [],
   "chrome": {
-    "src/app/(app)/settings/investments/_components/add-security-form.tsx": {
-      "min-h": 1
-    },
-    "src/app/(app)/settings/investments/_components/form-rows.tsx": {
-      "shrink": 1,
-      "min-h": 1,
-      "sab-pad": 1
-    },
     "src/app/(app)/settings/investments/_components/manage-prices-dialog.tsx": {
       "sab-pad": 1
     },

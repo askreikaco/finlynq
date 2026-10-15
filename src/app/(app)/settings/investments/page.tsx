@@ -24,7 +24,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -60,6 +59,7 @@ import {
 } from "./_components/shared";
 import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 type SortKey = "symbol" | "description" | "type" | "currency";
@@ -342,12 +342,12 @@ function InvestmentsSettingsPage() {
   };
 
   const filterInput = (col: FilterKey, label: string) => (
-    <Input
+    <Field
       value={filters[col]}
       onChange={(e) => setFilters((p) => ({ ...p, [col]: e.target.value }))}
       placeholder={`${label}…`}
-      className="h-8 text-xs"
       aria-label={`Filter by ${col}`}
+      compact
     />
   );
 

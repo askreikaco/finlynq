@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ArrowLeftRight, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
@@ -15,9 +11,8 @@ import {
   isSupportedCurrency,
 } from "@/lib/fx/supported-currencies";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { todayISO } from "@/lib/utils/date";
-import { AmountInput } from "@/components/amount-input";
-
 type Override = {
   id: number;
   currency: string;
@@ -178,41 +173,43 @@ export function FxOverridesSection() {
           <div className="rounded-md border border-border/50 p-3 space-y-3">
             <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Currency</Label>
+                <span className="text-xs font-medium">Currency</span>
                 {customCode ? (
                   <div className="flex items-center gap-1">
-                    <Input
+                    <Field
                       placeholder="3-4 letter code"
                       value={form.currency}
                       onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })}
-                      className="h-9 font-mono"
                       maxLength={4}
+                      compact
+                      controlClassName="font-mono"
                     />
                     <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" onClick={() => { setCustomCode(false); setForm({ ...form, currency: "EUR" }); }}>
                       Pick from list
                     </Button>
                   </div>
                 ) : (
-                  <Combobox
+                  <Field
+                    control="combobox"
                     value={form.currency}
                     onValueChange={(v) => {
                       if (v === "__custom__") { setCustomCode(true); setForm({ ...form, currency: "" }); return; }
                       setForm({ ...form, currency: v || "EUR" });
                     }}
-                    items={[
+                    options={[
                       ...sortCurrency(
                         activeCurrencies
                           .filter((c) => c !== "USD")
-                          .map((c): ComboboxItemShape => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
+                          .map((c): FieldComboboxOption => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
                         (c) => c.value,
                         (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                       ),
-                      { value: "__custom__", label: "+ Custom currency code…" } satisfies ComboboxItemShape,
+                      { value: "__custom__", label: "+ Custom currency code…" } satisfies FieldComboboxOption,
                     ]}
                     placeholder="EUR"
                     searchPlaceholder="Search currencies…"
                     emptyMessage="No matches"
-                    className="h-9 w-full"
+                    compact
                   />
                 )}
                 {customCode ? (
@@ -222,56 +219,53 @@ export function FxOverridesSection() {
                 ) : null}
               </div>
               <div>
-                <Label className="text-xs">Rate</Label>
+                <span className="text-xs font-medium">Rate</span>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">1</span>
-                  <Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>
-                    <SelectTrigger className="h-9 w-20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={form.currency}>{form.currency}</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Field
+                    control="select"
+                    value={form.rateMode === "to-usd" ? form.currency : "USD"}
+                    onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}
+                    compact
+                    className="w-20"
+                    options={[{ value: form.currency, label: form.currency }, { value: "USD", label: "USD" }]}
+                  />
                   <span className="text-xs text-muted-foreground">=</span>
-                  <AmountInput
-                    className="h-9"
-                    
+                  <Field
+                    control="amount"
                     step="0.000001"
                     value={form.rateInput}
                     onValueChange={(nv) => setForm({ ...form, rateInput: nv })}
+                    compact
                   />
                   <span className="text-xs text-muted-foreground font-mono w-8">{form.rateMode === "to-usd" ? "USD" : form.currency}</span>
                 </div>
               </div>
-              <div>
-                <Label className="text-xs">From date</Label>
-                <Input
-                  type="date"
-                  value={form.dateFrom}
-                  onChange={(e) => setForm({ ...form, dateFrom: e.target.value })}
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">To date (optional)</Label>
-                <Input
-                  type="date"
-                  value={form.dateTo}
-                  onChange={(e) => setForm({ ...form, dateTo: e.target.value })}
-                  className="h-9"
-                  placeholder="Leave blank for open-ended"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Note (optional)</Label>
-              <Input
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                placeholder="e.g. Wise actual rate on 2026-04-15"
-                className="h-9"
+              <Field
+                label="From date"
+                control="date"
+                value={form.dateFrom}
+                onChange={(e) => setForm({ ...form, dateFrom: e.target.value })}
+                compact
+              />
+              <Field
+                label="To date"
+                optional
+                control="date"
+                value={form.dateTo}
+                onChange={(e) => setForm({ ...form, dateTo: e.target.value })}
+                placeholder="Leave blank for open-ended"
+                compact
               />
             </div>
+            <Field
+              label="Note"
+              optional
+              value={form.note}
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
+              placeholder="e.g. Wise actual rate on 2026-04-15"
+              compact
+            />
             <div className="flex items-center gap-2 pt-1">
               <Button size="sm" onClick={handleAdd}>Save override</Button>
               <Button size="sm" variant="outline" onClick={() => setAdding(false)}>Cancel</Button>

@@ -1,58 +1,18 @@
 "use client"
 
+/**
+ * Internal to Field: the Base UI Select wired to the shared control surface. Pages never import this file
+ * (tests/guards/one-field.test.ts); they render <Field control="select" options={...} />.
+ */
+
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { CONTROL_BOX, CONTROL_BOX_COMPACT, CONTROL_FOCUS_VISIBLE, CONTROL_STATE, CONTROL_SURFACE } from "../control-surface"
 
-type SelectItemsMap = Record<string, React.ReactNode>
-
-/**
- * Collect value → label from <SelectItem> descendants so <SelectValue /> shows
- * the label ("Expense") instead of the raw value ("E"). Base UI only maps
- * values to labels via the Root `items` prop; callers that pass `items`
- * explicitly keep theirs.
- */
-function collectItems(children: React.ReactNode, out: SelectItemsMap = {}): SelectItemsMap {
-  React.Children.forEach(children, (child) => {
-    if (!React.isValidElement(child)) return
-    const props = child.props as { value?: unknown; children?: React.ReactNode }
-    if (child.type === SelectItem) {
-      if (props.value != null && typeof props.value !== "object") out[String(props.value)] = props.children
-      return
-    }
-    if (props.children) collectItems(props.children, out)
-  })
-  return out
-}
-
-function Select<Value, Multiple extends boolean | undefined = false>(
-  props: SelectPrimitive.Root.Props<Value, Multiple>,
-) {
-  const { items, children } = props
-  const derived = React.useMemo(
-    () => (items === undefined ? collectItems(children) : undefined),
-    [items, children],
-  )
-  const useDerived = derived !== undefined && Object.keys(derived).length > 0
-  return (
-    <SelectPrimitive.Root
-      {...props}
-      {...(useDerived ? { items: derived as SelectPrimitive.Root.Props<Value, Multiple>["items"] } : {})}
-    />
-  )
-}
-
-function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
-  return (
-    <SelectPrimitive.Group
-      data-slot="select-group"
-      className={cn("scroll-my-1 p-1", className)}
-      {...props}
-    />
-  )
-}
+const Select = SelectPrimitive.Root
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
@@ -66,18 +26,21 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
 
 function SelectTrigger({
   className,
-  size = "default",
+  compact = false,
+  invalid = false,
   children,
   ...props
-}: SelectPrimitive.Trigger.Props & {
-  size?: "sm" | "default"
-}) {
+}: SelectPrimitive.Trigger.Props & { compact?: boolean; invalid?: boolean }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
-      data-size={size}
+      data-invalid={invalid || undefined}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 pointer-coarse:data-[size=default]:h-11 pointer-coarse:data-[size=sm]:h-11 dense:pointer-fine:data-[size=default]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        CONTROL_SURFACE,
+        compact ? CONTROL_BOX_COMPACT : CONTROL_BOX,
+        CONTROL_STATE,
+        CONTROL_FOCUS_VISIBLE,
+        "flex items-center justify-between gap-1.5 whitespace-nowrap select-none data-placeholder:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -131,19 +94,6 @@ function SelectContent({
   )
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: SelectPrimitive.GroupLabel.Props) {
-  return (
-    <SelectPrimitive.GroupLabel
-      data-slot="select-label"
-      className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
 function SelectItem({
   className,
   children,
@@ -154,6 +104,7 @@ function SelectItem({
       data-slot="select-item"
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "pointer-coarse:min-h-11",
         className
       )}
       {...props}
@@ -169,19 +120,6 @@ function SelectItem({
         <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
-  )
-}
-
-function SelectSeparator({
-  className,
-  ...props
-}: SelectPrimitive.Separator.Props) {
-  return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
   )
 }
 
@@ -223,15 +161,4 @@ function SelectScrollDownButton({
   )
 }
 
-export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-}
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue }

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { Sparkline } from "@/components/sparkline";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Field } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 /**
@@ -201,12 +201,12 @@ export function ListRow({
   const body = (
     <>
       {select ? (
-        <Checkbox
+        <Field
+          control="checkbox"
           checked={select.checked}
           onChange={select.onToggle}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
           aria-label={select.label}
-          className="shrink-0"
         />
       ) : null}
       <span

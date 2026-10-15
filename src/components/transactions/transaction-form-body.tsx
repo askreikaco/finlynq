@@ -10,25 +10,16 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AutoTextarea } from "@/components/ui/auto-textarea";
-
 /** Note field look (Input-like box), two-row minimum, grows to max-h-48 then scrolls. */
-const NOTE_TEXTAREA_CLASS =
-  "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
-import { Label } from "@/components/ui/label";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
-import { AmountInput } from "@/components/amount-input";
 import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { ChevronDown, Link2, Plus, Scissors, Trash2 } from "lucide-react";
 import { labelForSource } from "@/lib/tx-source";
 import { getDisplayLocale } from "@/lib/locale";
 import { FxPreviewLine } from "./fx-preview-line";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import type { DialogLinkedSibling } from "./transaction-dialog";
 import type { TransactionFormState } from "./use-transaction-form";
 
@@ -106,127 +97,114 @@ export function TransactionFormBody({
             className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
-              <div className="min-w-0 space-y-1.5">
-                <Label>Date</Label>
-                <Input
-                  type="date"
-                  className="min-w-0 max-w-full"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="min-w-0 space-y-1.5">
-                <Label>Amount</Label>
-                <AmountInput
-                  step="0.01"
-                  value={form.amount}
-                  onValueChange={(v) => setForm({ ...form, amount: v })}
-                  placeholder="-50.00"
-                  required
-                />
-              </div>
+              <Field
+                label="Date"
+                control="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                required
+                className="max-w-full"
+              />
+              <Field
+                label="Amount"
+                control="amount"
+                step="0.01"
+                value={form.amount}
+                onValueChange={(v) => setForm({ ...form, amount: v })}
+                placeholder="-50.00"
+                required
+              />
             </div>
             <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground -mt-2" />
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Account</Label>
-                <Combobox
-                  value={form.accountId}
-                  onValueChange={(v) => {
-                    const acct = accounts.find((a) => String(a.id) === v);
-                    const stillValid = form.portfolioHoldingId
-                      ? holdings.some(
-                          (h) => h.name === form.portfolioHoldingId && String(h.accountId) === v,
-                        )
-                      : true;
-                    setForm({
-                      ...form,
-                      accountId: v,
-                      currency: acct?.currency ?? displayCurrency,
-                      portfolioHoldingId: stillValid ? form.portfolioHoldingId : "",
-                    });
-                  }}
-                  items={sortAccount(
-                    accounts
-                      .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
-                      .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-                    (a) => Number(a.value),
-                    (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                  )}
-                  placeholder="Select account"
-                  searchPlaceholder="Search accounts…"
-                  emptyMessage="No matches"
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Combobox
-                  value={form.categoryId}
-                  onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                  items={sortCategory(
-                    categories.map((c): ComboboxItemShape => ({
-                      value: String(c.id),
-                      label: `${c.group} - ${c.name}`,
-                    })),
-                    (c) => Number(c.value),
-                    (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                  )}
-                  placeholder="Select category"
-                  searchPlaceholder="Search categories…"
-                  emptyMessage="No matches"
-                  className="w-full"
-                />
-              </div>
+              <Field
+                label="Account"
+                control="combobox"
+                value={form.accountId}
+                onValueChange={(v) => {
+                  const acct = accounts.find((a) => String(a.id) === v);
+                  const stillValid = form.portfolioHoldingId
+                    ? holdings.some(
+                      (h) => h.name === form.portfolioHoldingId && String(h.accountId) === v,
+                    )
+                    : true;
+                  setForm({
+                    ...form,
+                    accountId: v,
+                    currency: acct?.currency ?? displayCurrency,
+                    portfolioHoldingId: stillValid ? form.portfolioHoldingId : "",
+                  });
+                }}
+                options={sortAccount(
+                  accounts
+                    .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
+                    .map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+                  (a) => Number(a.value),
+                  (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                )}
+                placeholder="Select account"
+                searchPlaceholder="Search accounts…"
+                emptyMessage="No matches"
+              />
+              <Field
+                label="Category"
+                control="combobox"
+                value={form.categoryId}
+                onValueChange={(v) => setForm({ ...form, categoryId: v })}
+                options={sortCategory(
+                  categories.map((c): FieldComboboxOption => ({
+                    value: String(c.id),
+                    label: `${c.group} - ${c.name}`,
+                  })),
+                  (c) => Number(c.value),
+                  (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                )}
+                placeholder="Select category"
+                searchPlaceholder="Search categories…"
+                emptyMessage="No matches"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Payee</Label>
-                <Input value={form.payee} onChange={(e) => setForm({ ...form, payee: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Currency</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencyOptions.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Note</Label>
-              <AutoTextarea
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className={NOTE_TEXTAREA_CLASS}
+              <Field
+                label="Payee"
+                value={form.payee}
+                onChange={(e) => setForm({ ...form, payee: e.target.value })}
+              />
+              <Field
+                label="Currency"
+                control="select"
+                value={form.currency}
+                onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}
+                options={currencyOptions.map((c) => ({ value: c, label: c }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Tags (comma-separated)</Label>
-              <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+              <Field
+                label="Note"
+                control="textarea"
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+              />
             </div>
+            <Field
+              label="Tags (comma-separated)"
+              value={form.tags}
+              onChange={(e) => setForm({ ...form, tags: e.target.value })}
+            />
 
             {(() => {
               const sel = accounts.find((a) => String(a.id) === form.accountId);
               if (sel?.isInvestment !== true) return null;
               const accountHoldings = holdings.filter((h) => h.accountId === sel.id);
               const cash = accountHoldings.find((h) => !h.symbol);
-              const items: ComboboxItemShape[] = [
+              const items: FieldComboboxOption[] = [
                 ...(cash
-                  ? [{ value: cash.name, label: `${cash.name} (auto) — cash sleeve` } satisfies ComboboxItemShape]
+                  ? [{ value: cash.name, label: `${cash.name} (auto) — cash sleeve` } satisfies FieldComboboxOption]
                   : []),
                 ...sortHolding(
                   accountHoldings
                     .filter((h) => h !== cash)
-                    .map((h): ComboboxItemShape => ({
+                    .map((h): FieldComboboxOption => ({
                       value: h.name,
                       label: h.symbol ? `${h.name} (${h.symbol})` : h.name,
                     })),
@@ -236,23 +214,18 @@ export function TransactionFormBody({
               ];
               return (
                 <div className="space-y-1.5 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                  <div className="flex items-center gap-0.5">
-                    <Label>
-                      Portfolio Holding <span className="text-destructive">*</span>
-                    </Label>
-                    <InfoTip
-                      label="About portfolio holding"
-                      text={`${sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).`}
-                    />
-                  </div>
-                  <Combobox
+                  <Field
+                    label="Portfolio Holding"
+                    required
+                    info={`${sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).`}
+                    infoLabel="About portfolio holding"
+                    control="combobox"
                     value={form.portfolioHoldingId}
                     onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
-                    items={items}
+                    options={items}
                     placeholder={cash ? "Cash (auto)" : "Pick a holding"}
                     searchPlaceholder="Search holdings…"
                     emptyMessage="No matches"
-                    className="w-full"
                   />
                 </div>
               );
@@ -309,15 +282,16 @@ export function TransactionFormBody({
                 </div>
                 {splitRows.map((row, i) => (
                   <div key={i} className="flex gap-1.5 items-center">
-                    <Combobox
+                    <Field
+                      control="combobox"
                       value={row.categoryId}
                       onValueChange={(v) => {
                         const next = [...splitRows];
                         next[i] = { ...next[i], categoryId: v };
                         setSplitRows(next);
                       }}
-                      items={sortCategory(
-                        categories.map((c): ComboboxItemShape => ({
+                      options={sortCategory(
+                        categories.map((c): FieldComboboxOption => ({
                           value: String(c.id),
                           label: c.name,
                         })),
@@ -327,13 +301,13 @@ export function TransactionFormBody({
                       placeholder="Category"
                       searchPlaceholder="Search categories…"
                       emptyMessage="No matches"
-                      size="sm"
-                      className="h-7 flex-1 text-xs"
+                      compact
+                      className="flex-1"
                     />
-                    <AmountInput
+                    <Field
+                      control="amount"
                       step="0.01"
                       min="0"
-                      className="h-7 text-xs w-24 font-mono"
                       placeholder="0.00"
                       value={row.amount}
                       onValueChange={(nv) => {
@@ -341,9 +315,11 @@ export function TransactionFormBody({
                         next[i] = { ...next[i], amount: nv };
                         setSplitRows(next);
                       }}
+                      compact
+                      className="w-24"
+                      controlClassName="font-mono"
                     />
-                    <Input
-                      className="h-7 text-xs w-24"
+                    <Field
                       placeholder="Note"
                       value={row.note}
                       onChange={(e) => {
@@ -351,6 +327,8 @@ export function TransactionFormBody({
                         next[i] = { ...next[i], note: e.target.value };
                         setSplitRows(next);
                       }}
+                      compact
+                      className="w-24"
                     />
                     <Button aria-label="Remove split row"
                       type="button"
@@ -405,64 +383,57 @@ export function TransactionFormBody({
             {showAdvanced && (
               <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Quantity</Label>
-                    <AmountInput
-                      step="0.0001"
-                      value={form.quantity}
-                      onValueChange={(nv) => setForm({ ...form, quantity: nv })}
-                      placeholder="e.g. 10"
-                    />
-                  </div>
+                  <Field
+                    label="Quantity"
+                    control="amount"
+                    step="0.0001"
+                    value={form.quantity}
+                    onValueChange={(nv) => setForm({ ...form, quantity: nv })}
+                    placeholder="e.g. 10"
+                  />
                   {accounts.find((a) => String(a.id) === form.accountId)?.isInvestment !== true && (
-                    <div className="space-y-1.5">
-                      <Label>Portfolio Holding</Label>
-                      <Combobox
-                        value={form.portfolioHoldingId}
-                        onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
-                        items={(() => {
-                          const accountHoldings = form.accountId
-                            ? holdings.filter((h) => String(h.accountId) === form.accountId)
-                            : holdings;
-                          return [
-                            ...sortHolding(
-                              accountHoldings.map((h): ComboboxItemShape => ({
-                                value: h.name,
-                                label: `${h.symbol ? `${h.name} (${h.symbol})` : h.name}${h.accountName ? ` — ${h.accountName}` : ""}`,
-                              })),
-                              (h) => accountHoldings.find((x) => x.name === h.value)?.id ?? h.value,
-                              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                            ),
-                            ...(form.portfolioHoldingId &&
+                    <Field
+                      label="Portfolio Holding"
+                      control="combobox"
+                      value={form.portfolioHoldingId}
+                      onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
+                      options={(() => {
+                        const accountHoldings = form.accountId
+                          ? holdings.filter((h) => String(h.accountId) === form.accountId)
+                          : holdings;
+                        return [
+                          ...sortHolding(
+                            accountHoldings.map((h): FieldComboboxOption => ({
+                              value: h.name,
+                              label: `${h.symbol ? `${h.name} (${h.symbol})` : h.name}${h.accountName ? ` — ${h.accountName}` : ""}`,
+                            })),
+                            (h) => accountHoldings.find((x) => x.name === h.value)?.id ?? h.value,
+                            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                          ),
+                          ...(form.portfolioHoldingId &&
                             !holdings.some((h) => h.name === form.portfolioHoldingId)
-                              ? [
-                                  {
-                                    value: form.portfolioHoldingId,
-                                    label: form.portfolioHoldingId,
-                                  } satisfies ComboboxItemShape,
-                                ]
-                              : []),
-                          ];
-                        })()}
-                        placeholder="None"
-                        searchPlaceholder="Search holdings…"
-                        emptyMessage="No matches"
-                        className="w-full"
-                      />
-                    </div>
+                            ? [
+                              {
+                                value: form.portfolioHoldingId,
+                                label: form.portfolioHoldingId,
+                              } satisfies FieldComboboxOption,
+                            ]
+                            : []),
+                        ];
+                      })()}
+                      placeholder="None"
+                      searchPlaceholder="Search holdings…"
+                      emptyMessage="No matches"
+                    />
                   )}
                 </div>
-                <div className="flex min-h-row items-center justify-between gap-3">
-                  <Label htmlFor="isBusiness" className="flex-1 cursor-pointer">
-                    Business expense
-                  </Label>
-                  <Switch
-                    id="isBusiness"
-                    checked={form.isBusiness}
-                    onCheckedChange={(v) => setForm({ ...form, isBusiness: v })}
-                    className="shrink-0"
-                  />
-                </div>
+                <Field
+                  label="Business expense"
+                  control="switch"
+                  id="isBusiness"
+                  checked={form.isBusiness}
+                  onCheckedChange={(v) => setForm({ ...form, isBusiness: v })}
+                />
               </div>
             )}
 
@@ -517,17 +488,13 @@ export function TransactionFormBody({
                 The tx saves + reconciles first; the rule is best-effort. */}
             {ruleEligible && (
               <div className="space-y-1.5 rounded-md border border-info/30 bg-info/10 p-3">
-                <div className="flex min-h-row items-center justify-between gap-3">
-                  <Label htmlFor="alsoCreateRule" className="flex-1 cursor-pointer">
-                    Also create a rule for next time
-                  </Label>
-                  <Switch
-                    id="alsoCreateRule"
-                    checked={alsoCreateRule}
-                    onCheckedChange={(v) => setAlsoCreateRule(v)}
-                    className="shrink-0"
-                  />
-                </div>
+                <Field
+                  label="Also create a rule for next time"
+                  control="switch"
+                  id="alsoCreateRule"
+                  checked={alsoCreateRule}
+                  onCheckedChange={(v) => setAlsoCreateRule(v)}
+                />
                 <p className="text-xs text-muted-foreground pl-6">
                   Payee contains{" "}
                   <span className="font-mono text-foreground">
@@ -568,30 +535,27 @@ export function TransactionFormBody({
         {dialogMode === "transfer" && (
           <form id={formId} onSubmit={handleTransferSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="min-w-0 space-y-1.5">
-                <Label>Date</Label>
-                <Input
-                  type="date"
-                  className="min-w-0 max-w-full"
-                  value={transferForm.date}
-                  onChange={(e) => setTransferForm({ ...transferForm, date: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="min-w-0 space-y-1.5">
-                <Label>Amount sent</Label>
-                <AmountInput
-                  step="0.01"
-                  min="0"
-                  value={transferForm.amount}
-                  onValueChange={(v) => {
-                    setTransferReceivedTouched(false);
-                    setTransferForm({ ...transferForm, amount: v });
-                  }}
-                  placeholder="100.00"
-                  required
-                />
-              </div>
+              <Field
+                label="Date"
+                control="date"
+                value={transferForm.date}
+                onChange={(e) => setTransferForm({ ...transferForm, date: e.target.value })}
+                required
+                className="max-w-full"
+              />
+              <Field
+                label="Amount sent"
+                control="amount"
+                step="0.01"
+                min="0"
+                value={transferForm.amount}
+                onValueChange={(v) => {
+                  setTransferReceivedTouched(false);
+                  setTransferForm({ ...transferForm, amount: v });
+                }}
+                placeholder="100.00"
+                required
+              />
             </div>
             {(() => {
               const fromAcctPicker = accounts.find((a) => String(a.id) === transferForm.fromAccountId);
@@ -604,50 +568,46 @@ export function TransactionFormBody({
                 (!fromAcctPicker && toIsInv);
               return (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>From account</Label>
-                    <Combobox
-                      value={transferForm.fromAccountId}
-                      onValueChange={(v) => setTransferForm({ ...transferForm, fromAccountId: v })}
-                      items={sortAccount(
-                        accounts
-                          .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
-                          .filter((a) => allowSameAccount || String(a.id) !== transferForm.toAccountId)
-                          .map((a): ComboboxItemShape => ({
-                            value: String(a.id),
-                            label: `${a.name} · ${a.currency}`,
-                          })),
-                        (a) => Number(a.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Source account"
-                      searchPlaceholder="Search accounts…"
-                      emptyMessage="No matches"
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>To account</Label>
-                    <Combobox
-                      value={transferForm.toAccountId}
-                      onValueChange={(v) => setTransferForm({ ...transferForm, toAccountId: v })}
-                      items={sortAccount(
-                        accounts
-                          .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
-                          .filter((a) => allowSameAccount || String(a.id) !== transferForm.fromAccountId)
-                          .map((a): ComboboxItemShape => ({
-                            value: String(a.id),
-                            label: `${a.name} · ${a.currency}`,
-                          })),
-                        (a) => Number(a.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Destination account"
-                      searchPlaceholder="Search accounts…"
-                      emptyMessage="No matches"
-                      className="w-full"
-                    />
-                  </div>
+                  <Field
+                    label="From account"
+                    control="combobox"
+                    value={transferForm.fromAccountId}
+                    onValueChange={(v) => setTransferForm({ ...transferForm, fromAccountId: v })}
+                    options={sortAccount(
+                      accounts
+                        .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
+                        .filter((a) => allowSameAccount || String(a.id) !== transferForm.toAccountId)
+                        .map((a): FieldComboboxOption => ({
+                          value: String(a.id),
+                          label: `${a.name} · ${a.currency}`,
+                        })),
+                      (a) => Number(a.value),
+                      (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                    )}
+                    placeholder="Source account"
+                    searchPlaceholder="Search accounts…"
+                    emptyMessage="No matches"
+                  />
+                  <Field
+                    label="To account"
+                    control="combobox"
+                    value={transferForm.toAccountId}
+                    onValueChange={(v) => setTransferForm({ ...transferForm, toAccountId: v })}
+                    options={sortAccount(
+                      accounts
+                        .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
+                        .filter((a) => allowSameAccount || String(a.id) !== transferForm.fromAccountId)
+                        .map((a): FieldComboboxOption => ({
+                          value: String(a.id),
+                          label: `${a.name} · ${a.currency}`,
+                        })),
+                      (a) => Number(a.value),
+                      (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                    )}
+                    placeholder="Destination account"
+                    searchPlaceholder="Search accounts…"
+                    emptyMessage="No matches"
+                  />
                 </div>
               );
             })()}
@@ -664,9 +624,9 @@ export function TransactionFormBody({
               const sourceHoldings = fromAcct ? holdings.filter((h) => h.accountId === fromAcct.id) : [];
               const destHoldings = toAcct ? holdings.filter((h) => h.accountId === toAcct.id) : [];
 
-              const buildHoldingItems = (acctHoldings: typeof holdings): ComboboxItemShape[] =>
+              const buildHoldingItems = (acctHoldings: typeof holdings): FieldComboboxOption[] =>
                 sortHolding(
-                  acctHoldings.map((h): ComboboxItemShape => ({
+                  acctHoldings.map((h): FieldComboboxOption => ({
                     value: bothInv ? h.name : String(h.id),
                     label: h.symbol ? `${h.name} (${h.symbol})` : h.name,
                   })),
@@ -700,40 +660,35 @@ export function TransactionFormBody({
                       </p>
                     )}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Source holding (in {fromAcct?.name ?? "—"}){" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Combobox
-                          value={transferForm.holdingName}
-                          onValueChange={(v) => setTransferForm({ ...transferForm, holdingName: v ?? "" })}
-                          items={buildHoldingItems(sourceHoldings)}
-                          placeholder="Pick a holding"
-                          searchPlaceholder="Search holdings…"
-                          emptyMessage="No matches"
-                          size="sm"
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Quantity (shares) <span className="text-destructive">*</span>
-                        </Label>
-                        <AmountInput
-                          step="0.0001"
-                          min="0"
-                          value={transferForm.quantity}
-                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
-                          placeholder="e.g. 10.0000"
-                        />
-                      </div>
+                      <Field
+                        label={<>Source holding (in {fromAcct?.name ?? "—"}){" "}</>}
+                        required
+                        control="combobox"
+                        value={transferForm.holdingName}
+                        onValueChange={(v) => setTransferForm({ ...transferForm, holdingName: v ?? "" })}
+                        options={buildHoldingItems(sourceHoldings)}
+                        placeholder="Pick a holding"
+                        searchPlaceholder="Search holdings…"
+                        emptyMessage="No matches"
+                        compact
+                      />
+                      <Field
+                        label="Quantity (shares)"
+                        required
+                        control="amount"
+                        step="0.0001"
+                        min="0"
+                        value={transferForm.quantity}
+                        onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
+                        placeholder="e.g. 10.0000"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">Destination holding (in {toAcct?.name ?? "—"})</Label>
+                        <span className="text-xs font-medium">Destination holding (in {toAcct?.name ?? "—"})</span>
                         {toAcct ? (
-                          <Select
+                          <Field
+                            control="select"
                             value={destSelectValue}
                             onValueChange={(v) => {
                               const val = v ?? destSentinel;
@@ -747,54 +702,27 @@ export function TransactionFormBody({
                                 setTransferForm({ ...transferForm, destHoldingName: val });
                               }
                             }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Same as source">
-                                {(v) => {
-                                  const val = v == null ? "" : String(v);
-                                  if (!val || val === destSentinel) {
-                                    if (!sourceName) return "Same as source";
-                                    const matchShares = Number(destExactMatch?.currentShares ?? 0);
-                                    return destExactMatch
-                                      ? `${sourceName} (existing · ${matchShares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
-                                      : `${sourceName} (will create)`;
-                                  }
-                                  if (val === "__custom__") return transferForm.destHoldingName || "Custom name";
-                                  const h = destHoldings.find((x) => x.name === val);
-                                  const shares = Number(h?.currentShares ?? 0);
-                                  return `${val} · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
-                                }}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={destSentinel}>
-                                {sourceName
+                            placeholder="Same as source"
+                            options={[
+                              {
+                                value: destSentinel, label: sourceName
                                   ? destExactMatch
                                     ? `Same as source — binds to existing "${sourceName}" (${Number(
-                                        destExactMatch.currentShares ?? 0,
-                                      ).toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
+                                      destExactMatch.currentShares ?? 0,
+                                    ).toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
                                     : `Same as source — auto-create "${sourceName}"`
-                                  : "Same as source"}
-                              </SelectItem>
-                              {destHoldings
-                                .filter((h) => h.name !== sourceName)
-                                .map((h) => {
-                                  const shares = Number(h.currentShares ?? 0);
-                                  const qty = ` · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
-                                  return (
-                                    <SelectItem key={h.id} value={h.name}>
-                                      {h.symbol ? `${h.name} (${h.symbol})${qty}` : `${h.name}${qty}`}
-                                    </SelectItem>
-                                  );
-                                })}
-                              <SelectItem value="__custom__">+ Type a different name…</SelectItem>
-                            </SelectContent>
-                          </Select>
+                                  : "Same as source"
+                              },
+                              ...destHoldings
+                                .filter((h) => h.name !== sourceName).map((h) => { const shares = Number(h.currentShares ?? 0); const qty = ` · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`; return ({ value: h.name, label: h.symbol ? `${h.name} (${h.symbol})${qty}` : `${h.name}${qty}` }); }),
+                              { value: "__custom__", label: "+ Type a different name…" },
+                            ]}
+                          />
                         ) : (
-                          <Input value="" placeholder="Pick a destination account first" disabled />
+                          <Field value="" placeholder="Pick a destination account first" disabled />
                         )}
                         {destHoldingTouched && destSelectValue === "__custom__" && (
-                          <Input
+                          <Field
                             value={transferForm.destHoldingName}
                             onChange={(e) => setTransferForm({ ...transferForm, destHoldingName: e.target.value })}
                             placeholder={`New holding name in ${toAcct?.name ?? "destination"}`}
@@ -802,8 +730,9 @@ export function TransactionFormBody({
                         )}
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Destination quantity</Label>
-                        <AmountInput
+                        <Field
+                          label="Destination quantity"
+                          control="amount"
                           step="0.0001"
                           min="0"
                           value={destQuantityTouched ? transferForm.destQuantity : transferForm.quantity}
@@ -850,64 +779,54 @@ export function TransactionFormBody({
                   </div>
                   {fromInv && fromAcct && (
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Holding in {fromAcct.name} <span className="text-destructive">*</span>
-                        </Label>
-                        <Combobox
-                          value={transferForm.fromHoldingId}
-                          onValueChange={(v) => setTransferForm({ ...transferForm, fromHoldingId: v ?? "" })}
-                          items={buildHoldingItems(sourceHoldings)}
-                          placeholder="Pick a holding"
-                          searchPlaceholder="Search holdings…"
-                          emptyMessage="No matches"
-                          size="sm"
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Quantity (shares) <span className="text-destructive">*</span>
-                        </Label>
-                        <AmountInput
-                          step="0.0001"
-                          min="0"
-                          value={transferForm.quantity}
-                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
-                          placeholder="e.g. 10.0000"
-                        />
-                      </div>
+                      <Field
+                        label={<>Holding in {fromAcct.name}</>}
+                        required
+                        control="combobox"
+                        value={transferForm.fromHoldingId}
+                        onValueChange={(v) => setTransferForm({ ...transferForm, fromHoldingId: v ?? "" })}
+                        options={buildHoldingItems(sourceHoldings)}
+                        placeholder="Pick a holding"
+                        searchPlaceholder="Search holdings…"
+                        emptyMessage="No matches"
+                        compact
+                      />
+                      <Field
+                        label="Quantity (shares)"
+                        required
+                        control="amount"
+                        step="0.0001"
+                        min="0"
+                        value={transferForm.quantity}
+                        onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
+                        placeholder="e.g. 10.0000"
+                      />
                     </div>
                   )}
                   {toInv && toAcct && (
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Holding in {toAcct.name} <span className="text-destructive">*</span>
-                        </Label>
-                        <Combobox
-                          value={transferForm.toHoldingId}
-                          onValueChange={(v) => setTransferForm({ ...transferForm, toHoldingId: v ?? "" })}
-                          items={buildHoldingItems(destHoldings)}
-                          placeholder="Pick a holding"
-                          searchPlaceholder="Search holdings…"
-                          emptyMessage="No matches"
-                          size="sm"
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Quantity (shares) <span className="text-destructive">*</span>
-                        </Label>
-                        <AmountInput
-                          step="0.0001"
-                          min="0"
-                          value={transferForm.quantity}
-                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
-                          placeholder="e.g. 10.0000"
-                        />
-                      </div>
+                      <Field
+                        label={<>Holding in {toAcct.name}</>}
+                        required
+                        control="combobox"
+                        value={transferForm.toHoldingId}
+                        onValueChange={(v) => setTransferForm({ ...transferForm, toHoldingId: v ?? "" })}
+                        options={buildHoldingItems(destHoldings)}
+                        placeholder="Pick a holding"
+                        searchPlaceholder="Search holdings…"
+                        emptyMessage="No matches"
+                        compact
+                      />
+                      <Field
+                        label="Quantity (shares)"
+                        required
+                        control="amount"
+                        step="0.0001"
+                        min="0"
+                        value={transferForm.quantity}
+                        onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
+                        placeholder="e.g. 10.0000"
+                      />
                     </div>
                   )}
                 </div>
@@ -953,7 +872,7 @@ export function TransactionFormBody({
                 <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-0.5">
-                      <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
+                      <span className="text-xs font-medium">Amount received ({toAcct!.currency})</span>
                       <InfoTip
                         label="About amount received"
                         text={
@@ -975,7 +894,8 @@ export function TransactionFormBody({
                       </span>
                     ) : null}
                   </div>
-                  <AmountInput
+                  <Field
+                    control="amount"
                     step="0.01"
                     min="0"
                     value={transferForm.receivedAmount}
@@ -1013,21 +933,19 @@ export function TransactionFormBody({
             })()}
 
             <div className="space-y-1.5">
-              <Label>Note (applied to both legs)</Label>
-              <AutoTextarea
+              <Field
+                label="Note (applied to both legs)"
+                control="textarea"
                 value={transferForm.note}
                 onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
                 placeholder="e.g. rent buffer"
-                className={NOTE_TEXTAREA_CLASS}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Tags (comma-separated, applied to both legs)</Label>
-              <Input
-                value={transferForm.tags}
-                onChange={(e) => setTransferForm({ ...transferForm, tags: e.target.value })}
-              />
-            </div>
+            <Field
+              label="Tags (comma-separated, applied to both legs)"
+              value={transferForm.tags}
+              onChange={(e) => setTransferForm({ ...transferForm, tags: e.target.value })}
+            />
 
             {transferEdit && (() => {
               const debit = editingTx;

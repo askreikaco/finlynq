@@ -44,7 +44,7 @@ const LIST_FILES = [
   "src/components/account-hub.tsx",
   "src/components/templates/hub-page.tsx",
   "src/components/transactions/mobile-tx-list.tsx",
-  "src/components/forms/form-group.tsx",
+  "src/components/ui/field/field.tsx",
   "src/components/transactions/entry/grouped-picker.tsx",
   "src/app/(app)/accounts/page.tsx",
   "src/app/(app)/accounts/_components/manage-groups-panel.tsx",

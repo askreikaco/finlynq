@@ -11,9 +11,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { AmountInput } from "@/components/amount-input";
 import { AccountFilter } from "@/app/(app)/reports/_components/account-filter";
 import { parseAccountIdsParam, serializeAccountIds } from "@/lib/reports/account-filter";
 import { PageHeader } from "@/components/mobile";
@@ -21,6 +18,7 @@ import { useReturnTo } from "@/lib/forms/use-return-to";
 import { applyToReturnTo } from "@/lib/toolbar/filter-params";
 import { FILTER_CONFIGS } from "@/lib/toolbar/list-configs";
 import { fieldKeys, type FilterField, type FilterSortConfig } from "@/lib/toolbar/filter-config";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { defaultSortKey, dirLabel, naturalDir, parseSort, sortToParams, type SortDir } from "@/lib/toolbar/sort";
 
 type Lookup = { id: number; name: string; alias?: string | null; group?: string };
@@ -86,56 +84,69 @@ export function FilterSortPage({ config }: { config: FilterSortConfig }) {
   const renderField = (f: FilterField) => {
     switch (f.kind) {
       case "segment": {
-        const cols = Math.min(f.options.length, 4);
         return (
-          <div role="radiogroup" aria-label={f.label} className="grid gap-1 rounded-lg bg-muted p-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-            {f.options.map((o) => (
-              <button
-                key={o.value || "all"}
-                type="button"
-                role="radio"
-                aria-checked={(values[f.key] ?? "") === o.value}
-                onClick={() => set(f.key, o.value)}
-                className={`min-h-11 rounded-md text-sm font-medium ${(values[f.key] ?? "") === o.value ? "bg-background text-foreground shadow-[var(--shadow-card)]" : "text-muted-foreground"}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          <Field
+            control="segmented"
+            fill
+            aria-label={f.label}
+            value={values[f.key] ?? ""}
+            onValueChange={(v) => set(f.key, v)}
+            options={f.options.map((o) => ({ value: o.value, label: o.label }))}
+          />
         );
       }
       case "select": {
-        const opts: ComboboxItemShape[] =
+        const opts: FieldComboboxOption[] =
           f.options === "accounts"
             ? accounts.map((a) => ({ value: String(a.id), label: a.alias || a.name }))
             : f.options === "categories"
               ? categories.map((c) => ({ value: String(c.id), label: c.group ? `${c.group} — ${c.name}` : c.name }))
               : f.options.map((o) => ({ value: o.value, label: o.label }));
         return (
-          <Combobox
+          <Field
+            control="combobox"
             value={values[f.key] ?? ""}
             onValueChange={(v) => set(f.key, v === ALL ? "" : v)}
-            items={[{ value: ALL, label: f.allLabel }, ...opts.filter((o) => o.value !== "")]}
+            options={[{ value: ALL, label: f.allLabel }, ...opts.filter((o) => o.value !== "")]}
             placeholder={f.allLabel}
             searchPlaceholder="Search…"
             emptyMessage="No matches"
-            size="sm"
-            className="h-11 w-full text-sm"
+            compact
           />
         );
       }
       case "amount":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <AmountInput placeholder="From" value={values[f.minKey] ?? ""} onValueChange={(v) => set(f.minKey, v)} className="h-11 text-sm" />
-            <AmountInput placeholder="To" value={values[f.maxKey] ?? ""} onValueChange={(v) => set(f.maxKey, v)} className="h-11 text-sm" />
+            <Field
+              control="amount"
+              placeholder="From"
+              value={values[f.minKey] ?? ""}
+              onValueChange={(v) => set(f.minKey, v)}
+            />
+            <Field
+              control="amount"
+              placeholder="To"
+              value={values[f.maxKey] ?? ""}
+              onValueChange={(v) => set(f.maxKey, v)}
+            />
           </div>
         );
       case "date":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <Input type="date" aria-label={`${f.label} from`} value={values[f.fromKey] ?? ""} onChange={(e) => set(f.fromKey, e.target.value)} className="h-11 text-sm" />
-            <Input type="date" aria-label={`${f.label} to`} value={values[f.toKey] ?? ""} onChange={(e) => set(f.toKey, e.target.value)} className="h-11 text-sm" />
+            <Field
+              control="date"
+              aria-label={`${f.label} from`}
+              value={values[f.fromKey] ?? ""}
+              onChange={(e) => set(f.fromKey, e.target.value)}
+            />
+            <Field
+              control="date"
+              aria-label={`${f.label} to`}
+              value={values[f.toKey] ?? ""}
+              onChange={(e) => set(f.toKey, e.target.value)}
+            />
           </div>
         );
       case "accounts":
@@ -146,7 +157,12 @@ export function FilterSortPage({ config }: { config: FilterSortConfig }) {
           />
         );
       case "text":
-        return <Input aria-label={f.label} placeholder={f.placeholder} value={values[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className="h-11 text-sm" />;
+        return <Field
+          aria-label={f.label}
+          placeholder={f.placeholder}
+          value={values[f.key] ?? ""}
+          onChange={(e) => set(f.key, e.target.value)}
+        />;
     }
   };
 

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { AlertTriangle, Check, KeyRound, ShieldCheck } from "lucide-react";
 
 const STRINGS = {
@@ -253,21 +253,17 @@ export function SignInMethods() {
             <p id="unlink-title" className="text-sm font-medium">{STRINGS.unlinkConfirmTitle}</p>
             <p className="text-xs text-muted-foreground" data-keep="warning">{STRINGS.unlinkConfirmMessage}</p>
 
-            <div>
-              <label htmlFor="unlink-password" className="text-xs font-medium text-muted-foreground">
-                {STRINGS.passwordLabel}
-              </label>
-              <Input
-                id="unlink-password"
-                type="password"
-                autoComplete="current-password"
-                placeholder={STRINGS.passwordPlaceholder}
-                autoFocus
-                value={unlinkPassword}
-                onChange={(e) => setUnlinkPassword(e.target.value)}
-                disabled={unlinking}
-              />
-            </div>
+            <Field
+              label={STRINGS.passwordLabel}
+              id="unlink-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder={STRINGS.passwordPlaceholder}
+              autoFocus
+              value={unlinkPassword}
+              onChange={(e) => setUnlinkPassword(e.target.value)}
+              disabled={unlinking}
+            />
 
             {unlinkError && (
               <p className="text-xs text-destructive flex items-center gap-2" role="alert">

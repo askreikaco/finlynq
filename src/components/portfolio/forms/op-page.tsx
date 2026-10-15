@@ -27,10 +27,6 @@ export function safeReturnHref(raw: string | null | undefined): string {
 }
 
 /** Control and input classes: 44px rows, 16px text on phones, no box (the row is the field). */
-export const OP_INPUT =
-  "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent dark:disabled:bg-transparent";
-export const OP_SELECT =
-  "w-full border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent regular:pointer-fine:text-sm";
 
 export function OpPage({
   title,

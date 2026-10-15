@@ -9,15 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
 import { DialogHeading } from "@/components/ui/dialog-heading";
 
@@ -122,30 +115,23 @@ export function ExcelMapperDialog({
         {sheets.length > 1 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Sheet:</span>
-            <Select value={selectedSheet} onValueChange={(v) => setSelectedSheet(v ?? "")}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sheets.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    {s.name} ({s.totalRows} rows)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={selectedSheet}
+              onValueChange={(v) => setSelectedSheet(v ?? "")}
+              className="w-48"
+              options={sheets.map((s) => ({ value: s.name, label: <>{s.name} ({s.totalRows} rows)</> }))}
+            />
           </div>
         )}
 
         {/* Headers toggle */}
-        <label className="flex items-center justify-between gap-3 min-h-row text-sm">
-          <span className="flex-1">First row contains headers</span>
-          <Switch
-            checked={hasHeaders}
-            onCheckedChange={(v) => setHasHeaders(v)}
-            className="shrink-0"
-          />
-        </label>
+        <Field
+          label="First row contains headers"
+          control="switch"
+          checked={hasHeaders}
+          onCheckedChange={(v) => setHasHeaders(v)}
+        />
 
         {/* Column mapping */}
         <div className="space-y-2 overflow-auto flex-1">
@@ -156,18 +142,15 @@ export function ExcelMapperDialog({
                 {header}
               </Badge>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Select value={mapping[header] ?? ""} onValueChange={(v) => updateMapping(header, v)}>
-                <SelectTrigger className="w-48" size="sm">
-                  <SelectValue placeholder="Skip" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FIELD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value || "_skip"}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={mapping[header] ?? ""}
+                onValueChange={(v) => updateMapping(header, v)}
+                placeholder="Skip"
+                compact
+                className="w-48"
+                options={FIELD_OPTIONS.map((opt) => ({ value: opt.value || "_skip", label: opt.label }))}
+              />
             </div>
           ))}
         </div>

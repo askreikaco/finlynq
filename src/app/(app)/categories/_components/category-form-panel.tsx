@@ -14,8 +14,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { FormPage, type FormPageEmbedded } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { applyPendingBudgets } from "@/lib/budgets/pending-overlay";
@@ -159,7 +159,7 @@ function GroupRenameForm({ groupId, categories, onSaved, onCancel }: {
           {error}
         </div>
       )}
-      <Input aria-label="Group name" className="h-11 text-base regular:pointer-fine:text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Group name" />
+      <Field label="Group name" hideLabel value={name} onChange={(e) => setName(e.target.value)} placeholder="Group name" />
       <p className="text-xs text-muted-foreground">
         Renames the group on its {members.length} categor{members.length === 1 ? "y" : "ies"}. Move a single category by editing it.
       </p>

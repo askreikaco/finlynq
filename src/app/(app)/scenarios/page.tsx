@@ -4,8 +4,6 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -14,8 +12,8 @@ import {
   AreaChart, Area, Legend,
 } from "recharts";
 import { Calculator, CalendarClock, Coins, Home, Landmark, Percent, PiggyBank, Receipt, SlidersHorizontal, Sparkles, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
 import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
 
 // --- Types ---
@@ -97,12 +95,43 @@ function HomePurchaseTab() {
       <SectionCard label="Purchase details" icon={Home} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
-            <div><Label>Purchase Price ($)</Label><AmountInput  value={form.purchasePrice} onValueChange={(nv) => setForm({ ...form, purchasePrice: nv })} /></div>
-            <div><Label>Down Payment (%)</Label><AmountInput  value={form.downPaymentPct} onValueChange={(nv) => setForm({ ...form, downPaymentPct: nv })} /></div>
-            <div><Label>Interest Rate (%)</Label><AmountInput  step="0.1" value={form.interestRate} onValueChange={(nv) => setForm({ ...form, interestRate: nv })} /></div>
-            <div><Label>Amortization (years)</Label><Input type="number" value={form.amortizationYears} onChange={(e) => setForm({ ...form, amortizationYears: e.target.value })} /></div>
-            <div><Label>Property Tax / Year ($)</Label><AmountInput  value={form.propertyTaxYear} onValueChange={(nv) => setForm({ ...form, propertyTaxYear: nv })} /></div>
-            <div><Label>Maintenance / Year ($)</Label><AmountInput  value={form.maintenanceYear} onValueChange={(nv) => setForm({ ...form, maintenanceYear: nv })} /></div>
+            <Field
+              label="Purchase Price ($)"
+              control="amount"
+              value={form.purchasePrice}
+              onValueChange={(nv) => setForm({ ...form, purchasePrice: nv })}
+            />
+            <Field
+              label="Down Payment (%)"
+              control="amount"
+              value={form.downPaymentPct}
+              onValueChange={(nv) => setForm({ ...form, downPaymentPct: nv })}
+            />
+            <Field
+              label="Interest Rate (%)"
+              control="amount"
+              step="0.1"
+              value={form.interestRate}
+              onValueChange={(nv) => setForm({ ...form, interestRate: nv })}
+            />
+            <Field
+              label="Amortization (years)"
+              control="number"
+              value={form.amortizationYears}
+              onChange={(e) => setForm({ ...form, amortizationYears: e.target.value })}
+            />
+            <Field
+              label="Property Tax / Year ($)"
+              control="amount"
+              value={form.propertyTaxYear}
+              onValueChange={(nv) => setForm({ ...form, propertyTaxYear: nv })}
+            />
+            <Field
+              label="Maintenance / Year ($)"
+              control="amount"
+              value={form.maintenanceYear}
+              onValueChange={(nv) => setForm({ ...form, maintenanceYear: nv })}
+            />
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
@@ -176,9 +205,25 @@ function ExtraSavingsTab() {
       <SectionCard label="Savings details" icon={PiggyBank} tone="emerald">
         <div className="space-y-4">
           <div className={FORM_GRID}>
-            <div><Label>Additional Monthly Savings ($)</Label><AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} /></div>
-            <div><Label>Expected Annual Return (%)</Label><AmountInput  step="0.5" value={form.returnRate} onValueChange={(nv) => setForm({ ...form, returnRate: nv })} /></div>
-            <div><Label>Time Horizon (years)</Label><Input type="number" value={form.years} onChange={(e) => setForm({ ...form, years: e.target.value })} /></div>
+            <Field
+              label="Additional Monthly Savings ($)"
+              control="amount"
+              value={form.monthlySavings}
+              onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })}
+            />
+            <Field
+              label="Expected Annual Return (%)"
+              control="amount"
+              step="0.5"
+              value={form.returnRate}
+              onValueChange={(nv) => setForm({ ...form, returnRate: nv })}
+            />
+            <Field
+              label="Time Horizon (years)"
+              control="number"
+              value={form.years}
+              onChange={(e) => setForm({ ...form, years: e.target.value })}
+            />
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
@@ -318,10 +363,12 @@ function DebtPayoffTab() {
                 />
               ))}
             </div>
-            <div>
-              <Label>Extra Monthly Budget ($)</Label>
-              <AmountInput  value={extraBudget} onValueChange={(nv) => setExtraBudget(nv)} />
-            </div>
+            <Field
+              label="Extra Monthly Budget ($)"
+              control="amount"
+              value={extraBudget}
+              onValueChange={(nv) => setExtraBudget(nv)}
+            />
             <Button onClick={calculate} disabled={loading} className="w-full">
               <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Compare Strategies"}
             </Button>
@@ -409,9 +456,24 @@ function IncomeChangeTab() {
       <SectionCard label="Income details" icon={Wallet} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
-            <div><Label>Current Annual Income ($)</Label><AmountInput  value={form.currentIncome} onValueChange={(nv) => setForm({ ...form, currentIncome: nv })} /></div>
-            <div><Label>New Annual Income ($)</Label><AmountInput  value={form.newIncome} onValueChange={(nv) => setForm({ ...form, newIncome: nv })} /></div>
-            <div><Label>Current Savings Rate (%)</Label><AmountInput  value={form.currentSavingsRate} onValueChange={(nv) => setForm({ ...form, currentSavingsRate: nv })} /></div>
+            <Field
+              label="Current Annual Income ($)"
+              control="amount"
+              value={form.currentIncome}
+              onValueChange={(nv) => setForm({ ...form, currentIncome: nv })}
+            />
+            <Field
+              label="New Annual Income ($)"
+              control="amount"
+              value={form.newIncome}
+              onValueChange={(nv) => setForm({ ...form, newIncome: nv })}
+            />
+            <Field
+              label="Current Savings Rate (%)"
+              control="amount"
+              value={form.currentSavingsRate}
+              onValueChange={(nv) => setForm({ ...form, currentSavingsRate: nv })}
+            />
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate Impact"}

@@ -21,6 +21,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark, Layers, Loader2, PlusCircle, Receipt, RefreshCw, ShieldCheck, Undo2, Wallet } from "lucide-react";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // MUST stay in sync with the CHECK constraint on
@@ -443,12 +444,11 @@ function ProposalCard({
   return (
     <div className={`flex items-center ${selected ? "bg-muted" : ""}`}>
       {!isRefused && !isApplied && (
-        <input
-          type="checkbox"
+        <Field
+          control="checkbox"
           aria-label={`Approve: ${proposal.summary}`}
           checked={isApproved}
           onChange={onToggleApprove}
-          className="ml-4 size-4 shrink-0"
         />
       )}
       <div className="min-w-0 flex-1">
@@ -898,27 +898,15 @@ function HoldingPicker({
     );
   }
   return (
-    <select
-      value={proposal.chosenHoldingId ?? ""}
-      onChange={(e) => {
-        const v = e.target.value;
-        onChange(v === "" ? null : Number(v));
-      }}
-      className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
-    >
-      <option value="">— Pick a holding —</option>
-      {candidates.map((id) => {
-        const h = holdingMap[id];
-        const label = h?.name ?? `holding #${id}`;
-        const currency = h?.currency ? ` (${h.currency})` : "";
-        return (
-          <option key={id} value={id}>
-            {label}
-            {currency}
-          </option>
-        );
-      })}
-    </select>
+    <Field
+      control="select"
+      value={String(proposal.chosenHoldingId ?? "")}
+      onValueChange={(v) => onChange(v === "" ? null : Number(v))}
+      options={[
+        { value: "", label: "— Pick a holding —" },
+        ...candidates.map((id) => { const h = holdingMap[id]; const label = h?.name ?? `holding #${id}`; const currency = h?.currency ? ` (${h.currency})` : ""; return ({ value: String(id), label: `${label}${currency}` }); }),
+      ]}
+    />
   );
 }
 
@@ -1185,41 +1173,26 @@ function KindOverridePicker({
       </div>
 
       {isPaired && (
-        <div className="space-y-1.5 rounded border border-border p-2">
-          <div className="flex items-center gap-1 text-xs font-medium">
-            Counterpart leg
-            <InfoTip
-              label="About counterpart leg"
-              text={`New cash leg: ${supportsSynth ? `creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve` : "not available for cross-account kinds; link an existing row instead"}. Link existing row: pairs the orphan with an unmatched row ${supportsSynth ? "already in this account" : "in the other account or currency"}.`}
-            />
-          </div>
-          <label className={`flex items-start gap-2 text-xs ${supportsSynth ? "cursor-pointer" : "opacity-40 cursor-not-allowed"}`}>
-            <input
-              type="radio"
-              name={`counterpart-mode-${proposal.id}`}
-              className="mt-0.5"
-              disabled={!supportsSynth}
-              checked={chosenCounterpartMode === "synth_new"}
-              onChange={() => { if (supportsSynth) { setChosenCounterpartMode("synth_new"); setCounterpartTxId(null); } }}
-            />
-            <span>
-              <span className="font-medium">New cash leg</span>
-              {!supportsSynth && <span className="text-muted-foreground"> (n/a)</span>}
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-xs cursor-pointer">
-            <input
-              type="radio"
-              name={`counterpart-mode-${proposal.id}`}
-              className="mt-0.5"
-              checked={chosenCounterpartMode === "link_existing"}
-              onChange={() => setChosenCounterpartMode("link_existing")}
-            />
-            <span>
-              <span className="font-medium">Link existing row</span>
-            </span>
-          </label>
-
+        <div className="space-y-2">
+          <Field
+            label="Counterpart leg"
+            control="segmented"
+            info={`New cash leg: ${supportsSynth ? `creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve` : "not available for cross-account kinds; link an existing row instead"}. Link existing row: pairs the orphan with an unmatched row ${supportsSynth ? "already in this account" : "in the other account or currency"}.`}
+            value={chosenCounterpartMode}
+            onValueChange={(v) => {
+              if (v === "synth_new") {
+                if (supportsSynth) {
+                  setChosenCounterpartMode("synth_new");
+                  setCounterpartTxId(null);
+                }
+              } else setChosenCounterpartMode("link_existing");
+            }}
+            fill
+            options={[
+              { value: "synth_new", label: supportsSynth ? "New cash leg" : "New cash leg (n/a)", disabled: !supportsSynth },
+              { value: "link_existing", label: "Link existing row" },
+            ]}
+          />
           {chosenCounterpartMode === "link_existing" && (
             <div className="mt-1 space-y-1">
               {loadingCandidates && (
@@ -1263,18 +1236,15 @@ function KindOverridePicker({
       {needsRelatedHolding && (
         <div className="space-y-1">
           <div className="text-xs font-medium">Related stock holding (for reporting)</div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
-            value={chosenRelatedHoldingId ?? ""}
-            onChange={(e) => setChosenRelatedHoldingId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">— pick a holding —</option>
-            {accountHoldings.map(([id, h]) => (
-              <option key={id} value={id}>
-                {h.name ?? `holding #${id}`} ({h.currency})
-              </option>
-            ))}
-          </select>
+          <Field
+            control="select"
+            value={String(chosenRelatedHoldingId ?? "")}
+            onValueChange={(v) => setChosenRelatedHoldingId(v ? Number(v) : null)}
+            options={[
+              { value: "", label: "— pick a holding —" },
+              ...accountHoldings.map(([id, h]) => ({ value: String(id), label: `${h.name ?? `holding #${id}`}(${h.currency})` })),
+            ]}
+          />
         </div>
       )}
 
@@ -1289,22 +1259,19 @@ function KindOverridePicker({
               />
             )}
           </div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
-            value={chosenCategoryId ?? ""}
-            onChange={(e) => setChosenCategoryId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">
-              {autoCategoryName
-                ? `— auto: ${autoCategoryName} (created if needed) —`
-                : "— leave uncategorized —"}
-            </option>
-            {categoryOptions.map(([id, c]) => (
-              <option key={id} value={id}>
-                {c.name ?? `category #${id}`}
-              </option>
-            ))}
-          </select>
+          <Field
+            control="select"
+            value={String(chosenCategoryId ?? "")}
+            onValueChange={(v) => setChosenCategoryId(v ? Number(v) : null)}
+            options={[
+              {
+                value: "", label: autoCategoryName
+                  ? `— auto: ${autoCategoryName} (created if needed) —`
+                  : "— leave uncategorized —"
+              },
+              ...categoryOptions.map(([id, c]) => ({ value: String(id), label: c.name ?? `category #${id}` })),
+            ]}
+          />
         </div>
       )}
 

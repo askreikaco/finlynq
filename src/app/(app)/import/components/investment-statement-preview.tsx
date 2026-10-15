@@ -13,13 +13,6 @@ import { Button } from "@/components/ui/button";
 import { ListRow } from "@/components/mobile/list-row";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Landmark,
   ArrowRight,
   AlertTriangle,
@@ -27,6 +20,7 @@ import {
 } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
 export interface InvestmentExternalAccount {
@@ -149,7 +143,8 @@ export function InvestmentStatementPreview({
                 {rowCounts.get(acc.externalId) ?? 0} rows
               </span>
               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-              <Select
+              <Field
+                control="select"
                 value={bindings[acc.externalId] ?? ""}
                 onValueChange={(v) =>
                   setBindings((prev) => ({
@@ -157,18 +152,11 @@ export function InvestmentStatementPreview({
                     [acc.externalId]: v ?? "",
                   }))
                 }
-              >
-                <SelectTrigger className="w-56" size="sm">
-                  <SelectValue placeholder="Select Finlynq account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {finlynqAccounts.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select Finlynq account"
+                compact
+                className="w-56"
+                options={finlynqAccounts.map((name) => ({ value: name, label: name }))}
+              />
               {bindings[acc.externalId] ? (
                 <CheckCircle2 className="h-3 w-3 text-pos" />
               ) : (

@@ -13,6 +13,7 @@ import { MemberCard, type OwnMovers } from "./member-card";
 import { computeHousehold, computeHouseholdFlows, type ExcludeReason } from "./household";
 import { errorMessage } from "./api";
 import { fill } from "./section-labels";
+import { Field } from "@/components/ui/field";
 import { HeadlineCards, IncomeVsExpensesCard, NetWorthOverTimeCard, type Period } from "./overview-cards";
 
 /** The ranges offered (legacy 6m / 1y stay API-only). Default: this month. */
@@ -198,60 +199,28 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           also sticky at top 0 there, and a second bar would overlap it (no shared height var to offset by). */}
       <div className="sticky max-regular:top-[calc(var(--sat)+var(--phone-header-h))] regular:static z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Time range first (key filter), then icon-only people chips */}
-        <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              role="radio"
-              aria-checked={period === p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                period === p.value ? "bg-background" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <Field
+          control="segmented"
+          compact
+          aria-label={FAMILY_STRINGS.overview_range_label}
+          value={period}
+          onValueChange={(v) => setPeriod(v as typeof period)}
+          options={PERIODS.map((p) => ({ value: p.value, label: p.label }))}
+        />
 
         {/* People chips (icon-only) */}
-        <div
-          role="radiogroup"
+        <Field
+          control="segmented"
+          pills
           aria-label={FAMILY_STRINGS.overview_member_filter_label}
-          className="flex min-w-0 gap-2 overflow-x-auto p-0.5"
-        >
-          <button
-            role="radio"
-            aria-checked={focus == null}
-            aria-label="Everyone"
-            title="Everyone"
-            onClick={() => setSelected("all")}
-            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-              focus == null ? "ring-2 ring-primary bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Users className="h-4 w-4" aria-hidden="true" />
-          </button>
-          {data.members.map((m) => {
-            const fullName = memberLabel(m);
-            return (
-              <button
-                key={m.id}
-                role="radio"
-                aria-checked={focus?.id === m.id}
-                aria-label={fullName}
-                title={fullName}
-                onClick={() => setSelected(m.id)}
-                className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  focus?.id === m.id ? "ring-2 ring-primary bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {getInitials(fullName)}
-              </button>
-            );
-          })}
-        </div>
-
+          value={focus?.id ?? "all"}
+          onValueChange={(v) => setSelected(v)}
+          options={[
+            { value: "all", label: <Users className="h-4 w-4" aria-hidden="true" />, ariaLabel: "Everyone" },
+            ...data.members.map((m) => ({ value: m.id, label: <span className="text-xs font-bold">{getInitials(memberLabel(m))}</span>, ariaLabel: memberLabel(m) })),
+          ]}
+          className="flex-1"
+        />
         <button
           type="button"
           onClick={() => {

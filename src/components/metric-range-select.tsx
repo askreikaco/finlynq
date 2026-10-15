@@ -1,10 +1,7 @@
 "use client";
-
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { localDateISO } from "@/lib/utils/date";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { CONTROL_SURFACE } from "@/components/ui/control-surface";
+import { Field } from "@/components/ui/field";
 import { RANGE_KEYS, RANGE_LABELS, UNIT_MONTHS, type RangeKey, type RangeSelection } from "@/lib/metrics/period";
 
 /**
@@ -27,11 +24,8 @@ export function MetricRangeSelect({
   className?: string;
 }) {
   const options = keys.includes(value.range) ? keys : [value.range, ...keys];
-  // The Select base sets its height through data-[size=default]:h-8 (more specific than a plain h-*), so the toolbar
-  // height is set on the same selectors; otherwise the trigger is shorter than the 44px month switcher beside it.
-  const h = touch
-    ? "h-11 data-[size=default]:h-11 pointer-coarse:data-[size=default]:h-11 dense:pointer-fine:data-[size=default]:h-11"
-    : "h-8";
+  // The toolbar (touch) keeps every control 44px, including dense pointer-fine, to match the month switcher beside it.
+  const tall = touch ? "dense:pointer-fine:h-11" : undefined;
   const pick = (range: RangeKey) => {
     if (range === "custom") {
       const to = localDateISO();
@@ -42,33 +36,37 @@ export function MetricRangeSelect({
   };
   return (
     <div data-slot="metric-range" className={cn("flex flex-wrap items-center gap-2", className)}>
-      <Select items={RANGE_LABELS} value={value.range} onValueChange={(v) => pick((v as RangeKey) ?? "this_month")}>
-        <SelectTrigger aria-label="Time range" className={cn(h, "w-auto min-w-36 rounded-full pl-4 text-xs", CONTROL_SURFACE)}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((k) => (
-            <SelectItem key={k} value={k}>{RANGE_LABELS[k]}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Field
+        control="select"
+        compact={!touch}
+        value={value.range}
+        onValueChange={(v) => pick((v as RangeKey) || "this_month")}
+        aria-label="Time range"
+        className="w-auto"
+        controlClassName={cn("min-w-36 rounded-full pl-4", tall)}
+        options={options.map((k) => ({ value: k, label: RANGE_LABELS[k] }))}
+      />
       {value.range === "custom" && (
         <>
-          <Input
-            type="date"
+          <Field
+            control="date"
+            compact={!touch}
             aria-label="From date"
-            className={cn(h, "w-auto text-xs")}
             value={value.from ?? ""}
             max={value.to}
             onChange={(e) => e.target.value && onChange({ range: "custom", from: e.target.value, to: value.to ?? e.target.value })}
+            className="w-auto"
+            controlClassName={tall}
           />
-          <Input
-            type="date"
+          <Field
+            control="date"
+            compact={!touch}
             aria-label="To date"
-            className={cn(h, "w-auto text-xs")}
             value={value.to ?? ""}
             min={value.from}
             onChange={(e) => e.target.value && onChange({ range: "custom", from: value.from ?? e.target.value, to: e.target.value })}
+            className="w-auto"
+            controlClassName={tall}
           />
         </>
       )}

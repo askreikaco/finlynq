@@ -32,6 +32,7 @@ import { Fragment } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { MatchPill, type ReconcileBadgeVariant } from "./match-pill";
+import { Field } from "@/components/ui/field";
 import {
   SuggestionCard,
   type SuggestionDisplay,
@@ -113,15 +114,14 @@ export function TransactionsPane({
             <TableRow>
               {selectionEnabled && (
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
+                  <Field
+                    control="checkbox"
                     aria-label="Select all transactions"
                     checked={allChecked}
                     ref={(el) => {
                       if (el) el.indeterminate = someChecked;
                     }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
-                    className="h-4 w-4 cursor-pointer"
                   />
                 </TableHead>
               )}
@@ -156,12 +156,11 @@ export function TransactionsPane({
                   >
                     {selectionEnabled && (
                       <TableCell className="w-10">
-                        <input
-                          type="checkbox"
+                        <Field
+                          control="checkbox"
                           aria-label={`Select transaction ${r.date} ${r.payee ?? ""}`}
                           checked={checked}
                           onChange={() => onToggleSelect?.(r.id)}
-                          className="h-4 w-4 cursor-pointer"
                         />
                       </TableCell>
                     )}

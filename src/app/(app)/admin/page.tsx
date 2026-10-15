@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, KeyRound, Layers, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
@@ -25,6 +24,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
 import { formatDelta } from "@/lib/metrics/delta";
 import { pctChange } from "@/lib/metrics/period";
+import { Field } from "@/components/ui/field";
 import { localDateISO } from "@/lib/utils/date";
 import { InfoTip } from "@/components/ui/info-tip";
 
@@ -571,7 +571,7 @@ export default function AdminPage() {
                 })}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Input
+                <Field
                   aria-label="Search users"
                   placeholder="Search name, username or email"
                   value={textFilter?.type === "text" ? textFilter.value : ""}
@@ -579,49 +579,58 @@ export default function AdminPage() {
                     const value = e.target.value;
                     handleColumnFilterChange("user", value.trim() ? { type: "text", columnId: "user", value } : null);
                   }}
-                  className="col-span-2 h-8 text-xs"
+                  compact
+                  className="col-span-2"
                 />
-                <select
+                <Field
+                  control="select"
                   aria-label="Filter by role"
                   value={roleFilter}
-                  onChange={(e) => setEnumFilter("role", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">All roles</option>
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("role", v)}
+                  compact
+                  options={[
+                    { value: "", label: "All roles" },
+                    { value: "user", label: "User" },
+                    { value: "admin", label: "Admin" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by plan"
                   value={planFilter}
-                  onChange={(e) => setEnumFilter("plan", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">All plans</option>
-                  <option value="free">Free</option>
-                  <option value="pro">Pro</option>
-                  <option value="premium">Premium</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("plan", v)}
+                  compact
+                  options={[
+                    { value: "", label: "All plans" },
+                    { value: "free", label: "Free" },
+                    { value: "pro", label: "Pro" },
+                    { value: "premium", label: "Premium" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by verified"
                   value={verifiedFilter}
-                  onChange={(e) => setEnumFilter("verified", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">Any verification</option>
-                  <option value="1">Verified</option>
-                  <option value="0">Not verified</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("verified", v)}
+                  compact
+                  options={[
+                    { value: "", label: "Any verification" },
+                    { value: "1", label: "Verified" },
+                    { value: "0", label: "Not verified" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by MFA"
                   value={mfaFilter}
-                  onChange={(e) => setEnumFilter("mfa", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">Any MFA</option>
-                  <option value="1">Enabled</option>
-                  <option value="0">Disabled</option>
-                </select>
+                  onValueChange={(v) => setEnumFilter("mfa", v)}
+                  compact
+                  options={[
+                    { value: "", label: "Any MFA" },
+                    { value: "1", label: "Enabled" },
+                    { value: "0", label: "Disabled" },
+                  ]}
+                />
               </div>
               {colFilters.length > 0 && (
                 <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -793,20 +802,20 @@ export default function AdminPage() {
           <Button variant="outline" disabled={updatingUser === detailUser.id} onClick={() => handleRoleToggle(detailUser.id, detailUser.role)}>
             {detailUser.role === "admin" ? "Revoke Admin" : "Make Admin"}
           </Button>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">Plan</span>
-            <select
-              aria-label="Plan"
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-              value={detailUser.plan ?? "free"}
-              disabled={updatingUser === detailUser.id}
-              onChange={(e) => handlePlanChange(detailUser.id, e.target.value)}
-            >
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
-          </label>
+          <Field
+            label="Plan"
+            control="select"
+            aria-label="Plan"
+            value={detailUser.plan ?? "free"}
+            disabled={updatingUser === detailUser.id}
+            onValueChange={(v) => handlePlanChange(detailUser.id, v)}
+            compact
+            options={[
+              { value: "free", label: "Free" },
+              { value: "pro", label: "Pro" },
+              { value: "premium", label: "Premium" },
+            ]}
+          />
         </DetailSheet>
       )}
 

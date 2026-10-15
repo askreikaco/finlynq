@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface InboxRow {
@@ -373,17 +374,15 @@ export default function AdminInboxPage() {
               {/* Reply box */}
               {thread.category === "mailbox" && (
                 <div className="border-t px-4 py-3 space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Reply to <span className="font-mono">{thread.counterparty}</span>
-                  </label>
-                  <textarea
+                  <Field
+                    label={<>Reply to <span className="font-mono">{thread.counterparty}</span></>}
+                    control="textarea"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     rows={4}
                     maxLength={50000}
                     placeholder="Write your reply…"
                     disabled={sending}
-                    className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
                   />
                   {replyError && <p className="text-xs text-destructive">{replyError}</p>}
                   <div className="flex justify-end">

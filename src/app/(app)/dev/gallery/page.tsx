@@ -29,15 +29,9 @@ import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import {
@@ -47,6 +41,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
+import { FieldsGallery } from "./fields";
+import { Field } from "@/components/ui/field";
 
 const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
 const SPARK_LABELS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
@@ -141,7 +137,7 @@ function MetricPlayground() {
         {METRIC_PARTS.map(([k, name]) => (
           <label key={k} className="flex items-center justify-between gap-2 text-sm">
             {name}
-            <Switch checked={parts[k]} onCheckedChange={() => toggle(k)} aria-label={name} />
+            <Field control="switch" checked={parts[k]} onCheckedChange={() => toggle(k)} aria-label={name} />
           </label>
         ))}
       </div>
@@ -160,8 +156,6 @@ function GalleryContent() {
   const [confirm, setConfirm] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [detail, setDetail] = useState(false);
-  const [select, setSelect] = useState("a");
-  const [combo, setCombo] = useState("");
   const [on, setOn] = useState(true);
   const [acc, setAcc] = useState<string | null>("one");
 
@@ -349,7 +343,7 @@ function GalleryContent() {
                 <ListRow icon={Bell} title="Quiet value" value="Pro plan" quietValue />
                 <ListRow icon={Bell} title="Unread" unread={3} href="/dev/gallery" />
                 <ListRow title="Count and badge" count={4} badge={<Badge variant="outline" className="text-xs">new</Badge>} />
-                <ListRow icon={Settings} title="Trailing node" trailing={<Switch checked={on} onCheckedChange={setOn} aria-label="Demo switch" />} />
+                <ListRow icon={Settings} title="Trailing node" trailing={<Field control="switch" checked={on} onCheckedChange={setOn} aria-label="Demo switch" />} />
               </SectionCard>
               <SectionCard label="Behaviour" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 <ListRow icon={Wallet} title="Link row (href)" subtitle="chevron by default" href="/dev/gallery" />
@@ -461,31 +455,8 @@ function GalleryContent() {
             </Item>
           </Group>
 
-          <Group id="forms" title="Inputs / Select / Combobox" file="ui/input.tsx · select.tsx · combobox.tsx · checkbox.tsx">
-            <div className="space-y-1.5">
-              <Label htmlFor="g-input">Input</Label>
-              <Input id="g-input" placeholder="Placeholder" />
-              <Input aria-label="Disabled" disabled defaultValue="Disabled" />
-              <Input aria-label="Invalid" aria-invalid defaultValue="Invalid" />
-            </div>
-            <Item name="Select">
-              <Select value={select} onValueChange={(v) => setSelect(v as string)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a">Option A</SelectItem>
-                  <SelectItem value="b">Option B</SelectItem>
-                </SelectContent>
-              </Select>
-            </Item>
-            <Item name="Combobox">
-              <Combobox
-                value={combo}
-                onValueChange={setCombo}
-                items={[{ value: "x", label: "Alpha" }, { value: "y", label: "Beta" }, { value: "z", label: "Gamma" }]}
-                placeholder="Pick one"
-              />
-            </Item>
-            <label className="flex items-center gap-2 text-sm"><Checkbox defaultChecked /> Checkbox</label>
+          <Group id="forms" title="Field" file="ui/field/ · one component for every form input" span>
+            <FieldsGallery />
           </Group>
 
           <Group id="overlays" title="Dialogs / Sheets" file="ui/dialog.tsx · sheet.tsx · confirm-dialog.tsx · mobile/detail-sheet.tsx">
@@ -582,7 +553,7 @@ function GalleryContent() {
             <Tabs defaultValue="one">
               <TabsList variant="line"><TabsTrigger value="one">Line</TabsTrigger><TabsTrigger value="two">Tabs</TabsTrigger></TabsList>
             </Tabs>
-            <label className="flex items-center gap-2 text-sm"><Switch checked={on} onCheckedChange={setOn} /> Switch</label>
+            <Field control="switch" label="Switch" checked={on} onCheckedChange={setOn} />
             <Separator />
             <Accordion value={acc} onValueChange={setAcc}>
               <AccordionItem value="one" title="Accordion item">Content</AccordionItem>

@@ -23,9 +23,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
-import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
+import { Field } from "@/components/ui/field";
 import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Landmark, Link2, Loader2, Plus, RefreshCw } from "lucide-react";
 import { ListRow } from "@/components/mobile/list-row";
 
@@ -431,27 +431,18 @@ export function BankFeedsSection() {
                                 <Link2 className="h-3.5 w-3.5 mr-1" /> Link existing
                               </Button>
                               {choices[a.externalId]?.mode === "existing" && (
-                                <select
+                                <Field
+                                  control="select"
                                   value={
-                                    (choices[a.externalId] as { accountId: number }).accountId
+                                    String((choices[a.externalId] as { accountId: number }).accountId)
                                   }
-                                  onChange={(e) =>
-                                    setChoice(a.externalId, {
-                                      mode: "existing",
-                                      accountId: Number(e.target.value),
-                                    })
-                                  }
-                                  className={cn(
-                                    "h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none",
-                                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
-                                  )}
-                                >
-                                  {preview.existingAccounts.map((ea) => (
-                                    <option key={ea.id} value={ea.id}>
-                                      {ea.name} ({ea.currency})
-                                    </option>
-                                  ))}
-                                </select>
+                                  onValueChange={(v) => setChoice(a.externalId, {
+                                    mode: "existing",
+                                    accountId: Number(v),
+                                  })}
+                                  compact
+                                  options={preview.existingAccounts.map((ea) => ({ value: String(ea.id), label: `${ea.name}(${ea.currency})` }))}
+                                />
                               )}
                             </>
                           )}
@@ -512,21 +503,16 @@ export function BankFeedsSection() {
           ) : (
             /* ── Not connected: paste setup token ── */
             <div className="space-y-3">
-              <label htmlFor="simplefin-token" className="block text-sm font-medium">
-                Setup token
-              </label>
-              <textarea
+              <Field
+                label="Setup token"
+                control="textarea"
                 id="simplefin-token"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 rows={3}
                 placeholder="Paste setup token"
-                className={cn(
-                  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
-                  "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                  "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
-                )}
                 disabled={connecting}
+                controlClassName="font-mono"
               />
               {connectError && <p className="text-sm text-destructive">{connectError}</p>}
               <div className="flex items-center justify-between gap-3">

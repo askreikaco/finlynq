@@ -9,8 +9,8 @@ const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
 
 const switchSrc = read("src/components/ui/switch.tsx");
 const tabsSrc = read("src/components/ui/tabs.tsx");
-const checkboxSrc = read("src/components/ui/checkbox.tsx");
-const comboSrc = read("src/components/ui/combobox.tsx");
+const checkboxSrc = read("src/components/ui/field/controls.tsx");
+const comboSrc = read("src/components/ui/field/combobox-base.tsx");
 const workspace = read("src/app/(app)/transactions/_components/transactions-workspace.tsx");
 const accountPage = read("src/app/(app)/accounts/_components/account-detail.tsx");
 const moreMenu = read("src/components/more-menu.tsx");
@@ -58,15 +58,13 @@ describe("checkbox pressed state", () => {
   });
 });
 
-describe("combobox trigger reaches 44px on coarse pointers (matches select.tsx)", () => {
-  it("default and sm sizes are h-11 on coarse pointers", () => {
-    expect(comboSrc).toContain("pointer-coarse:data-[size=default]:h-11");
-    expect(comboSrc).toContain("pointer-coarse:data-[size=sm]:h-11");
+describe("combobox trigger reaches 44px on coarse pointers (the shared control surface)", () => {
+  const surface = read("src/components/ui/control-surface.ts");
+  it("trigger uses CONTROL_BOX (h-11) or CONTROL_BOX_COMPACT (h-8, h-11 on coarse pointers)", () => {
+    expect(comboSrc).toContain("compact ? CONTROL_BOX_COMPACT : CONTROL_BOX");
+    expect(surface).toMatch(/CONTROL_BOX = "h-11 /);
+    expect(surface).toMatch(/CONTROL_BOX_COMPACT = "h-8 pointer-coarse:h-11 /);
     expect(comboSrc).not.toMatch(/max-md:/);
-  });
-  it("desktop heights unchanged", () => {
-    expect(comboSrc).toContain("data-[size=default]:h-8");
-    expect(comboSrc).toContain("data-[size=sm]:h-7");
   });
 });
 

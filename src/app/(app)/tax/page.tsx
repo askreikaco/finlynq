@@ -4,16 +4,15 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
 import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
+import { Field } from "@/components/ui/field";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { InfoTip } from "@/components/ui/info-tip";
 
@@ -112,14 +111,20 @@ function TaxPageContent() {
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Annual Income</Label>
-              <AmountInput value={income} onValueChange={(nv) => setIncome(nv)} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Contribution Amount</Label>
-              <AmountInput value={contribution} onValueChange={(nv) => setContribution(nv)} className="mt-1" />
-            </div>
+            <Field
+              label="Annual Income"
+              control="amount"
+              value={income}
+              onValueChange={(nv) => setIncome(nv)}
+              className="mt-1"
+            />
+            <Field
+              label="Contribution Amount"
+              control="amount"
+              value={contribution}
+              onValueChange={(nv) => setContribution(nv)}
+              className="mt-1"
+            />
           </div>
           <Button onClick={compareRrspTfsa} className="w-full">Compare</Button>
           {comparison && (

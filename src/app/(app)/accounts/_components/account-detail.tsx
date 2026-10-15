@@ -6,7 +6,6 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Inbox, Info, MoreHorizontal, Pencil, Plus, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +16,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -37,7 +35,7 @@ import {
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { InfoTip } from "@/components/ui/info-tip";
-import { FieldLabel } from "@/components/forms";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 
 type Account = {
   id: number;
@@ -555,11 +553,12 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
                 </span>
               }
               value={
-                <Switch
+                <Field
+                  control="switch"
                   checked={invisible}
                   onCheckedChange={handleInvisibleToggle}
                   disabled={savingInvisible}
-                  role="switch"
+                  aria-label="Invisible"
                 />
               }
             />
@@ -607,23 +606,19 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
             <DialogTitle>Add cash sleeve</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateSleeve} className="space-y-4">
-            <div className="space-y-1.5">
-              <FieldLabel
-                label="Currency"
-                info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
-              />
-              <Combobox
-                value={newSleeveCurrency}
-                onValueChange={(v) => setNewSleeveCurrency(v || "")}
-                items={sleeveCurrencyOptions.map(
-                  (c): ComboboxItemShape => ({ value: c, label: c }),
-                )}
-                placeholder="Pick a currency"
-                searchPlaceholder="Search…"
-                emptyMessage="No matches"
-                className="w-full"
-              />
-            </div>
+            <Field
+              label="Currency"
+              control="combobox"
+              info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
+              value={newSleeveCurrency}
+              onValueChange={(v) => setNewSleeveCurrency(v || "")}
+              options={sleeveCurrencyOptions.map(
+                (c): FieldComboboxOption => ({ value: c, label: c }),
+              )}
+              placeholder="Pick a currency"
+              searchPlaceholder="Search…"
+              emptyMessage="No matches"
+            />
             {newSleeveError && (
               <p className="text-sm text-destructive">{newSleeveError}</p>
             )}

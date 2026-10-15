@@ -47,9 +47,8 @@ describe("W7 contrast class strings", () => {
   });
 
   it("settings theme Light/Dark selected state uses text-primary-text", () => {
-    expect(read("src/app/(app)/settings/general/page.tsx")).toContain(
-      '"bg-primary/10 text-primary-text"',
-    );
+    // Theme is a segmented Field; its default selected state is the shared primary-text one.
+    expect(read("src/components/ui/field/controls.tsx")).toContain('"bg-primary/10 text-primary-text"');
   });
 
   it("portfolio type chip uses text-primary-foreground when selected (toolbar chips, portfolio-ui)", () => {

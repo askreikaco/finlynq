@@ -30,6 +30,7 @@ import type {
 } from "@shared/types";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
+import { Field } from "@/components/ui/field";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 function fmtBytes(n: number): string {
@@ -241,7 +242,8 @@ function ThreadDialog({
               <div ref={bottomRef} />
             </div>
             <div className="space-y-2">
-              <textarea
+              <Field
+                control="textarea"
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 onPaste={(e) => {
@@ -273,7 +275,6 @@ function ThreadDialog({
                 rows={3}
                 maxLength={4000}
                 placeholder="Write a reply…"
-                className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
               <input
                 ref={fileRef}

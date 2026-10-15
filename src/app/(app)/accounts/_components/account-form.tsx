@@ -4,10 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ACCOUNT_GROUP_DEFAULTS } from "@/lib/accounts/groups";
@@ -18,10 +14,8 @@ import {
   type OpeningBalance,
 } from "@/lib/accounts/opening-balance-client";
 import { cn } from "@/lib/utils";
-import { TW } from "@/lib/design/tokens";
+import { Field, FieldGroup, type FieldComboboxOption } from "@/components/ui/field";
 import { GroupField } from "./group-field";
-import { AmountInput } from "@/components/amount-input";
-import { FieldLabel, FormField } from "@/components/forms";
 
 const ACCOUNT_TYPES = [
   { value: "A", label: "Asset" },
@@ -130,64 +124,6 @@ const INFO = {
     "Turning this on now will reassign any unattributed transactions to this account's Cash holding.",
   invisible: "Hidden from net worth, totals, reports and metrics. The account and its transactions stay here.",
 } as const;
-
-/**
- * One field. Label + (i) tip on top, control below, then at most a short error / warning. Same layout in the 25% pane,
- * the page and the stacked variant ("rows" = padded rows inside one divided card).
- */
-function Field({
-  variant,
-  label,
-  htmlFor,
-  info,
-  error,
-  warning,
-  children,
-}: {
-  variant: AccountFormVariant;
-  label: string;
-  htmlFor?: string;
-  info?: ReactNode;
-  error?: string;
-  warning?: string;
-  children: ReactNode;
-}) {
-  return (
-    <FormField
-      label={label}
-      htmlFor={htmlFor}
-      info={info}
-      error={error}
-      warning={warning}
-      className={variant === "rows" ? "px-4 py-3" : undefined}
-    >
-      {children}
-    </FormField>
-  );
-}
-
-function CheckField({
-  variant,
-  id,
-  label,
-  checked,
-  onChange,
-  info,
-}: {
-  variant: AccountFormVariant;
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  info: ReactNode;
-}) {
-  return (
-    <div className={cn("flex items-center justify-between gap-2", variant === "rows" && `px-4 py-2 ${TW.row}`)}>
-      <FieldLabel label={label} htmlFor={id} info={info} className="flex-1" />
-      <Switch id={id} checked={checked} onCheckedChange={(v) => onChange(v)} className="shrink-0" />
-    </div>
-  );
-}
 
 /**
  * Shared account form (create + edit): the same fields, validation, opening
@@ -381,151 +317,127 @@ export function AccountForm({
   const aliasMsg = aliasWarning?.(form.alias, account?.id ?? null) ?? "";
   const v = variant;
 
-  // Type + Group share a line in the stacked dialog; separate rows on the page / pane.
-  const pair = (node: ReactNode) =>
-    v === "stack" ? <div className="grid grid-cols-2 gap-3">{node}</div> : <>{node}</>;
+  // "rows" (the edit page / pane) = one divided card; "stack" (dialog) = plain stacked fields. Same Fields either way.
+  const fields = (
+    <>
+      <Field
+        label="Account Name"
+        info={INFO.name}
+        id="account-form-name"
+        error={errors.name}
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        placeholder="e.g. TD Chequing"
+        autoFocus
+      />
+
+      <Field
+        label="Alias"
+        optional
+        info={INFO.alias}
+        id="account-form-alias"
+        warning={aliasMsg || undefined}
+        value={form.alias}
+        onChange={(e) => setForm({ ...form, alias: e.target.value })}
+        placeholder="e.g. 1234 or Visa4242"
+        maxLength={64}
+      />
+
+      <Field
+        label="Type"
+        control="select"
+        info={INFO.type}
+        error={errors.type}
+        value={form.type}
+        onValueChange={(t) => setType(t || "A")}
+        options={ACCOUNT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+      />
+
+      <GroupField
+        id="account-dialog-group"
+        info={INFO.group}
+        error={errors.group}
+        type={form.type}
+        value={form.group}
+        existingGroups={existingGroups}
+        onChange={(g) => setForm({ ...form, group: g })}
+      />
+
+      <Field
+        label="Currency"
+        control="combobox"
+        info={INFO.currency}
+        value={form.currency}
+        onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
+        options={sortCurrency(
+          currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
+          (c) => c.value,
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+        )}
+        placeholder={defaultCurrency}
+        searchPlaceholder="Search…"
+        emptyMessage="No matches"
+      />
+
+      <Field
+        label="Note"
+        optional
+        info={INFO.note}
+        id="account-form-note"
+        value={form.note}
+        onChange={(e) => setForm({ ...form, note: e.target.value })}
+        placeholder="e.g. Joint account"
+      />
+
+      {/* Opening balance (FINLYNQ-206) — cash accounts only. Backed by ONE
+          kind='opening_balance' transaction; clearing zeroes it (never
+          deletes). Hidden when "Investment account" is checked. */}
+      {!form.isInvestment && (
+        <>
+          <Field
+            label="Opening balance"
+            optional
+            control="amount"
+            info={INFO.openingBalance}
+            id="account-dialog-ob-amount"
+            step="0.01"
+            value={form.obAmount}
+            onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
+            placeholder="0.00"
+          />
+          <Field
+            label="Date"
+            control="date"
+            id="account-dialog-ob-date"
+            value={form.obDate}
+            onChange={(e) => setForm({ ...form, obDate: e.target.value })}
+          />
+        </>
+      )}
+
+      <Field
+        label="Investment account"
+        control="switch"
+        info={INFO.isInvestment}
+        id="account-dialog-isInvestment"
+        checked={form.isInvestment}
+        onCheckedChange={(checked) => setForm({ ...form, isInvestment: checked })}
+      />
+
+      <Field
+        label="Invisible"
+        control="switch"
+        info={INFO.invisible}
+        id="account-dialog-invisible"
+        checked={form.invisible}
+        onCheckedChange={(checked) => setForm({ ...form, invisible: checked })}
+      />
+    </>
+  );
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
-      <div
-        className={cn(
-          v === "rows" && `[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden ${TW.group} border border-border bg-card`,
-          v === "stack" && "space-y-4",
-        )}
-      >
-        <Field variant={v} label="Account Name" htmlFor="account-form-name" info={INFO.name} error={errors.name}>
-          <Input
-            id="account-form-name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. TD Chequing"
-            autoFocus
-          />
-        </Field>
-
-        <Field variant={v} label="Alias" htmlFor="account-form-alias" info={INFO.alias} warning={aliasMsg}>
-          <Input
-            id="account-form-alias"
-            value={form.alias}
-            onChange={(e) => setForm({ ...form, alias: e.target.value })}
-            placeholder="e.g. 1234"
-            maxLength={64}
-          />
-        </Field>
-
-        {pair(
-          <>
-            <Field variant={v} label="Type" info={INFO.type} error={errors.type}>
-              <Select items={ACCOUNT_TYPE_LABELS} value={form.type} onValueChange={(t) => setType(t ?? "A")}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ACCOUNT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field variant={v} label="Group" htmlFor="account-dialog-group" info={INFO.group} error={errors.group}>
-              <GroupField
-                inputId="account-dialog-group"
-                type={form.type}
-                value={form.group}
-                existingGroups={existingGroups}
-                onChange={(g) => setForm({ ...form, group: g })}
-              />
-            </Field>
-          </>,
-        )}
-
-        <Field variant={v} label="Currency" info={INFO.currency}>
-          <Combobox
-            value={form.currency}
-            onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
-            items={sortCurrency(
-              currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
-              (c) => c.value,
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder={defaultCurrency}
-            searchPlaceholder="Search…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Field>
-
-        <Field variant={v} label="Note" htmlFor="account-form-note" info={INFO.note}>
-          <Input
-            id="account-form-note"
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-          />
-        </Field>
-
-        {/* Opening balance (FINLYNQ-206) — cash accounts only. Backed by ONE
-            kind='opening_balance' transaction; clearing zeroes it (never
-            deletes). Hidden when "Investment account" is checked. */}
-        {!form.isInvestment &&
-          (v === "stack" ? (
-            <div className="space-y-2 rounded-lg border border-border/60 p-3">
-              <FieldLabel label="Opening balance" info={INFO.openingBalance} />
-              <div className="grid grid-cols-2 gap-3">
-                <Field variant={v} label="Amount" htmlFor="account-dialog-ob-amount">
-                  <AmountInput
-                    id="account-dialog-ob-amount"
-                    step="0.01"
-                    value={form.obAmount}
-                    onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
-                    placeholder="0.00"
-                  />
-                </Field>
-                <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                  <Input
-                    id="account-dialog-ob-date"
-                    type="date"
-                    value={form.obDate}
-                    onChange={(e) => setForm({ ...form, obDate: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </div>
-          ) : (
-            <>
-              <Field variant={v} label="Opening balance" htmlFor="account-dialog-ob-amount" info={INFO.openingBalance}>
-                <AmountInput
-                  id="account-dialog-ob-amount"
-                  step="0.01"
-                  value={form.obAmount}
-                  onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
-                  placeholder="0.00"
-                />
-              </Field>
-              <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                <Input
-                  id="account-dialog-ob-date"
-                  type="date"
-                  value={form.obDate}
-                  onChange={(e) => setForm({ ...form, obDate: e.target.value })}
-                />
-              </Field>
-            </>
-          ))}
-
-        <CheckField
-          variant={v}
-          id="account-dialog-isInvestment"
-          label="Investment account"
-          checked={form.isInvestment}
-          onChange={(checked) => setForm({ ...form, isInvestment: checked })}
-          info={INFO.isInvestment}
-        />
-
-        <CheckField
-          variant={v}
-          id="account-dialog-invisible"
-          label="Invisible"
-          checked={form.invisible}
-          onChange={(checked) => setForm({ ...form, invisible: checked })}
-          info={INFO.invisible}
-        />
-      </div>
+      {v === "rows" ? <FieldGroup>{fields}</FieldGroup> : <div className="space-y-4">{fields}</div>}
 
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
 

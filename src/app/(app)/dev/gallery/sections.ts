@@ -5,7 +5,7 @@ export const GALLERY_SECTIONS = [
   { id: "list-row", label: "ListRow" },
   { id: "shadow", label: "Card shadow" },
   { id: "buttons", label: "Buttons / Badges" },
-  { id: "forms", label: "Inputs / Select / Combobox" },
+  { id: "forms", label: "Field" },
   { id: "overlays", label: "Dialogs / Sheets" },
   { id: "topbar", label: "Top bar" },
   { id: "toolbar", label: "Page toolbar" },

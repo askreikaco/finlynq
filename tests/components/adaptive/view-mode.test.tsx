@@ -268,7 +268,7 @@ describe("ViewModeToggle accessibility", () => {
     session.userId = newUser();
     render(<ViewModeToggle viewKey="accounts" />);
     const list = screen.getByRole("radio", { name: "List" });
-    expect(list.className).toContain("pointer-coarse:h-11");
+    expect(screen.getByRole("radiogroup").className).toContain("pointer-coarse:min-h-11");
     expect(list.className).not.toMatch(/text-\[/);
     expect(list.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });

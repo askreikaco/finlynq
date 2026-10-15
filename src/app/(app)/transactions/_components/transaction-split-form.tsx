@@ -18,10 +18,9 @@ import { cn } from "@/lib/utils";
 import { currencyDecimals, formatCurrency } from "@/lib/currency";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { parseCount, rowsFromSavedSplits, type SplitAdjustment, type SplitRowModel } from "@/lib/transactions/split-math";
-import { FormRow } from "@/components/forms";
-import { ListCard } from "@/components/transactions/entry/list-card";
 import { CategorySelector } from "@/components/transactions/entry/category-selector";
 import { NumpadDock } from "@/components/transactions/entry/numpad-dock";
+import { FieldGroup, Field } from "@/components/ui/field";
 import { SplitRows, validateSplits } from "@/components/transactions/split-rows";
 
 export interface SplitCategory {
@@ -230,16 +229,16 @@ export function TransactionSplitForm({
       />
 
       <div className={`mt-3 space-y-3 px-4 ${TW.form} ${TW.formPad}`}>
-        <ListCard>
-          <FormRow variant="custom" label="Total amount" labelWidth="narrow" height="tall">
+        <FieldGroup>
+          <Field control="custom" label="Total amount">
             <span className="font-mono font-semibold text-foreground">{formatCurrency(parentAbs, currency)}</span>
-          </FormRow>
-          <FormRow variant="custom" label="Category" labelWidth="narrow" height="tall">
+          </Field>
+          <Field control="custom" label="Category">
             <span data-testid="tx-split-category" className="text-sm text-foreground">
               {parentCategoryName}
             </span>
-          </FormRow>
-        </ListCard>
+          </Field>
+        </FieldGroup>
 
         {notice && (
           <p data-testid="tx-split-adjusted" role="status" className="px-1 text-xs text-muted-foreground">

@@ -9,9 +9,9 @@ import { WifiOff } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { countUnsyncedWrites, useOfflineKey, useOfflineMode } from "@/lib/data/local-write-queue";
 
 function daysAgo(ts: number): string {
@@ -50,7 +50,8 @@ export function OfflineModeCard() {
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-sm text-muted-foreground" data-testid="offline-mode-status">{status}</span>
-            <Switch
+            <Field
+              control="switch"
               checked={on}
               onCheckedChange={(v) => void onChange(v)}
               disabled={trusted !== true}

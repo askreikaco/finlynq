@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowUpDown,
+  Banknote,
   Briefcase,
   CalendarDays,
   Calculator,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Hash,
   Info,
@@ -29,9 +31,7 @@ import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { InfoTip } from "@/components/ui/info-tip";
-import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
 import { NumpadDock, buildCurrencyChips } from "./numpad-dock";
 import { CategorySelector, type Category } from "./category-selector";
@@ -40,10 +40,6 @@ import { EMPTY_GROUP_ORDER, type AccountGroupOrder } from "@/lib/accounts/groups
 import { CurrencySelector } from "./currency-selector";
 import { AutocompletePills } from "./autocomplete-pills";
 import { SplitSection } from "./split-section";
-import { FormRow } from "./form-row";
-import { AmountRow } from "./amount-row";
-import { TypeSegmented } from "./type-segmented";
-import { ListCard } from "./list-card";
 import { buildPrefill, canDuplicate, readAndClearPrefill, writePrefill } from "@/lib/transactions/prefill";
 import {
   buildEntrySeed,
@@ -83,6 +79,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { PageHeader, MoreActionsMenu, type MoreItem } from "@/components/mobile";
 
 export type { EntryMode } from "@/lib/transactions/entry-mode";
@@ -1233,12 +1230,13 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
       {/* Type control (44px), 8px below the top bar. */}
       <div data-testid="txnew-type" className="mt-2 shrink-0 px-4">
-        <TypeSegmented
+        <Field
+          control="segmented"
+          fill
+          aria-label="Transaction type"
           value={txType}
-          disabledOptions={
-            editMode?.kind === "edit" || postTarget ? ["Transfer"] : editMode?.kind === "edit-transfer" ? ["Expense", "Income"] : undefined
-          }
-          onChange={(next) => {
+          onValueChange={(v) => {
+            const next = v as TxType;
             setTxType(next);
             if (next === "Transfer") {
               setSeries(null);
@@ -1248,6 +1246,16 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             setInvalid(null);
             closePad();
           }}
+          options={TX_TYPE_OPTIONS.map((o) => ({
+            ...o,
+            disabled: (
+              editMode?.kind === "edit" || postTarget
+                ? ["Transfer"]
+                : editMode?.kind === "edit-transfer"
+                  ? ["Expense", "Income"]
+                  : []
+            ).includes(o.value),
+          }))}
         />
       </div>
 
@@ -1295,16 +1303,23 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
         {/* Field list. Expense/Income: Date, Amount, Category, Account, Payee, Note.
             Transfer: Date, Amount, From Account, To Account, Received (cross-currency only), Note. */}
-        <ListCard className="shrink-0" data-testid="txnew-list">
+        <FieldGroup className="shrink-0" data-testid="txnew-list">
           {/* The OS date picker: a native date input (iOS/Android sheets, desktop calendar popup). */}
-          <FormRow
-            variant="custom"
+          <Field
+            control="date"
             testId="txnew-row-date"
             label="Date"
             icon={CalendarDays}
-            htmlFor="txnew-date"
             hideLabel
-            right={
+            id="txnew-date"
+            value={date}
+            placeholder="Date"
+            max="9999-12-31"
+            onFocus={closePad}
+            onChange={(e) => {
+              if (e.target.value) setDate(e.target.value);
+            }}
+            suffix={
               isInstallmentRow || isRepeatRow ? (
                 <SeriesBadge
                   hasInstallment={isInstallmentRow}
@@ -1314,42 +1329,43 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
                 />
               ) : undefined
             }
-          >
-            <input
-              id="txnew-date"
-              type="date"
-              value={date}
-              placeholder="Date"
-              max="9999-12-31"
-              onFocus={closePad}
-              onChange={(e) => {
-                if (e.target.value) setDate(e.target.value);
-              }}
-              className="block min-h-row w-full min-w-0 bg-transparent text-left text-base text-foreground outline-none"
-            />
-          </FormRow>
-          <AmountRow
+          />
+          {/* Amount: typed from a hardware keyboard or the numpad (inputMode none keeps the OS keyboard closed). */}
+          <Field
             testId="txnew-row-amount"
+            label="Amount"
+            icon={Banknote}
+            hideLabel
+            aria-label="Amount"
+            inputMode="none"
+            placeholder="0"
             value={amount}
-            onChange={(v) => {
-              setAmount(v);
+            onChange={(e) => {
+              setAmount(e.target.value);
               if (isEditTransfer) setReceivedTouched(false); // a new sent amount refills the received amount
               setInvalid((prev) => (prev?.field === "amount" ? null : prev));
             }}
-            onOpenPad={openPad}
-            currency={currency}
-            currencyDisabled={isEditTransfer}
-            onOpenCurrency={() => {
-              closePad();
-              setShowCurrencySelector(true);
-            }}
-            showCurrency
-            fxLine={fxAmountLine}
+            onFocus={openPad}
             invalid={invalidField === "amount"}
+            hint={fxAmountLine}
+            controlClassName={cn("text-2xl font-semibold tabular-nums", invalidField === "amount" && "text-neg")}
+            suffix={
+              <>
+                {invalidField === "amount" && !amount && <span className="shrink-0 text-base text-neg">Required</span>}
+                <CurrencyChip
+                  code={currency}
+                  disabled={isEditTransfer}
+                  onClick={() => {
+                    closePad();
+                    setShowCurrencySelector(true);
+                  }}
+                />
+              </>
+            }
           />
           {txType !== "Transfer" && (
-            <FormRow
-              variant="button"
+            <Field
+              control="picker"
               testId="txnew-row-category"
               label="Category"
               icon={Tag}
@@ -1376,8 +1392,8 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
           {/* From and To share a relative wrapper so the Transfer swap button sits on their divider;
               the wrapper repeats the group's divider shadow because the two rows are no longer its direct children. */}
           <div className="relative [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-            <FormRow
-              variant="button"
+            <Field
+              control="picker"
               testId="txnew-row-account"
               label={txType === "Transfer" ? "From" : "Account"}
               icon={Wallet}
@@ -1393,8 +1409,8 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             />
             {txType === "Transfer" && (
               <>
-                <FormRow
-                  variant="button"
+                <Field
+                  control="picker"
                   testId="txnew-row-to-account"
                   label="To"
                   icon={Wallet}
@@ -1422,18 +1438,17 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             )}
           </div>
           {transferCrossCcy && (
-            <FormRow
-              variant="input"
+            <Field
               testId="txnew-row-received"
               id="transfer-received"
               label={`Received (${selectedToAcc?.currency})`}
               icon={Calculator}
-              inputValue={receivedAmount}
-              onInputChange={(v) => {
+              value={receivedAmount}
+              onChange={(e) => {
                 setReceivedTouched(true);
-                setReceivedAmount(v);
+                setReceivedAmount(e.target.value);
               }}
-              onInputFocus={closePad}
+              onFocus={closePad}
               inputMode="decimal"
               placeholder={
                 transferFxPreview.state === "ok"
@@ -1443,29 +1458,28 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             />
           )}
           {txType !== "Transfer" && (
-            <FormRow
-              variant="input"
+            <Field
               testId="txnew-row-payee"
               id="txnew-payee"
               label="Payee"
               icon={Store}
               hideLabel
-              inputValue={payee}
-              onInputChange={(v) => {
-                setPayee(v);
+              value={payee}
+              onChange={(e) => {
+                setPayee(e.target.value);
                 setInvalid((prev) => (prev?.field === "payee" ? null : prev));
               }}
               invalid={invalidField === "payee"}
               error={invalidField === "payee" ? "Repeat needs a payee" : undefined}
-              onInputBlur={() => void suggestCategoryForPayee(payee)}
+              onBlur={() => void suggestCategoryForPayee(payee)}
               placeholder="Payee / Merchant"
               enterKeyHint="next"
               autoComplete="off"
-              onInputFocus={() => {
+              onFocus={() => {
                 closePad();
                 setFocusedField("payee");
               }}
-              onInputKeyDown={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   document.getElementById("txnew-note")?.focus();
@@ -1473,61 +1487,51 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               }}
             />
           )}
-          {/* Note: two-row minimum (2x the tall row token), grows with the text up to max-h-48. */}
-          <FormRow
-            variant="custom"
+          {/* Note: two-row minimum, grows with the text up to max-h-48. */}
+          <Field
+            control="textarea"
             testId="txnew-row-note"
-            htmlFor="txnew-note"
             label="Note"
             icon={StickyNote}
             hideLabel
-            className="items-start min-h-[calc(var(--spacing-row-tall)*2)] py-3"
-          >
-            <AutoTextarea
-              id="txnew-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Note"
-              enterKeyHint="enter"
-              autoComplete="off"
-              rows={2}
-              className="max-h-48 bg-transparent text-base"
-              onFocus={() => {
-                closePad();
-                setFocusedField("note");
-              }}
-            />
-          </FormRow>
-          <FormRow
-            variant="input"
+            id="txnew-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note"
+            enterKeyHint="enter"
+            autoComplete="off"
+            rows={2}
+            onFocus={() => {
+              closePad();
+              setFocusedField("note");
+            }}
+          />
+          <Field
             testId="txnew-row-tags"
             id="txnew-tags"
             label="Tags"
             icon={Hash}
             hideLabel
-            inputValue={tags}
-            onInputChange={setTags}
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
             placeholder="Tags"
             autoComplete="off"
-            onInputFocus={() => {
+            onFocus={() => {
               closePad();
               setFocusedField("tags");
             }}
           />
           {/* Business: a plain toggle row; the label stays visible because it names the switch. */}
-          <div data-testid="txnew-row-business" className="flex min-h-row items-center justify-between gap-3 px-4">
-            <label htmlFor="txnew-business" className="flex min-w-0 flex-1 items-center gap-2 text-base text-foreground">
-              <Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-              <span className="min-w-0 truncate">Business</span>
-            </label>
-            <Switch
-              id="txnew-business"
-              className="shrink-0"
-              checked={isBusiness}
-              onCheckedChange={(checked) => setIsBusiness(checked)}
-            />
-          </div>
-        </ListCard>
+          <Field
+            testId="txnew-row-business"
+            label="Business"
+            icon={Briefcase}
+            control="switch"
+            id="txnew-business"
+            checked={isBusiness}
+            onCheckedChange={(checked) => setIsBusiness(checked)}
+          />
+        </FieldGroup>
 
         {/* Autocomplete pills sit below the list while the field is focused. */}
         {txType !== "Transfer" && (
@@ -1589,20 +1593,13 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
         {/* Rule suggestion (Expense/Income, payee + category set). Payee is on screen one. */}
         {ruleEligible && (
-          <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/10 px-4 py-2">
-            <label htmlFor="txnew-also-rule" className="flex min-w-0 flex-1 cursor-pointer flex-col">
-              <span className="text-sm font-medium text-foreground">Also create a rule for next time</span>
-              <span className="truncate text-xs text-muted-foreground">
-                Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name}
-              </span>
-            </label>
-            <Switch
-              id="txnew-also-rule"
-              className="shrink-0"
-              checked={alsoCreateRule}
-              onCheckedChange={(checked) => setAlsoCreateRule(checked)}
-            />
-          </div>
+          <Field
+            label={<><span className="text-sm font-medium text-foreground">Also create a rule for next time</span> <span className="truncate text-xs text-muted-foreground"> Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name} </span></>}
+            control="switch"
+            id="txnew-also-rule"
+            checked={alsoCreateRule}
+            onCheckedChange={(checked) => setAlsoCreateRule(checked)}
+          />
         )}
 
         {isInstallmentRow && (
@@ -1768,5 +1765,30 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       />
 
     </div>
+  );
+}
+
+/** Owner order: Income | Expense | Transfer. Each type has its own selected tone. */
+const TX_TYPE_OPTIONS: ReadonlyArray<{ value: TxType; label: string; selectedClassName: string }> = [
+  { value: "Income", label: "Income", selectedClassName: "bg-pos/10 text-pos" },
+  { value: "Expense", label: "Expense", selectedClassName: "bg-neg/10 text-neg" },
+  { value: "Transfer", label: "Transfer", selectedClassName: "bg-muted text-foreground" },
+];
+
+/** The currency code at the end of the amount row; opens the currency sheet. */
+function CurrencyChip({ code, disabled, onClick }: { code: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Currency"
+      aria-haspopup="dialog"
+      data-slot="amount-currency-chip"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted disabled:opacity-50 disabled:hover:bg-transparent disabled:active:bg-transparent"
+    >
+      <span className="font-medium text-foreground">{code}</span>
+      <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }

@@ -15,7 +15,7 @@
 
 import { type ComponentType, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { Field } from "@/components/ui/field";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 
 /** The pending-prompt shape the gate hands each form (from GET /api/prompts/pending). */
@@ -55,10 +55,11 @@ function DisplayCurrencyForm({ submitting, error, onSubmit }: PromptFormProps) {
 
   return (
     <div className="mt-2 space-y-3">
-      <Combobox
+      <Field
+        control="combobox"
         value={currency}
         onValueChange={(v) => setCurrency(v || "USD")}
-        items={options}
+        options={options}
         disabled={submitting}
         placeholder="Select currency"
         searchPlaceholder="Search currencies…"

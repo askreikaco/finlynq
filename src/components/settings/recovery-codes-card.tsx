@@ -14,9 +14,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, Check, LifeBuoy, ShieldCheck } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
@@ -221,10 +220,7 @@ export function RecoveryCodesCard() {
                 </span>
               )}
             </div>
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              <span>{STRINGS.savedLabel}</span>
-              <Switch checked={saved} onCheckedChange={(v) => setSaved(v)} />
-            </label>
+            <Field label={STRINGS.savedLabel} control="switch" checked={saved} onCheckedChange={(v) => setSaved(v)} />
             <Button size="sm" disabled={!saved} onClick={handleDone}>
               {STRINGS.done}
             </Button>
@@ -255,19 +251,15 @@ export function RecoveryCodesCard() {
             {confirming ? (
               <form onSubmit={handleGenerate} className="space-y-3 rounded-lg border border-border p-3" aria-label="Generate recovery codes">
                 {hasCodes && <p className="text-xs text-warning" data-keep="warning">{STRINGS.regenerateWarning}</p>}
-                <div className="space-y-1.5">
-                  <label htmlFor="recovery-codes-password" className="text-sm font-medium">
-                    {STRINGS.passwordLabel}
-                  </label>
-                  <Input
-                    id="recovery-codes-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoFocus
-                  />
-                </div>
+                <Field
+                  label={STRINGS.passwordLabel}
+                  id="recovery-codes-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                />
                 {error && (
                   <p className="text-sm text-destructive" role="alert">
                     {error}

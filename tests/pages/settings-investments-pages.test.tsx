@@ -104,7 +104,7 @@ describe("securities/new (Add security page)", () => {
     render(<AddSecurityRoute />);
     expect(screen.getByPlaceholderText("e.g. AAPL, VTI, BTC")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add security" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Manual" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Manual" })).toBeTruthy();
   });
 
   it("blocks an empty ticker and a bad currency without calling define", async () => {
@@ -137,7 +137,7 @@ describe("securities/new (Add security page)", () => {
   it("manual pricing returns with the manual notice", async () => {
     render(<AddSecurityRoute />);
     fireEvent.change(screen.getByPlaceholderText("e.g. AAPL, VTI, BTC"), { target: { value: "PRIV" } });
-    fireEvent.click(screen.getByRole("button", { name: "Manual" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Manual" }));
     fireEvent.click(screen.getByRole("button", { name: "Add security" }));
     await waitFor(() => expect(nav.push).toHaveBeenCalled());
     expect(nav.push.mock.calls[0][0]).toBe("/settings/investments?notice=security-added-manual");
