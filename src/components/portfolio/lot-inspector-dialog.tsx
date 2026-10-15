@@ -32,6 +32,7 @@ import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matri
 import { formatCurrency } from "@/lib/currency";
 import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface LotRow {
   id: number;
@@ -321,12 +322,12 @@ export function LotInspectorDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {loading && <p className="text-sm text-muted-foreground">Loading lots…</p>}
+        {loading && <p data-keep="status" className="text-sm text-muted-foreground">Loading lots…</p>}
         {error && !loading && (
           <p className="text-sm text-destructive">{error}</p>
         )}
         {!loading && !error && lots.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p data-keep="empty" className="text-sm text-muted-foreground">
             No lots tracked for this holding yet.
           </p>
         )}
@@ -350,10 +351,13 @@ export function LotInspectorDialog({
         {!loading && !error && editTxId == null && !showMatrix && lots.length > 0 && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Rebuild replays this ticker&apos;s transactions in date order to
-                fix lots. It changes lots only, never your transactions.
-              </p>
+              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                Rebuild lots
+                <InfoTip
+                  label="About rebuilding lots"
+                  text="Rebuild replays this ticker's transactions in date order to fix lots. It changes lots only, never your transactions."
+                />
+              </span>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowMatrix(true)}>
                   Edit all allocations
@@ -409,8 +413,12 @@ export function LotInspectorDialog({
         {!loading && !error && editTxId != null && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">
+              <h3 className="flex items-center gap-0.5 text-sm font-medium">
                 Reassign sell tx #{editTxId}
+                <InfoTip
+                  label="About reassigning lots"
+                  text={`Choose how many shares to close from each open lot. The total must equal ${closureTotalForEdit.toLocaleString(getDisplayLocale())} shares. Requesting more than a lot holds opens a short for the overflow.`}
+                />
               </h3>
               <span
                 className={`text-xs font-mono ${sumMatches ? "text-pos" : "text-destructive"}`}
@@ -418,15 +426,10 @@ export function LotInspectorDialog({
                 {allocTotal.toLocaleString(getDisplayLocale())} / {closureTotalForEdit.toLocaleString(getDisplayLocale())} sh
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Choose how many shares to close from each open lot. The total must
-              equal {closureTotalForEdit.toLocaleString(getDisplayLocale())} shares. Requesting more
-              than a lot holds opens a short for the overflow.
-            </p>
 
             <div className="space-y-1.5 max-h-[40dvh] overflow-y-auto">
               {openLongLots.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p data-keep="warning" className="text-xs text-muted-foreground">
                   No open long lots available — the closure will open a short.
                 </p>
               )}
@@ -590,7 +593,7 @@ export function LotInspectorDialog({
                       ))}
                     </ul>
                   ) : (
-                    <p className="px-3 py-1.5 text-xs text-muted-foreground">
+                    <p data-keep="empty" className="px-3 py-1.5 text-xs text-muted-foreground">
                       No closures — fully open.
                     </p>
                   )}

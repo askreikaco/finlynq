@@ -204,8 +204,7 @@ function ThreadDialog({
             {thread ? `${thread.type} feedback` : "Feedback"}
           </DialogTitle>
           <DialogDescription>
-            Replies from the team appear here. Please don&apos;t include sensitive
-            financial details.
+            Team replies appear here. No sensitive details, please.
           </DialogDescription>
         </DialogHeader>
 

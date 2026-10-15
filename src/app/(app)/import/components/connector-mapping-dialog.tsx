@@ -4,10 +4,8 @@ import React, { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 export interface MappingDialogState {
   accountAutoCreateByDefault: boolean;
@@ -89,11 +88,8 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-3xl max-h-[85dvh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Map WealthPosition to Finlynq</DialogTitle>
-          <DialogDescription>
-            Every WealthPosition account and category needs a Finlynq counterpart. By default,
-            missing ones will be auto-created for you — you can override any mapping below.
-          </DialogDescription>
+          <DialogHeading help={<>Every WealthPosition account and category needs a Finlynq counterpart. By default,
+            missing ones will be auto-created for you — you can override any mapping below.</>}>Map WealthPosition to Finlynq</DialogHeading>
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">

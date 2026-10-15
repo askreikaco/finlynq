@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { AmountInput } from "@/components/amount-input";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export interface StagedEditableRow {
   id: string;
@@ -357,6 +358,7 @@ export function StagedRowEditor({
           <div className="space-y-1">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
               Holding <Spinner shown={savingField === "portfolioHoldingId"} />
+              <InfoTip label="About holding" text="Cash sleeve is used automatically when left blank." />
             </Label>
             <Select
               items={holdingLabelById}
@@ -372,7 +374,7 @@ export function StagedRowEditor({
               }}
             >
               <SelectTrigger className="h-8">
-                <SelectValue placeholder="Pick holding (Cash sleeve auto if blank)" />
+                <SelectValue placeholder="Pick holding" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">— Cash (auto) —</SelectItem>
@@ -413,6 +415,7 @@ export function StagedRowEditor({
         <div className="space-y-1">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Entered amount <Spinner shown={savingField === "enteredAmount"} />
+            <InfoTip label="About entered amount" text="Override only when the row currency differs." />
           </Label>
           <AmountInput
             step="any"
@@ -427,7 +430,7 @@ export function StagedRowEditor({
               }
             }}
             className="h-8"
-            placeholder="Override only when row currency differs"
+            placeholder="Amount"
           />
         </div>
         <div className="space-y-1">
@@ -456,6 +459,7 @@ export function StagedRowEditor({
       <div className="space-y-1">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           Tags <Spinner shown={savingField === "tags"} />
+          <InfoTip label="About tags" text="Comma-separated." />
         </Label>
         <Input
           value={local.tags ?? ""}
@@ -466,13 +470,14 @@ export function StagedRowEditor({
             }
           }}
           className="h-8"
-          placeholder="comma-separated"
+          placeholder="Tags"
         />
       </div>
 
       <div className="space-y-1">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           Note <Spinner shown={savingField === "note"} />
+          <InfoTip label="About note" text="Free-form notes (max 2000 characters)." />
         </Label>
         <textarea
           value={local.note ?? ""}
@@ -483,7 +488,7 @@ export function StagedRowEditor({
             }
           }}
           className="w-full text-xs px-2 py-1.5 border rounded-md bg-background min-h-[60px] resize-y"
-          placeholder="Free-form notes (max 2000 chars)"
+          placeholder="Note"
           maxLength={2000}
         />
       </div>

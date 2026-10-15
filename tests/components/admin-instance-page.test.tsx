@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, within, fireEvent } from "@testing-library/react";
 
 // Real SectionCard / ListRow / MetricGrid; only the PageHeader is stubbed (heading level 1 so it can be found by role).
 vi.mock("@/components/mobile", async (importOriginal) => ({
@@ -135,11 +135,14 @@ describe("InstanceAdminPage", () => {
   });
 
   describe.each(EXPECTED)("section %s", (title, description, rows) => {
-    it("shows its description and exactly its own rows and badges", async () => {
+    it("keeps its description in an (i) tip and shows exactly its own rows and badges", async () => {
       await renderLoaded();
       const section = getSection(title);
 
-      expect(within(section).getByText(description)).toBeTruthy();
+      // The description is not visible text; it opens from the (i) tip beside the section title.
+      expect(within(section).queryByText(description)).toBeNull();
+      fireEvent.click(within(section).getByRole("button", { name: `About ${title}` }));
+      expect(await screen.findByText(description)).toBeTruthy();
       expect(within(section).getAllByTestId("source-badge")).toHaveLength(rows.length);
       expect(section.querySelectorAll('[data-slot="list-row"]')).toHaveLength(rows.length);
     });

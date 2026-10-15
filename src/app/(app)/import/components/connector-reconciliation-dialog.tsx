@@ -4,10 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface ReconciliationRow {
   externalAccountId: string;
@@ -104,11 +103,8 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-3xl max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Balance reconciliation</DialogTitle>
-          <DialogDescription>
-            Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
-            to missing opening balances before WP&rsquo;s oldest imported transaction.
-          </DialogDescription>
+          <DialogHeading help={<>Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
+            to missing opening balances before WP&rsquo;s oldest imported transaction.</>}>Balance reconciliation</DialogHeading>
         </DialogHeader>
 
         <div className="flex items-end gap-2">

@@ -119,7 +119,10 @@ describe("series pill on an edited row (read-only)", () => {
     expect(b.textContent).toBe("Installment 2/6");
     expect(b.tagName).toBe("SPAN");
     expect(screen.getByTestId("txnew-row-date").contains(b)).toBe(true);
-    expect(screen.getByTestId("txnew-series-hint").textContent).toBe("Edits can apply to this payment or the following ones");
+    // The hint lives in an (i) tip, not as visible text.
+    expect(screen.getByTestId("txnew-series-hint").textContent).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "About payment series" }));
+    expect(await screen.findByText("Edits can apply to this payment or the following ones")).toBeTruthy();
     expect(screen.queryByTestId("txnew-repeat-pill")).toBeNull();
   });
 

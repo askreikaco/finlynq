@@ -26,6 +26,7 @@ import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series"
 import { formatDelta } from "@/lib/metrics/delta";
 import { pctChange } from "@/lib/metrics/period";
 import { localDateISO } from "@/lib/utils/date";
+import { InfoTip } from "@/components/ui/info-tip";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -472,6 +473,10 @@ export default function AdminPage() {
               <h2 className="text-sm font-semibold text-muted-foreground">
                 Live activity
               </h2>
+              <InfoTip
+                label="About live activity"
+                text="Counts users with any authenticated request (web, MCP, or API key) in the window. Best glance before a deploy: the restart rotates JWTs and forces a re-login."
+              />
             </div>
             <MetricGrid
               metrics={[
@@ -480,18 +485,23 @@ export default function AdminPage() {
                 { icon: Activity, label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
               ]}
             />
-            <p className="text-xs text-muted-foreground mt-2">
-              Counts users with any authenticated request (web, MCP, or API key)
-              in the window. Best glance before a deploy: the restart rotates JWTs
-              and forces a re-login.
-            </p>
           </motion.div>
         )}
 
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard
+              label={
+                <>
+                  Decision prompts
+                  <InfoTip
+                    label="About decision prompts"
+                    text="Rows appear once a user has interacted with a prompt; users never shown a prompt have no ack row. Answered is terminal for that version; bump the prompt's version to re-ask everyone."
+                  />
+                </>
+              }
+              icon={MessageSquare} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -507,11 +517,6 @@ export default function AdminPage() {
                 />
               ))}
             </SectionCard>
-            <p className="text-xs text-muted-foreground mt-2">
-              Rows appear once a user has interacted with a prompt; users never
-              shown a prompt have no ack row. Answered is terminal for that
-              version; bump the prompt&apos;s version to re-ask everyone.
-            </p>
           </motion.div>
         )}
 
@@ -745,10 +750,10 @@ export default function AdminPage() {
               <Card>
                 <CardContent className="p-4 space-y-2">
                   <div className="px-1">
-                    <h2 className="font-semibold">Recent logins</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Last 15 users who signed in, most recent first.
-                    </p>
+                    <h2 className="flex items-center gap-0.5 font-semibold">
+                      Recent logins
+                      <InfoTip label="About recent logins" text="Last 15 users who signed in, most recent first." />
+                    </h2>
                   </div>
                   <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(stats?.recentLogins ?? []).map((row) => (
@@ -774,11 +779,11 @@ export default function AdminPage() {
                     <h2 className="font-semibold flex items-center gap-2">
                       <KeyRound className="h-4 w-4" />
                       OAuth grants ({grants.length})
+                      <InfoTip
+                        label="About OAuth grants"
+                        text={`Live OAuth / MCP grants across all users. A grant is dormant when it has not been used in over ${DORMANT_DAYS} days.`}
+                      />
                     </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Live OAuth / MCP grants across all users. A grant is dormant
-                      when it has not been used in over {DORMANT_DAYS} days.
-                    </p>
                   </div>
                   <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {grants.map((grant) => {

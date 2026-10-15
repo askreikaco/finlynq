@@ -13,6 +13,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { isLocalWriteQueueActive, queueOfflineEntityCreate, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { AmountInput } from "@/components/amount-input";
+import { FieldLabel } from "@/components/forms";
 
 export type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -288,7 +289,7 @@ export function GoalForm({
         </div>
       </div>
       <div>
-        <Label>Linked Accounts</Label>
+        <FieldLabel label="Linked Accounts" labelClassName="text-foreground" info="Goal progress sums transactions across every linked account. Leave empty for manual tracking." />
         {form.accountIds.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {form.accountIds.map((id) => {
@@ -322,9 +323,6 @@ export function GoalForm({
           emptyMessage="No matches"
           className="w-full"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          Goal progress sums transactions across every linked account. Leave empty for manual tracking.
-        </p>
       </div>
       <div>
         <Label>Note</Label>

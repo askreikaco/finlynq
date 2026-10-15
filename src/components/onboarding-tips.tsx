@@ -40,14 +40,14 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
       id: "dash-overview",
       title: "This is your financial overview",
       description:
-        "Your dashboard shows your net worth, income vs. spending, and alerts at a glance. Cards link to detailed pages.",
+        "Net worth, income vs. spending and alerts at a glance.",
       action: { label: "View accounts", href: "/accounts" },
     },
     {
       id: "dash-import",
       title: "Import your bank statements",
       description:
-        "Bring in CSV or OFX/QFX files from your bank to see real data here. The more data you add, the better your insights.",
+        "Bring in CSV or OFX/QFX files from your bank.",
       action: { label: "Import files", href: "/import" },
     },
   ],
@@ -56,13 +56,13 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
       id: "txn-search",
       title: "Find any transaction",
       description:
-        "Use the search bar to filter by payee, note, or tag. You can also filter by date range, account, or category.",
+        "Search by payee, note or tag; filter by date, account or category.",
     },
     {
       id: "txn-categorize",
       title: "Categorize for better insights",
       description:
-        "Assigning categories to transactions powers your budget tracking and spending breakdown charts.",
+        "Categories power budgets and spending charts.",
     },
   ],
   budgets: [
@@ -70,7 +70,7 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
       id: "budget-start",
       title: "Set monthly spending limits",
       description:
-        "Create budgets per category to track your spending. You'll see progress bars showing how much you've used each month.",
+        "Budget per category and watch the monthly progress.",
     },
   ],
   accounts: [
@@ -78,7 +78,7 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
       id: "acct-types",
       title: "Track all your money in one place",
       description:
-        "Add bank accounts, credit cards, investments, and loans. Your net worth is calculated from the total of all accounts.",
+        "Add banks, cards, investments and loans. Net worth sums them all.",
     },
   ],
   import: [
@@ -86,7 +86,7 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
       id: "import-formats",
       title: "Multiple formats supported",
       description:
-        "Upload CSV or OFX/QFX files from your bank. We'll detect duplicates automatically so nothing gets counted twice.",
+        "Upload CSV or OFX/QFX. Duplicates are detected automatically.",
     },
   ],
 };
@@ -162,7 +162,7 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{tip.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{tip.description}</p>
+                <p data-keep="tip" className="text-xs text-muted-foreground mt-0.5">{tip.description}</p>
                 {tip.action && (
                   <Link
                     href={tip.action.href}
