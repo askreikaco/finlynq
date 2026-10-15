@@ -19,7 +19,7 @@ function sheetContent(): HTMLElement {
 function rowNames(): string[] {
   return within(sheetContent())
     .getAllByRole("button")
-    .filter((b) => !b.hasAttribute("data-slot") && b.textContent)
+    .filter((b) => (!b.hasAttribute("data-slot") || b.getAttribute("data-slot") === "list-row") && b.textContent)
     .map((b) => b.textContent ?? "");
 }
 

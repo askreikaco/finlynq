@@ -39,7 +39,7 @@ const TILE: Record<TileTone, string> = {
 };
 
 /** Text tone of the row: normal, accent (primary action) or destructive (log out, delete). */
-export type RowTone = "default" | "accent" | "destructive";
+type RowTone = "default" | "accent" | "destructive";
 const TITLE_TONE: Record<RowTone, string> = {
   default: "text-foreground",
   accent: "text-primary",
@@ -55,7 +55,7 @@ const BAR_TONE: Record<ProgressTone, string> = {
   pos: "bg-pos",
 };
 
-export interface RowProgress {
+interface RowProgress {
   /** Fill 0..100 (uncapped values are clamped); null = bar without fill. */
   pct: number | null;
   tone?: ProgressTone;

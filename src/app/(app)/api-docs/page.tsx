@@ -439,7 +439,7 @@ function RouteCard({ route }: { route: ApiRoute }) {
       <ListRow
         leading={<MethodBadge method={route.method} />}
         title={<code className="text-sm">{route.path}</code>}
-        subtitle={<span className="hidden regular:inline">{route.description}</span>}
+        subtitle={<span className="max-regular:hidden">{route.description}</span>}
         trailing={<ChevronDown aria-hidden className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />}
         chevron={false}
         onPress={() => setOpen(!open)}
