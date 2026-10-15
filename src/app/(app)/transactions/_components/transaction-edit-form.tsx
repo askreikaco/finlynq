@@ -5,18 +5,20 @@
  * (PKG1 tx-edit). Logic: useTransactionForm (moved out of TransactionDialog).
  * Fields: TransactionFormBody with variant "page". Chrome: glass PageHeader
  * with one phone primary (Save, icon-only check, submits the form by id),
- * Duplicate/Delete in the overflow menu. Delete asks first in a confirm dialog.
+ * Duplicate/Split/Delete in the overflow menu. Delete asks first in the shared confirm dialog (lot-locked rows offer
+ * "Reallocate & delete"; no connection queues a simple row).
  * Back, save and delete all navigate to returnTo (validated) or /transactions.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Copy, Trash2 } from "lucide-react";
+import { Copy, Split, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import type { MoreItem } from "@/components/mobile";
-import { Button } from "@/components/ui/button";
-import { Overlay } from "@/components/ui/overlay";
+import { EditDeleteDialog } from "@/components/transactions/entry/edit-delete-dialog";
+import { EditDetails } from "@/components/transactions/entry/edit-details";
+import { useTransactionDelete } from "@/lib/transactions/use-transaction-delete";
 import { TW } from "@/lib/design/tokens";
 import { useTransactionForm } from "@/components/transactions/use-transaction-form";
 import { TransactionFormBody } from "@/components/transactions/transaction-form-body";
@@ -27,7 +29,7 @@ import type {
 } from "@/components/transactions/transaction-dialog";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { buildPrefill, canDuplicate, writePrefill } from "@/lib/transactions/prefill";
-import { transactionEditHref } from "@/lib/transactions/edit-flow";
+import { transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import type { EditInitialState } from "./use-edit-source";
 
 const FORM_ID = "transaction-edit-form";
@@ -39,6 +41,8 @@ export interface TransactionEditFormProps {
   holdings: DialogHolding[];
   /** Validated same-app path to go back to after save, delete or Back. */
   returnTo: string;
+  /** Stored splits of the row (read-only count in Details). */
+  splitCount?: number | null;
 }
 
 export function TransactionEditForm({
@@ -47,13 +51,12 @@ export function TransactionEditForm({
   categories,
   holdings,
   returnTo,
+  splitCount,
 }: TransactionEditFormProps) {
   const router = useRouter();
   const { mutate: swrMutate, cache } = useSWRConfig();
   const isTransfer = initialState.kind === "transfer-edit";
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [transferConfirmOpen, setTransferConfirmOpen] = useState(false);
 
   const goBack = () => router.push(returnTo);
   const refreshLists = () => {
@@ -81,33 +84,15 @@ export function TransactionEditForm({
   };
 
   // Single-transaction delete (transfers delete through the hook: both legs at once).
-  async function deleteTransaction() {
-    if (!editingTx) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      const res = await fetch(`/api/transactions?id=${editingTx.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setDeleteError(
-          data?.code === "portfolio_edit_blocked"
-            ? (data.error ?? "Delete blocked by portfolio dependencies.")
-            : (data?.error ?? `Delete failed (${res.status})`),
-        );
-        return;
-      }
-      setConfirmOpen(false);
+  const del = useTransactionDelete<NonNullable<typeof editingTx>>({
+    onDeleted: () => {
       refreshLists();
       goBack();
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Could not reach the server.");
-    } finally {
-      setDeleting(false);
-    }
-  }
+    },
+  });
 
   const more: MoreItem[] = isTransfer
-    ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
+    ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setTransferConfirmOpen(true) }]
     : [
         {
           label: "Duplicate",
@@ -115,7 +100,13 @@ export function TransactionEditForm({
           disabled: !editingTx || !canDuplicate(editingTx, editingTx.currency),
           onSelect: onDuplicate,
         },
-        { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
+        {
+          label: "Split",
+          icon: Split,
+          disabled: !editingTx,
+          onSelect: () => editingTx && router.push(transactionSplitHref(editingTx.id, returnTo)),
+        },
+        { label: "Delete", icon: Trash2, destructive: true, onSelect: () => editingTx && del.open(editingTx) },
       ];
 
   return (
@@ -140,34 +131,32 @@ export function TransactionEditForm({
           formId={FORM_ID}
           onLinkedSiblingClick={(s) => router.push(transactionEditHref(s.id, returnTo))}
         />
+        {editingTx && <EditDetails tx={editingTx} splitCount={splitCount} />}
       </div>
 
-      <Overlay
-        variant="confirm"
-        open={confirmOpen}
-        onClose={() => {
-          setConfirmOpen(false);
-          setDeleteError(null);
+      <EditDeleteDialog
+        open={isTransfer ? transferConfirmOpen : del.target !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          if (isTransfer) setTransferConfirmOpen(false);
+          else del.close();
         }}
-        title={isTransfer ? "Delete this transfer?" : "Delete this transaction?"}
-        message={
-          isTransfer
-            ? "Both legs of this transfer will be deleted. This cannot be undone."
-            : "This transaction will be deleted. This cannot be undone."
-        }
-        confirmLabel="Delete"
-        busy={deleting || f.transferDeleting}
+        isTransfer={isTransfer}
+        deleting={isTransfer ? f.transferDeleting : del.deleting}
+        error={isTransfer ? null : del.error}
         onConfirm={() => {
           if (isTransfer) {
-            setConfirmOpen(false);
+            setTransferConfirmOpen(false);
             void f.handleTransferDelete();
           } else {
-            void deleteTransaction();
+            void del.confirm();
           }
         }}
-      >
-        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-      </Overlay>
+        blocked={del.blocked}
+        preview={del.preview}
+        previewLoading={del.previewLoading}
+        onReallocate={() => void del.reallocate()}
+      />
     </div>
   );
 }

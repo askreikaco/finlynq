@@ -15,6 +15,7 @@ import {
   Hash,
   Info,
   Loader2,
+  Split,
   StickyNote,
   Store,
   Tag,
@@ -53,14 +54,20 @@ import {
   isOfflineQueueEligible,
   type EntryMode,
 } from "@/lib/transactions/entry-mode";
-import { getQueuedCreate, isLocalWriteQueueActive, isLocalWriteQueueOn, queueOfflineCreate, queueOfflineEdit, saveQueuedCreate } from "@/lib/data/local-write-queue";
+import { discardQueuedCreate, getQueuedCreate, isLocalWriteQueueActive, isLocalWriteQueueOn, queueOfflineCreate, queueOfflineEdit, saveQueuedCreate } from "@/lib/data/local-write-queue";
 import { parseSaveError } from "@/lib/save-error";
 
 const OFFLINE_SAVED_NOTICE = "Saved on this device — will sync when online";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import { EditMetaLine } from "./edit-meta-line";
-import { EditDeleteDialog, type DeleteScope } from "./edit-delete-dialog";
+import { Notice } from "@/components/notice";
+import { EditDetails } from "./edit-details";
+import { useTransactionDelete } from "@/lib/transactions/use-transaction-delete";
+import { useDeleteFlow } from "@/lib/forms/use-delete-flow";
+import { Overlay } from "@/components/ui/overlay";
+import { transactionSplitHref } from "@/lib/transactions/edit-flow";
+import { EditDeleteDialog } from "./edit-delete-dialog";
 import { EditSaveDialog, type SaveScope } from "./edit-save-dialog";
 import {
   REPEAT_SPLIT_DISABLED_TITLE,
@@ -344,12 +351,9 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
     void mutate("/api/accounts");
   };
   // Edit: Delete asks first; the lot-reallocation prompt of a lot-locked save (FINLYNQ-176).
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   // Installment row: Save asks the scope first (this payment / this and following).
   const [saveScopeOpen, setSaveScopeOpen] = useState(false);
   const savedScopeRef = useRef<SaveScope | undefined>(undefined);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reallocPreview, setReallocPreview] = useState<LotReallocationPreview | null>(null);
   const [reallocPending, setReallocPending] = useState(false);
   // Recently picked IDs for this type (read per render; empty on the server).
@@ -1103,41 +1107,38 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
     }
   };
 
-  // Edit: Duplicate seeds the new-entry screen from the loaded row; Delete asks first.
-  async function deleteEntry(scope: DeleteScope = "this") {
-    if (!editMode) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      const res = await fetch(
-        editMode.kind === "edit-transfer"
-          ? `/api/transactions/transfer?linkId=${encodeURIComponent(editMode.linkId)}`
-          : `/api/transactions?id=${editMode.tx.id}${isInstallmentRow ? `&scope=${scope}` : ""}`,
-        { method: "DELETE" },
-      );
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setDeleteError(
-          data?.code === "portfolio_edit_blocked"
-            ? (data.error ?? "Delete blocked by portfolio dependencies.")
-            : (data?.error ?? `Delete failed (${res.status})`),
-        );
-        return;
-      }
-      setConfirmOpen(false);
+  // Edit: Delete asks first. One flow for the plain row and the transfer pair: a lot-locked row offers
+  // "Reallocate & delete", no connection queues a simple row on this device (useTransactionDelete).
+  const del = useTransactionDelete<NonNullable<typeof editRow>>({
+    request:
+      editMode?.kind === "edit-transfer"
+        ? () => fetch(`/api/transactions/transfer?linkId=${encodeURIComponent(editMode.linkId)}`, { method: "DELETE" })
+        : undefined,
+    queueable: editMode?.kind === "edit",
+    onDeleted: () => {
       refreshLists();
       if (embedded) embedded.onDeleted?.();
       else goReturn();
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Could not reach the server.");
-    } finally {
-      setDeleting(false);
-    }
-  }
+    },
+  });
+  // Edit of a queued create (?queued=<opId>): Discard drops the outbox entry, nothing goes to the server.
+  const discard = useDeleteFlow<string>({
+    request: async (opId) =>
+      (await discardQueuedCreate(opId))
+        ? ({ ok: true, status: 200 } as Response)
+        : ({ ok: false, status: 409, json: async () => ({ error: "This entry is being sent right now. Try again in a moment." }) } as Response),
+    onDeleted: () => {
+      refreshLists();
+      if (embedded) embedded.onCancel?.();
+      else router.push(returnTo);
+    },
+  });
   const editMore: MoreItem[] | undefined = !editMode
-    ? undefined
+    ? queuedOpId
+      ? [{ label: "Discard entry", icon: Trash2, destructive: true, onSelect: () => discard.open(queuedOpId) }]
+      : undefined
     : editMode.kind === "edit-transfer"
-      ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
+      ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => del.open(editMode.debit) }]
       : [
           {
             label: "Duplicate",
@@ -1150,7 +1151,9 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               else router.push("/transactions/new?prefill=1");
             },
           },
-          { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
+          // The pane edits splits inline; the page also reaches the full split page.
+          ...(embedded ? [] : [{ label: "Split", icon: Split, onSelect: () => router.push(transactionSplitHref(editMode.tx.id, returnTo)) }]),
+          { label: "Delete", icon: Trash2, destructive: true, onSelect: () => del.open(editMode.tx) },
         ];
 
   // Layout budget (phone 390x844; sat/sab = safe-area top/bottom). The page root is fixed from
@@ -1609,6 +1612,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
         )}
 
         {editRow && <EditMetaLine tx={editRow} />}
+        {editTx && <EditDetails tx={editTx} splitCount={editMode?.kind === "edit" ? editMode.splits.length : null} />}
 
         {errorMessage && (
           <div
@@ -1688,17 +1692,36 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
       {editMode && (
         <EditDeleteDialog
-          open={confirmOpen}
+          open={del.target !== null}
           onOpenChange={(open) => {
-            setConfirmOpen(open);
-            if (!open) setDeleteError(null);
+            if (!open) del.close();
           }}
           isTransfer={isEditTransfer}
           isInstallment={isInstallmentRow}
-          deleting={deleting}
-          error={deleteError}
-          onConfirm={(scope) => void deleteEntry(scope)}
+          deleting={del.deleting}
+          error={del.error}
+          onConfirm={(scope) => void del.confirm(scope)}
+          blocked={del.blocked}
+          preview={del.preview}
+          previewLoading={del.previewLoading}
+          onReallocate={(scope) => void del.reallocate(scope)}
         />
+      )}
+
+      {/* Edit of a queued create: Discard asks first, then drops the outbox entry. */}
+      {queuedOpId && (
+        <Overlay
+          variant="confirm"
+          open={discard.target !== null}
+          onClose={discard.close}
+          title="Discard this entry?"
+          message="It has not synced yet. It will be removed from this device and will not be saved."
+          confirmLabel="Discard"
+          busy={discard.deleting}
+          onConfirm={() => void discard.confirm()}
+        >
+          {discard.error && <Notice tone="danger">{discard.error}</Notice>}
+        </Overlay>
       )}
 
       {editMode && isInstallmentRow && (
