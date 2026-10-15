@@ -337,7 +337,7 @@ function CategoryPageContent() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="font-semibold">No transactions in this category in {periodName}</p>
-            <p className="text-sm text-muted-foreground mt-1">Try another period, or pick another category above.</p>
+            <p className="text-sm text-muted-foreground mt-1">Try another period.</p>
           </CardContent>
         </Card>
       )}

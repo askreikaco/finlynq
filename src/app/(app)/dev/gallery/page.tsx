@@ -316,7 +316,7 @@ function GalleryContent() {
               only: <code>primary</code> (one Add / Edit / Save), <code>more</code>, <code>filter</code>, <code>bulkEdit</code>.
             </p>
             <TopBarDemos />
-            <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page (a root page: no back).</p>
+            <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page (the gallery is a child of More, so it shows the automatic back).</p>
           </Group>
 
           <Group id="toolbar" title="Page toolbar" file="page-toolbar.tsx" span>
@@ -496,7 +496,7 @@ function TopBarDemos() {
   return (
     <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
       <BarFrame name="Root page: title + tooltip, no back, primary Add">
-        <PageHeader title="Accounts" info="Overview of your assets, liabilities, and net worth" primary={{ kind: "add", label: "Add account", onSelect: noop }} />
+        <PageHeader title="Accounts" info="Overview of your assets, liabilities, and net worth" back={false} primary={{ kind: "add", label: "Add account", onSelect: noop }} />
       </BarFrame>
       <BarFrame name="Detail page: back + title + primary Edit">
         <PageHeader title="Checking" back={{ onBack: noop }} primary={{ kind: "edit", label: "Edit account", onSelect: noop }} />
@@ -514,6 +514,7 @@ function TopBarDemos() {
       <BarFrame name={bulk ? "Bulk edit on: Filter moves into More" : "Bulk edit off (tap the list button)"}>
         <PageHeader
           title="Transactions"
+          back={false}
           bulkEdit={{ onToggle: () => setBulk((v) => !v), active: bulk }}
           filter={{ href: "/filter/transactions?returnTo=%2Fdev%2Fgallery" }}
           more={[{ label: "Export CSV", onSelect: noop }]}
