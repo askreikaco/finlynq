@@ -45,6 +45,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/forms";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -411,7 +412,7 @@ export function HoldingEditForm({
         <Input
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder={isCreateMode ? "e.g. Apple Inc., Bitcoin, Cash USD" : undefined}
+          placeholder={isCreateMode ? "e.g. Apple Inc." : undefined}
         />
         {errors.name && (
           <p className="text-xs text-destructive">{errors.name}</p>
@@ -453,11 +454,14 @@ export function HoldingEditForm({
       )}
 
       <div className="space-y-1.5">
-        <Label>Symbol / ticker</Label>
+        <FieldLabel
+          label="Symbol / ticker"
+          info="Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position. Custom currencies you've added in Settings are recognized here too."
+        />
         <Input
           value={form.symbol}
           onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-          placeholder="e.g. VCN.TO, AAPL, BTC, or a currency code (USD, EUR, XAU)"
+          placeholder="e.g. VCN.TO, AAPL, BTC, USD"
           list="symbol-suggestions"
         />
         <datalist id="symbol-suggestions">
@@ -465,21 +469,34 @@ export function HoldingEditForm({
             <option key={c} value={c} />
           ))}
         </datalist>
-        <p className="text-xs text-muted-foreground">
-          Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position.
-          Custom currencies you&apos;ve added in Settings are recognized here too.
-        </p>
         {symbolLoading ? (
-          <p className="text-xs text-muted-foreground">Looking up…</p>
+          <p data-keep="status" className="text-xs text-muted-foreground">Looking up…</p>
         ) : symbolInfo ? (
-          <p className="text-xs text-muted-foreground">
+          <p data-keep="data" className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{symbolInfo.label}</span>
           </p>
         ) : null}
       </div>
 
       <div className="space-y-1.5">
-        <Label>Holding currency</Label>
+        <FieldLabel
+          label="Holding currency"
+          info={
+            <>
+              {currencyAutoSource ? (
+                <>Auto-detected from <strong>{currencyAutoSource}</strong>. Override if needed.</>
+              ) : (
+                <>
+                  The currency this holding trades / is denominated in. For cash positions, type the currency code in
+                  Symbol (USD, EUR, XAU…) and this will auto-fill.
+                </>
+              )}
+              {accountCurrency ? (
+                <> Account currency: <strong>{accountCurrency}</strong>.</>
+              ) : null}
+            </>
+          }
+        />
         <Input
           value={form.currency}
           onChange={(e) => {
@@ -487,29 +504,6 @@ export function HoldingEditForm({
             setCurrencyTouched(true);
           }}
         />
-        <p className="text-xs text-muted-foreground">
-          {currencyAutoSource ? (
-            <>
-              Auto-detected from <strong>{currencyAutoSource}</strong>.{" "}
-              {accountCurrency ? (
-                <>
-                  Account currency: <strong>{accountCurrency}</strong>.
-                </>
-              ) : null}{" "}
-              Override if needed.
-            </>
-          ) : (
-            <>
-              The currency this holding trades / is denominated in.{" "}
-              {accountCurrency ? (
-                <>
-                  Account currency: <strong>{accountCurrency}</strong>.
-                </>
-              ) : null}{" "}
-              For cash positions, type the currency code in Symbol (USD, EUR, XAU…) and this will auto-fill.
-            </>
-          )}
-        </p>
         {errors.currency && (
           <p className="text-xs text-destructive">
             {errors.currency}

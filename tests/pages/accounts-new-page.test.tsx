@@ -66,16 +66,27 @@ describe("New account page: fields", () => {
     render(<NewAccountRoute />);
     expect(screen.getByRole("heading", { level: 1, name: "New account" })).toBeTruthy();
     expect(screen.getByLabelText("Account Name")).toBeTruthy();
-    expect(screen.getByLabelText(/Alias/)).toBeTruthy();
+    expect(screen.getByLabelText("Alias")).toBeTruthy();
     expect(screen.getByText("Type")).toBeTruthy();
     expect(screen.getByLabelText("Group")).toBeTruthy();
     expect(screen.getByText("Currency")).toBeTruthy();
-    expect(screen.getByLabelText(/Note/)).toBeTruthy();
+    expect(screen.getByLabelText("Note")).toBeTruthy();
     expect(screen.getByLabelText("Opening balance")).toBeTruthy();
     expect(screen.getByLabelText("Date")).toBeTruthy();
     expect(screen.getByRole("switch", { name: "Investment account" })).toBeTruthy();
     expect(screen.getByRole("switch", { name: "Invisible" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Create Account" })).toBeTruthy();
+  });
+
+  it("keeps field help in (i) tips, not as paragraphs under the inputs", async () => {
+    render(<NewAccountRoute />);
+    for (const name of ["Alias", "Type", "Group", "Opening balance", "Investment account", "Invisible"]) {
+      expect(screen.getByRole("button", { name: `About ${name}` })).toBeTruthy();
+    }
+    expect(screen.queryByText(/Short nickname used when matching/)).toBeNull();
+    expect(screen.queryByText(/Hidden from net worth/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "About Invisible" }));
+    expect(await screen.findByText(/Hidden from net worth, totals, reports and metrics/)).toBeTruthy();
   });
 
   it("loads existing accounts (archived included) for the group and alias checks", async () => {

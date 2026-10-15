@@ -4,12 +4,11 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import type { HealthData } from "./types";
+import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface HealthInfoDialogProps {
   data: HealthData;
@@ -136,12 +135,9 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>How is the Financial Health score calculated?</DialogTitle>
-          <DialogDescription>
-            Six components, each scored 0-100 and weighted to produce your overall score.
+          <DialogHeading help={<>Six components, each scored 0-100 and weighted to produce your overall score.
             Components without enough data are excluded — the remaining weights renormalize so
-            you&apos;re never penalized for a gap.
-          </DialogDescription>
+            you&apos;re never penalized for a gap.</>}>How is the Financial Health score calculated?</DialogHeading>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">

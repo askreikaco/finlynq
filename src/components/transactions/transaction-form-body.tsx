@@ -17,6 +17,7 @@ import { AutoTextarea } from "@/components/ui/auto-textarea";
 const NOTE_TEXTAREA_CLASS =
   "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
@@ -235,9 +236,15 @@ export function TransactionFormBody({
               ];
               return (
                 <div className="space-y-1.5 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                  <Label>
-                    Portfolio Holding <span className="text-destructive">*</span>
-                  </Label>
+                  <div className="flex items-center gap-0.5">
+                    <Label>
+                      Portfolio Holding <span className="text-destructive">*</span>
+                    </Label>
+                    <InfoTip
+                      label="About portfolio holding"
+                      text={`${sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).`}
+                    />
+                  </div>
                   <Combobox
                     value={form.portfolioHoldingId}
                     onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
@@ -247,9 +254,6 @@ export function TransactionFormBody({
                     emptyMessage="No matches"
                     className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).
-                  </p>
                 </div>
               );
             })()}
@@ -683,9 +687,13 @@ export function TransactionFormBody({
                     : destSentinel;
                 return (
                   <div className="space-y-3 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move.
-                    </p>
+                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                      In-kind transfer
+                      <InfoTip
+                        label="About in-kind transfers"
+                        text="Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move."
+                      />
+                    </div>
                     {fromAcct && toAcct && fromAcct.id === toAcct.id && (
                       <p className="text-xs text-warning">
                         Same-account rebalance — pick a different destination holding to move shares between two positions in this brokerage.
@@ -833,9 +841,13 @@ export function TransactionFormBody({
               if (transferEdit) return null;
               return (
                 <div className="space-y-2 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                  <p className="text-xs text-muted-foreground">
-                    Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it.
-                  </p>
+                  <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                    Investment leg
+                    <InfoTip
+                      label="About investment legs"
+                      text="Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it."
+                    />
+                  </div>
                   {fromInv && fromAcct && (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
@@ -940,7 +952,17 @@ export function TransactionFormBody({
               return (
                 <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
+                    <span className="flex items-center gap-0.5">
+                      <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
+                      <InfoTip
+                        label="About amount received"
+                        text={
+                          isAsBooked
+                            ? "Saved from the original transfer. Override with the actual amount your bank credited."
+                            : "Pre-filled from market FX. Override with the actual amount your bank credited."
+                        }
+                      />
+                    </span>
                     {impliedRate != null ? (
                       <span className="text-xs text-muted-foreground">
                         rate {impliedRate.toFixed(6)} · {rateSource}
@@ -967,11 +989,6 @@ export function TransactionFormBody({
                         : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? displayCurrency))}`
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {isAsBooked
-                      ? "Saved from the original transfer. Override with the actual amount your bank credited."
-                      : "Pre-filled from market FX. Override with the actual amount your bank credited."}
-                  </p>
                   {showMarketRef && transferFxPreview.state === "ok" && (
                     <p className="text-xs text-muted-foreground">
                       Market rate on {formatDate(transferFxPreview.date)}:{" "}
