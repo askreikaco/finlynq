@@ -28,8 +28,10 @@ import {
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
 import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
-import { Field } from "@/components/ui/field";
 import { EmailRuleDialog } from "./email-rule-dialog";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
+
 type Action =
   | "pending"
   | "auto_recorded"
@@ -280,10 +282,13 @@ export function InboxEmailTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Transactions emailed to your import address. Body emails matching an
-          email rule auto-record; the rest wait here for review.
-        </p>
+        <span className="flex items-center gap-0.5 text-sm text-muted-foreground">
+          Emailed transactions
+          <InfoTip
+            label="About emailed transactions"
+            text="Transactions emailed to your import address. Body emails matching an email rule auto-record; the rest wait here for review."
+          />
+        </span>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </Button>
@@ -302,8 +307,7 @@ export function InboxEmailTab() {
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <Mail className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No emails yet. Forward a bank alert or statement to your import
-              address and it&apos;ll show up here.
+              No emails yet.
             </p>
           </CardContent>
         </Card>
@@ -531,21 +535,25 @@ export function InboxEmailTab() {
                             compact
                             className="w-[110px]"
                           />
-                          <Field
-                            label="Date"
-                            control="date"
-                            value={editDate}
-                            onChange={(e) => setEditDate(e.target.value)}
-                            compact
-                            className="w-[150px]"
-                          />
-                          <Field
-                            label="Payee"
-                            value={editPayee}
-                            onChange={(e) => setEditPayee(e.target.value)}
-                            compact
-                            className="w-[160px]"
-                          />
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Date</label>
+                            <Field
+                              control="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              compact
+                              className="w-[150px]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Payee</label>
+                            <Field
+                              value={editPayee}
+                              onChange={(e) => setEditPayee(e.target.value)}
+                              compact
+                              className="w-[160px]"
+                            />
+                          </div>
                           <Button
                             size="sm"
                             onClick={() => void record(it.id)}

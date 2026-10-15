@@ -5,8 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,8 +15,10 @@ import type {
   ImportMode,
   ImportTemplate,
 } from "@/lib/import-templates";
-import { Field } from "@/components/ui/field";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { DialogHeading } from "@/components/ui/dialog-heading";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -152,10 +152,7 @@ export function EditTemplateDialog({
           the import-options panel is expanded. */}
       <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Edit Template</DialogTitle>
-          <DialogDescription>
-            Update this template&apos;s name, default account, column mapping, and parser options.
-          </DialogDescription>
+          <DialogHeading help={<>Update this template&apos;s name, default account, column mapping, and parser options.</>}>Edit Template</DialogHeading>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
@@ -170,13 +167,12 @@ export function EditTemplateDialog({
 
             <Field
               label="Default Account"
-              optional
               control="select"
               value={defaultAccount || NONE_ACCOUNT}
               onValueChange={(v) =>
                 setDefaultAccount(!v || v === NONE_ACCOUNT ? "" : v)
               }
-              placeholder="Leave blank to keep per-row account"
+              placeholder="Per row"
               options={[
                 { value: NONE_ACCOUNT, label: "— none —" },
                 ...accounts.map((a) => ({ value: a, label: a })),
@@ -186,12 +182,12 @@ export function EditTemplateDialog({
 
           <div className="flex items-center justify-between gap-3 min-h-row rounded-lg border px-3 py-2.5">
             <div className="flex-1">
-              <Label htmlFor="edit-tpl-default" className="cursor-pointer text-sm font-medium">
-                Default template
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Auto-apply this template when headers match.
-              </p>
+              <span className="flex items-center gap-0.5">
+                <Label htmlFor="edit-tpl-default" className="cursor-pointer text-sm font-medium">
+                  Default template
+                </Label>
+                <InfoTip label="About default template" text="Auto-apply this template when headers match." />
+              </span>
             </div>
             <Field
               control="switch"
@@ -225,10 +221,8 @@ export function EditTemplateDialog({
                     className="h-4 w-4"
                   />
                   <span className="font-medium">Detailed</span>
+                  <InfoTip label="About Detailed" text="Review the parse on /import/pending before rows land. Recommended for new or messy formats." />
                 </div>
-                <p className="text-xs text-muted-foreground pl-6">
-                  Review the parse on /import/pending before rows land. Recommended for new or messy formats.
-                </p>
               </label>
               <label
                 className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${
@@ -247,17 +241,17 @@ export function EditTemplateDialog({
                     className="h-4 w-4"
                   />
                   <span className="font-medium">Simplified</span>
+                  <InfoTip label="About Simplified" text="Rows land directly in the bank ledger. Categorize on /reconcile. Use only for trusted, clean formats." />
                 </div>
-                <p className="text-xs text-muted-foreground pl-6">
-                  Rows land directly in the bank ledger. Categorize on /reconcile. Use only for trusted, clean formats.
-                </p>
               </label>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Column Mapping</Label>
-            <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
+            <div className="flex items-center gap-0.5">
+              <Label className="text-sm font-medium">Column Mapping</Label>
+              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
+            </div>
             <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
@@ -285,12 +279,13 @@ export function EditTemplateDialog({
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              Import options (skip header / footer rows, date format, default currency)
+              Import options
+              <InfoTip
+                label="About import options"
+                text="Skip header / footer rows, date format, default currency. Applied whenever this template is used. Leave at defaults for canonical exports."
+              />
             </summary>
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
-              </p>
               <div className="grid gap-3 regular:grid-cols-2">
                 <Field
                   label="Skip N header rows"
@@ -310,20 +305,22 @@ export function EditTemplateDialog({
                   value={skipFooterRows}
                   onChange={(e) => setSkipFooterRows(e.target.value)}
                 />
-                <Field
-                  label="Date format"
-                  control="select"
-                  value={dateFormatOverride}
-                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
-                  compact
-                  options={[
-                    { value: "auto", label: "Auto-detect" },
-                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
-                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
-                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
-                  ]}
-                  className="w-full"
-                />
+                <div className="space-y-1">
+                  <Label className="text-xs">Date format</Label>
+                  <Field
+                    control="select"
+                    value={dateFormatOverride}
+                    onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                    compact
+                    className="w-full"
+                    options={[
+                      { value: "auto", label: "Auto-detect" },
+                      { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                      { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                      { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                    ]}
+                  />
+                </div>
                 <Field
                   label="Default currency (rows missing one)"
                   control="select"

@@ -5,8 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,11 +13,13 @@ import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 // Pure, dependency-free module — importing parseAmount from "@/lib/csv-parser"
-import { Field } from "@/components/ui/field";
-
 // would drag its server-only `@/db` (pg → dns/fs) import into this client bundle.
 import { parseAmount } from "@/lib/parse-amount";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { Field } from "@/components/ui/field";
+import { DialogHeading } from "@/components/ui/dialog-heading";
+import { FieldLabel } from "@/components/forms";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -318,11 +318,7 @@ export function ColumnMappingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>
-            {confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}
-          </DialogTitle>
-          <DialogDescription>
-            {confirmMode ? (
+          <DialogHeading help={<>{confirmMode ? (
               <>
                 We detected a column mapping for{" "}
                 <span className="font-mono text-xs">{fileName}</span>. Review it
@@ -334,8 +330,9 @@ export function ColumnMappingDialog({
                 <span className="font-mono text-xs">{fileName}</span>.
                 Tell us which column is which — we&apos;ll remember the mapping for next time.
               </>
-            )}
-          </DialogDescription>
+            )}</>}>
+            {confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}
+          </DialogHeading>
         </DialogHeader>
 
         <div className="overflow-auto flex-1 space-y-4 pr-1">
@@ -354,14 +351,13 @@ export function ColumnMappingDialog({
               below; date format / currency apply on Continue. */}
           <details className="rounded-lg border bg-muted/30 p-3" open>
             <summary className="cursor-pointer text-sm font-medium">
-              Import options (skip header / footer rows, date format, default currency)
+              Import options
+              <InfoTip
+                label="About import options"
+                text="Skip header / footer rows, date format, default currency. If the real column names aren't on the first row (a title or summary row sits above them), skip those rows: the columns below refresh automatically."
+              />
             </summary>
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                If the real column names aren&apos;t on the first row (a title or
-                summary row sits above them), skip those rows — the columns below
-                refresh automatically.
-              </p>
               <div className="grid gap-3 regular:grid-cols-2">
                 <Field
                   label="Skip N header rows"
@@ -389,21 +385,23 @@ export function ColumnMappingDialog({
                     scheduleReparse(skipHeaderRows, v);
                   }}
                 />
-                <Field
-                  label="Date format"
-                  control="select"
-                  id="map-date-fmt"
-                  value={dateFormatOverride}
-                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
-                  compact
-                  options={[
-                    { value: "auto", label: "Auto-detect" },
-                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
-                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
-                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
-                  ]}
-                  className="w-full"
-                />
+                <div className="space-y-1">
+                  <Label htmlFor="map-date-fmt" className="text-xs">Date format</Label>
+                  <Field
+                    control="select"
+                    id="map-date-fmt"
+                    value={dateFormatOverride}
+                    onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                    compact
+                    className="w-full"
+                    options={[
+                      { value: "auto", label: "Auto-detect" },
+                      { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                      { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                      { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                    ]}
+                  />
+                </div>
                 <Field
                   label="Default currency (rows missing one)"
                   control="select"
@@ -434,7 +432,7 @@ export function ColumnMappingDialog({
                 />
               </label>
               {redetecting && (
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p data-keep="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Re-reading file…
                 </p>
@@ -484,14 +482,13 @@ export function ColumnMappingDialog({
               it does NOT yet materialize lot-aware portfolio operations. */}
           {isInvestment && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Investment columns (this is an investment account)
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Map the security ticker/symbol, name, and quantity from your
-                brokerage export. These are captured with the imported rows for
-                now; they aren&apos;t yet turned into buy/sell positions.
-              </p>
+              <div className="flex items-center gap-0.5">
+                <Label className="text-sm font-medium">Investment columns</Label>
+                <InfoTip
+                  label="About investment columns"
+                  text="This is an investment account. Map the security ticker/symbol, name, and quantity from your brokerage export. These are captured with the imported rows for now; they aren't yet turned into buy/sell positions."
+                />
+              </div>
               <div className="rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {INVESTMENT_FIELDS.map((field) => (
                   <div key={field} className="flex items-center gap-3 px-3 py-2">
@@ -519,10 +516,10 @@ export function ColumnMappingDialog({
 
           {/* Default account */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Default Account</Label>
-            <p className="text-xs text-muted-foreground">
-              Used when the Account column is not mapped, or when a row&apos;s account cell is empty.
-            </p>
+            <FieldLabel
+              label="Default Account"
+              info="Used when the Account column is not mapped, or when a row's account cell is empty."
+            />
             <Field
               control="select"
               value={defaultAccount}
@@ -558,15 +555,20 @@ export function ColumnMappingDialog({
           )}
 
           {/* Template name */}
-          <Field
-            label="Save this mapping as a template"
-            info="Future uploads with the same columns will use this mapping automatically."
-            id="col-map-tpl-name"
-            value={templateName}
-            onChange={(e) => setTemplateName(e.target.value)}
-            placeholder="e.g. CIBC Mastercard"
-            compact
-          />
+          <div className="space-y-1.5">
+            <FieldLabel
+              label="Template name"
+              htmlFor="col-map-tpl-name"
+              info="Save this mapping as a template. Future uploads with the same columns will use this mapping automatically."
+            />
+            <Field
+              id="col-map-tpl-name"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g. CIBC Mastercard"
+              compact
+            />
+          </div>
 
           {/* §B — per-account auto-vs-ask choice. Shown in BOTH modes (the
               saved template auto-applies via header-match next time; this
@@ -584,9 +586,7 @@ export function ColumnMappingDialog({
                 />
                 <span>
                   <span className="font-medium">Ask me to confirm first</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Show this mapping for review each time (recommended).
-                  </span>
+                  <InfoTip label="About Ask me to confirm first" text="Show this mapping for review each time (recommended)." />
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm cursor-pointer">
@@ -599,10 +599,10 @@ export function ColumnMappingDialog({
                 />
                 <span>
                   <span className="font-medium">Apply this mapping automatically</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Import silently — don&apos;t ask again for this account. Reset
-                    anytime on the account&apos;s page → Import preferences.
-                  </span>
+                  <InfoTip
+                    label="About Apply this mapping automatically"
+                    text="Import silently: don't ask again for this account. Reset anytime on the account's page, Import preferences."
+                  />
                 </span>
               </label>
             </div>

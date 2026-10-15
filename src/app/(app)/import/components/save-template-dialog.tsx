@@ -5,16 +5,16 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 import { autoDetectColumnMapping } from "@/lib/import-templates";
-import { Field } from "@/components/ui/field";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { DialogHeading } from "@/components/ui/dialog-heading";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -138,10 +138,7 @@ export function SaveTemplateDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Save as Template</DialogTitle>
-          <DialogDescription>
-            Save this column mapping so future uploads from the same source are auto-matched.
-          </DialogDescription>
+          <DialogHeading help={<>Save this column mapping so future uploads from the same source are auto-matched.</>}>Save as Template</DialogHeading>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
@@ -149,25 +146,26 @@ export function SaveTemplateDialog({
             <Field
               label="Template Name"
               id="tpl-name"
-              placeholder="e.g. TD Chequing, RBC Visa"
+              placeholder="e.g. TD Chequing"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
 
             <Field
               label="Default Account"
-              optional
               control="select"
               value={defaultAccount}
               onValueChange={(v) => setDefaultAccount(v ?? "")}
-              placeholder="Leave blank to keep per-row account"
+              placeholder="Per row"
               options={accounts.map((a) => ({ value: a, label: a }))}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Column Mapping</Label>
-            <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
+            <div className="flex items-center gap-0.5">
+              <Label className="text-sm font-medium">Column Mapping</Label>
+              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
+            </div>
             <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
@@ -193,12 +191,13 @@ export function SaveTemplateDialog({
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              Import options (skip header / footer rows, date format, default currency)
+              Import options
+              <InfoTip
+                label="About import options"
+                text="Skip header / footer rows, date format, default currency. Applied whenever this template is used. Leave at defaults for canonical exports."
+              />
             </summary>
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
-              </p>
               <div className="grid gap-3 regular:grid-cols-2">
                 <Field
                   label="Skip N header rows"
@@ -218,20 +217,22 @@ export function SaveTemplateDialog({
                   value={skipFooterRows}
                   onChange={(e) => setSkipFooterRows(e.target.value)}
                 />
-                <Field
-                  label="Date format"
-                  control="select"
-                  value={dateFormatOverride}
-                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
-                  compact
-                  options={[
-                    { value: "auto", label: "Auto-detect" },
-                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
-                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
-                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
-                  ]}
-                  className="w-full"
-                />
+                <div className="space-y-1">
+                  <Label className="text-xs">Date format</Label>
+                  <Field
+                    control="select"
+                    value={dateFormatOverride}
+                    onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                    compact
+                    className="w-full"
+                    options={[
+                      { value: "auto", label: "Auto-detect" },
+                      { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                      { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                      { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                    ]}
+                  />
+                </div>
                 <Field
                   label="Default currency (rows missing one)"
                   control="select"

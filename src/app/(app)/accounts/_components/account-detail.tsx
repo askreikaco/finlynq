@@ -6,7 +6,6 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -25,7 +24,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
+import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -45,6 +44,7 @@ import {
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Field } from "@/components/ui/field";
 import { FieldLabel } from "@/components/forms";
 
 type Account = {
@@ -623,7 +623,8 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
                 </span>
               }
               value={
-                <Switch
+                <Field
+                  control="switch"
                   checked={invisible}
                   onCheckedChange={handleInvisibleToggle}
                   disabled={savingInvisible}
@@ -680,10 +681,11 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
                 label="Currency"
                 info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
               />
-              <Combobox
+              <Field
+                control="combobox"
                 value={newSleeveCurrency}
                 onValueChange={(v) => setNewSleeveCurrency(v || "")}
-                items={sleeveCurrencyOptions.map(
+                options={sleeveCurrencyOptions.map(
                   (c): ComboboxItemShape => ({ value: c, label: c }),
                 )}
                 placeholder="Pick a currency"

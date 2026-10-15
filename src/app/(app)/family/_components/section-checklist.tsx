@@ -5,8 +5,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { Field } from "@/components/ui/field";
 import { getSectionDescription, getSectionLabel } from "./section-labels";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface Props {
   legend: string;
@@ -56,16 +57,28 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
       </div>
       <div className="space-y-2 pl-4 regular:pl-6 border-l-2 border-muted">
         {FAMILY_OVERVIEW_SECTIONS.map((s) => (
-          <Field
-            key={s}
-            label={<><span className="font-medium">{getSectionLabel(s)}</span> <span className="text-xs text-muted-foreground"> {getSectionDescription(s)} {isLocked(s) ? ` — ${FAMILY_STRINGS.update_sections_locked}` : ""} </span></>}
-            control="switch"
-            id={`${uid}-${s}`}
-            checked={selected.has(s) || isLocked(s)}
-            disabled={disabled || isLocked(s)}
-            onCheckedChange={(v) => toggle(s, v)}
-            className="shrink-0"
-          />
+          <div key={s} className="flex items-center justify-between gap-3 min-h-row">
+            <span className="flex min-w-0 flex-1 items-center gap-0.5">
+              <Label htmlFor={`${uid}-${s}`} className="font-normal cursor-pointer min-w-0">
+                <span className="font-medium">{getSectionLabel(s)}</span>
+                {isLocked(s) ? (
+                  <span className="ml-2 text-xs text-muted-foreground">Required</span>
+                ) : null}
+              </Label>
+              <InfoTip
+                label={`About ${getSectionLabel(s)}`}
+                text={`${getSectionDescription(s)}${isLocked(s) ? ` — ${FAMILY_STRINGS.update_sections_locked}` : ""}`}
+              />
+            </span>
+            <Field
+              control="switch"
+              id={`${uid}-${s}`}
+              checked={selected.has(s) || isLocked(s)}
+              disabled={disabled || isLocked(s)}
+              onCheckedChange={(v) => toggle(s, v)}
+              className="shrink-0"
+            />
+          </div>
         ))}
       </div>
     </fieldset>

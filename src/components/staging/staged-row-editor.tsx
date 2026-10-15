@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export interface StagedEditableRow {
   id: string;
@@ -331,6 +332,8 @@ export function StagedRowEditor({
         <div className="grid grid-cols-2 gap-3">
           <Field
             label={<>Holding <Spinner shown={savingField === "portfolioHoldingId"} /></>}
+            info="Cash sleeve is used automatically when left blank."
+            infoLabel="About holding"
             control="select"
             value={
               local.portfolioHoldingId != null
@@ -342,7 +345,7 @@ export function StagedRowEditor({
               setLocal({ ...local, portfolioHoldingId: next });
               void save("portfolioHoldingId", { portfolioHoldingId: next });
             }}
-            placeholder="Pick holding (Cash sleeve auto if blank)"
+            placeholder="Pick holding"
             compact
             options={[
               { value: "__none__", label: "— Cash (auto) —" },
@@ -373,6 +376,8 @@ export function StagedRowEditor({
       <div className="grid grid-cols-2 gap-3">
         <Field
           label={<>Entered amount <Spinner shown={savingField === "enteredAmount"} /></>}
+          info="Override only when the row currency differs."
+          infoLabel="About entered amount"
           control="amount"
           step="any"
           value={local.enteredAmount ?? ""}
@@ -385,7 +390,7 @@ export function StagedRowEditor({
               void save("enteredAmount", { enteredAmount: local.enteredAmount });
             }
           }}
-          placeholder="Override only when row currency differs"
+          placeholder="Amount"
           compact
         />
         <Field
@@ -409,6 +414,8 @@ export function StagedRowEditor({
 
       <Field
         label={<>Tags <Spinner shown={savingField === "tags"} /></>}
+        info="Comma-separated."
+        infoLabel="About tags"
         value={local.tags ?? ""}
         onChange={(e) => setLocal({ ...local, tags: e.target.value })}
         onBlur={() => {
@@ -416,24 +423,29 @@ export function StagedRowEditor({
             void save("tags", { tags: local.tags ?? "" });
           }
         }}
-        placeholder="comma-separated"
+        placeholder="Tags"
         compact
       />
 
-      <Field
-        label={<>Note <Spinner shown={savingField === "note"} /></>}
-        control="textarea"
-        value={local.note ?? ""}
-        onChange={(e) => setLocal({ ...local, note: e.target.value })}
-        onBlur={() => {
-                  if (local.note !== row.note) {
-                    void save("note", { note: local.note ?? "" });
-                  }
-                }}
-        placeholder="Free-form notes (max 2000 chars)"
-        maxLength={2000}
-        className="w-full"
-      />
+      <div className="space-y-1">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+          Note <Spinner shown={savingField === "note"} />
+          <InfoTip label="About note" text="Free-form notes (max 2000 characters)." />
+        </Label>
+        <Field
+          control="textarea"
+          value={local.note ?? ""}
+          onChange={(e) => setLocal({ ...local, note: e.target.value })}
+          onBlur={() => {
+                    if (local.note !== row.note) {
+                      void save("note", { note: local.note ?? "" });
+                    }
+                  }}
+          placeholder="Note"
+          maxLength={2000}
+          className="w-full"
+        />
+      </div>
     </div>
   );
 }

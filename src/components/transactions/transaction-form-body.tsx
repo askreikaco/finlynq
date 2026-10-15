@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button";
 const NOTE_TEXTAREA_CLASS =
   "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { ChevronDown, Link2, Plus, Scissors, Trash2 } from "lucide-react";
@@ -22,7 +24,7 @@ import { labelForSource } from "@/lib/tx-source";
 import { getDisplayLocale } from "@/lib/locale";
 import { FxPreviewLine } from "./fx-preview-line";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
-import { Field, type FieldComboboxOption } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
 import type { DialogLinkedSibling } from "./transaction-dialog";
 import type { TransactionFormState } from "./use-transaction-form";
 
@@ -142,7 +144,7 @@ export function TransactionFormBody({
                 options={sortAccount(
                   accounts
                     .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
-                    .map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+                    .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
                   (a) => Number(a.value),
                   (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                 )}
@@ -157,7 +159,7 @@ export function TransactionFormBody({
                 value={form.categoryId}
                 onValueChange={(v) => setForm({ ...form, categoryId: v })}
                 options={sortCategory(
-                  categories.map((c): FieldComboboxOption => ({
+                  categories.map((c): ComboboxItemShape => ({
                     value: String(c.id),
                     label: `${c.group} - ${c.name}`,
                   })),
@@ -204,14 +206,14 @@ export function TransactionFormBody({
               if (sel?.isInvestment !== true) return null;
               const accountHoldings = holdings.filter((h) => h.accountId === sel.id);
               const cash = accountHoldings.find((h) => !h.symbol);
-              const items: FieldComboboxOption[] = [
+              const items: ComboboxItemShape[] = [
                 ...(cash
-                  ? [{ value: cash.name, label: `${cash.name} (auto) — cash sleeve` } satisfies FieldComboboxOption]
+                  ? [{ value: cash.name, label: `${cash.name} (auto) — cash sleeve` } satisfies ComboboxItemShape]
                   : []),
                 ...sortHolding(
                   accountHoldings
                     .filter((h) => h !== cash)
-                    .map((h): FieldComboboxOption => ({
+                    .map((h): ComboboxItemShape => ({
                       value: h.name,
                       label: h.symbol ? `${h.name} (${h.symbol})` : h.name,
                     })),
@@ -220,19 +222,27 @@ export function TransactionFormBody({
                 ),
               ];
               return (
-                <Field
-                  label="Portfolio Holding"
-                  required
-                  info={<>{sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).</>}
-                  control="combobox"
-                  value={form.portfolioHoldingId}
-                  onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
-                  options={items}
-                  placeholder={cash ? "Cash (auto)" : "Pick a holding"}
-                  searchPlaceholder="Search holdings…"
-                  emptyMessage="No matches"
-                  className="w-full"
-                />
+                <div className="space-y-1.5 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
+                  <div className="flex items-center gap-0.5">
+                    <Label>
+                      Portfolio Holding <span className="text-destructive">*</span>
+                    </Label>
+                    <InfoTip
+                      label="About portfolio holding"
+                      text={`${sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).`}
+                    />
+                  </div>
+                  <Field
+                    control="combobox"
+                    value={form.portfolioHoldingId}
+                    onValueChange={(v) => setForm({ ...form, portfolioHoldingId: v })}
+                    options={items}
+                    placeholder={cash ? "Cash (auto)" : "Pick a holding"}
+                    searchPlaceholder="Search holdings…"
+                    emptyMessage="No matches"
+                    className="w-full"
+                  />
+                </div>
               );
             })()}
 
@@ -296,7 +306,7 @@ export function TransactionFormBody({
                         setSplitRows(next);
                       }}
                       options={sortCategory(
-                        categories.map((c): FieldComboboxOption => ({
+                        categories.map((c): ComboboxItemShape => ({
                           value: String(c.id),
                           label: c.name,
                         })),
@@ -408,7 +418,7 @@ export function TransactionFormBody({
                           : holdings;
                         return [
                           ...sortHolding(
-                            accountHoldings.map((h): FieldComboboxOption => ({
+                            accountHoldings.map((h): ComboboxItemShape => ({
                               value: h.name,
                               label: `${h.symbol ? `${h.name} (${h.symbol})` : h.name}${h.accountName ? ` — ${h.accountName}` : ""}`,
                             })),
@@ -421,7 +431,7 @@ export function TransactionFormBody({
                                 {
                                   value: form.portfolioHoldingId,
                                   label: form.portfolioHoldingId,
-                                } satisfies FieldComboboxOption,
+                                } satisfies ComboboxItemShape,
                               ]
                             : []),
                         ];
@@ -586,7 +596,7 @@ export function TransactionFormBody({
                       accounts
                         .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
                         .filter((a) => allowSameAccount || String(a.id) !== transferForm.toAccountId)
-                        .map((a): FieldComboboxOption => ({
+                        .map((a): ComboboxItemShape => ({
                           value: String(a.id),
                           label: `${a.name} · ${a.currency}`,
                         })),
@@ -607,7 +617,7 @@ export function TransactionFormBody({
                       accounts
                         .filter((a) => !!editId || (a.isInvestment !== true && a.archived !== true))
                         .filter((a) => allowSameAccount || String(a.id) !== transferForm.fromAccountId)
-                        .map((a): FieldComboboxOption => ({
+                        .map((a): ComboboxItemShape => ({
                           value: String(a.id),
                           label: `${a.name} · ${a.currency}`,
                         })),
@@ -635,9 +645,9 @@ export function TransactionFormBody({
               const sourceHoldings = fromAcct ? holdings.filter((h) => h.accountId === fromAcct.id) : [];
               const destHoldings = toAcct ? holdings.filter((h) => h.accountId === toAcct.id) : [];
 
-              const buildHoldingItems = (acctHoldings: typeof holdings): FieldComboboxOption[] =>
+              const buildHoldingItems = (acctHoldings: typeof holdings): ComboboxItemShape[] =>
                 sortHolding(
-                  acctHoldings.map((h): FieldComboboxOption => ({
+                  acctHoldings.map((h): ComboboxItemShape => ({
                     value: bothInv ? h.name : String(h.id),
                     label: h.symbol ? `${h.name} (${h.symbol})` : h.name,
                   })),
@@ -658,9 +668,13 @@ export function TransactionFormBody({
                     : destSentinel;
                 return (
                   <div className="space-y-3 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move.
-                    </p>
+                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                      In-kind transfer
+                      <InfoTip
+                        label="About in-kind transfers"
+                        text="Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move."
+                      />
+                    </div>
                     {fromAcct && toAcct && fromAcct.id === toAcct.id && (
                       <p className="text-xs text-warning">
                         Same-account rebalance — pick a different destination holding to move shares between two positions in this brokerage.
@@ -804,9 +818,13 @@ export function TransactionFormBody({
               if (transferEdit) return null;
               return (
                 <div className="space-y-2 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                  <p className="text-xs text-muted-foreground">
-                    Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it.
-                  </p>
+                  <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                    Investment leg
+                    <InfoTip
+                      label="About investment legs"
+                      text="Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it."
+                    />
+                  </div>
                   {fromInv && fromAcct && (
                     <div className="grid grid-cols-2 gap-3">
                       <Field
@@ -903,7 +921,17 @@ export function TransactionFormBody({
               return (
                 <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
+                    <span className="flex items-center gap-0.5">
+                      <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
+                      <InfoTip
+                        label="About amount received"
+                        text={
+                          isAsBooked
+                            ? "Saved from the original transfer. Override with the actual amount your bank credited."
+                            : "Pre-filled from market FX. Override with the actual amount your bank credited."
+                        }
+                      />
+                    </span>
                     {impliedRate != null ? (
                       <span className="text-xs text-muted-foreground">
                         rate {impliedRate.toFixed(6)} · {rateSource}
@@ -931,11 +959,6 @@ export function TransactionFormBody({
                         : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? displayCurrency))}`
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {isAsBooked
-                      ? "Saved from the original transfer. Override with the actual amount your bank credited."
-                      : "Pre-filled from market FX. Override with the actual amount your bank credited."}
-                  </p>
                   {showMarketRef && transferFxPreview.state === "ok" && (
                     <p className="text-xs text-muted-foreground">
                       Market rate on {formatDate(transferFxPreview.date)}:{" "}

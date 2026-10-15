@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { X } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
-import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { isLocalWriteQueueActive, queueOfflineEntityCreate, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { Field } from "@/components/ui/field";
+import { FieldLabel } from "@/components/forms";
+
 export type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
   currency: string;
@@ -287,7 +289,7 @@ export function GoalForm({
         />
       </div>
       <div>
-        <Label>Linked Accounts</Label>
+        <FieldLabel label="Linked Accounts" labelClassName="text-foreground" info="Goal progress sums transactions across every linked account. Leave empty for manual tracking." />
         {form.accountIds.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {form.accountIds.map((id) => {
@@ -313,7 +315,7 @@ export function GoalForm({
           value=""
           onValueChange={(v) => addAccount(v ?? "")}
           options={sortAccount(
-            availableAccounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+            availableAccounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
             (a) => Number(a.value),
             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
           )}
@@ -322,9 +324,6 @@ export function GoalForm({
           emptyMessage="No matches"
           className="w-full"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          Goal progress sums transactions across every linked account. Leave empty for manual tracking.
-        </p>
       </div>
       <Field label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
       {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}

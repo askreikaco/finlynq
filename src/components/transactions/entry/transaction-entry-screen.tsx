@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 import { NumpadDock, buildCurrencyChips } from "./numpad-dock";
 import { CategorySelector, type Category } from "./category-selector";
@@ -1197,7 +1198,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       data-embedded={embedded ? "true" : undefined}
       className={cn(
         "flex flex-col text-foreground",
-        // Pane: fills the 1/3 column on the pane's own card background; the pane (aside) scrolls, so the root just grows.
+        // Pane: fills the 1/4 column on the pane's own card background; the pane (aside) scrolls, so the root just grows.
         embedded ? "relative w-full" : "bg-background",
         !embedded && "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
         // No page gutter on this root: stop the bar bleeding (-mx-4) past the screen edge so it keeps its own 16px side padding.
@@ -1609,9 +1610,9 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
         )}
 
         {isInstallmentRow && (
-          <p data-testid="txnew-series-hint" className="shrink-0 px-1 text-xs text-muted-foreground">
-            Edits can apply to this payment or the following ones
-          </p>
+          <div data-testid="txnew-series-hint" className="shrink-0 px-1">
+            <InfoTip label="About payment series" text="Edits can apply to this payment or the following ones" />
+          </div>
         )}
 
         {editRow && <EditMetaLine tx={editRow} />}
