@@ -23,7 +23,8 @@ const H = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(`month=2026-10${H.EDIT ? `&edit=${H.EDIT}` : ""}`),
+  useSearchParams: () => new URLSearchParams("month=2026-10"),
+  useParams: () => ({ id: H.EDIT }),
   usePathname: () => "/categories",
 }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement("a", { href }, children) }));
@@ -59,6 +60,7 @@ vi.mock("@/lib/data/local-write-queue", () => ({
 
 import { queueOfflineBudgetDelete } from "@/lib/data/local-write-queue";
 import CategoriesPageContent from "@/app/(app)/categories/_page-content";
+import { CategoryFormPanel } from "@/app/(app)/categories/_components/category-form-panel";
 
 const BudgetsPage = () => <CategoriesPageContent />;
 
@@ -108,9 +110,9 @@ describe("categories page budgets with the offline queue", () => {
     H.PEND = { creates: [], edits: { 1: { opId: "e9", status: "pending", failReason: null, fields: { amount: 450 }, ref: { categoryId: 10, month: "2026-10" } } }, deletes: {} };
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     vi.mocked(queueOfflineBudgetDelete).mockResolvedValueOnce(true);
-    // The shared form (?edit=10) is prefilled with the (overlaid) budget; a blank budget removes it.
+    // The shared form (/categories/10/edit) is prefilled with the (overlaid) budget; a blank budget removes it.
     H.EDIT = "10";
-    render(<BudgetsPage />);
+    render(<CategoryFormPanel mode="edit" />);
     expect((await screen.findByLabelText("Budget") as HTMLInputElement).value).toBe("450");
     fireEvent.change(screen.getByLabelText("Budget"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

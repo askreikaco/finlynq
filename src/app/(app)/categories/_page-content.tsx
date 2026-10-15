@@ -1,12 +1,17 @@
 "use client";
 
 /**
- * Categories hub: spending / income by category with the month's budgets. Everything lives here: the topbar Add
- * button and each row's Edit open the ONE shared CategoryBudgetForm (?edit=new | ?edit=<id>). /budgets and
- * /settings/categorization redirect to /categories.
+ * Categories hub: spending / income by category with the month's budgets. /budgets and /settings/categorization
+ * redirect to /categories.
  *
  * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the Categories
  * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
+ *
+ * Split view (wide): a click on a category OR a group (parent) row selects it (?sel=<id>; group ids look like
+ * g-E-housing) and the pane shows its detail first (CategoryDetail: chart, totals, transactions; a group aggregates its
+ * children). Edit / Add switch the pane to the ONE shared CategoryFormPanel (?mode=edit | ?sel=new). A group expands
+ * and collapses ONLY from its chevron button, which never selects. Below wide a row opens /categories/<id>
+ * (/categories/new and /categories/<id>/edit hold the form), no sheet.
  */
 
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -16,7 +21,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
@@ -28,12 +32,17 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
-import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
-import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
+import type { FormCategory } from "./_components/category-budget-form";
+import { CategoryDetail } from "./_components/category-detail";
+import { CategoryFormPanel } from "./_components/category-form-panel";
+import { CategoryGroup } from "./_components/category-group";
+import { groupSelId, isGroupSelId } from "@/lib/categories/group-key";
+import { withMode, withSel } from "@/lib/list-detail/selection";
+import { sizeClassFor } from "@/components/ui/size-class";
 import { CategoryRow } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
+  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PROGRESS_ROW_LINK, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -46,8 +55,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import type { PageCard } from "@/lib/card-layout";
 import type { Budget } from "../budgets/_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
-import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
-import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { usePendingBudgets } from "@/lib/data/local-write-queue";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -158,7 +166,7 @@ function CategoriesOverview() {
   const [openByType, setOpenByType] = useState<Record<CatType, Set<string>>>(() => ({ E: new Set(), I: new Set() }));
   // regular+ (tablet, desktop): Spending and Income side by side. compact (phone): the Spending / Income tabs.
   const twoCol = useAppSizeClass() !== "compact";
-  // wide (>= 1024px): the split pane is a third column (?sel=<id>|new); below wide the ?edit= sheet stays.
+  // wide (>= 1024px): the split pane is a third column (?sel=<id>|new); below wide rows open the /categories/<id> routes.
   const detail = useListDetail();
   const [copying, setCopying] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -219,29 +227,33 @@ function CategoriesOverview() {
     catsReload();
   }, [overviewReload, budgetsReload, catsReload]);
 
-  // ?edit=new | ?edit=<id> opens the shared category + budget form.
+  // Legacy deep link ?edit=new | ?edit=<id>: wide maps it to the pane (?sel=, one address for the same form), below wide
+  // to the form route. Read the live width: the size class is "compact" for one render before it is measured.
   const editParam = searchParams.get("edit");
-  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
-  const formOpen = (editParam === "new" || editId != null) && !detail.split;
-  const { split: paneOn } = detail;
-  // ?edit= is a deep link: at wide it maps to the pane (?sel=), one address for the same form.
   useEffect(() => {
-    if (!paneOn || !editParam || !(editParam === "new" || /^\d+$/.test(editParam))) return;
+    if (!editParam || !(editParam === "new" || /^\d+$/.test(editParam))) return;
+    const wide = sizeClassFor(document.documentElement.clientWidth) === "wide";
     const qs = new URLSearchParams(window.location.search);
     qs.delete("edit");
-    qs.set("sel", editParam);
-    router.replace(`/categories?${qs}`, { scroll: false });
-  }, [paneOn, editParam, router]);
-  function setEdit(next: "new" | number | null) {
-    if (detail.split && next != null) {
-      if (next === "new") detail.selectNew();
-      else detail.select(next);
-      return;
+    if (wide) {
+      qs.set("sel", editParam);
+      if (editParam !== "new") qs.set("mode", "edit");
+      router.replace(`/categories?${qs}`, { scroll: false });
+    } else {
+      const m = qs.get("month");
+      router.replace(`/categories/${editParam === "new" ? "new" : `${editParam}/edit`}${m ? `?month=${m}` : ""}`, { scroll: false });
     }
-    const qs = new URLSearchParams(searchParams.toString());
-    if (next == null) qs.delete("edit");
-    else qs.set("edit", String(next));
-    router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
+  }, [editParam, router]);
+
+  /** Open a category / group (id or group id): the pane at wide, its detail route below. */
+  function open(id: string | number) {
+    if (detail.split) detail.select(id);
+    else router.push(`/categories/${id}`);
+  }
+  /** Open a category / group's edit form (Edit list mode): the pane in edit mode at wide, the form route below. */
+  function openEdit(id: string | number) {
+    if (detail.split) router.push(`/categories${withMode(withSel(window.location.search, id), "edit")}`, { scroll: false });
+    else router.push(`/categories/${id}/edit?month=${month}`);
   }
 
   function go(next: { type: CatType }) {
@@ -321,29 +333,6 @@ function CategoriesOverview() {
     },
   ];
 
-  /** Server row of a budget (no overlay fields) as the offline queue's baseline. */
-  function serverRowOf(b: Budget) {
-    return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
-  }
-
-  /** Remove a budget (server or queued on this device). False = failed (the reason is in actionError). */
-  async function clearBudget(b: Budget): Promise<boolean> {
-    // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
-    if (b.pendingSync?.kind === "create") {
-      const dropped = await discardQueuedCreate(b.pendingSync.opId);
-      if (!dropped) setActionError("Being sent now. Try again.");
-      return dropped;
-    }
-    try {
-      const res = await fetch(`/api/budgets?id=${b.id}`, { method: "DELETE" });
-      return res.ok;
-    } catch (netErr) {
-      // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
-      const serverRow = serverBudgets.find((x) => x.id === b.id) ?? b;
-      return isLocalWriteQueueActive() && isNetworkFailure(netErr) ? await queueOfflineBudgetDelete(serverRowOf(serverRow)) : false;
-    }
-  }
-
   // Copy last month's budgets into the selected month (the upserting POST /api/budgets, native amount + currency).
   async function handleCopyFromPrevMonth() {
     setActionError("");
@@ -389,8 +378,6 @@ function CategoriesOverview() {
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
 
-  const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
   /** One type's pieces: heading total, the share (pie) card and the category list card. */
   function panelFor(t: CatType) {
     const data = dataOf[t]!;
@@ -432,7 +419,7 @@ function CategoriesOverview() {
       const row = findRow(allRows, key);
       if (!row) return;
       if (row.kind === "category") {
-        router.push(`/categories/${row.categories[0].id}`);
+        open(row.categories[0].id);
         return;
       }
       setOpen(t, key, true);
@@ -469,28 +456,38 @@ function CategoriesOverview() {
     const groupRow = (row: OverviewRow) =>
       rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
 
-    /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
-    function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
-      const body = categoryRow(c, group, dot, indent);
+    /**
+     * A selectable row (category or group): a link to its detail route that, at wide, selects it into the pane instead;
+     * in Edit list mode a button that opens the shared form prefilled. Never toggles a group (only the chevron does).
+     */
+    function selectableRow(id: string | number, name: string, body: ReactNode) {
+      const idStr = String(id);
+      const selected = detail.selectedId === idStr;
       return editMode ? (
-        <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
+        <button type="button" data-edit-row="" aria-label={`Edit: ${name}`} onClick={() => openEdit(id)} className={`${PROGRESS_ROW_LINK} bg-primary/5 text-left`}>
           {body}
         </button>
       ) : (
         <Link
-        href={`/categories/${c.id}`}
-        className={`${className}${detail.selectedId === String(c.id) ? " bg-primary/5" : ""}`}
-        aria-current={detail.selectedId === String(c.id) ? "true" : undefined}
-        onClick={(e) => {
-          if (!detail.split) return;
-          e.preventDefault();
-          detail.select(c.id); // wide: the row selects into the pane; the detail page stays one click away from the form
-        }}
-      >
-        {body}
-      </Link>
+          href={`/categories/${id}`}
+          className={`${PROGRESS_ROW_LINK}${selected ? " bg-muted" : ""}`}
+          {...(selected ? { "data-selected": "true", "aria-current": "true" as const } : {})}
+          onClick={(e) => {
+            if (!detail.split) return;
+            e.preventDefault();
+            detail.select(id); // wide: the row selects into the pane; below wide the link opens the detail route
+          }}
+        >
+          {body}
+        </Link>
       );
     }
+
+    const categoryLink = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+      selectableRow(c.id, subLabel(c.name, group), categoryRow(c, group, dot, indent));
+
+    const groupLink = (row: OverviewRow) =>
+      selectableRow(groupSelId(t, row.label), row.label, groupRow(row));
 
     const summary = (
       <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
@@ -568,28 +565,22 @@ function CategoriesOverview() {
           rows.map((row) =>
             row.kind === "group" ? (
               <div key={row.key} id={groupDomId(t, row.key)} data-slot="category-group">
-                <Accordion
-                  value={openKeys.has(row.key) ? row.key : null}
-                  onValueChange={(v) => setOpen(t, row.key, v === row.key)}
-                  className="gap-0"
+                <CategoryGroup
+                  label={row.label}
+                  panelId={`${groupDomId(t, row.key)}-panel`}
+                  open={openKeys.has(row.key)}
+                  onToggle={() => setOpen(t, row.key, !openKeys.has(row.key))}
+                  header={groupLink(row)}
                 >
-                  <AccordionItem
-                    value={row.key}
-                    title={groupRow(row)}
-                    className="rounded-none border-0 bg-transparent"
-                    triggerClassName="rounded-none px-4 py-3"
-                    panelClassName="border-t border-border/50 p-0"
-                  >
-                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                      {row.categories.map((c) => (
-                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
-                      ))}
-                    </ul>
-                  </AccordionItem>
-                </Accordion>
+                  <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {row.categories.map((c) => (
+                      <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), true)}</li>
+                    ))}
+                  </ul>
+                </CategoryGroup>
               </div>
             ) : (
-              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key), ROW_LINK)}</div>
+              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key))}</div>
             ),
           )
         )}
@@ -637,28 +628,6 @@ function CategoriesOverview() {
     </section>
   );
 
-  // ---- split pane (wide): the ONE block that wires the third column; the sheet below is the below-wide twin ------------
-  const paneBody = (api: ListDetailPaneApi) => {
-    const id = api.selectedId != null && /^\d+$/.test(api.selectedId) ? Number(api.selectedId) : null;
-    const cat = id != null ? (allCategories.find((c) => c.id === id) ?? null) : null;
-    if (!api.isNew && !cat) return <p className="text-sm text-muted-foreground">Category not found.</p>;
-    return (
-      <CategoryBudgetForm
-        key={`${api.selectedId ?? "new"}-${budgetsKnown}-${allCategories.length}`}
-        category={cat}
-        categories={allCategories}
-        budgets={budgets}
-        month={month}
-        currency={displayCurrency}
-        defaultType="E"
-        onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); api.afterSaved(cat?.id); }}
-        onCancel={api.clear}
-        onDeleted={() => { reloadAll(); api.afterDeleted(); }}
-        onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
-      />
-    );
-  };
-
   /** What one card id renders: metrics are spending only (full width above the columns); the type cards are per column. */
   const nodeFor = (id: string): ReactNode => {
     if (id === "metrics") return isIncome && !twoCol ? null : metricsNode;
@@ -675,7 +644,7 @@ function CategoriesOverview() {
       <PageHeader
         title="Categories"
         actions={
-          <ListDetailNewButton href="/categories?edit=new" label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
+          <ListDetailNewButton href={`/categories/new?month=${month}`} label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
         }
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
@@ -683,7 +652,32 @@ function CategoriesOverview() {
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
       {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 3/4, the pane is the right 1/4 at full page height. */}
-      <ListDetailLayout entity="category" newLabel="Add" enabled={twoCol} pane={paneBody}>
+      <ListDetailLayout
+        entity="category"
+        newLabel="Add"
+        enabled={twoCol}
+        detailTitle="Category"
+        detailHref={(id) => `/categories/${id}`}
+        renderDetail={(id, api) => <CategoryDetail id={id} embedded={{ onEdit: api.edit, onOpen: api.select }} />}
+        renderForm={(api) => (
+          <CategoryFormPanel
+            embedded
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            month={month}
+            defaultType={type}
+            onSaved={(id, warning) => {
+              setActionError(warning ? `Budget: ${warning}` : "");
+              reloadAll();
+              // A renamed group has a new id: stay on it.
+              if (typeof id === "string" && isGroupSelId(id) && id !== api.selectedId) api.replaceWith(id);
+              else api.afterSaved(id);
+            }}
+            onCancel={api.cancel}
+            onDeleted={() => { reloadAll(); api.afterDeleted(); }}
+          />
+        )}
+      >
         {toolbar}
         {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
@@ -702,29 +696,6 @@ function CategoriesOverview() {
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
-
-      <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
-        <SheetContent side="right" className="w-full overflow-y-auto regular:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
-          </SheetHeader>
-          {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
-            <CategoryBudgetForm
-              key={`${editParam}-${budgetsKnown}-${allCategories.length}`}
-              category={editId != null ? (allCategories.find((c) => c.id === editId) ?? null) : null}
-              categories={allCategories}
-              budgets={budgets}
-              month={month}
-              currency={displayCurrency}
-              defaultType={type}
-              onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); setEdit(null); }}
-              onCancel={() => setEdit(null)}
-              onDeleted={() => { reloadAll(); setEdit(null); }}
-              onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
 
       {partial && (
         <p className="text-xs text-muted-foreground">

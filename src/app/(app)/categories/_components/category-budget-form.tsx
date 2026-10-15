@@ -39,16 +39,18 @@ export interface CategoryBudgetFormProps {
   currency: string;
   /** Type for a new category (the page's Spending / Income tab). */
   defaultType?: "E" | "I";
-  /** Saved; `warning` = the category saved but its budget did not. */
-  onSaved: (warning?: string) => void;
+  /** Saved; `warning` = the category saved but its budget did not; `id` = the category (the new one after an add). */
+  onSaved: (warning?: string, id?: number) => void;
   onCancel: () => void;
   onDeleted: () => void;
   /** Remove an existing budget (server or queued). Resolves false on failure. */
   onClearBudget: (b: Budget) => Promise<boolean>;
+  /** No own horizontal padding: the host (pane, page body) already pads. */
+  flush?: boolean;
 }
 
 export function CategoryBudgetForm({
-  category, categories, budgets, month, currency, defaultType = "E", onSaved, onCancel, onDeleted, onClearBudget,
+  category, categories, budgets, month, currency, defaultType = "E", onSaved, onCancel, onDeleted, onClearBudget, flush,
 }: CategoryBudgetFormProps) {
   const isEdit = category != null;
   const existing = category ? budgets.find((b) => b.categoryId === category.id) : undefined;
@@ -141,7 +143,7 @@ export function CategoryBudgetForm({
         id = (await res.json()).id;
       }
       const warning = canBudget ? await saveBudget(id, name.trim(), group.trim()) : null;
-      onSaved(warning ?? undefined);
+      onSaved(warning ?? undefined, id);
     } catch {
       setFormError("Network error");
     } finally {
@@ -170,7 +172,7 @@ export function CategoryBudgetForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate data-form="category-budget" className="space-y-4 px-4 pb-4">
+    <form onSubmit={handleSubmit} noValidate data-form="category-budget" className={flush ? "space-y-4" : "space-y-4 px-4 pb-4"}>
       {formError && (
         <div role="alert" className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
