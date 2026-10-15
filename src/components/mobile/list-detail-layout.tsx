@@ -4,7 +4,7 @@
  * ListDetailLayout: the split view of every list page that has an edit/create form.
  *
  * It wraps the WHOLE page body (everything under the top bar: toolbar, metric cards, charts, lists), not just the list.
- * wide (>= 1024px, desktop and tablet landscape): a two-column grid, page 2fr | pane 1fr. The pane is a column of the
+ * wide (>= 1024px, desktop and tablet landscape): a two-column grid, page 3fr | pane 1fr (pane 25%). The pane is a column of the
  * entire page height: sticky below the top bar (offset = header height + safe area + 1rem), as tall as the viewport minus
  * that offset, scrolling inside itself, to the right of everything on the page. The pane renders the SAME form component the
  * /x/new and /x/[id]/edit routes render (`embedded`), selected by `?sel=<id>` / `?sel=new` in the URL.

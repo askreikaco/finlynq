@@ -66,8 +66,8 @@ describe("parseSel / withSel", () => {
 });
 
 describe("pane geometry", () => {
-  it("grid is list 2fr | pane 1fr", () => {
-    expect(SPLIT_GRID_CLASS).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+  it("grid is list 3fr | pane 1fr", () => {
+    expect(SPLIT_GRID_CLASS).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(SPLIT_GRID_CLASS).toContain("items-start");
   });
   it("the pane sticks below the top bar: header height + safe area + 1rem, is viewport-tall minus that offset, and scrolls inside", () => {
@@ -85,7 +85,7 @@ describe("ListDetailLayout", () => {
     const pane = screen.getByTestId("list-detail-pane");
     expect(pane.className).toContain("sticky");
     expect(pane.className).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
-    expect(pane.closest("[data-slot=list-detail]")!.className).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(pane.closest("[data-slot=list-detail]")!.className).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(screen.getByTestId("the-list")).toBeTruthy();
   });
 

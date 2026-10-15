@@ -40,5 +40,5 @@ export const PANE_HEIGHT = "calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,
 // Literal class strings (Tailwind only generates classes it can read verbatim from source).
 export const PANE_CLASS =
   "sticky top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)] h-[calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)] overflow-y-auto";
-/** Page body 2/3, pane 1/3. */
-export const SPLIT_GRID_CLASS = "grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-6";
+/** Page body 3/4, pane 1/4 (25%). */
+export const SPLIT_GRID_CLASS = "grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)] items-start gap-6";
