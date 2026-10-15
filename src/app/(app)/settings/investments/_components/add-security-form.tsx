@@ -8,11 +8,10 @@
  */
 
 import { useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
+import { Field } from "@/components/ui/field";
 import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
 
 type PriceSource = "auto" | "manual";
@@ -148,7 +147,7 @@ export function AddSecurityForm({
           hint="Name and currency are filled from the ticker; edit if needed."
         >
           <div className="relative">
-            <Input
+            <Field
               id="sec-symbol"
               value={symbol}
               onChange={(e) => {
@@ -165,7 +164,7 @@ export function AddSecurityForm({
           </div>
         </FormRow>
         <FormRow label="Name" htmlFor="sec-name" hint="Auto-filled from the ticker, or type it.">
-          <Input
+          <Field
             id="sec-name"
             value={name}
             onChange={(e) => {
@@ -175,7 +174,7 @@ export function AddSecurityForm({
           />
         </FormRow>
         <FormRow label="Currency" htmlFor="sec-currency" error={errors.currency}>
-          <Input
+          <Field
             id="sec-currency"
             value={currency}
             onChange={(e) => {
@@ -189,7 +188,8 @@ export function AddSecurityForm({
         <FormRow label="Crypto">
           <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
             <span>Crypto asset</span>
-            <Switch
+            <Field
+              control="switch"
               checked={isCrypto}
               onCheckedChange={(v) => {
                 setIsCrypto(v);

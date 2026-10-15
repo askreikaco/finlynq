@@ -25,7 +25,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -38,13 +37,13 @@ import { applyEmailTransform } from "@/lib/email-import/apply-transform";
 import { formatCurrency } from "@/lib/currency";
 import { SUPPORTED_FIAT_CURRENCIES } from "@/lib/fx/supported-currencies";
 import { safeAccountName, safeName } from "@/lib/safe-name";
+import { Field } from "@/components/ui/field";
 import {
   EMAIL_CONDITION_FIELDS,
   defaultEmailConditionForField,
   type EmailCondition,
   type EmailConditionField,
 } from "@/lib/email-rules/schema";
-import { AmountInput } from "@/components/amount-input";
 
 export interface RuleDraftInit {
   id?: number | null;
@@ -112,21 +111,19 @@ function EmailConditionRow({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <Select
+      <Field
+        control="select"
         value={cond.field}
         onValueChange={(v) => onChange(defaultEmailConditionForField((v as EmailConditionField) ?? "sender"))}
-      >
-        <SelectTrigger className="w-[110px] h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {EMAIL_CONDITION_FIELDS.map((f) => (
-            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        compact
+        className="w-[110px]"
+        options={EMAIL_CONDITION_FIELDS.map((f) => ({ value: f.value, label: f.label }))}
+      />
 
       {cond.field === "amount" ? (
         <>
-          <Select
+          <Field
+            control="select"
             value={cond.op}
             onValueChange={(v) => {
               const op = (v as "gt" | "lt" | "between") ?? "lt";
@@ -136,61 +133,69 @@ function EmailConditionRow({
                   : { field: "amount", op, value: 0 },
               );
             }}
-          >
-            <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gt">greater than</SelectItem>
-              <SelectItem value="lt">less than</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
+            compact
+            className="w-[130px]"
+            options={[
+              { value: "gt", label: "greater than" },
+              { value: "lt", label: "less than" },
+              { value: "between", label: "between" },
+            ]}
+          />
           {cond.op === "between" ? (
             <>
-              <AmountInput native
+              <Field
+                control="amount"
                 step="0.01"
-                className="h-9 w-[90px] rounded-md border bg-background px-2 text-sm"
                 value={String(cond.min)}
                 placeholder="min"
                 onValueChange={(nv) => onChange({ field: "amount", op: "between", min: toNum(nv), max: cond.max })}
+                compact
+                className="w-[90px]"
               />
               <span className="text-xs text-muted-foreground">–</span>
-              <AmountInput native
+              <Field
+                control="amount"
                 step="0.01"
-                className="h-9 w-[90px] rounded-md border bg-background px-2 text-sm"
                 value={String(cond.max)}
                 placeholder="max"
                 onValueChange={(nv) => onChange({ field: "amount", op: "between", min: cond.min, max: toNum(nv) })}
+                compact
+                className="w-[90px]"
               />
             </>
           ) : (
-            <AmountInput native
+            <Field
+              control="amount"
               step="0.01"
-              className="h-9 w-[120px] rounded-md border bg-background px-2 text-sm"
               value={String(cond.value)}
               placeholder="amount"
               onValueChange={(nv) => onChange({ field: "amount", op: cond.op, value: toNum(nv) })}
+              compact
+              className="w-[120px]"
             />
           )}
           <span className="text-xs text-muted-foreground">(by magnitude)</span>
         </>
       ) : (
         <>
-          <Select
+          <Field
+            control="select"
             value={cond.op}
             onValueChange={(v) => onChange({ ...cond, op: (v as "contains" | "exact" | "regex") ?? "contains" })}
-          >
-            <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="contains">contains</SelectItem>
-              <SelectItem value="exact">exact</SelectItem>
-              <SelectItem value="regex">regex</SelectItem>
-            </SelectContent>
-          </Select>
-          <input
-            className="h-9 flex-1 min-w-[140px] rounded-md border bg-background px-2 text-sm"
+            compact
+            className="w-[120px]"
+            options={[
+              { value: "contains", label: "contains" },
+              { value: "exact", label: "exact" },
+              { value: "regex", label: "regex" },
+            ]}
+          />
+          <Field
             placeholder={PLACEHOLDER[cond.field]}
             value={cond.value}
             onChange={(e) => onChange({ ...cond, value: e.target.value })}
+            compact
+            className="flex-1 min-w-[140px]"
           />
         </>
       )}
@@ -451,11 +456,11 @@ export function EmailRuleDialog({
           )}
 
           {/* Name */}
-          <input
-            className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+          <Field
             placeholder="Rule name (e.g. Chase alerts)"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className="w-full"
           />
 
           {/* Conditions (AND) */}
@@ -503,7 +508,8 @@ export function EmailRuleDialog({
               </Select>
 
               {/* FINLYNQ-189 — Category vs Transfer (mutually exclusive). */}
-              <Select
+              <Field
+                control="select"
                 value={targetKind}
                 onValueChange={(v) => {
                   const kind = (v as "category" | "transfer") ?? "category";
@@ -512,13 +518,10 @@ export function EmailRuleDialog({
                   if (kind === "transfer") setCategoryId(null);
                   else setTransferDestAccountId(null);
                 }}
-              >
-                <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="category">Category</SelectItem>
-                  <SelectItem value="transfer">Transfer to</SelectItem>
-                </SelectContent>
-              </Select>
+                compact
+                className="w-[120px]"
+                options={[{ value: "category", label: "Category" }, { value: "transfer", label: "Transfer to" }]}
+              />
 
               {targetKind === "transfer" ? (
                 <Select
@@ -557,13 +560,14 @@ export function EmailRuleDialog({
                 </Select>
               )}
 
-              <Select value={ruleMode} onValueChange={(v) => setRuleMode((v as "auto" | "review") ?? "auto")}>
-                <SelectTrigger className="w-[110px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">auto</SelectItem>
-                  <SelectItem value="review">review</SelectItem>
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={ruleMode}
+                onValueChange={(v) => setRuleMode((v as "auto" | "review") ?? "auto")}
+                compact
+                className="w-[110px]"
+                options={[{ value: "auto", label: "auto" }, { value: "review", label: "review" }]}
+              />
             </div>
             {targetKind === "transfer" && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -580,27 +584,27 @@ export function EmailRuleDialog({
                 Reverse amount sign
                 <span className="text-xs text-muted-foreground">(for alerts that report expenses as positive)</span>
               </span>
-              <Switch checked={flipSign} onCheckedChange={setFlipSign} />
+              <Field control="switch" checked={flipSign} onCheckedChange={setFlipSign} />
             </label>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <label className="text-xs text-muted-foreground w-20">Use date</label>
-              <Select value={dateSource} onValueChange={(v) => setDateSource((v as "parsed" | "received") ?? "parsed")}>
-                <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parsed">from the email body</SelectItem>
-                  <SelectItem value="received">the email&apos;s received date</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <label className="text-xs text-muted-foreground w-20">Payee</label>
-              <input
-                className="flex-1 min-w-[160px] rounded-md border bg-background px-2 py-1.5 text-sm"
-                placeholder="(optional) always use this payee"
-                value={payeeOverride}
-                onChange={(e) => setPayeeOverride(e.target.value)}
-              />
-            </div>
+            <Field
+              label="Use date"
+              control="select"
+              value={dateSource}
+              onValueChange={(v) => setDateSource((v as "parsed" | "received") ?? "parsed")}
+              compact
+              options={[
+                { value: "parsed", label: "from the email body" },
+                { value: "received", label: "the email's received date" },
+              ]}
+              className="w-[200px]"
+            />
+            <Field
+              label="Payee"
+              placeholder="(optional) always use this payee"
+              value={payeeOverride}
+              onChange={(e) => setPayeeOverride(e.target.value)}
+              className="flex-1 min-w-[160px]"
+            />
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="text-xs text-muted-foreground w-20">Currency</label>
               <Select

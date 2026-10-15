@@ -15,21 +15,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
-
+import { Field } from "@/components/ui/field";
 import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
 
 export default function SwapForm() {
@@ -262,55 +253,39 @@ function SwapCreateForm() {
     >
       <OpGroup label="Account">
         <OpRow label="Account" error={errors.accountId}>
-          <Select
-            items={accountLabelById}
+          <Field
+            control="select"
             value={accountId}
             onValueChange={(v) => {
               setAccountId(v ?? "");
               setSourceHoldingId("");
               setDestHoldingId("");
             }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick an investment account"
+            className={OP_SELECT}
+            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
       </OpGroup>
 
       <OpGroup label="Swap">
         <OpRow label="Sell" error={errors.sourceHoldingId}>
-          <Select
-            items={sourceHoldingLabelById}
+          <Field
+            control="select"
             value={sourceHoldingId}
             onValueChange={(v) => {
               setSourceHoldingId(v ?? "");
               if (v === destHoldingId) setDestHoldingId("");
             }}
             disabled={!selectedAccount}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a holding" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {accountHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`} ({h.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick a holding"
+            className={OP_SELECT}
+            options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+          />
         </OpRow>
         <OpRow label="Sell qty" error={errors.sourceQty}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={sourceQty}
@@ -320,7 +295,8 @@ function SwapCreateForm() {
           />
         </OpRow>
         <OpRow label="Proceeds" error={errors.sourceProceeds}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={sourceProceeds}
@@ -330,27 +306,19 @@ function SwapCreateForm() {
           />
         </OpRow>
         <OpRow label="Buy" error={errors.destHoldingId}>
-          <Select
-            items={destHoldingLabelById}
+          <Field
+            control="select"
             value={destHoldingId}
             onValueChange={(v) => setDestHoldingId(v ?? "")}
             disabled={!selectedAccount || !sourceHoldingId}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a holding" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {destHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`} ({h.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick a holding"
+            className={OP_SELECT}
+            options={destHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+          />
         </OpRow>
         <OpRow label="Buy qty" error={errors.destQty}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={destQty}
@@ -360,7 +328,8 @@ function SwapCreateForm() {
           />
         </OpRow>
         <OpRow label="Cost" error={errors.destCost}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={destCost}
@@ -370,8 +339,8 @@ function SwapCreateForm() {
           />
         </OpRow>
         <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
+          <Field
+            control="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={OP_INPUT}
@@ -388,7 +357,7 @@ function SwapCreateForm() {
 
       <OpGroup label="Details">
         <OpRow label="Payee">
-          <Input
+          <Field
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
             placeholder="Broker name (optional)"
@@ -396,7 +365,7 @@ function SwapCreateForm() {
           />
         </OpRow>
         <OpRow label="Note">
-          <Input
+          <Field
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"

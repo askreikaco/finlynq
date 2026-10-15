@@ -2,17 +2,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { AmountInput } from "@/components/amount-input";
 import { parseSaveError } from "@/lib/save-error";
 import { TW } from "@/lib/design/tokens";
 import { FREQUENCY_LABELS, MAX_INTERVAL_DAYS, MIN_INTERVAL_DAYS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import type { Subscription } from "./types";
 
 export type SubscriptionDraft = {
@@ -158,23 +156,24 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl border border-border bg-card">
         <Row label="Name" htmlFor="sub-name">
-          <Input
+          <Field
             id="sub-name"
-            className={ROW_CONTROL}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="e.g. Netflix, car insurance, domain renewal"
             required
+            className={ROW_CONTROL}
           />
         </Row>
         <Row label="Amount per payment" htmlFor="sub-amount">
-          <AmountInput
+          <Field
+            control="amount"
             id="sub-amount"
-            className={ROW_CONTROL}
             step="0.01"
             value={form.amount}
             onValueChange={(v) => setForm({ ...form, amount: v })}
             required
+            className={ROW_CONTROL}
           />
         </Row>
         <Row label="How often">
@@ -191,10 +190,9 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
         </Row>
         {form.frequency === "every_n_days" && (
           <Row label="Every (days)" htmlFor="sub-interval">
-            <Input
+            <Field
+              control="number"
               id="sub-interval"
-              className={ROW_CONTROL}
-              type="number"
               inputMode="numeric"
               min={MIN_INTERVAL_DAYS}
               max={MAX_INTERVAL_DAYS}
@@ -203,15 +201,17 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
               onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
               placeholder="e.g. 10"
               required
+              className={ROW_CONTROL}
             />
           </Row>
         )}
         <Row label="Currency">
-          <Combobox
+          <Field
+            control="combobox"
             value={formCurrency}
             onValueChange={(v) => setForm({ ...form, currency: v || displayCurrency })}
-            items={sortCurrency(
-              currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
+            options={sortCurrency(
+              currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
               (c) => c.value,
               (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
             )}
@@ -222,20 +222,21 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           />
         </Row>
         <Row label="Next payment" htmlFor="sub-next">
-          <Input
+          <Field
+            control="date"
             id="sub-next"
-            className={ROW_CONTROL}
-            type="date"
             value={form.nextDate}
             onChange={(e) => setForm({ ...form, nextDate: e.target.value })}
+            className={ROW_CONTROL}
           />
         </Row>
         <Row label="Category">
-          <Combobox
+          <Field
+            control="combobox"
             value={form.categoryId}
             onValueChange={(v) => setForm({ ...form, categoryId: v })}
-            items={sortCategory(
-              categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name ?? "" })),
+            options={sortCategory(
+              categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: c.name ?? "" })),
               (c) => Number(c.value),
               (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
             )}
@@ -246,11 +247,12 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           />
         </Row>
         <Row label="Paid from">
-          <Combobox
+          <Field
+            control="combobox"
             value={form.accountId}
             onValueChange={(v) => setForm({ ...form, accountId: v })}
-            items={sortAccount(
-              accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name ?? "" })),
+            options={sortAccount(
+              accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name ?? "" })),
               (a) => Number(a.value),
               (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
             )}
@@ -261,16 +263,21 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           />
         </Row>
         <Row label="Remind me to cancel on" htmlFor="sub-reminder">
-          <Input
+          <Field
+            control="date"
             id="sub-reminder"
-            className={ROW_CONTROL}
-            type="date"
             value={form.cancelReminderDate}
             onChange={(e) => setForm({ ...form, cancelReminderDate: e.target.value })}
+            className={ROW_CONTROL}
           />
         </Row>
         <Row label="Notes" htmlFor="sub-notes">
-          <Input id="sub-notes" className={ROW_CONTROL} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          <Field
+            id="sub-notes"
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            className={ROW_CONTROL}
+          />
         </Row>
       </div>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}

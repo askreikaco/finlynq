@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +26,13 @@ import { Loader2, Monitor, Moon, Palette, Settings2, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
-import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
 import { DisplaySection } from "@/components/settings/sections/display-section";
 import { SectionPage } from "@/components/templates";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import { useAnimationPreference } from "@/hooks/use-animations";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
@@ -137,10 +135,11 @@ export default function GeneralSettingsPage() {
                 custom rate via Settings → Custom exchange rates first") was a
                 dead end — after adding the rate, no picker listed the currency. */}
             <div className="w-full wide:w-56 wide:shrink-0">
-              <Combobox
+              <Field
+                control="combobox"
                 value={displayCurrency}
                 onValueChange={handleCurrencySelect}
-                items={currencyOptions}
+                options={currencyOptions}
                 placeholder="Select currency"
                 searchPlaceholder="Search currencies…"
                 emptyMessage="No matching currency"
@@ -155,16 +154,13 @@ export default function GeneralSettingsPage() {
                 <InfoTip label="About font" text="This browser only." />
               </div>
             </div>
-            <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>
-              <SelectTrigger className="w-44 shrink-0 regular:w-48"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FONT_OPTIONS.map((o) => (
-                  <SelectItem key={o.key} value={o.key}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={font}
+              onValueChange={(v) => setFont(v as FontKey)}
+              className="w-44 shrink-0 regular:w-48"
+              options={FONT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+            />
           </div>
 
           <div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">
@@ -210,7 +206,8 @@ export default function GeneralSettingsPage() {
                 <InfoTip label="About animations" text="Smooth number and chart transitions. Off is faster." />
               </div>
             </div>
-            <Switch
+            <Field
+              control="switch"
               id="animation-toggle"
               checked={animationsEnabled}
               onCheckedChange={setAnimationsEnabled}

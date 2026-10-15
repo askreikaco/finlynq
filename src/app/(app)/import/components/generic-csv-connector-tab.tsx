@@ -10,16 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
 import { ListRow, SectionCard } from "@/components/mobile";
 import {
   AlertCircle,
@@ -33,6 +23,7 @@ import {
 } from "lucide-react";
 import { exportCsv } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import { getDisplayLocale } from "@/lib/locale";
 
 // Logical fields the importer understands. Required ones can't be unmapped.
@@ -420,28 +411,21 @@ export function GenericCsvConnectorTab() {
                         {f.label}
                         {f.required && <span className="text-destructive"> *</span>}
                       </label>
-                      <Select
+                      <Field
+                        control="select"
                         value={mapping[f.key] ?? NONE}
                         onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}
-                      >
-                        <SelectTrigger
-                          className={`h-8 flex-1 ${
+                        placeholder="— Not mapped —"
+                        className={`h-8 flex-1 ${
                             f.required && !mapping[f.key]
                               ? "border-destructive/60"
                               : ""
                           }`}
-                        >
-                          <SelectValue placeholder="— Not mapped —" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {!f.required && <SelectItem value={NONE}>— Not mapped —</SelectItem>}
-                          {headers.map((h) => (
-                            <SelectItem key={h} value={h}>
-                              {h}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={[
+                          ...(!f.required ? [{ value: NONE, label: "— Not mapped —" }] : []),
+                          ...headers.map((h) => ({ value: h, label: h })),
+                        ]}
+                      />
                     </div>
                   ))}
                 </div>
@@ -474,22 +458,21 @@ export function GenericCsvConnectorTab() {
 
               {/* Options */}
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-muted-foreground">
-                    Default currency
-                  </label>
-                  <Input
-                    value={defaultCurrency}
-                    onChange={(e) => setDefaultCurrency(e.target.value.toUpperCase())}
-                    onBlur={() => mapping.date && mapping.amount && mapping.account && runPreview(mapping)}
-                    placeholder="USD"
-                    className="h-8 w-24 font-mono"
-                    maxLength={10}
-                  />
-                </div>
+                <Field
+                  label="Default currency"
+                  value={defaultCurrency}
+                  onChange={(e) => setDefaultCurrency(e.target.value.toUpperCase())}
+                  onBlur={() => mapping.date && mapping.amount && mapping.account && runPreview(mapping)}
+                  placeholder="USD"
+                  maxLength={10}
+                  compact
+                  controlClassName="font-mono"
+                  className="w-24"
+                />
                 <label className="flex items-center justify-between gap-3 min-h-row text-xs text-muted-foreground">
                   <span className="flex-1">Import opening-balance rows</span>
-                  <Switch
+                  <Field
+                    control="switch"
                     checked={includeOpening}
                     onCheckedChange={(v) => {
                       setIncludeOpening(v);
@@ -539,7 +522,8 @@ export function GenericCsvConnectorTab() {
                                 {p.currency} · {p.txCount} tx
                               </span>
                             </div>
-                            <Combobox
+                            <Field
+                              control="combobox"
                               value={sel}
                               onValueChange={(v) =>
                                 setTarget((prev) => ({
@@ -547,14 +531,16 @@ export function GenericCsvConnectorTab() {
                                   [p.sourceName]: v || "new",
                                 }))
                               }
-                              items={accountItems}
+                              options={accountItems}
                               placeholder="Select account"
                               searchPlaceholder="Search accounts…"
                               emptyMessage="No matching account"
-                              className="h-8 w-[220px]"
+                              compact
+                              className="w-[220px]"
                             />
                             {sel === "new" && (
-                              <Select
+                              <Field
+                                control="select"
                                 value={newType[p.sourceName] ?? "A"}
                                 onValueChange={(v) =>
                                   setNewType((prev) => ({
@@ -562,15 +548,10 @@ export function GenericCsvConnectorTab() {
                                     [p.sourceName]: (v as "A" | "L") ?? "A",
                                   }))
                                 }
-                              >
-                                <SelectTrigger className="w-[110px] h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="A">Asset</SelectItem>
-                                  <SelectItem value="L">Liability</SelectItem>
-                                </SelectContent>
-                              </Select>
+                                compact
+                                className="w-[110px]"
+                                options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
+                              />
                             )}
                           </div>
                         );

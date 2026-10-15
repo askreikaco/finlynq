@@ -15,7 +15,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,8 +28,8 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
+import { Field } from "@/components/ui/field";
 
 type Direction = "income" | "expense";
 
@@ -353,30 +352,22 @@ export default function IncomeExpenseForm() {
     >
       <OpGroup label="Entry">
         <OpRow label="Account" error={errors.accountId}>
-          <Select
-            items={accountLabelById}
+          <Field
+            control="select"
             value={accountId}
             onValueChange={(v) => {
               setAccountId(v ?? "");
               setRelatedHoldingId("");
             }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick an investment account"
+            className={OP_SELECT}
+            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
 
         <OpRow label="Direction">
-          <Select
-            items={directionLabels}
+          <Field
+            control="select"
             value={direction}
             onValueChange={(v) => {
               const d = (v ?? "income") as Direction;
@@ -388,20 +379,15 @@ export default function IncomeExpenseForm() {
               // expense so the form stays consistent.
               if (d === "expense") setSettleAs("cash");
             }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              <SelectItem value="income">Income (+)</SelectItem>
-              <SelectItem value="expense">Expense (−)</SelectItem>
-            </SelectContent>
-          </Select>
+            className={OP_SELECT}
+            options={[{ value: "income", label: "Income (+)" }, { value: "expense", label: "Expense (−)" }]}
+          />
         </OpRow>
 
         {sharesMode ? (
           <OpRow label="Shares" error={errors.quantity}>
-            <AmountInput
+            <Field
+              control="amount"
               step="any"
               inputMode="decimal"
               value={quantity}
@@ -412,49 +398,31 @@ export default function IncomeExpenseForm() {
           </OpRow>
         ) : (
           <OpRow label="Sleeve" error={errors.currency}>
-            <Select
+            <Field
+              control="select"
               value={currency}
               onValueChange={(v) => setCurrency(v ?? "")}
               disabled={!selectedAccount || cashSleeves.length === 0}
-            >
-              <SelectTrigger className={OP_SELECT}>
-                <SelectValue
-                  placeholder={
+              placeholder={
                     selectedAccount && cashSleeves.length === 0
                       ? "No cash sleeves on this account"
                       : "Pick a sleeve"
                   }
-                />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {cashSleeves.map((s) => (
-                  <SelectItem key={s.id} value={s.currency}>
-                    {s.currency}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className={OP_SELECT}
+              options={cashSleeves.map((s) => ({ value: s.currency, label: s.currency }))}
+            />
           </OpRow>
         )}
 
         {sharesAllowed && (
           <OpRow label="Settle into">
-            <Select
-              items={{
-                cash: "Cash sleeve",
-                shares: "Holding (shares)",
-              }}
+            <Field
+              control="select"
               value={settleAs}
               onValueChange={(v) => setSettleAs((v ?? "cash") as "cash" | "shares")}
-            >
-              <SelectTrigger className={OP_SELECT}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                <SelectItem value="cash">Cash sleeve</SelectItem>
-                <SelectItem value="shares">Holding (shares)</SelectItem>
-              </SelectContent>
-            </Select>
+              className={OP_SELECT}
+              options={[{ value: "cash", label: "Cash sleeve" }, { value: "shares", label: "Holding (shares)" }]}
+            />
           </OpRow>
         )}
 
@@ -487,7 +455,8 @@ export default function IncomeExpenseForm() {
         </OpRow>
 
         <OpRow label={sharesMode ? "Dollar value" : "Amount"} error={errors.amount}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={amount}
@@ -498,8 +467,8 @@ export default function IncomeExpenseForm() {
         </OpRow>
 
         <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
+          <Field
+            control="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={OP_INPUT}
@@ -507,15 +476,12 @@ export default function IncomeExpenseForm() {
         </OpRow>
 
         <OpRow label={sharesMode ? "Receives" : "Holding"} error={sharesMode ? errors.relatedHoldingId : undefined}>
-          <Select
-            items={relatedHoldingLabelById}
+          <Field
+            control="select"
             value={relatedHoldingId}
             onValueChange={(v) => setRelatedHoldingId(v ?? "")}
             disabled={!selectedAccount || accountHoldings.length === 0}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue
-                placeholder={
+            placeholder={
                   selectedAccount
                     ? accountHoldings.length === 0
                       ? "No non-cash holdings"
@@ -524,45 +490,26 @@ export default function IncomeExpenseForm() {
                         : "Optional, for attribution"
                     : "Pick an account first"
                 }
-              />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {accountHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className={OP_SELECT}
+            options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`}</> }))}
+          />
         </OpRow>
 
         {incomeType === "other" && (
           <OpRow label="Category">
-            <Select
-              items={categoryLabelById}
+            <Field
+              control="select"
               value={categoryId}
               onValueChange={(v) => setCategoryId(v ?? "")}
               disabled={categories.length === 0}
-            >
-              <SelectTrigger className={OP_SELECT}>
-                <SelectValue
-                  placeholder={
+              placeholder={
                     categories.length === 0
                       ? "No categories available"
                       : "Pick a category (optional)"
                   }
-                />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name ?? `#${c.id}`}
-                    {c.group ? ` (${c.group})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className={OP_SELECT}
+              options={categories.map((c) => ({ value: String(c.id), label: <>{c.name ?? `#${c.id}`} {c.group ? ` (${c.group})` : ""}</> }))}
+            />
           </OpRow>
         )}
       </OpGroup>
@@ -600,7 +547,7 @@ export default function IncomeExpenseForm() {
 
       <OpGroup label="Details">
         <OpRow label="Payee">
-          <Input
+          <Field
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
             placeholder="e.g. Quarterly dividend (optional)"
@@ -608,7 +555,7 @@ export default function IncomeExpenseForm() {
           />
         </OpRow>
         <OpRow label="Note">
-          <Input
+          <Field
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"
@@ -616,7 +563,7 @@ export default function IncomeExpenseForm() {
           />
         </OpRow>
         <OpRow label="Tags">
-          <Input
+          <Field
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="tag1, tag2 (optional)"

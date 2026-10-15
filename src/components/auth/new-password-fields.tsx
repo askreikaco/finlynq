@@ -1,3 +1,5 @@
+import { Field } from "@/components/ui/field";
+
 "use client";
 
 /**
@@ -35,7 +37,7 @@ export function NewPasswordFields({
         <label htmlFor={`${idPrefix}-new-password`} className="mb-1.5 block text-sm font-medium text-foreground">
           New password
         </label>
-        <input
+        <Field
           id={`${idPrefix}-new-password`}
           type="password"
           value={password}
@@ -51,7 +53,7 @@ export function NewPasswordFields({
         <label htmlFor={`${idPrefix}-confirm-password`} className="mb-1.5 block text-sm font-medium text-foreground">
           Confirm new password
         </label>
-        <input
+        <Field
           id={`${idPrefix}-confirm-password`}
           type="password"
           value={confirm}

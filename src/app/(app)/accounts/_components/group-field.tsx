@@ -1,19 +1,6 @@
 "use client";
 
-/**
- * GroupField — free-text account-group entry with suggestion chips (FINLYNQ-179).
- *
- * `accounts.group` is free-text: the user may type ANY group name (e.g.
- * "Emergency Fund", "Kids"), not just the hard-coded defaults. This field is a
- * plain editable `<Input>` (the typed text IS the value) plus a row of
- * clickable suggestion chips = the seeded defaults UNION the user's existing
- * group names for the current account type, de-duped.
- *
- * Combobox-style without the base-ui creatable wiring: deterministic, fully
- * accessible, and the typed value is committed verbatim on save.
- */
-
-import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { groupSuggestions } from "@/lib/accounts/groups";
 
 export function GroupField({
@@ -37,7 +24,7 @@ export function GroupField({
 
   return (
     <div className="space-y-1.5">
-      <Input
+      <Field
         id={inputId}
         value={value}
         onChange={(e) => onChange(e.target.value)}

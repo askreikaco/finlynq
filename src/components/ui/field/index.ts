@@ -5,6 +5,7 @@ export type {
   FieldChromeProps,
   FieldLabelPlacement,
   FieldOption,
+  FieldComboboxOption,
   TextFieldProps,
   NumberFieldProps,
   DateFieldProps,

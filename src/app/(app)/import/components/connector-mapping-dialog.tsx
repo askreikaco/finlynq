@@ -10,9 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -99,28 +98,22 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Defaults */}
           <div className="space-y-3 rounded-md border p-3 bg-muted/30">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="accts-auto" className="text-sm">
-                Auto-create missing accounts ({probe.external.accounts.length} total)
-              </Label>
-              <Switch
-                id="accts-auto"
-                checked={s.accountAutoCreateByDefault}
-                onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
-                className="shrink-0"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="cats-auto" className="text-sm">
-                Auto-create missing categories ({probe.external.categories.length} total)
-              </Label>
-              <Switch
-                id="cats-auto"
-                checked={s.categoryAutoCreateByDefault}
-                onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
-                className="shrink-0"
-              />
-            </div>
+            <Field
+              label={<>Auto-create missing accounts ({probe.external.accounts.length} total)</>}
+              control="switch"
+              id="accts-auto"
+              checked={s.accountAutoCreateByDefault}
+              onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
+              className="shrink-0"
+            />
+            <Field
+              label={<>Auto-create missing categories ({probe.external.categories.length} total)</>}
+              control="switch"
+              id="cats-auto"
+              checked={s.categoryAutoCreateByDefault}
+              onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
+              className="shrink-0"
+            />
           </div>
 
           {/* System categories */}
@@ -171,15 +164,13 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs">Start date (optional — leave blank to pull everything)</Label>
-            <Input
-              type="date"
-              value={s.startDate}
-              onChange={(e) => setS({ ...s, startDate: e.target.value })}
-              className="h-9 text-sm"
-            />
-          </div>
+          <Field
+            label="Start date (optional — leave blank to pull everything)"
+            control="date"
+            value={s.startDate}
+            onChange={(e) => setS({ ...s, startDate: e.target.value })}
+            compact
+          />
 
           {/* Advanced per-row mapping */}
           <div>

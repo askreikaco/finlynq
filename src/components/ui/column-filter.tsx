@@ -19,15 +19,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -35,13 +27,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Filter } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import {
   isEmptyFilter,
   type FilterOption,
   type TableColFilter,
   type TableFilterType,
 } from "@/lib/table-filters";
-import { AmountInput } from "@/components/amount-input";
 
 export interface ColumnFilterPopoverProps {
   columnId: string;
@@ -104,9 +96,8 @@ export function ColumnFilterPopover({
         {filterType === "date" && (
           <>
             <Label className="text-xs">From</Label>
-            <Input
-              type="date"
-              className="h-8 text-xs"
+            <Field
+              control="date"
               value={(draft as { from?: string } | null)?.from ?? ""}
               onChange={(e) => {
                 const cur = draft ?? initDraft();
@@ -114,11 +105,11 @@ export function ColumnFilterPopover({
                 setDraft({ ...cur, from: e.target.value || undefined });
               }}
               onKeyDown={swallowMenuKeys}
+              compact
             />
             <Label className="text-xs">To</Label>
-            <Input
-              type="date"
-              className="h-8 text-xs"
+            <Field
+              control="date"
               value={(draft as { to?: string } | null)?.to ?? ""}
               onChange={(e) => {
                 const cur = draft ?? initDraft();
@@ -126,27 +117,29 @@ export function ColumnFilterPopover({
                 setDraft({ ...cur, to: e.target.value || undefined });
               }}
               onKeyDown={swallowMenuKeys}
+              compact
             />
           </>
         )}
         {filterType === "text" && (
           <>
             <Label className="text-xs">Contains</Label>
-            <Input
-              className="h-8 text-xs"
+            <Field
               placeholder="Substring…"
               value={(draft as { value?: string } | null)?.value ?? ""}
               onChange={(e) =>
                 setDraft({ type: "text", columnId, value: e.target.value })
               }
               onKeyDown={swallowMenuKeys}
+              compact
             />
           </>
         )}
         {filterType === "numeric" && (
           <>
             <Label className="text-xs">Operator</Label>
-            <Select
+            <Field
+              control="select"
               value={(draft as { op?: string } | null)?.op ?? "eq"}
               onValueChange={(v) => {
                 const op = (v ?? "eq") as "eq" | "gt" | "lt" | "between";
@@ -156,20 +149,17 @@ export function ColumnFilterPopover({
                     : { type: "numeric" as const, columnId, value: 0, op };
                 setDraft({ ...cur, op } as TableColFilter);
               }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="eq">=</SelectItem>
-                <SelectItem value="gt">&gt;</SelectItem>
-                <SelectItem value="lt">&lt;</SelectItem>
-                <SelectItem value="between">Between</SelectItem>
-              </SelectContent>
-            </Select>
+              compact
+              options={[
+                { value: "eq", label: "=" },
+                { value: "gt", label: ">" },
+                { value: "lt", label: "<" },
+                { value: "between", label: "Between" },
+              ]}
+            />
             <Label className="text-xs">Value</Label>
-            <AmountInput
-              className="h-8 text-xs"
+            <Field
+              control="amount"
               value={(draft as { value?: number } | null)?.value ?? ""}
               onValueChange={(nv) => {
                 const n = nv === "" ? 0 : Number(nv);
@@ -186,12 +176,13 @@ export function ColumnFilterPopover({
                 setDraft({ ...cur, value: n } as TableColFilter);
               }}
               onKeyDown={swallowMenuKeys}
+              compact
             />
             {draft?.type === "numeric" && draft.op === "between" && (
               <>
                 <Label className="text-xs">Upper bound</Label>
-                <AmountInput
-                  className="h-8 text-xs"
+                <Field
+                  control="amount"
                   value={draft.value2 ?? ""}
                   onValueChange={(nv) => {
                     const n =
@@ -200,6 +191,7 @@ export function ColumnFilterPopover({
                     setDraft({ ...draft, value2: n });
                   }}
                   onKeyDown={swallowMenuKeys}
+                  compact
                 />
               </>
             )}
@@ -220,19 +212,19 @@ export function ColumnFilterPopover({
                     key={opt.value}
                     className="flex items-center gap-2 text-xs cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
+                    <Field
+                      control="checkbox"
                       checked={checked}
                       onChange={(e) => {
-                        const cur =
-                          draft && draft.type === "enum"
-                            ? draft
-                            : { type: "enum" as const, columnId, values: [] };
-                        const values = e.target.checked
-                          ? Array.from(new Set([...cur.values, opt.value]))
-                          : cur.values.filter((v) => v !== opt.value);
-                        setDraft({ ...cur, values });
-                      }}
+                                            const cur =
+                                              draft && draft.type === "enum"
+                                                ? draft
+                                                : { type: "enum" as const, columnId, values: [] };
+                                            const values = e.target.checked
+                                              ? Array.from(new Set([...cur.values, opt.value]))
+                                              : cur.values.filter((v) => v !== opt.value);
+                                            setDraft({ ...cur, values });
+                                          }}
                     />
                     {opt.label}
                   </label>

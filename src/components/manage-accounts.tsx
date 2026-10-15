@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccountAlert } from "@/components/account-switcher";
 import { initialsOf, useAccountActions, MAX_ACCOUNTS, CAP_MESSAGE, type Account } from "@/lib/client/use-account-actions";
 import { cn } from "@/lib/utils";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { PageHeader } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { TW } from "@/lib/design/tokens";
 
 /** /manage-accounts: per-device show/hide, remove, add, sign out of all. */
@@ -49,7 +49,8 @@ export function ManageAccounts() {
                 </div>
                 <div className="truncate text-xs text-muted-foreground">{acc.email}</div>
               </div>
-              <Switch
+              <Field
+                control="switch"
                 checked={shown}
                 disabled={acc.active}
                 onCheckedChange={(on) => a.setHidden(acc.userId, !on)}

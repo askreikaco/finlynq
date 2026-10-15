@@ -2,17 +2,14 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
-import { AmountInput } from "@/components/amount-input";
 import { FormGroup } from "@/components/forms";
 import { TW } from "@/lib/design/tokens";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { LOAN_TYPE_OPTIONS, type Loan, type LoanAccount } from "./loan-types";
 
 const FREQUENCY_OPTIONS = [
@@ -188,68 +185,122 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormGroup>
           <Row label="Name" htmlFor="loan-name" error={errors.name}>
-            <Input id="loan-name" className={ROW_CONTROL} value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} />
+            <Field
+              id="loan-name"
+              value={form.name}
+              onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Type">
-            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LOAN_TYPE_OPTIONS.map((t) => (<SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={form.type}
+              onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}
+              className={ROW_CONTROL}
+              options={LOAN_TYPE_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+            />
           </Row>
           <Row label="Currency">
-            <Select value={form.currency} onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {currencyOptions.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={form.currency}
+              onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}
+              className={ROW_CONTROL}
+              options={currencyOptions.map((c) => ({ value: c, label: c }))}
+            />
           </Row>
           <Row label="Principal" htmlFor="loan-principal" error={errors.principal}>
-            <AmountInput id="loan-principal" className={ROW_CONTROL} step="0.01" value={form.principal} onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }} />
+            <Field
+              control="amount"
+              id="loan-principal"
+              step="0.01"
+              value={form.principal}
+              onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Annual Rate (%)" htmlFor="loan-rate" error={errors.annualRate}>
-            <AmountInput id="loan-rate" className={ROW_CONTROL} step="0.01" value={form.annualRate} onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }} />
+            <Field
+              control="amount"
+              id="loan-rate"
+              step="0.01"
+              value={form.annualRate}
+              onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Term (months)" htmlFor="loan-term" error={errors.termMonths}>
-            <Input id="loan-term" className={ROW_CONTROL} type="number" placeholder="From payment" value={form.termMonths} onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }} />
+            <Field
+              control="number"
+              id="loan-term"
+              placeholder="From payment"
+              value={form.termMonths}
+              onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Payment" htmlFor="loan-payment" error={errors.paymentAmount}>
-            <AmountInput id="loan-payment" className={ROW_CONTROL} step="0.01" placeholder="From term" value={form.paymentAmount} onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
+            <Field
+              control="amount"
+              id="loan-payment"
+              step="0.01"
+              placeholder="From term"
+              value={form.paymentAmount}
+              onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Frequency">
-            <Select value={form.paymentFrequency} onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FREQUENCY_OPTIONS.map((f) => (<SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={form.paymentFrequency}
+              onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}
+              className={ROW_CONTROL}
+              options={FREQUENCY_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
+            />
           </Row>
           <Row label="Extra/Payment">
-            <AmountInput className={ROW_CONTROL} step="0.01" value={form.extraPayment} onValueChange={(nv) => setForm({ ...form, extraPayment: nv })} />
+            <Field
+              control="amount"
+              step="0.01"
+              value={form.extraPayment}
+              onValueChange={(nv) => setForm({ ...form, extraPayment: nv })}
+              className={ROW_CONTROL}
+            />
           </Row>
           <Row label="Start Date" htmlFor="loan-start" error={errors.startDate}>
-            <Input id="loan-start" className={ROW_CONTROL} type="date" value={form.startDate} onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }} />
+            <Field
+              control="date"
+              id="loan-start"
+              value={form.startDate}
+              onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }}
+              className={ROW_CONTROL}
+            />
           </Row>
           {form.type === "lease" && (
             <Row label="Residual / Buyout" error={errors.residualValue}>
-              <AmountInput className={ROW_CONTROL} step="0.01" placeholder="Balance at term end" value={form.residualValue} onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }} />
+              <Field
+                control="amount"
+                step="0.01"
+                placeholder="Balance at term end"
+                value={form.residualValue}
+                onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }}
+                className={ROW_CONTROL}
+              />
             </Row>
           )}
           <Row label="Linked account">
-            <Combobox
+            <Field
+              control="combobox"
               value={form.accountId}
-              // Mirror the server's precedence (explicit > linked account >
-              // display currency): picking an account moves the currency
-              // with it, so the form can't imply one and store another.
               onValueChange={(v) => {
                 const acct = accounts.find((a) => String(a.id) === v);
                 if (acct?.currency) setCurrencyTouched(true);
                 setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
               }}
-              items={sortAccount(
-                accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
+              options={sortAccount(
+                accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
                 (a) => Number(a.value),
                 (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
               )}

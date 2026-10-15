@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { parseSaveError } from "@/lib/save-error";
 
 export function CashSleeveForm({
@@ -62,7 +62,7 @@ export function CashSleeveForm({
         <label htmlFor="cash-currency" className="block pb-1 text-sm text-muted-foreground">
           Currency
         </label>
-        <Input
+        <Field
           id="cash-currency"
           value={currency}
           onChange={(e) => setCurrency(e.target.value.toUpperCase())}

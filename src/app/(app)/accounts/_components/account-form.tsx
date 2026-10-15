@@ -4,11 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ACCOUNT_GROUP_DEFAULTS } from "@/lib/accounts/groups";
@@ -21,8 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { GroupField } from "./group-field";
-import { AmountInput } from "@/components/amount-input";
-
 const ACCOUNT_TYPES = [
   { value: "A", label: "Asset" },
   { value: "L", label: "Liability" },
@@ -179,7 +173,13 @@ function CheckField({
   const box = (
     <div className={cn("flex items-center justify-between gap-3", variant === "rows" && TW.row)}>
       <Label htmlFor={id} className="flex-1 cursor-pointer">{label}</Label>
-      <Switch id={id} checked={checked} onCheckedChange={(v) => onChange(v)} className="shrink-0" />
+      <Field
+        control="switch"
+        id={id}
+        checked={checked}
+        onCheckedChange={(v) => onChange(v)}
+        className="shrink-0"
+      />
     </div>
   );
   if (variant === "stack") {
@@ -404,13 +404,13 @@ export function AccountForm({
         )}
       >
         <Field variant={v} label="Account Name" htmlFor="account-form-name" error={errors.name}>
-          <Input
+          <Field
             id="account-form-name"
-            className={control()}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="e.g. TD Chequing"
             autoFocus
+            className={control()}
           />
         </Field>
 
@@ -425,13 +425,13 @@ export function AccountForm({
           }
           warning={aliasMsg}
         >
-          <Input
+          <Field
             id="account-form-alias"
-            className={control()}
             value={form.alias}
             onChange={(e) => setForm({ ...form, alias: e.target.value })}
             placeholder="e.g. 1234 or Visa4242"
             maxLength={64}
+            className={control()}
           />
         </Field>
 
@@ -443,12 +443,12 @@ export function AccountForm({
               error={errors.type}
               hint={<p className="text-xs text-muted-foreground">Credit cards should be Liability accounts; balance = amount owed.</p>}
             >
-              <Select items={ACCOUNT_TYPE_LABELS} value={form.type} onValueChange={(t) => setType(t ?? "A")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ACCOUNT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={form.type}
+                onValueChange={(t) => setType(t ?? "A")}
+                options={ACCOUNT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
             </Field>
             <Field variant={v} label="Group" htmlFor="account-dialog-group" error={errors.group}>
               <GroupField
@@ -463,11 +463,12 @@ export function AccountForm({
         )}
 
         <Field variant={v} label="Currency">
-          <Combobox
+          <Field
+            control="combobox"
             value={form.currency}
             onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
-            items={sortCurrency(
-              currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
+            options={sortCurrency(
+              currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
               (c) => c.value,
               (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
             )}
@@ -479,12 +480,12 @@ export function AccountForm({
         </Field>
 
         <Field variant={v} label={<>Note <span className="text-muted-foreground text-xs">(optional)</span></>} htmlFor="account-form-note">
-          <Input
+          <Field
             id="account-form-note"
-            className={control()}
             value={form.note}
             onChange={(e) => setForm({ ...form, note: e.target.value })}
             placeholder="e.g. Joint account"
+            className={control()}
           />
         </Field>
 
@@ -498,7 +499,8 @@ export function AccountForm({
               <p className="text-xs text-muted-foreground">{OB_HELP}</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field variant={v} label="Amount" htmlFor="account-dialog-ob-amount">
-                  <AmountInput
+                  <Field
+                    control="amount"
                     id="account-dialog-ob-amount"
                     step="0.01"
                     value={form.obAmount}
@@ -507,9 +509,9 @@ export function AccountForm({
                   />
                 </Field>
                 <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                  <Input
+                  <Field
+                    control="date"
                     id="account-dialog-ob-date"
-                    type="date"
                     value={form.obDate}
                     onChange={(e) => setForm({ ...form, obDate: e.target.value })}
                   />
@@ -524,7 +526,8 @@ export function AccountForm({
                 htmlFor="account-dialog-ob-amount"
                 hint={<p className="text-xs text-muted-foreground">{OB_HELP}</p>}
               >
-                <AmountInput
+                <Field
+                  control="amount"
                   id="account-dialog-ob-amount"
                   step="0.01"
                   value={form.obAmount}
@@ -533,12 +536,12 @@ export function AccountForm({
                 />
               </Field>
               <Field variant={v} label="Date" htmlFor="account-dialog-ob-date">
-                <Input
+                <Field
+                  control="date"
                   id="account-dialog-ob-date"
-                  type="date"
-                  className={ROW_CONTROL}
                   value={form.obDate}
                   onChange={(e) => setForm({ ...form, obDate: e.target.value })}
+                  className={ROW_CONTROL}
                 />
               </Field>
             </>

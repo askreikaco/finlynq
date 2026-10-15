@@ -11,11 +11,11 @@ import { useCallback, useEffect, useState } from "react";
 import { SectionPage } from "@/components/templates/section-page";
 import { TW } from "@/lib/design/tokens";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Mail, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
+import { Field } from "@/components/ui/field";
 import { ListRow, SectionCard } from "@/components/mobile";
 
 type Source = "db" | "env" | "none";
@@ -320,39 +320,48 @@ export default function AdminIntegrationsPage() {
               Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
             </p>
             <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-provider">Provider</Label>
-                <select
-                  id="email-provider"
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                >
-                  <option value="auto">Auto (Resend, then Brevo, then SMTP)</option>
-                  <option value="resend">Resend</option>
-                  <option value="brevo">Brevo</option>
-                  <option value="smtp">SMTP</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email-from">From</Label>
-                <Input id="email-from" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Finlynq <noreply@finlynq.com>" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email-smtp-host">SMTP host</Label>
-                <Input id="email-smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email-smtp-port">SMTP port</Label>
-                <Input id="email-smtp-port" inputMode="numeric" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} />
-              </div>
+              <Field
+                label="Provider"
+                control="select"
+                id="email-provider"
+                value={provider}
+                onValueChange={(v) => setProvider(v)}
+                compact
+                options={[
+                  { value: "auto", label: "Auto (Resend, then Brevo, then SMTP)" },
+                  { value: "resend", label: "Resend" },
+                  { value: "brevo", label: "Brevo" },
+                  { value: "smtp", label: "SMTP" },
+                ]}
+                className="w-full"
+              />
+              <Field
+                label="From"
+                id="email-from"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                placeholder="Finlynq <noreply@finlynq.com>"
+              />
+              <Field
+                label="SMTP host"
+                id="email-smtp-host"
+                value={smtpHost}
+                onChange={(e) => setSmtpHost(e.target.value)}
+              />
+              <Field
+                label="SMTP port"
+                id="email-smtp-port"
+                inputMode="numeric"
+                value={smtpPort}
+                onChange={(e) => setSmtpPort(e.target.value)}
+              />
               {SECRETS.map(({ field, label }) => {
                 const src = status.sources[field] as Source | undefined;
                 const saved = src === "db" || src === "env";
                 return (
                   <div key={field} className="space-y-2">
                     <Label htmlFor={`email-${field}`}>{label}</Label>
-                    <Input
+                    <Field
                       id={`email-${field}`}
                       type="password"
                       autoComplete="new-password"
@@ -396,7 +405,7 @@ export default function AdminIntegrationsPage() {
                     <Label htmlFor="email-step-up">
                       {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
                     </Label>
-                    <Input
+                    <Field
                       id="email-step-up"
                       type={status.stepUp === "password" ? "password" : "text"}
                       inputMode={status.stepUp === "password" ? undefined : "numeric"}
@@ -407,10 +416,14 @@ export default function AdminIntegrationsPage() {
                   </>
                 )}
                 {stepOpen === "save" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="email-save-test-to">Send test to (optional)</Label>
-                    <Input id="email-save-test-to" type="email" value={saveTestTo} onChange={(e) => setSaveTestTo(e.target.value)} />
-                  </div>
+                  <Field
+                    label="Send test to"
+                    optional
+                    id="email-save-test-to"
+                    type="email"
+                    value={saveTestTo}
+                    onChange={(e) => setSaveTestTo(e.target.value)}
+                  />
                 )}
                 <div className="flex flex-wrap gap-2">
                   {stepOpen === "save" ? (
@@ -449,17 +462,15 @@ export default function AdminIntegrationsPage() {
           {status.provider !== "none" ? (
             <SectionCard label="Send a test email" icon={Send} tone="indigo">
               <form onSubmit={sendTest} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="test-to" className="text-sm">To</Label>
-                  <Input
-                    id="test-to"
-                    type="email"
-                    placeholder="Enter email address"
-                    value={testTo}
-                    onChange={(e) => setTestTo(e.target.value)}
-                    disabled={sending}
-                  />
-                </div>
+                <Field
+                  label="To"
+                  id="test-to"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  disabled={sending}
+                />
                 {result && (
                   <div
                     role={result.ok ? "status" : "alert"}

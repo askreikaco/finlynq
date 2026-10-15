@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { METRIC_GRID_CLASS } from "@/components/mobile";
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Field } from "@/components/ui/field";
 import { RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 type Tab = "price" | "fx";
@@ -347,33 +347,36 @@ export default function AdminPriceCachePage() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           {tab === "fx" ? "Currency" : "Symbol"}
-          <input
-            type="text"
+          <Field
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
-              resetOffset();
-            }}
+                        setSearch(e.target.value);
+                        resetOffset();
+                      }}
             placeholder={tab === "fx" ? "e.g. CAD" : `e.g. VTI`}
-            className="h-8 w-40 rounded-md border bg-background px-2 text-sm text-foreground"
+            compact
+            className="w-40"
+            controlClassName="text-foreground"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Date (YYYY-MM-DD)
-          <input
-            type="text"
+          <Field
             value={date}
             onChange={(e) => {
-              setDate(e.target.value);
-              resetOffset();
-            }}
+                        setDate(e.target.value);
+                        resetOffset();
+                      }}
             placeholder="exact date"
-            className="h-8 w-40 rounded-md border bg-background px-2 text-sm text-foreground"
+            compact
+            className="w-40"
+            controlClassName="text-foreground"
           />
         </label>
         <label className="flex items-center gap-2 text-sm">
           Today only
-          <Switch
+          <Field
+            control="switch"
             checked={todayOnly}
             onCheckedChange={(v) => {
               setTodayOnly(v);
@@ -383,7 +386,8 @@ export default function AdminPriceCachePage() {
         </label>
         <label className="flex items-center gap-2 text-sm">
           Stale today only
-          <Switch
+          <Field
+            control="switch"
             checked={staleOnly}
             onCheckedChange={(v) => {
               setStaleOnly(v);
@@ -393,20 +397,17 @@ export default function AdminPriceCachePage() {
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Page size
-          <select
+          <Field
+            control="select"
             value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              resetOffset();
-            }}
-            className="h-8 rounded-md border bg-background px-2 text-sm text-foreground"
-          >
-            {LIMITS.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => {
+                        setLimit(Number(v));
+                        resetOffset();
+                      }}
+            compact
+            controlClassName="text-foreground"
+            options={LIMITS.map((l) => ({ value: l, label: l }))}
+          />
         </label>
       </div>
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { currencyLabel } from "@/lib/fx/supported-currencies";
-import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -33,8 +32,8 @@ import {
   Copy,
   CheckCheck,
 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { motion, AnimatePresence } from "framer-motion";
-import { AmountInput } from "@/components/amount-input";
 
 interface OnboardingWizardProps {
   userEmail: string;
@@ -374,10 +373,11 @@ export function OnboardingWizard({
                       Reporting currency
                     </label>
                     <div className="mt-1.5">
-                      <Combobox
+                      <Field
+                        control="combobox"
                         value={currency}
                         onValueChange={(v) => setCurrency(v || "USD")}
-                        items={currencyOptions}
+                        options={currencyOptions}
                         placeholder="Select currency"
                         searchPlaceholder="Search currencies…"
                         emptyMessage="No matching currency"
@@ -518,7 +518,8 @@ export function OnboardingWizard({
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                             {currencySymbol}
                           </span>
-                          <AmountInput native
+                          <Field
+                            control="amount"
                             min={0}
                             step={10}
                             value={budgetAmounts[category]}

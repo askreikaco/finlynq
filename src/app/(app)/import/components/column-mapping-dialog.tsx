@@ -10,20 +10,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ListRow, SectionCard } from "@/components/mobile";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 // Pure, dependency-free module — importing parseAmount from "@/lib/csv-parser"
+import { Field } from "@/components/ui/field";
+
 // would drag its server-only `@/db` (pg → dns/fs) import into this client bundle.
 import { parseAmount } from "@/lib/parse-amount";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
@@ -370,67 +363,59 @@ export function ColumnMappingDialog({
                 refresh automatically.
               </p>
               <div className="grid gap-3 regular:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="map-skip-h" className="text-xs">Skip N header rows</Label>
-                  <Input
-                    id="map-skip-h"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipHeaderRows}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSkipHeaderRows(v);
-                      scheduleReparse(v, skipFooterRows);
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="map-skip-f" className="text-xs">Skip N footer rows</Label>
-                  <Input
-                    id="map-skip-f"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipFooterRows}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSkipFooterRows(v);
-                      scheduleReparse(skipHeaderRows, v);
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="map-date-fmt" className="text-xs">Date format</Label>
-                  <select
-                    id="map-date-fmt"
-                    value={dateFormatOverride}
-                    onChange={(e) => setDateFormatOverride(e.target.value as DateFormatUi)}
-                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-                  >
-                    <option value="auto">Auto-detect</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Default currency (rows missing one)</Label>
-                  <Select
-                    value={defaultCurrency || NONE}
-                    onValueChange={(v) => setDefaultCurrency(!v || v === NONE ? "" : v)}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="— None —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>— None —</SelectItem>
-                      {SUPPORTED_CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Field
+                  label="Skip N header rows"
+                  control="number"
+                  id="map-skip-h"
+                  min={0}
+                  max={100}
+                  value={skipHeaderRows}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSkipHeaderRows(v);
+                    scheduleReparse(v, skipFooterRows);
+                  }}
+                />
+                <Field
+                  label="Skip N footer rows"
+                  control="number"
+                  id="map-skip-f"
+                  min={0}
+                  max={100}
+                  value={skipFooterRows}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSkipFooterRows(v);
+                    scheduleReparse(skipHeaderRows, v);
+                  }}
+                />
+                <Field
+                  label="Date format"
+                  control="select"
+                  id="map-date-fmt"
+                  value={dateFormatOverride}
+                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                  compact
+                  options={[
+                    { value: "auto", label: "Auto-detect" },
+                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                  ]}
+                  className="w-full"
+                />
+                <Field
+                  label="Default currency (rows missing one)"
+                  control="select"
+                  value={defaultCurrency || NONE}
+                  onValueChange={(v) => setDefaultCurrency(!v || v === NONE ? "" : v)}
+                  placeholder="— None —"
+                  compact
+                  options={[
+                    { value: NONE, label: "— None —" },
+                    ...SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
+                  ]}
+                />
               </div>
               <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
                 <span className="flex-1">
@@ -441,7 +426,8 @@ export function ColumnMappingDialog({
                     sample below updates to match.
                   </span>
                 </span>
-                <Switch
+                <Field
+                  control="switch"
                   checked={mapping.flipSign === true}
                   onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
                   className="shrink-0"
@@ -475,20 +461,17 @@ export function ColumnMappingDialog({
                   <span className="w-36 text-xs text-muted-foreground shrink-0">
                     {FIELD_LABELS[field]}
                   </span>
-                  <Select
+                  <Field
+                    control="select"
                     value={mapping[field] ?? NONE}
                     onValueChange={(v) => setField(field, (!v || v === NONE) ? "" : v)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>— not mapped —</SelectItem>
-                      {localHeaders.map((h) => (
-                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="—"
+                    compact
+                    options={[
+                      { value: NONE, label: "— not mapped —" },
+                      ...localHeaders.map((h) => ({ value: h, label: h })),
+                    ]}
+                  />
                 </div>
               ))}
             </div>
@@ -515,22 +498,19 @@ export function ColumnMappingDialog({
                     <span className="w-36 text-xs text-muted-foreground shrink-0">
                       {INVESTMENT_FIELD_LABELS[field]}
                     </span>
-                    <Select
+                    <Field
+                      control="select"
                       value={mapping[field] ?? NONE}
                       onValueChange={(v) =>
                         setInvestmentField(field, !v || v === NONE ? "" : v)
                       }
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="—" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>— not mapped —</SelectItem>
-                        {localHeaders.map((h) => (
-                          <SelectItem key={h} value={h}>{h}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="—"
+                      compact
+                      options={[
+                        { value: NONE, label: "— not mapped —" },
+                        ...localHeaders.map((h) => ({ value: h, label: h })),
+                      ]}
+                    />
                   </div>
                 ))}
               </div>
@@ -543,16 +523,14 @@ export function ColumnMappingDialog({
             <p className="text-xs text-muted-foreground">
               Used when the Account column is not mapped, or when a row&apos;s account cell is empty.
             </p>
-            <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="— none —" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a} value={a}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={defaultAccount}
+              onValueChange={(v) => setDefaultAccount(v ?? "")}
+              placeholder="— none —"
+              compact
+              options={accounts.map((a) => ({ value: a, label: a }))}
+            />
           </div>
 
           {/* Live sample — how rows land in staging with the current mapping. */}
@@ -580,21 +558,15 @@ export function ColumnMappingDialog({
           )}
 
           {/* Template name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="col-map-tpl-name" className="text-sm">
-              Save this mapping as a template
-            </Label>
-            <Input
-              id="col-map-tpl-name"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="e.g. CIBC Mastercard"
-              className="h-8 text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Future uploads with the same columns will use this mapping automatically.
-            </p>
-          </div>
+          <Field
+            label="Save this mapping as a template"
+            info="Future uploads with the same columns will use this mapping automatically."
+            id="col-map-tpl-name"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="e.g. CIBC Mastercard"
+            compact
+          />
 
           {/* §B — per-account auto-vs-ask choice. Shown in BOTH modes (the
               saved template auto-applies via header-match next time; this

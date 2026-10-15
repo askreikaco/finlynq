@@ -11,21 +11,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
-
 import { OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { Field } from "@/components/ui/field";
 import { NEW_OP_HREF } from "./op-catalog";
 
 export default function WithdrawalForm() {
@@ -261,59 +252,34 @@ export default function WithdrawalForm() {
     >
       <OpGroup label="Accounts">
         <OpRow label="From" error={errors.sourceAccountId}>
-          <Select
-            items={sourceAccountLabelById}
+          <Field
+            control="select"
             value={sourceAccountId}
             onValueChange={(v) => setSourceAccountId(v ?? "")}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick an investment account"
+            className={OP_SELECT}
+            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
         <OpRow label="To" error={errors.destAccountId}>
-          <Select
-            items={destAccountLabelById}
+          <Field
+            control="select"
             value={destAccountId}
             onValueChange={(v) => setDestAccountId(v ?? "")}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a destination account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {nonInvestmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick a destination account"
+            className={OP_SELECT}
+            options={nonInvestmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
         {eligibleSleeves.length > 1 && (
           <OpRow label="Cash sleeve">
-            <Select
-              items={sleeveLabelById}
+            <Field
+              control="select"
               value={sourceCashSleeveHoldingId}
               onValueChange={(v) => setSourceCashSleeveHoldingId(v ?? "")}
-            >
-              <SelectTrigger className={OP_SELECT}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {eligibleSleeves.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.name ?? `Cash ${s.currency}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className={OP_SELECT}
+              options={eligibleSleeves.map((s) => ({ value: String(s.id), label: s.name ?? `Cash ${s.currency}` }))}
+            />
           </OpRow>
         )}
       </OpGroup>
@@ -333,7 +299,8 @@ export default function WithdrawalForm() {
 
       <OpGroup label="Amount">
         <OpRow label={destAcct ? `Amount (${destAcct.currency})` : "Amount"} error={errors.amount}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={amount}
@@ -343,8 +310,8 @@ export default function WithdrawalForm() {
           />
         </OpRow>
         <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
+          <Field
+            control="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={OP_INPUT}
@@ -354,7 +321,7 @@ export default function WithdrawalForm() {
 
       <OpGroup label="Details">
         <OpRow label="Payee">
-          <Input
+          <Field
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
             placeholder="Optional"
@@ -362,7 +329,7 @@ export default function WithdrawalForm() {
           />
         </OpRow>
         <OpRow label="Note">
-          <Input
+          <Field
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"
@@ -370,7 +337,7 @@ export default function WithdrawalForm() {
           />
         </OpRow>
         <OpRow label="Tags">
-          <Input
+          <Field
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="tag1, tag2 (optional)"

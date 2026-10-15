@@ -11,16 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { File, Eye, ArrowRight } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
 interface PdfPreviewProps {
@@ -89,16 +83,15 @@ export function PdfPreview({
           </Badge>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Assign to account:</span>
-            <Select value={selectedAccount} onValueChange={(v) => setSelectedAccount(v ?? "")}>
-              <SelectTrigger className="w-48" size="sm">
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((acc) => (
-                  <SelectItem key={acc} value={acc}>{acc}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={selectedAccount}
+              onValueChange={(v) => setSelectedAccount(v ?? "")}
+              placeholder="Select account"
+              compact
+              className="w-48"
+              options={accounts.map((acc) => ({ value: acc, label: acc }))}
+            />
           </div>
         </div>
 

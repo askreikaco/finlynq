@@ -12,13 +12,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RefreshCw, Trash2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface Row {
@@ -238,7 +238,7 @@ export default function AdminDiagnosticsPage() {
         actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh
-              <Switch checked={auto} onCheckedChange={setAuto} />
+              <Field control="switch" checked={auto} onCheckedChange={setAuto} />
             </label>
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -291,24 +291,25 @@ export default function AdminDiagnosticsPage() {
           ))}
 
           <div className="ml-auto flex items-center gap-2">
-            <select
+            <Field
+              control="select"
               value={kind}
-              onChange={(e) => setKind(e.target.value)}
-              className="rounded-md border bg-background px-2 py-1 text-xs"
-            >
-              <option value="">All kinds</option>
-              <option value="slow_query">Slow query</option>
-              <option value="db_error">DB error</option>
-              <option value="api_error">API error</option>
-              <option value="outbound_error">Outbound API</option>
-            </select>
-            <input
-              type="number"
+              onValueChange={(v) => setKind(v)}
+              options={[
+                { value: "", label: "All kinds" },
+                { value: "slow_query", label: "Slow query" },
+                { value: "db_error", label: "DB error" },
+                { value: "api_error", label: "API error" },
+                { value: "outbound_error", label: "Outbound API" },
+              ]}
+            />
+            <Field
+              control="number"
               inputMode="numeric"
               placeholder="min ms"
               value={minMs}
               onChange={(e) => setMinMs(e.target.value)}
-              className="w-24 rounded-md border bg-background px-2 py-1 text-xs"
+              className="w-24"
             />
           </div>
         </CardContent>

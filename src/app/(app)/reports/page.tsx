@@ -7,8 +7,6 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
@@ -48,6 +46,7 @@ import {
   YoYStatementRows,
 } from "./_components/statement-rows";
 import type { PageCard } from "@/lib/card-layout";
+import { Field } from "@/components/ui/field";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
 // ── Types ──
@@ -767,28 +766,24 @@ export default function ReportsPage() {
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="pt-4">
                 <div className="flex items-end gap-4 flex-wrap">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Year 1</Label>
-                    <Input
-                      type="number"
-                      value={yoyYear1}
-                      onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
-                      className="mt-1 w-28"
-                      min={2000}
-                      max={currentYear}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Year 2</Label>
-                    <Input
-                      type="number"
-                      value={yoyYear2}
-                      onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
-                      className="mt-1 w-28"
-                      min={2000}
-                      max={currentYear}
-                    />
-                  </div>
+                  <Field
+                    label="Year 1"
+                    control="number"
+                    value={yoyYear1}
+                    onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
+                    min={2000}
+                    max={currentYear}
+                    className="mt-1 w-28"
+                  />
+                  <Field
+                    label="Year 2"
+                    control="number"
+                    value={yoyYear2}
+                    onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
+                    min={2000}
+                    max={currentYear}
+                    className="mt-1 w-28"
+                  />
                 </div>
               </CardContent>
             </Card>

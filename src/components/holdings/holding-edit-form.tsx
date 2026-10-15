@@ -41,20 +41,11 @@
  * to every Phase-3 plaintext-NULL'd read path.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Trash2, AlertTriangle } from "lucide-react";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
+import { Field } from "@/components/ui/field";
 import {
   holdingCreateSchema,
   holdingUpdateSchema,
@@ -200,16 +191,6 @@ export function HoldingEditForm({
       cancelled = true;
     };
   }, [holdingId, isCreateMode, initialHolding]);
-
-  // value→label map so the base-ui Select trigger shows the account name
-  // rather than the raw numeric id (FINLYNQ-197).
-  const accountLabelById = useMemo(
-    () =>
-      Object.fromEntries(
-        accounts.map((a) => [String(a.id), `${a.name} (${a.currency})`]),
-      ),
-    [accounts],
-  );
 
   const accountIdNum = form.accountId ? parseInt(form.accountId, 10) : NaN;
   const accountCurrency = (
@@ -406,136 +387,86 @@ export function HoldingEditForm({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label>Name</Label>
-        <Input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder={isCreateMode ? "e.g. Apple Inc., Bitcoin, Cash USD" : undefined}
-        />
-        {errors.name && (
-          <p className="text-xs text-destructive">{errors.name}</p>
-        )}
-      </div>
+      <Field
+        label="Name"
+        error={errors.name}
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        placeholder={isCreateMode ? "e.g. Apple Inc., Bitcoin, Cash USD" : undefined}
+      />
 
       {isCreateMode && (
-        <div className="space-y-1.5">
-          <Label>Account</Label>
-          <Select
-            items={accountLabelById}
-            value={form.accountId}
-            onValueChange={(v) => setForm({ ...form, accountId: v ?? "" })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select an account" />
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.length === 0 ? (
-                <SelectItem value="__none__" disabled>
-                  No accounts available
-                </SelectItem>
-              ) : (
-                accounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name}{" "}
-                    <span className="text-muted-foreground">({a.currency})</span>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-          {errors.accountId && (
-            <p className="text-xs text-destructive">
-              {errors.accountId}
-            </p>
-          )}
-        </div>
+        <Field
+          label="Account"
+          control="select"
+          value={form.accountId}
+          onValueChange={(v) => setForm({ ...form, accountId: v })}
+          placeholder="Select an account"
+          options={
+            accounts.length === 0
+              ? [{ value: "__none__", label: "No accounts available", disabled: true }]
+              : accounts.map((a) => ({ value: String(a.id), label: `${a.name} (${a.currency})` }))
+          }
+          error={errors.accountId}
+        />
       )}
 
-      <div className="space-y-1.5">
-        <Label>Symbol / ticker</Label>
-        <Input
-          value={form.symbol}
-          onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-          placeholder="e.g. VCN.TO, AAPL, BTC, or a currency code (USD, EUR, XAU)"
-          list="symbol-suggestions"
-        />
-        <datalist id="symbol-suggestions">
-          {currencyOptions.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
-        <p className="text-xs text-muted-foreground">
-          Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position.
-          Custom currencies you&apos;ve added in Settings are recognized here too.
-        </p>
-        {symbolLoading ? (
-          <p className="text-xs text-muted-foreground">Looking up…</p>
-        ) : symbolInfo ? (
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{symbolInfo.label}</span>
-          </p>
-        ) : null}
-      </div>
+      <Field
+        label="Symbol / ticker"
+        info="Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position. Custom currencies you've added in Settings are recognized here too."
+        value={form.symbol}
+        onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+        placeholder="e.g. VCN.TO, AAPL, BTC, or a currency code (USD, EUR, XAU)"
+        list="symbol-suggestions"
+        hint={symbolLoading ? "Looking up…" : symbolInfo?.label}
+      />
+      <datalist id="symbol-suggestions">
+        {currencyOptions.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
 
-      <div className="space-y-1.5">
-        <Label>Holding currency</Label>
-        <Input
-          value={form.currency}
-          onChange={(e) => {
-            setForm({ ...form, currency: e.target.value.toUpperCase() });
-            setCurrencyTouched(true);
-          }}
-        />
-        <p className="text-xs text-muted-foreground">
-          {currencyAutoSource ? (
-            <>
-              Auto-detected from <strong>{currencyAutoSource}</strong>.{" "}
-              {accountCurrency ? (
-                <>
-                  Account currency: <strong>{accountCurrency}</strong>.
-                </>
-              ) : null}{" "}
-              Override if needed.
-            </>
-          ) : (
-            <>
-              The currency this holding trades / is denominated in.{" "}
-              {accountCurrency ? (
-                <>
-                  Account currency: <strong>{accountCurrency}</strong>.
-                </>
-              ) : null}{" "}
-              For cash positions, type the currency code in Symbol (USD, EUR, XAU…) and this will auto-fill.
-            </>
-          )}
-        </p>
-        {errors.currency && (
-          <p className="text-xs text-destructive">
-            {errors.currency}
-          </p>
+      <Field
+        label="Holding currency"
+        info={currencyAutoSource ? (
+          <>
+            Auto-detected from <strong>{currencyAutoSource}</strong>.{" "}
+            {accountCurrency ? (
+              <>
+                Account currency: <strong>{accountCurrency}</strong>.
+              </>
+            ) : null}{" "}
+            Override if needed.
+          </>
+        ) : (
+          <>
+            The currency this holding trades / is denominated in.{" "}
+            {accountCurrency ? (
+              <>
+                Account currency: <strong>{accountCurrency}</strong>.
+              </>
+            ) : null}{" "}
+            For cash positions, type the currency code in Symbol (USD, EUR, XAU…) and this will auto-fill.
+          </>
         )}
-      </div>
+        error={errors.currency}
+        value={form.currency}
+        onChange={(e) => {
+          setForm({ ...form, currency: e.target.value.toUpperCase() });
+          setCurrencyTouched(true);
+        }}
+      />
 
-      <div className="flex min-h-row items-center justify-between gap-3">
-        <Label htmlFor="is-crypto" className="flex-1 cursor-pointer">
-          Crypto asset
-        </Label>
-        <Switch
-          id="is-crypto"
-          checked={form.isCrypto}
-          onCheckedChange={(v) => setForm({ ...form, isCrypto: v })}
-          className="shrink-0"
-        />
-      </div>
+      <Field
+        label="Crypto asset"
+        control="switch"
+        id="is-crypto"
+        checked={form.isCrypto}
+        onCheckedChange={(v) => setForm({ ...form, isCrypto: v })}
+        className="shrink-0"
+      />
 
-      <div className="space-y-1.5">
-        <Label>Note</Label>
-        <Input
-          value={form.note}
-          onChange={(e) => setForm({ ...form, note: e.target.value })}
-        />
-      </div>
+      <Field label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">

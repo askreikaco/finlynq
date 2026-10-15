@@ -13,7 +13,7 @@
 import { useEffect, useState } from "react";
 import { hardReload } from "@/lib/client/hard-reload";
 import { passkeyRecovery } from "@/lib/client/passkey-prf";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import {
   AUTH_INPUT_CLASS,
   NewPasswordFields,
@@ -145,7 +145,7 @@ function SharedComputer({ checked, onChange }: { checked: boolean; onChange: (v:
   return (
     <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
       <span>This is a shared computer</span>
-      <Switch checked={checked} onCheckedChange={(v) => onChange(v)} />
+      <Field control="switch" checked={checked} onCheckedChange={(v) => onChange(v)} />
     </label>
   );
 }
@@ -303,7 +303,7 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
           {proofType === "totp" ? "Authenticator code (6 digits)" : "Recovery code"}
         </label>
         {proofType === "totp" ? (
-          <input
+          <Field
             id="device-proof"
             inputMode="numeric"
             maxLength={6}
@@ -313,7 +313,7 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
             className={AUTH_INPUT_CLASS}
           />
         ) : (
-          <input
+          <Field
             id="device-proof"
             autoComplete="off"
             autoCapitalize="characters"
@@ -395,7 +395,7 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
         <label htmlFor="rc-identifier" className="mb-1.5 block text-sm font-medium text-foreground">
           Email or username
         </label>
-        <input
+        <Field
           id="rc-identifier"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
@@ -408,7 +408,7 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
         <label htmlFor="rc-code" className="mb-1.5 block text-sm font-medium text-foreground">
           Recovery code
         </label>
-        <input
+        <Field
           id="rc-code"
           value={code}
           onChange={(e) => setCode(formatRecoveryInput(e.target.value))}
@@ -479,7 +479,7 @@ function EmailReset({ onBack }: { onBack: () => void }) {
             <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
               Email
             </label>
-            <input
+            <Field
               id="email"
               type="email"
               value={email}

@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Unlink, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { MatchPill, type ReconcileBadgeVariant } from "./match-pill";
 
 export interface BankRow {
@@ -148,15 +149,15 @@ export function BankPane({
             <TableRow>
               {selectionEnabled && (
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
+                  <Field
+                    control="checkbox"
                     aria-label="Select all bank rows"
                     checked={allChecked}
                     ref={(el) => {
-                      if (el) el.indeterminate = someChecked;
-                    }}
+                                        if (el) el.indeterminate = someChecked;
+                                      }}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
-                    className="h-4 w-4 cursor-pointer"
+                    className="w-4"
                   />
                 </TableHead>
               )}
@@ -202,12 +203,12 @@ export function BankPane({
                 >
                   {selectionEnabled && (
                     <TableCell className="w-10">
-                      <input
-                        type="checkbox"
+                      <Field
+                        control="checkbox"
                         aria-label={`Select bank row ${r.date} ${r.payee ?? ""}`}
                         checked={checked}
                         onChange={() => onToggleSelect?.(r.id)}
-                        className="h-4 w-4 cursor-pointer"
+                        className="w-4"
                       />
                     </TableCell>
                   )}

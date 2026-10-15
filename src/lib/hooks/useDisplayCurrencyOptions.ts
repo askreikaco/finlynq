@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { type FieldComboboxOption } from "@/components/ui/field";
 import {
   REPORTABLE_FIAT_CURRENCIES,
   currencyLabel,
 } from "@/lib/fx/supported-currencies";
-import type { ComboboxItemShape } from "@/components/ui/combobox";
 
 /**
  * The options for an app-wide DISPLAY (reporting) currency picker — the single
@@ -40,7 +40,7 @@ import type { ComboboxItemShape } from "@/components/ui/combobox";
  */
 export function useDisplayCurrencyOptions(
   ensure?: string | null,
-): ComboboxItemShape[] {
+): FieldComboboxOption[] {
   const [overrideCurrencies, setOverrideCurrencies] = useState<string[]>([]);
 
   useEffect(() => {

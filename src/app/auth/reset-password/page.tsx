@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LogoMark } from "@/components/logo-mark";
+import { Field } from "@/components/ui/field";
 import { dropAllLocalCaches } from "@/lib/data/local-read-cache-wipe";
 
 const INPUT_CLASS =
@@ -106,7 +107,7 @@ function ResetPasswordForm() {
         <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
           New password
         </label>
-        <input
+        <Field
           id="new-password"
           type="password"
           value={newPassword}
@@ -123,7 +124,7 @@ function ResetPasswordForm() {
         <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
           Confirm new password
         </label>
-        <input
+        <Field
           id="confirm-password"
           type="password"
           value={confirmPassword}
@@ -139,9 +140,8 @@ function ResetPasswordForm() {
         <label htmlFor="confirmation" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
           Type <span className="font-mono">WIPE</span> to confirm
         </label>
-        <input
+        <Field
           id="confirmation"
-          type="text"
           value={confirmation}
           onChange={(e) => setConfirmation(e.target.value)}
           required

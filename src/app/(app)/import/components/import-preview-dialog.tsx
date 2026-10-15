@@ -17,6 +17,7 @@ import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { SaveTemplateDialog } from "./save-template-dialog";
+import { Field } from "@/components/ui/field";
 import { formatPercent } from "@/lib/locale";
 
 interface PreviewRow extends RawTransaction {
@@ -272,21 +273,21 @@ export function ImportPreviewDialog({
                 <div className="flex items-center gap-2 pl-3">
                   <div className="flex w-5 shrink-0 justify-center">
                     {isDuplicate && (
-                      <input
-                        type="checkbox"
+                      <Field
+                        control="checkbox"
                         checked={isForced}
                         onChange={() => toggleDuplicate(row.rowIndex)}
-                        className="h-4 w-4 rounded border-border"
                         title="Force import this duplicate"
+                        className="w-4"
                       />
                     )}
                     {isProbable && (
-                      <input
-                        type="checkbox"
+                      <Field
+                        control="checkbox"
                         checked={!isSkipped}
                         onChange={() => toggleSkipProbable(row.rowIndex)}
-                        className="h-4 w-4 rounded border-warning/30"
                         title="Uncheck to skip this probable duplicate"
+                        className="w-4"
                       />
                     )}
                   </div>

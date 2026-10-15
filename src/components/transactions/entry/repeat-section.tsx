@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Minus, Plus, Repeat } from "lucide-react";
 
 import { FormRow } from "@/components/forms";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { occurrenceAt } from "@/lib/subscriptions/schedule";
 import {
@@ -26,6 +25,7 @@ import {
 } from "@/lib/transactions/series";
 import type { SubscriptionFrequency } from "@/lib/subscriptions/schedule";
 import { PickerCard, PickerRow } from "./grouped-picker";
+import { Field } from "@/components/ui/field";
 import { ToggleCard } from "./toggle-card";
 
 /** Why the Repeat toggle is disabled while splits are on (phase 1 does not combine them). */
@@ -295,7 +295,8 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
       description={series ? seriesSummary(series) : undefined}
       open={enabled}
       control={
-        <Switch
+        <Field
+          control="switch"
           id="txnew-repeat-toggle"
           data-testid="txnew-repeat-toggle"
           aria-label="Repeat"

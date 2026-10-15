@@ -23,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { AccordionItem } from "@/components/ui/accordion";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -39,6 +38,7 @@ import { MoneyProConnectorTab } from "@/app/(app)/import/components/moneypro-con
 import { GenericCsvConnectorTab } from "@/app/(app)/import/components/generic-csv-connector-tab";
 import { InvestmentStatementImporter } from "@/app/(app)/import/components/investment-statement-importer";
 import { EmailRulesManager } from "@/components/inbox/email-rules-manager";
+import { Field } from "@/components/ui/field";
 import type { ImportTemplate } from "@/lib/import-templates";
 
 type ImportProvider = "wealthposition" | "moneypro" | "generic-csv";
@@ -137,7 +137,8 @@ export function ImportSettingsCard() {
                 {confirmCsvMapping ? "On" : "Off"}
               </p>
             </div>
-            <Switch
+            <Field
+              control="switch"
               checked={confirmCsvMapping}
               onCheckedChange={() => void toggleConfirmCsvMapping()}
               disabled={confirmCsvLoading}

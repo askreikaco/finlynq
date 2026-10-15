@@ -10,18 +10,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 import { autoDetectColumnMapping } from "@/lib/import-templates";
+import { Field } from "@/components/ui/field";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -154,29 +146,23 @@ export function SaveTemplateDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
           <div className="grid gap-3 regular:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="tpl-name">Template Name</Label>
-              <Input
-                id="tpl-name"
-                placeholder="e.g. TD Chequing, RBC Visa"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+            <Field
+              label="Template Name"
+              id="tpl-name"
+              placeholder="e.g. TD Chequing, RBC Visa"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-            <div className="space-y-1.5">
-              <Label>Default Account (optional)</Label>
-              <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Leave blank to keep per-row account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a} value={a}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Field
+              label="Default Account"
+              optional
+              control="select"
+              value={defaultAccount}
+              onValueChange={(v) => setDefaultAccount(v ?? "")}
+              placeholder="Leave blank to keep per-row account"
+              options={accounts.map((a) => ({ value: a, label: a }))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -188,20 +174,18 @@ export function SaveTemplateDialog({
                   <span className="w-row-label text-xs text-muted-foreground shrink-0">
                     {FIELD_LABELS[field]}
                   </span>
-                  <Select
+                  <Field
+                    control="select"
                     value={mapping[field] ?? "__none__"}
                     onValueChange={(v) => setMappingField(field, (!v || v === "__none__") ? "" : v)}
-                  >
-                    <SelectTrigger className="h-7 text-xs flex-1">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— not mapped —</SelectItem>
-                      {csvHeaders.map((h) => (
-                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="—"
+                    compact
+                    className="flex-1"
+                    options={[
+                      { value: "__none__", label: "— not mapped —" },
+                      ...csvHeaders.map((h) => ({ value: h, label: h })),
+                    ]}
+                  />
                 </div>
               ))}
             </div>
@@ -216,60 +200,51 @@ export function SaveTemplateDialog({
                 Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
               </p>
               <div className="grid gap-3 regular:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="save-tpl-skip-h" className="text-xs">Skip N header rows</Label>
-                  <Input
-                    id="save-tpl-skip-h"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipHeaderRows}
-                    onChange={(e) => setSkipHeaderRows(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="save-tpl-skip-f" className="text-xs">Skip N footer rows</Label>
-                  <Input
-                    id="save-tpl-skip-f"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={skipFooterRows}
-                    onChange={(e) => setSkipFooterRows(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Date format</Label>
-                  <select
-                    value={dateFormatOverride}
-                    onChange={(e) => setDateFormatOverride(e.target.value as DateFormatUi)}
-                    className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-                  >
-                    <option value="auto">Auto-detect</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Default currency (rows missing one)</Label>
-                  <Select
-                    value={defaultCurrency || "__none__"}
-                    onValueChange={(v) =>
-                      setDefaultCurrency(!v || v === "__none__" ? "" : v)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="— None —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">— None —</SelectItem>
-                      {SUPPORTED_CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Field
+                  label="Skip N header rows"
+                  control="number"
+                  id="save-tpl-skip-h"
+                  min={0}
+                  max={100}
+                  value={skipHeaderRows}
+                  onChange={(e) => setSkipHeaderRows(e.target.value)}
+                />
+                <Field
+                  label="Skip N footer rows"
+                  control="number"
+                  id="save-tpl-skip-f"
+                  min={0}
+                  max={100}
+                  value={skipFooterRows}
+                  onChange={(e) => setSkipFooterRows(e.target.value)}
+                />
+                <Field
+                  label="Date format"
+                  control="select"
+                  value={dateFormatOverride}
+                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                  compact
+                  options={[
+                    { value: "auto", label: "Auto-detect" },
+                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                  ]}
+                  className="w-full"
+                />
+                <Field
+                  label="Default currency (rows missing one)"
+                  control="select"
+                  value={defaultCurrency || "__none__"}
+                  onValueChange={(v) =>
+                    setDefaultCurrency(!v || v === "__none__" ? "" : v)
+                  }
+                  placeholder="— None —"
+                  options={[
+                    { value: "__none__", label: "— None —" },
+                    ...SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
+                  ]}
+                />
               </div>
               <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
                 <span className="flex-1">
@@ -279,7 +254,8 @@ export function SaveTemplateDialog({
                     exports expenses as positive (or income as negative).
                   </span>
                 </span>
-                <Switch
+                <Field
+                  control="switch"
                   checked={mapping.flipSign === true}
                   onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
                   className="shrink-0"

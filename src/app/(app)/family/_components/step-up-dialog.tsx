@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 
 interface StepUpDialogProps {
@@ -50,24 +49,22 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4" noValidate>
-          <div>
-            <Label htmlFor="family-step-up-password">{FAMILY_STRINGS.step_up_password_label}</Label>
-            <Input
-              id="family-step-up-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setLocalError(null);
-              }}
-              disabled={busy}
-              aria-invalid={shownError ? true : undefined}
-              aria-describedby={shownError ? "family-step-up-error" : undefined}
-              className="mt-2"
-              autoFocus
-            />
-          </div>
+          <Field
+            label={FAMILY_STRINGS.step_up_password_label}
+            id="family-step-up-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setLocalError(null);
+            }}
+            disabled={busy}
+            aria-invalid={shownError ? true : undefined}
+            aria-describedby={shownError ? "family-step-up-error" : undefined}
+            autoFocus
+            className="mt-2"
+          />
 
           {shownError && (
             <Alert variant="destructive" id="family-step-up-error">

@@ -17,6 +17,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Coins, Loader2, SlidersHorizontal, Target } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
 
 type Mode = "refuse_orphans" | "synthesize_orphans";
@@ -169,14 +170,14 @@ export default function BackfillWizardPage() {
               {accounts.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">No investment accounts.</p>}
               {accounts.map((a) => (
                 <label key={a.accountId} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
+                  <Field
+                    control="checkbox"
                     checked={accountIds.includes(a.accountId)}
                     onChange={(e) => {
-                      setAccountIds((prev) =>
-                        e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
-                      );
-                    }}
+                                        setAccountIds((prev) =>
+                                          e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
+                                        );
+                                      }}
                   />
                   <span>{a.name}</span>
                 </label>
@@ -186,8 +187,18 @@ export default function BackfillWizardPage() {
 
           {scopeChoice === "date_range" && (
             <div className="flex gap-3 items-center">
-              <label className="text-sm">From: <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded px-2 py-1 ml-1" /></label>
-              <label className="text-sm">To: <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded px-2 py-1 ml-1" /></label>
+              <label className="text-sm">From: <Field
+                control="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="ml-1"
+              /></label>
+              <label className="text-sm">To: <Field
+                control="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="ml-1"
+              /></label>
             </div>
           )}
         </CardContent>

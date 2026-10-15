@@ -8,6 +8,7 @@ import { todayISO, localDateISO } from "@/lib/utils/date";
 import { SectionCard, TxRow, type TxRowTile } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { cn } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 import { PendingSyncBadge } from "./pending-sync-badge";
 
 /** Bulk selection for the list: rows show a checkbox and a tap toggles the row. Pending rows are never selectable. */
@@ -226,12 +227,12 @@ function TransactionRow({
           if (!(e.target instanceof HTMLInputElement)) selection.onToggle(t.id);
         }}
       >
-        <input
-          type="checkbox"
+        <Field
+          control="checkbox"
           checked={checked}
           onChange={() => selection.onToggle(t.id)}
           aria-label={`Select ${payee}`}
-          className="ml-1 h-4 w-4 shrink-0 cursor-pointer rounded border-input"
+          className="ml-1 w-4 shrink-0"
         />
         <div className="min-w-0 flex-1">
           <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} />

@@ -4,8 +4,6 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/currency";
@@ -15,8 +13,8 @@ import {
   ReferenceLine, Legend,
 } from "recharts";
 import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
 
 type FireResult = {
@@ -207,38 +205,57 @@ function FirePageContent() {
       <SectionCard label="Your details" icon={SlidersHorizontal} tone="indigo">
         <div className="space-y-4">
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
-            <div>
-              <Label>Current Age</Label>
-              <Input type="number" value={form.currentAge} onChange={(e) => setForm({ ...form, currentAge: e.target.value })} />
-            </div>
-            <div>
-              <Label>Target Retirement Age</Label>
-              <Input type="number" value={form.targetRetirementAge} onChange={(e) => setForm({ ...form, targetRetirementAge: e.target.value })} />
-            </div>
-            <div>
-              <Label>Current Investments ($)</Label>
-              <AmountInput  value={form.currentInvestments} onValueChange={(nv) => setForm({ ...form, currentInvestments: nv })} />
-            </div>
-            <div>
-              <Label>Monthly Savings ($)</Label>
-              <AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} />
-            </div>
-            <div>
-              <Label>Annual Return (%)</Label>
-              <AmountInput  step="0.5" value={form.annualReturn} onValueChange={(nv) => setForm({ ...form, annualReturn: nv })} />
-            </div>
-            <div>
-              <Label>Inflation (%)</Label>
-              <AmountInput  step="0.5" value={form.inflation} onValueChange={(nv) => setForm({ ...form, inflation: nv })} />
-            </div>
-            <div>
-              <Label>Annual Expenses in Retirement ($)</Label>
-              <AmountInput  value={form.annualExpenses} onValueChange={(nv) => setForm({ ...form, annualExpenses: nv })} />
-            </div>
-            <div>
-              <Label>Safe Withdrawal Rate (%)</Label>
-              <AmountInput  step="0.25" value={form.withdrawalRate} onValueChange={(nv) => setForm({ ...form, withdrawalRate: nv })} />
-            </div>
+            <Field
+              label="Current Age"
+              control="number"
+              value={form.currentAge}
+              onChange={(e) => setForm({ ...form, currentAge: e.target.value })}
+            />
+            <Field
+              label="Target Retirement Age"
+              control="number"
+              value={form.targetRetirementAge}
+              onChange={(e) => setForm({ ...form, targetRetirementAge: e.target.value })}
+            />
+            <Field
+              label="Current Investments ($)"
+              control="amount"
+              value={form.currentInvestments}
+              onValueChange={(nv) => setForm({ ...form, currentInvestments: nv })}
+            />
+            <Field
+              label="Monthly Savings ($)"
+              control="amount"
+              value={form.monthlySavings}
+              onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })}
+            />
+            <Field
+              label="Annual Return (%)"
+              control="amount"
+              step="0.5"
+              value={form.annualReturn}
+              onValueChange={(nv) => setForm({ ...form, annualReturn: nv })}
+            />
+            <Field
+              label="Inflation (%)"
+              control="amount"
+              step="0.5"
+              value={form.inflation}
+              onValueChange={(nv) => setForm({ ...form, inflation: nv })}
+            />
+            <Field
+              label="Annual Expenses in Retirement ($)"
+              control="amount"
+              value={form.annualExpenses}
+              onValueChange={(nv) => setForm({ ...form, annualExpenses: nv })}
+            />
+            <Field
+              label="Safe Withdrawal Rate (%)"
+              control="amount"
+              step="0.25"
+              value={form.withdrawalRate}
+              onValueChange={(nv) => setForm({ ...form, withdrawalRate: nv })}
+            />
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Flame className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate FIRE"}
@@ -336,28 +353,24 @@ function FirePageContent() {
 
               {/* Monte Carlo parameters */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Volatility (%)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="5"
-                    max="40"
-                    value={mcVolatility}
-                    onChange={(e) => setMcVolatility(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Years to Simulate</Label>
-                  <Input
-                    type="number"
-                    step="5"
-                    min="10"
-                    max="60"
-                    value={mcYears}
-                    onChange={(e) => setMcYears(e.target.value)}
-                  />
-                </div>
+                <Field
+                  label="Volatility (%)"
+                  control="number"
+                  step="1"
+                  min="5"
+                  max="40"
+                  value={mcVolatility}
+                  onChange={(e) => setMcVolatility(e.target.value)}
+                />
+                <Field
+                  label="Years to Simulate"
+                  control="number"
+                  step="5"
+                  min="10"
+                  max="60"
+                  value={mcYears}
+                  onChange={(e) => setMcYears(e.target.value)}
+                />
               </div>
               <Button onClick={runMonteCarlo} disabled={mcLoading} variant="outline" className="w-full">
                 <Dice5 className="h-3.5 w-3.5 mr-1" />

@@ -29,7 +29,6 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
@@ -51,6 +50,7 @@ import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, periodLabel, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
 import { resolveCard } from "@/lib/metrics/delta";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { cardProps } from "@/lib/metrics/series";
 
 /** Cards of the category page, default order (Customize). The period selector and the header are not cards. */
@@ -130,7 +130,7 @@ function CategoryPageContent() {
       sortCategory(
         categories
           .filter((c) => c.type === "E" || c.type === "I")
-          .map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name ?? `Category #${c.id}` })),
+          .map((c): FieldComboboxOption => ({ value: String(c.id), label: c.name ?? `Category #${c.id}` })),
         (c) => Number(c.value),
         (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
       ),
@@ -341,12 +341,13 @@ function CategoryPageContent() {
           <>
           {switcherItems.length > 0 ? (
             <span className={HEADER_DESKTOP_ONLY}>
-              <Combobox
+              <Field
+                control="combobox"
                 value={String(categoryId)}
                 onValueChange={(v) => {
                   if (v && v !== String(categoryId)) router.push(`/categories/${v}${typeof window !== "undefined" ? window.location.search : ""}`);
                 }}
-                items={switcherItems}
+                options={switcherItems}
                 placeholder="Switch category"
                 searchPlaceholder="Search categories…"
                 emptyMessage="No matches"

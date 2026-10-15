@@ -4,9 +4,6 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ErrorState } from "@/components/error-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,6 +42,7 @@ import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
 import { canQueueOfflineDelete, isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineDelete, usePendingTransactions } from "@/lib/data/local-write-queue";
 
 /**
@@ -926,66 +924,94 @@ export function TransactionsWorkspace({
                   <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
                     <span className="font-medium text-primary">{selected.size} selected</span>
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
-                      <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
-                        <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="update_category">Change category</SelectItem>
-                          <SelectItem value="update_account">Change account</SelectItem>
-                          <SelectItem value="update_date">Change date</SelectItem>
-                          <SelectItem value="update_payee">Change payee</SelectItem>
-                          <SelectItem value="update_note">Change note</SelectItem>
-                          <SelectItem value="update_tags">Change tags</SelectItem>
-                          <SelectItem value="delete">Delete selected</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Field
+                        control="select"
+                        value={bulkAction}
+                        onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}
+                        placeholder="Choose action…"
+                        compact
+                        className="w-44"
+                        options={[
+                          { value: "update_category", label: "Change category" },
+                          { value: "update_account", label: "Change account" },
+                          { value: "update_date", label: "Change date" },
+                          { value: "update_payee", label: "Change payee" },
+                          { value: "update_note", label: "Change note" },
+                          { value: "update_tags", label: "Change tags" },
+                          { value: "delete", label: "Delete selected" },
+                        ]}
+                      />
                       {bulkAction === "update_category" && (
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={bulkCategoryId}
                           onValueChange={(v) => setBulkCategoryId(v)}
-                          items={sortCategory(
-                            categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
+                          options={sortCategory(
+                            categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
                             (c) => Number(c.value),
                             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                           )}
                           placeholder="Select category"
                           searchPlaceholder="Search categories…"
                           emptyMessage="No matches"
-                          size="sm"
-                          className="h-7 w-44 text-xs"
+                          compact
+                          className="w-44"
                         />
                       )}
                       {bulkAction === "update_account" && (
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={bulkAccountId}
                           onValueChange={(v) => setBulkAccountId(v)}
-                          // Bulk "move to account" DESTINATION — archived accounts are
-                          // excluded: this writes new rows into whatever you pick, and an
-                          // archived account is one you've said you're done using.
-                          items={sortAccount(
+                          options={sortAccount(
                             accounts
                               .filter((a) => a.archived !== true)
-                              .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
+                              .map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
                             (a) => Number(a.value),
                             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                           )}
                           placeholder="Select account"
                           searchPlaceholder="Search accounts…"
                           emptyMessage="No matches"
-                          size="sm"
-                          className="h-7 w-44 text-xs"
+                          compact
+                          className="w-44"
                         />
                       )}
                       {bulkAction === "update_date" && (
-                        <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+                        <Field
+                          control="date"
+                          value={bulkDate}
+                          onChange={(e) => setBulkDate(e.target.value)}
+                          compact
+                          className="w-36"
+                        />
                       )}
                       {bulkAction === "update_payee" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
+                        <Field
+                          placeholder="New payee"
+                          value={bulkPayee}
+                          onChange={(e) => setBulkPayee(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       {bulkAction === "update_note" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+                        <Field
+                          placeholder="New note"
+                          value={bulkNote}
+                          onChange={(e) => setBulkNote(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       {bulkAction === "update_tags" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
+                        <Field
+                          placeholder="New tags"
+                          value={bulkTags}
+                          onChange={(e) => setBulkTags(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       <Button
                         size="sm"
@@ -1004,12 +1030,12 @@ export function TransactionsWorkspace({
                 )}
           {selectMode && txns.length > 0 && (
             <label className="flex h-11 items-center gap-2 px-1 text-sm">
-              <input
-                type="checkbox"
+              <Field
+                control="checkbox"
                 title="Select all"
                 checked={allSelected}
                 onChange={toggleAll}
-                className="h-4 w-4 rounded border-input cursor-pointer"
+                className="w-4"
               />
               <span>Select all</span>
             </label>

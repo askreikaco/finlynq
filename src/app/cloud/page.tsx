@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { LogoMark } from "@/components/logo-mark";
-import { Switch } from "@/components/ui/switch";
 import { hardReload } from "@/lib/client/hard-reload";
 import {
   setPasskeyHint,
@@ -14,6 +13,7 @@ import {
   isPasskeyAutoAllowed,
 } from "@/lib/client/passkey-auto";
 import { passkeyLogin, getAssertionWithPrf } from "@/lib/client/passkey-prf";
+import { Field } from "@/components/ui/field";
 import {
   safeNext,
   googleStartUrl,
@@ -586,7 +586,7 @@ function CloudAuthPageInner() {
               </p>
             )}
             <div>
-              <input
+              <Field
                 id="google-unlock-password"
                 type="password"
                 value={unlockPassword}
@@ -596,7 +596,8 @@ function CloudAuthPageInner() {
                 autoComplete="current-password"
                 autoFocus
                 aria-label="Password"
-                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full"
+                controlClassName="text-foreground"
               />
             </div>
             {error && (
@@ -633,8 +634,7 @@ function CloudAuthPageInner() {
                   <p className="mb-4 text-sm text-muted-foreground text-center">
                     Enter the 6-digit code from your authenticator app.
                   </p>
-                  <input
-                    type="text"
+                  <Field
                     inputMode="numeric"
                     pattern="[0-9]{6}"
                     maxLength={6}
@@ -642,8 +642,9 @@ function CloudAuthPageInner() {
                     onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="000000"
                     aria-label="Authentication code"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-widest text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     autoFocus
+                    className="w-full"
+                    controlClassName="text-center font-mono tracking-widest text-foreground"
                   />
                 </>
               ) : (
@@ -651,8 +652,7 @@ function CloudAuthPageInner() {
                   <p className="mb-4 text-sm text-muted-foreground text-center">
                     Enter one of your recovery codes. Each code works once.
                   </p>
-                  <input
-                    type="text"
+                  <Field
                     value={recoveryCode}
                     onChange={(e) => setRecoveryCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-\s]/g, ""))}
                     placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
@@ -660,8 +660,9 @@ function CloudAuthPageInner() {
                     autoComplete="off"
                     autoCapitalize="characters"
                     spellCheck={false}
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center font-mono text-base tracking-wider text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     autoFocus
+                    className="w-full"
+                    controlClassName="text-center font-mono tracking-wider text-foreground"
                   />
                 </>
               )}
@@ -678,7 +679,7 @@ function CloudAuthPageInner() {
             </button>
             <label className="flex min-h-row items-center justify-center gap-3 text-xs text-muted-foreground">
               This is a shared computer
-              <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
+              <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
             </label>
             <div className="flex flex-col items-center gap-2 text-sm">
               {passkeySupported && (
@@ -731,7 +732,7 @@ function CloudAuthPageInner() {
 
             <label className="mb-4 flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
               This is a shared computer
-              <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
+              <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
             </label>
 
             {error && (
@@ -765,17 +766,17 @@ function CloudAuthPageInner() {
             {flowStep === "identify" && (
               <form onSubmit={handleIdentify} className="space-y-4 w-full">
                 <div>
-                  <input
+                  <Field
                     id="identifier"
-                    type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder="Email or username"
                     required
                     autoComplete="username"
                     aria-label="Email or username"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     autoFocus
+                    className="w-full"
+                    controlClassName="text-foreground"
                   />
                 </div>
                 {error && (
@@ -816,7 +817,7 @@ function CloudAuthPageInner() {
                   </button>
                 </div>
                 <div>
-                  <input
+                  <Field
                     id={passwordInputId}
                     type="password"
                     value={password}
@@ -825,8 +826,9 @@ function CloudAuthPageInner() {
                     required
                     autoComplete="current-password"
                     aria-label="Password"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     autoFocus
+                    className="w-full"
+                    controlClassName="text-foreground"
                   />
                   <Link
                     href="/auth/forgot-password"
@@ -838,7 +840,7 @@ function CloudAuthPageInner() {
                 </div>
                 <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
                   This is a shared computer
-                  <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
+                  <Field control="switch" checked={sharedComputer} onCheckedChange={setSharedComputer} />
                 </label>
                 {error && (
                   <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
@@ -886,23 +888,23 @@ function CloudAuthPageInner() {
 
                     {googleSignup && (
                       <div>
-                        <input
+                        <Field
                           id="signup-username"
-                          type="text"
                           value={signupUsername}
                           onChange={(e) => setSignupUsername(e.target.value)}
                           placeholder="Choose a username"
                           required
                           autoComplete="username"
                           aria-label="Username"
-                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                           autoFocus
+                          className="w-full"
+                          controlClassName="text-foreground"
                         />
                       </div>
                     )}
 
                     <div>
-                      <input
+                      <Field
                         id={passwordInputId}
                         type="password"
                         value={signupPassword}
@@ -912,13 +914,14 @@ function CloudAuthPageInner() {
                         minLength={12}
                         autoComplete="new-password"
                         aria-label="Password"
-                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         autoFocus={!googleSignup}
+                        className="w-full"
+                        controlClassName="text-foreground"
                       />
                     </div>
 
                     <div>
-                      <input
+                      <Field
                         id="signup-confirm-password"
                         type="password"
                         value={signupConfirmPassword}
@@ -928,7 +931,8 @@ function CloudAuthPageInner() {
                         minLength={12}
                         autoComplete="new-password"
                         aria-label="Confirm password"
-                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full"
+                        controlClassName="text-foreground"
                       />
                     </div>
 

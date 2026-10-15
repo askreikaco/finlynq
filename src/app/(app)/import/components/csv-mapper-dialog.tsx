@@ -11,14 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field } from "@/components/ui/field";
 import { ArrowRight, FileText } from "lucide-react";
 
 const FIELD_OPTIONS = [
@@ -120,18 +113,15 @@ export function CsvMapperDialog({
                 {header}
               </Badge>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Select value={mapping[header] ?? ""} onValueChange={(v) => updateMapping(header, v === "_skip" ? "" : (v ?? ""))}>
-                <SelectTrigger className="w-52" size="sm">
-                  <SelectValue placeholder="Skip" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FIELD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value || "_skip"} value={opt.value || "_skip"}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={mapping[header] ?? ""}
+                onValueChange={(v) => updateMapping(header, v === "_skip" ? "" : (v ?? ""))}
+                placeholder="Skip"
+                compact
+                className="w-52"
+                options={FIELD_OPTIONS.map((opt) => ({ value: opt.value || "_skip", label: opt.label }))}
+              />
             </div>
           ))}
 
@@ -142,18 +132,16 @@ export function CsvMapperDialog({
                 Required when your CSV has no Account column.
               </p>
               {accounts.length > 0 ? (
-                <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
-                  <SelectTrigger className="w-60">
-                    <SelectValue placeholder="Select account…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a} value={a}>{a}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field
+                  control="select"
+                  value={defaultAccount}
+                  onValueChange={(v) => setDefaultAccount(v ?? "")}
+                  placeholder="Select account…"
+                  className="w-60"
+                  options={accounts.map((a) => ({ value: a, label: a }))}
+                />
               ) : (
-                <Input
+                <Field
                   placeholder="Account name"
                   value={defaultAccount}
                   onChange={(e) => setDefaultAccount(e.target.value)}

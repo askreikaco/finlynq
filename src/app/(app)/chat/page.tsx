@@ -5,7 +5,6 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
@@ -13,6 +12,7 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
 import { PageHeader, HEADER_CELL, ListRow } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
+import { Field } from "@/components/ui/field";
 import {
   BarChart,
   Bar,
@@ -486,7 +486,7 @@ function ChatPageContent() {
           </div>
         )}
         <div className="flex gap-2">
-          <Input
+          <Field
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}

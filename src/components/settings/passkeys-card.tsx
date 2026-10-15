@@ -16,11 +16,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AlertTriangle, Check, Fingerprint } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { enablePasskeyPrf, registerPasskey } from "@/lib/client/passkey-prf";
 import { setPasskeyHint } from "@/lib/client/passkey-auto";
+import { Field } from "@/components/ui/field";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 const STRINGS = {
@@ -342,7 +342,7 @@ export function PasskeysCard() {
                     <div className="min-w-0 text-sm">
                       {renaming?.id === p.id ? (
                         <div className="flex items-center gap-2">
-                          <Input
+                          <Field
                             aria-label={`New name for ${name}`}
                             value={renaming.value}
                             maxLength={60}
@@ -406,7 +406,7 @@ export function PasskeysCard() {
                       <label htmlFor={`prf-pw-${p.id}`} className="text-sm font-medium">
                         {STRINGS.passwordLabel}
                       </label>
-                      <Input
+                      <Field
                         id={`prf-pw-${p.id}`}
                         type="password"
                         autoComplete="current-password"
@@ -431,7 +431,7 @@ export function PasskeysCard() {
                       <label htmlFor={`rm-pw-${p.id}`} className="text-sm font-medium">
                         {STRINGS.passwordLabel}
                       </label>
-                      <Input
+                      <Field
                         id={`rm-pw-${p.id}`}
                         type="password"
                         autoComplete="current-password"
@@ -446,7 +446,7 @@ export function PasskeysCard() {
                               <label htmlFor={`rm-totp-${p.id}`} className="text-sm font-medium">
                                 {STRINGS.totpLabel}
                               </label>
-                              <Input
+                              <Field
                                 id={`rm-totp-${p.id}`}
                                 inputMode="numeric"
                                 maxLength={6}
@@ -490,18 +490,14 @@ export function PasskeysCard() {
 
         {adding && addNeedsPassword ? (
           <div className="space-y-3 rounded-lg border border-border p-3" role="group" aria-label="Add a passkey">
-            <div className="space-y-1.5">
-              <label htmlFor="passkey-add-password" className="text-sm font-medium">
-                {STRINGS.passwordLabel}
-              </label>
-              <Input
-                id="passkey-add-password"
-                type="password"
-                autoComplete="current-password"
-                value={addPassword}
-                onChange={(e) => setAddPassword(e.target.value)}
-              />
-            </div>
+            <Field
+              label={STRINGS.passwordLabel}
+              id="passkey-add-password"
+              type="password"
+              autoComplete="current-password"
+              value={addPassword}
+              onChange={(e) => setAddPassword(e.target.value)}
+            />
             <div className="flex gap-2">
               <Button size="sm" onClick={submitAdd} disabled={busy || !addPassword}>
                 {busy ? STRINGS.working : STRINGS.createButton}

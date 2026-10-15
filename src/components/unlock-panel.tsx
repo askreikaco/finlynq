@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { isWebAuthnPending, passkeyLogin } from "@/lib/client/passkey-prf";
+import { Field } from "@/components/ui/field";
 import { hardReload } from "@/lib/client/hard-reload";
 
 /**
@@ -186,21 +187,19 @@ export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
         className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-xl border border-border bg-background p-4 text-foreground shadow-lg regular:mx-0"
       >
         {identifier && (
-          <input
-            type="text"
+          <Field
             name="username"
             autoComplete="username"
             value={identifier}
             readOnly
             tabIndex={-1}
             aria-hidden="true"
-            className="sr-only"
           />
         )}
         <label htmlFor="unlock-password" className="text-sm font-medium">
           Password
         </label>
-        <input
+        <Field
           id="unlock-password"
           name="password"
           type="password"
@@ -213,7 +212,8 @@ export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
           disabled={busy}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "unlock-error" : undefined}
-          className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+          className="w-full"
+          controlClassName="text-foreground"
         />
         {error && (
           <p id="unlock-error" role="alert" className="text-sm text-destructive">

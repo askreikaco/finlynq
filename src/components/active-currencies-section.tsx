@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AlertTriangle, Check, Coins, Globe, Loader2, Plus, X } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { currencyLabel, isSupportedCurrency } from "@/lib/fx/supported-currencies";
 
 /**
@@ -201,17 +201,18 @@ export function ActiveCurrenciesSection() {
                     <label className="text-xs font-medium">Add currency</label>
                     <InfoTip label="About adding a currency" text="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one." />
                   </div>
-                  <Input
+                  <Field
                     placeholder="e.g. EUR, AED, JPY, BTC, XAU…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value.toUpperCase())}
-                    className="h-9 font-mono"
                     maxLength={4}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && (lookup.status === "supported" || lookup.status === "custom")) {
                         addCode(lookup.code);
                       }
                     }}
+                    compact
+                    controlClassName="font-mono"
                   />
                 </div>
 

@@ -17,7 +17,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
@@ -33,6 +32,7 @@ import {
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
+import { Field } from "@/components/ui/field";
 import { ArrowDown, ArrowUp, Check, Layers, Merge, MoreHorizontal, Pencil, X } from "lucide-react";
 
 const TYPE_LABELS: Record<AccountGroupType, string> = {
@@ -173,11 +173,10 @@ export function ManageGroupsPanel({
     if (isEditing) {
       return (
         <li key={g} className="flex min-h-row items-center gap-2 px-4 py-1.5">
-          <Input
+          <Field
             value={editValue}
             aria-label={`New name for ${g}`}
             onChange={(e) => setEditValue(e.target.value)}
-            className="h-9 flex-1"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -187,6 +186,8 @@ export function ManageGroupsPanel({
                 setEditing(null);
               }
             }}
+            compact
+            className="flex-1"
           />
           <Button
             type="button"

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Combobox } from "@/components/ui/combobox";
 import { FileDropZone } from "@/app/(app)/import/components/file-drop-zone";
 import { Loader2 } from "lucide-react";
-
+import { Field } from "@/components/ui/field";
 import type { AccountOption } from "./preview-table";
-import { AmountInput } from "@/components/amount-input";
 
 export interface TemplateOption {
   id: number;
@@ -154,10 +152,11 @@ export function ReconcileUploadCard({
               {lockedAccount.name} ({lockedAccount.currency})
             </div>
           ) : (
-            <Combobox
+            <Field
+              control="combobox"
               value={selectedAccountId}
               onValueChange={(v) => setSelectedAccountId(v ?? "")}
-              items={accountItems}
+              options={accountItems}
               placeholder="— Use account column from CSV —"
               searchPlaceholder="Search…"
               emptyMessage="No accounts"
@@ -165,56 +164,48 @@ export function ReconcileUploadCard({
             />
           )}
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Settlement-vs-posting fuzz (days)
-          </label>
-          <input
-            type="number"
-            min={0}
-            max={30}
-            value={tolerance}
-            onChange={(e) => setTolerance(e.target.value)}
-            className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-          />
-        </div>
+        <Field
+          label="Settlement-vs-posting fuzz (days)"
+          control="number"
+          min={0}
+          max={30}
+          value={tolerance}
+          onChange={(e) => setTolerance(e.target.value)}
+          compact
+          className="w-full"
+        />
       </div>
 
       <div className="grid gap-3 regular:grid-cols-2">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            CSV template (optional — for non-standard formats like IBKR)
-          </label>
-          <Combobox
-            value={selectedTemplateId}
-            onValueChange={(v) => {
-              const next = v ?? "";
-              setSelectedTemplateId(next);
-              applyTemplateKnobs(next);
-            }}
-            items={templateItems}
-            placeholder="— Auto-detect —"
-            searchPlaceholder="Search templates…"
-            emptyMessage={
-              templates.length === 0
-                ? "No saved templates yet"
-                : "No matching templates"
-            }
-            className="w-full"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Statement balance (optional — CSV only)
-          </label>
-          <AmountInput native
-            step="0.01"
-            value={statementBalance}
-            onValueChange={(nv) => setStatementBalance(nv)}
-            placeholder="e.g. 1234.56"
-            className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
-          />
-        </div>
+        <Field
+          label="CSV template (optional — for non-standard formats like IBKR)"
+          control="combobox"
+          value={selectedTemplateId}
+          onValueChange={(v) => {
+            const next = v ?? "";
+            setSelectedTemplateId(next);
+            applyTemplateKnobs(next);
+          }}
+          options={templateItems}
+          placeholder="— Auto-detect —"
+          searchPlaceholder="Search templates…"
+          emptyMessage={
+            templates.length === 0
+              ? "No saved templates yet"
+              : "No matching templates"
+          }
+          className="w-full"
+        />
+        <Field
+          label="Statement balance (optional — CSV only)"
+          control="amount"
+          step="0.01"
+          value={statementBalance}
+          onValueChange={(nv) => setStatementBalance(nv)}
+          placeholder="e.g. 1234.56"
+          compact
+          className="w-full"
+        />
       </div>
 
       {ofxPayeeSource && (

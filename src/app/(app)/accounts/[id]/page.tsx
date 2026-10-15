@@ -6,7 +6,6 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -25,8 +24,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -44,6 +41,7 @@ import {
   PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 type Account = {
@@ -585,7 +583,8 @@ export default function AccountDetailPage() {
               title="Invisible"
               subtitle="Hidden from net worth, totals, reports and metrics"
               value={
-                <Switch
+                <Field
+                  control="switch"
                   checked={invisible}
                   onCheckedChange={handleInvisibleToggle}
                   disabled={savingInvisible}
@@ -639,20 +638,19 @@ export default function AccountDetailPage() {
               Creates a per-currency cash position inside <b>{account.name}</b>.
               Only one sleeve per currency is allowed.
             </p>
-            <div className="space-y-1.5">
-              <Label>Currency</Label>
-              <Combobox
-                value={newSleeveCurrency}
-                onValueChange={(v) => setNewSleeveCurrency(v || "")}
-                items={sleeveCurrencyOptions.map(
-                  (c): ComboboxItemShape => ({ value: c, label: c }),
-                )}
-                placeholder="Pick a currency"
-                searchPlaceholder="Search…"
-                emptyMessage="No matches"
-                className="w-full"
-              />
-            </div>
+            <Field
+              label="Currency"
+              control="combobox"
+              value={newSleeveCurrency}
+              onValueChange={(v) => setNewSleeveCurrency(v || "")}
+              options={sleeveCurrencyOptions.map(
+                (c): FieldComboboxOption => ({ value: c, label: c }),
+              )}
+              placeholder="Pick a currency"
+              searchPlaceholder="Search…"
+              emptyMessage="No matches"
+              className="w-full"
+            />
             {newSleeveError && (
               <p className="text-sm text-destructive">{newSleeveError}</p>
             )}

@@ -9,7 +9,6 @@ import { Suspense, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, Key, KeyRound, Lock, Mail, RefreshCw, Shield, ShieldCheck, Upload } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 import { TwoFactor } from "@/app/(app)/settings/account/_components/two-factor";
@@ -18,6 +17,7 @@ import { TrustedDevices } from "@/app/(app)/settings/account/_components/trusted
 import { PasskeysCard } from "@/components/settings/passkeys-card";
 import { RevealForm } from "@/components/settings/reveal-form";
 import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
+import { Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/mobile";
 
 export function AccountContent({
@@ -309,21 +309,32 @@ export function AccountContent({
             )}
             <RevealForm open={pwOpen} onOpen={() => { setPwStatus(""); setPwOpen(true); }} buttonLabel="Change password">
             <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Current</label>
-                <Input type="password" autoComplete="current-password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
-              </div>
+              <Field
+                label="Current"
+                type="password"
+                autoComplete="current-password"
+                value={curPw}
+                onChange={(e) => setCurPw(e.target.value)}
+              />
               <div>
                 <div className="flex items-center gap-1">
                   <label className="text-xs font-medium text-muted-foreground">New</label>
                   <InfoTip label="Password rule" text="At least 12 characters." />
                 </div>
-                <Input type="password" autoComplete="new-password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                <Field
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
+                />
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Confirm</label>
-                <Input type="password" autoComplete="new-password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
-              </div>
+              <Field
+                label="Confirm"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+              />
               {pwError && <p className="text-sm text-destructive">{pwError}</p>}
               <div className="flex gap-2">
                 <Button type="submit" disabled={pwSaving || !curPw || !newPw || !confirmPw}>
@@ -366,14 +377,21 @@ export function AccountContent({
             )}
             <RevealForm open={emailOpen} onOpen={() => { setEmailStatus(""); setEmailOpen(true); }} buttonLabel="Change email">
             <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">New email</label>
-                <Input type="email" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Current</label>
-                <Input type="password" autoComplete="current-password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} />
-              </div>
+              <Field
+                label="New email"
+                type="email"
+                autoComplete="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+              <Field
+                label="Current"
+                type="password"
+                autoComplete="current-password"
+                value={emailPw}
+                onChange={(e) => setEmailPw(e.target.value)}
+              />
               {emailError && <p className="text-sm text-destructive">{emailError}</p>}
               <div className="flex gap-2">
                 <Button type="submit" disabled={emailSaving || !newEmail || !emailPw}>
@@ -406,7 +424,7 @@ export function AccountContent({
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
-            <Input
+            <Field
               readOnly
               value={
                 !apiKeyLoaded
@@ -415,7 +433,8 @@ export function AccountContent({
                     ? (apiKeyVisible ? apiKey : `${apiKey.slice(0, 6)}${"•".repeat(20)}${apiKey.slice(-4)}`)
                     : "•".repeat(40)
               }
-              className="font-mono text-sm flex-1"
+              className="flex-1"
+              controlClassName="font-mono"
             />
             <Button aria-label={apiKeyVisible ? "Hide key" : "Show key"}
               variant="outline"
@@ -537,11 +556,11 @@ export function AccountContent({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Input
+                  <Field
                     value={restoreConfirm}
                     onChange={(e) => setRestoreConfirm(e.target.value)}
                     placeholder="Type RESTORE to confirm"
-                    className="max-w-52 text-sm"
+                    className="max-w-52"
                   />
                   <Button
                     variant="destructive"

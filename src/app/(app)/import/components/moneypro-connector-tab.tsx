@@ -11,14 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
-import {
   AlertCircle,
   CheckCircle2,
   Clipboard,
@@ -30,6 +22,7 @@ import {
 } from "lucide-react";
 import { exportCsv } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import { getDisplayLocale } from "@/lib/locale";
 
 interface AccountPlan {
@@ -359,7 +352,8 @@ export function MoneyProConnectorTab() {
                             {p.currency} · {p.txCount} tx
                           </span>
                         </div>
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={sel}
                           onValueChange={(v) =>
                             setTarget((prev) => ({
@@ -367,14 +361,16 @@ export function MoneyProConnectorTab() {
                               [p.sourceName]: v || "new",
                             }))
                           }
-                          items={accountItems}
+                          options={accountItems}
                           placeholder="Select account"
                           searchPlaceholder="Search accounts…"
                           emptyMessage="No matching account"
-                          className="h-8 w-[220px]"
+                          compact
+                          className="w-[220px]"
                         />
                         {sel === "new" && (
-                          <Select
+                          <Field
+                            control="select"
                             value={newType[p.sourceName] ?? "A"}
                             onValueChange={(v) =>
                               setNewType((prev) => ({
@@ -382,15 +378,10 @@ export function MoneyProConnectorTab() {
                                 [p.sourceName]: (v as "A" | "L") ?? "A",
                               }))
                             }
-                          >
-                            <SelectTrigger className="w-[110px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A">Asset</SelectItem>
-                              <SelectItem value="L">Liability</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            compact
+                            className="w-[110px]"
+                            options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
+                          />
                         )}
                       </div>
                     );

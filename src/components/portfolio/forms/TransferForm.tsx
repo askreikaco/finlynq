@@ -16,23 +16,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
-
+import { Field } from "@/components/ui/field";
 import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
 
 export default function TransferForm() {
@@ -244,45 +235,29 @@ export default function TransferForm() {
     >
       <OpGroup label="Accounts">
         <OpRow label="From" error={errors.sourceAccountId}>
-          <Select
-            items={sourceAccountLabelById}
+          <Field
+            control="select"
             value={sourceAccountId}
             onValueChange={(v) => {
               setSourceAccountId(v ?? "");
               setHoldingId("");
               if (v === destAccountId) setDestAccountId("");
             }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick source" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick source"
+            className={OP_SELECT}
+            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
         <OpRow label="To" error={errors.destAccountId}>
-          <Select
-            items={destAccountLabelById}
+          <Field
+            control="select"
             value={destAccountId}
             onValueChange={(v) => setDestAccountId(v ?? "")}
             disabled={!sourceAccountId}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick destination" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {destAccountOptions.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Pick destination"
+            className={OP_SELECT}
+            options={destAccountOptions.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
         </OpRow>
       </OpGroup>
       <OpFooter>
@@ -291,35 +266,25 @@ export default function TransferForm() {
 
       <OpGroup label="Shares">
         <OpRow label="Holding" error={errors.holdingId}>
-          <Select
-            items={holdingLabelById}
+          <Field
+            control="select"
             value={holdingId}
             onValueChange={(v) => setHoldingId(v ?? "")}
             disabled={!sourceAccount}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue
-                placeholder={
+            placeholder={
                   sourceAccount
                     ? sourceHoldings.length === 0
                       ? "No non-cash holdings in source"
                       : "Pick a holding"
                     : "Pick source account first"
                 }
-              />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {sourceHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`} ({h.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className={OP_SELECT}
+            options={sourceHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+          />
         </OpRow>
         <OpRow label="Quantity" error={errors.qty}>
-          <AmountInput
+          <Field
+            control="amount"
             step="any"
             inputMode="decimal"
             value={qty}
@@ -329,8 +294,8 @@ export default function TransferForm() {
           />
         </OpRow>
         <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
+          <Field
+            control="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={OP_INPUT}
@@ -346,7 +311,7 @@ export default function TransferForm() {
 
       <OpGroup label="Details">
         <OpRow label="Payee">
-          <Input
+          <Field
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
             placeholder="e.g. ACATS transfer"
@@ -354,7 +319,7 @@ export default function TransferForm() {
           />
         </OpRow>
         <OpRow label="Note">
-          <Input
+          <Field
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"

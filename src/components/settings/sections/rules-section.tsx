@@ -24,9 +24,9 @@ function rulePatch(f: Record<string, string | number | null>): Partial<RuleRow> 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { Field } from "@/components/ui/field";
 import { AlertTriangle, ListChecks, Plus, Trash2, Zap } from "lucide-react";
 import type { Condition, Action } from "@/lib/rules/schema";
 
@@ -241,7 +241,8 @@ export function RulesSection() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="flex h-8 items-center px-1">
-                    <Switch
+                    <Field
+                      control="switch"
                       checked={!!rule.isActive}
                       onCheckedChange={() => handleToggle(rule)}
                       aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}

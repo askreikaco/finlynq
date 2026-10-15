@@ -26,11 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matrix";
 import { formatCurrency } from "@/lib/currency";
-import { AmountInput } from "@/components/amount-input";
+import { Field } from "@/components/ui/field";
 import { getDisplayLocale } from "@/lib/locale";
 
 interface LotRow {
@@ -442,16 +441,19 @@ export function LotInspectorDialog({
                       {formatCurrency(lot.costPerShare, lot.currency)}
                     </span>
                   </span>
-                  <AmountInput
+                  <Field
+                    control="amount"
                     min={0}
                     step="any"
-                    className="h-7 w-24 text-right"
                     value={alloc[lot.id] ?? ""}
                     onValueChange={(nv) => {
                       const v = nv;
                       setPreview(null);
                       setAlloc((a) => ({ ...a, [lot.id]: v }));
                     }}
+                    compact
+                    className="w-24"
+                    controlClassName="text-right"
                   />
                 </div>
               ))}

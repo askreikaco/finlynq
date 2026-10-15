@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { List, Lock, RefreshCw, Users } from "lucide-react";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
 
 interface ByUser {
@@ -228,21 +229,11 @@ export default function AdminEmailInboxPage() {
         </div>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           From
-          <input
-            type="date"
-            value={since}
-            onChange={(e) => setSince(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          />
+          <Field control="date" value={since} onChange={(e) => setSince(e.target.value)} />
         </label>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           To
-          <input
-            type="date"
-            value={until}
-            onChange={(e) => setUntil(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          />
+          <Field control="date" value={until} onChange={(e) => setUntil(e.target.value)} />
         </label>
         {selectedUserLabel && (
           <Badge variant="outline" className="gap-1">

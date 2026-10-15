@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { AlertTriangle, Check, RefreshCw, X } from "lucide-react";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
 
 type AuditRow = {
@@ -126,7 +126,8 @@ export default function CurrencyAuditPage() {
         ],
         actions: (
           <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-            <Switch
+            <Field
+              control="switch"
               checked={includeResolved}
               onCheckedChange={(v) => setIncludeResolved(v)}
             />

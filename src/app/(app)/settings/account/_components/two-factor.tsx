@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { RevealForm } from "@/components/settings/reveal-form";
-import { Input } from "@/components/ui/input";
 import { AlertTriangle, Check, Shield, ShieldCheck } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import QRCode from "qrcode";
 
 const STRINGS = {
@@ -300,35 +300,26 @@ export function TwoFactor() {
             )}
             <RevealForm open={state.type === "disabling"} onOpen={startDisable} buttonLabel={STRINGS.disableButton} variant="destructive">
               <form onSubmit={(e) => { e.preventDefault(); handleDisableMfa(); }} className="space-y-3 max-w-sm">
-                <div>
-                  <label htmlFor="disable-code" className="text-xs font-medium text-muted-foreground">
-                    {STRINGS.codeLabel}
-                  </label>
-                  <Input
-                    id="disable-code"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder={STRINGS.codePlaceholder}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.slice(0, 6))}
-                    disabled={saving}
-                  />
-                </div>
+                <Field
+                  label={STRINGS.codeLabel}
+                  id="disable-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder={STRINGS.codePlaceholder}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.slice(0, 6))}
+                  disabled={saving}
+                />
 
-                <div>
-                  <label htmlFor="disable-password" className="text-xs font-medium text-muted-foreground">
-                    {STRINGS.passwordLabel}
-                  </label>
-                  <Input
-                    id="disable-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={saving}
-                  />
-                </div>
+                <Field
+                  label={STRINGS.passwordLabel}
+                  id="disable-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={saving}
+                />
 
                 {error && (
                   <p className="text-sm text-destructive flex items-center gap-2" role="alert">
@@ -376,13 +367,7 @@ export function TwoFactor() {
                 <InfoTip label="About secret key" text={STRINGS.secretHelp} />
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="secret"
-                  type="text"
-                  readOnly
-                  value={secret}
-                  className="font-mono text-sm"
-                />
+                <Field id="secret" readOnly value={secret} controlClassName="font-mono" />
                 <Button
                   type="button"
                   variant="outline"
@@ -396,36 +381,27 @@ export function TwoFactor() {
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">
-              <div>
-                <label htmlFor="enable-code" className="text-xs font-medium text-muted-foreground">
-                  {STRINGS.codeLabel}
-                </label>
-                <Input
-                  id="enable-code"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={STRINGS.codePlaceholder}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.slice(0, 6))}
-                  disabled={saving}
-                  autoFocus
-                />
-              </div>
+              <Field
+                label={STRINGS.codeLabel}
+                id="enable-code"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder={STRINGS.codePlaceholder}
+                value={code}
+                onChange={(e) => setCode(e.target.value.slice(0, 6))}
+                disabled={saving}
+                autoFocus
+              />
 
-              <div>
-                <label htmlFor="enable-password" className="text-xs font-medium text-muted-foreground">
-                  {STRINGS.passwordLabel}
-                </label>
-                <Input
-                  id="enable-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={saving}
-                />
-              </div>
+              <Field
+                label={STRINGS.passwordLabel}
+                id="enable-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={saving}
+              />
 
               {error && (
                 <p className="text-sm text-destructive flex items-center gap-2" role="alert">

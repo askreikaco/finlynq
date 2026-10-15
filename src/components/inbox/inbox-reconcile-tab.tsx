@@ -49,6 +49,7 @@ import {
 import { RecentUploadsPanel } from "@/components/reconcile/recent-uploads-panel";
 import { ConfirmDeleteBankRow } from "@/components/reconcile/confirm-delete-bank-row";
 import { BulkLinkActionBar } from "@/components/reconcile/bulk-link-action-bar";
+import { Field } from "@/components/ui/field";
 import { safeAccountName } from "@/lib/safe-name";
 
 interface Account {
@@ -933,31 +934,31 @@ export function InboxReconcileTab({
         <label className="text-muted-foreground" htmlFor="inbox-date-from">
           From
         </label>
-        <input
+        <Field
+          control="date"
           id="inbox-date-from"
-          type="date"
           value={dateFrom ?? ""}
           onChange={(e) => {
-            const v = e.target.value;
-            setDateFrom(v ? v : null);
-            setRejected(new Set());
-          }}
-          className="h-7 px-2 text-xs border border-input rounded-md bg-background"
+                    const v = e.target.value;
+                    setDateFrom(v ? v : null);
+                    setRejected(new Set());
+                  }}
+          compact
         />
         <span className="text-muted-foreground">→</span>
         <label className="text-muted-foreground" htmlFor="inbox-date-to">
           To
         </label>
-        <input
+        <Field
+          control="date"
           id="inbox-date-to"
-          type="date"
           value={dateTo ?? ""}
           onChange={(e) => {
-            const v = e.target.value;
-            setDateTo(v ? v : null);
-            setRejected(new Set());
-          }}
-          className="h-7 px-2 text-xs border border-input rounded-md bg-background"
+                    const v = e.target.value;
+                    setDateTo(v ? v : null);
+                    setRejected(new Set());
+                  }}
+          compact
         />
         <div
           className="flex items-center gap-1 ml-2"

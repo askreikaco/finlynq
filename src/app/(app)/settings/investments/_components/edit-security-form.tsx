@@ -9,11 +9,10 @@
  */
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseSaveError } from "@/lib/save-error";
 import { ASSET_TYPE_LABELS, advisoryFor, type Security } from "./shared";
+import { Field } from "@/components/ui/field";
 import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
 
 type PriceSource = "auto" | "manual";
@@ -129,17 +128,17 @@ export function EditSecurityForm({
               ) : undefined
             }
           >
-            <Input
+            <Field
               id="edit-symbol"
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               placeholder="e.g. AMZN"
-              className="font-mono"
+              controlClassName="font-mono"
             />
           </FormRow>
         )}
         <FormRow label="Display name" htmlFor="edit-name" error={errors.name}>
-          <Input
+          <Field
             id="edit-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -154,19 +153,13 @@ export function EditSecurityForm({
             label="Asset type"
             hint="Overrides the automatic (Yahoo) classification for the badge."
           >
-            <Select
-              items={ASSET_TYPE_LABELS}
+            <Field
+              control="select"
               value={assetType}
               onValueChange={(v) => setAssetType(v ?? "stock")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Asset type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="stock">Stock</SelectItem>
-                <SelectItem value="etf">ETF</SelectItem>
-              </SelectContent>
-            </Select>
+              placeholder="Asset type"
+              options={[{ value: "stock", label: "Stock" }, { value: "etf", label: "ETF" }]}
+            />
           </FormRow>
         )}
         {/* Pricing mode — manual securities are excluded from the market price API

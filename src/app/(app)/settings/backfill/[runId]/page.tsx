@@ -21,6 +21,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark, Layers, Loader2, PlusCircle, Receipt, RefreshCw, ShieldCheck, Undo2, Wallet } from "lucide-react";
 import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // MUST stay in sync with the CHECK constraint on
@@ -447,12 +448,12 @@ function ProposalCard({
   return (
     <div className={`flex items-center gap-2 ${selected ? "bg-primary/5" : ""}`}>
       {!isRefused && !isApplied && (
-        <input
-          type="checkbox"
+        <Field
+          control="checkbox"
           aria-label={`Approve: ${proposal.summary}`}
           checked={isApproved}
           onChange={onToggleApprove}
-          className="size-4 shrink-0"
+          className="shrink-0"
         />
       )}
       <div className="min-w-0 flex-1">
@@ -902,27 +903,19 @@ function HoldingPicker({
     );
   }
   return (
-    <select
+    <Field
+      control="select"
       value={proposal.chosenHoldingId ?? ""}
-      onChange={(e) => {
-        const v = e.target.value;
-        onChange(v === "" ? null : Number(v));
-      }}
-      className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
-    >
-      <option value="">— Pick a holding —</option>
-      {candidates.map((id) => {
-        const h = holdingMap[id];
-        const label = h?.name ?? `holding #${id}`;
-        const currency = h?.currency ? ` (${h.currency})` : "";
-        return (
-          <option key={id} value={id}>
-            {label}
-            {currency}
-          </option>
-        );
-      })}
-    </select>
+      onValueChange={(v) => {
+            const v = v;
+            onChange(v === "" ? null : Number(v));
+          }}
+      className="w-full"
+      options={[
+        { value: "", label: "— Pick a holding —" },
+        ...candidates.map((id) => { const h = holdingMap[id]; const label = h?.name ?? `holding #${id}`; const currency = h?.currency ? ` (${h.currency})` : ""; return ({ value: id, label: `${label}${currency}` }); }),
+      ]}
+    />
   );
 }
 
@@ -1267,18 +1260,16 @@ function KindOverridePicker({
       {needsRelatedHolding && (
         <div className="space-y-1">
           <div className="text-xs font-medium">Related stock holding (for reporting)</div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          <Field
+            control="select"
             value={chosenRelatedHoldingId ?? ""}
-            onChange={(e) => setChosenRelatedHoldingId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">— pick a holding —</option>
-            {accountHoldings.map(([id, h]) => (
-              <option key={id} value={id}>
-                {h.name ?? `holding #${id}`} ({h.currency})
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setChosenRelatedHoldingId(v ? Number(v) : null)}
+            className="w-full"
+            options={[
+              { value: "", label: "— pick a holding —" },
+              ...accountHoldings.map(([id, h]) => ({ value: id, label: `${h.name ?? `holding #${id}`}(${h.currency})` })),
+            ]}
+          />
         </div>
       )}
 
@@ -1293,22 +1284,18 @@ function KindOverridePicker({
               />
             )}
           </div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          <Field
+            control="select"
             value={chosenCategoryId ?? ""}
-            onChange={(e) => setChosenCategoryId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">
-              {autoCategoryName
-                ? `— auto: ${autoCategoryName} (created if needed) —`
-                : "— leave uncategorized —"}
-            </option>
-            {categoryOptions.map(([id, c]) => (
-              <option key={id} value={id}>
-                {c.name ?? `category #${id}`}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setChosenCategoryId(v ? Number(v) : null)}
+            className="w-full"
+            options={[
+              { value: "", label: autoCategoryName
+                          ? `— auto: ${autoCategoryName} (created if needed) —`
+                          : "— leave uncategorized —" },
+              ...categoryOptions.map(([id, c]) => ({ value: id, label: c.name ?? `category #${id}` })),
+            ]}
+          />
         </div>
       )}
 

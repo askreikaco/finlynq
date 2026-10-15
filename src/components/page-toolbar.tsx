@@ -17,11 +17,11 @@ import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RoundIconButton } from "@/components/ui/round-icon-button";
 import { CONTROL_SURFACE } from "@/components/ui/control-surface";
-import { Input } from "@/components/ui/input";
 import { RefreshButton } from "@/components/refresh-button";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { cn } from "@/lib/utils";
 import { localDateISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import {
   TOOLBAR_RANGE_KEYS, canStepNext, isSteppable, periodLabel, stepSelection,
   type RangeSelection,
@@ -103,13 +103,12 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
   return (
     <div data-slot="search-toggle" className="relative min-w-40 flex-1 basis-56">
       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-      <Input
+      <Field
         ref={input}
         type="search"
         aria-label="Search"
         placeholder={placeholder}
         value={value}
-        className={cn("h-11 rounded-full pl-10 pr-10 text-sm", CONTROL_SURFACE)}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -120,6 +119,7 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
         onBlur={() => {
           if (value === "") setOpen(false);
         }}
+        className={cn("h-11 rounded-full pl-10 pr-10 text-sm", CONTROL_SURFACE)}
       />
       {value !== "" && (
         <Button

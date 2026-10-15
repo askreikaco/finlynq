@@ -41,6 +41,9 @@ import { FieldRowContext } from "./surface";
 
 export type { FieldOption } from "./controls";
 
+/** An option of a combobox: a plain string label so the list can filter on it. */
+export type FieldComboboxOption = { value: string; label: string; disabled?: boolean };
+
 export type FieldLabelPlacement = "top" | "left" | "inline";
 
 /** The parts around a control. All optional; a Field with no label is just the control. */
@@ -130,7 +133,7 @@ export type ComboboxFieldProps = FieldChromeProps & {
   control: "combobox";
   value?: string;
   onValueChange?: (value: string) => void;
-  options: ReadonlyArray<{ value: string; label: string; disabled?: boolean }>;
+  options: ReadonlyArray<FieldComboboxOption>;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;

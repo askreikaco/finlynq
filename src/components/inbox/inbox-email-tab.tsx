@@ -28,9 +28,8 @@ import {
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
 import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { EmailRuleDialog } from "./email-rule-dialog";
-import { AmountInput } from "@/components/amount-input";
-
 type Action =
   | "pending"
   | "auto_recorded"
@@ -523,32 +522,30 @@ export function InboxEmailTab() {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Amount</label>
-                            <AmountInput native
-                              step="0.01"
-                              className="h-9 w-[110px] rounded-md border bg-background px-2 text-sm"
-                              value={editAmount}
-                              onValueChange={(nv) => setEditAmount(nv)}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Date</label>
-                            <input
-                              type="date"
-                              className="h-9 w-[150px] rounded-md border bg-background px-2 text-sm"
-                              value={editDate}
-                              onChange={(e) => setEditDate(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Payee</label>
-                            <input
-                              className="h-9 w-[160px] rounded-md border bg-background px-2 text-sm"
-                              value={editPayee}
-                              onChange={(e) => setEditPayee(e.target.value)}
-                            />
-                          </div>
+                          <Field
+                            label="Amount"
+                            control="amount"
+                            step="0.01"
+                            value={editAmount}
+                            onValueChange={(nv) => setEditAmount(nv)}
+                            compact
+                            className="w-[110px]"
+                          />
+                          <Field
+                            label="Date"
+                            control="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            compact
+                            className="w-[150px]"
+                          />
+                          <Field
+                            label="Payee"
+                            value={editPayee}
+                            onChange={(e) => setEditPayee(e.target.value)}
+                            compact
+                            className="w-[160px]"
+                          />
                           <Button
                             size="sm"
                             onClick={() => void record(it.id)}

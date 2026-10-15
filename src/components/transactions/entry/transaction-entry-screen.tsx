@@ -30,8 +30,6 @@ import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
 import { NumpadDock, buildCurrencyChips } from "./numpad-dock";
 import { CategorySelector, type Category } from "./category-selector";
@@ -83,6 +81,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import { Field } from "@/components/ui/field";
 import { PageHeader, OverflowMenu, HEADER_SAVE } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 
@@ -1497,7 +1496,8 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             hideLabel
             className="items-start min-h-[calc(var(--spacing-row-tall)*2)] py-3"
           >
-            <AutoTextarea
+            <Field
+              control="textarea"
               id="txnew-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -1505,7 +1505,6 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               enterKeyHint="enter"
               autoComplete="off"
               rows={2}
-              className="max-h-48 bg-transparent text-base"
               onFocus={() => {
                 closePad();
                 setFocusedField("note");
@@ -1529,18 +1528,15 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             }}
           />
           {/* Business: a plain toggle row; the label stays visible because it names the switch. */}
-          <div data-testid="txnew-row-business" className="flex min-h-row items-center justify-between gap-3 px-4">
-            <label htmlFor="txnew-business" className="flex min-w-0 flex-1 items-center gap-2 text-base text-foreground">
-              <Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-              <span className="min-w-0 truncate">Business</span>
-            </label>
-            <Switch
-              id="txnew-business"
-              className="shrink-0"
-              checked={isBusiness}
-              onCheckedChange={(checked) => setIsBusiness(checked)}
-            />
-          </div>
+          <Field
+            testId="txnew-row-business"
+            label={<><Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" /> <span className="min-w-0 truncate">Business</span></>}
+            control="switch"
+            id="txnew-business"
+            checked={isBusiness}
+            onCheckedChange={(checked) => setIsBusiness(checked)}
+            className="shrink-0"
+          />
         </ListCard>
 
         {/* Autocomplete pills sit below the list while the field is focused. */}
@@ -1603,20 +1599,14 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
         {/* Rule suggestion (Expense/Income, payee + category set). Payee is on screen one. */}
         {ruleEligible && (
-          <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/10 px-4 py-2">
-            <label htmlFor="txnew-also-rule" className="flex min-w-0 flex-1 cursor-pointer flex-col">
-              <span className="text-sm font-medium text-foreground">Also create a rule for next time</span>
-              <span className="truncate text-xs text-muted-foreground">
-                Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name}
-              </span>
-            </label>
-            <Switch
-              id="txnew-also-rule"
-              className="shrink-0"
-              checked={alsoCreateRule}
-              onCheckedChange={(checked) => setAlsoCreateRule(checked)}
-            />
-          </div>
+          <Field
+            label={<><span className="text-sm font-medium text-foreground">Also create a rule for next time</span> <span className="truncate text-xs text-muted-foreground"> Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name} </span></>}
+            control="switch"
+            id="txnew-also-rule"
+            checked={alsoCreateRule}
+            onCheckedChange={(checked) => setAlsoCreateRule(checked)}
+            className="shrink-0 shrink-0"
+          />
         )}
 
         {isInstallmentRow && (

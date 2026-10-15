@@ -12,6 +12,7 @@ import { useEffect, useState, type ComponentProps } from "react";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language-provider";
 import { parseAmountInput } from "@/lib/parse-amount";
+import { Field } from "@/components/ui/field";
 import { getSeparators } from "@/lib/locale";
 
 type Props = Omit<ComponentProps<typeof Input>, "value" | "onChange" | "type"> & {

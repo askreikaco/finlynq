@@ -14,14 +14,13 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GroupCombobox } from "@/components/ui/group-combobox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getMonthLabel } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { isLocalWriteQueueActive, queueOfflineBudgetSet, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { Field } from "@/components/ui/field";
 import type { Budget } from "../../budgets/_components/budget-types";
 
 export type FormCategory = { id: number; type: string; group: string; name: string };
@@ -179,10 +178,9 @@ export function CategoryBudgetForm({
       )}
 
       <div>
-        <Input
+        <Field
           aria-label="Name"
           aria-invalid={!!nameError || undefined}
-          className="h-11 text-base regular:pointer-fine:text-sm"
           value={name}
           onChange={(e) => { setName(e.target.value); setNameError(""); }}
           placeholder="Name"
@@ -192,29 +190,31 @@ export function CategoryBudgetForm({
       </div>
 
       {!isEdit && (
-        <Select items={TYPE_LABELS} value={type} onValueChange={(v) => setType(v ?? "E")}>
-          <SelectTrigger aria-label="Type" className="h-11 w-full">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="E">Expense</SelectItem>
-            <SelectItem value="I">Income</SelectItem>
-            <SelectItem value="R">Reconciliation</SelectItem>
-          </SelectContent>
-        </Select>
+        <Field
+          control="select"
+          value={type}
+          onValueChange={(v) => setType(v ?? "E")}
+          aria-label="Type"
+          placeholder="Type"
+          className="w-full"
+          options={[
+            { value: "E", label: "Expense" },
+            { value: "I", label: "Income" },
+            { value: "R", label: "Reconciliation" },
+          ]}
+        />
       )}
 
       <GroupCombobox value={group} onChange={setGroup} options={groups} placeholder="Group" ariaLabel="Group" />
 
       {canBudget && (
         <div>
-          <Input
+          <Field
+            control="number"
             aria-label="Budget"
-            type="number"
             inputMode="decimal"
             min="0"
             step="0.01"
-            className="h-11 text-base regular:pointer-fine:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={`Budget · ${getMonthLabel(month)}`}

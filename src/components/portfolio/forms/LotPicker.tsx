@@ -13,8 +13,8 @@
  */
 
 import { useEffect, useState } from "react";
+import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
-import { AmountInput } from "@/components/amount-input";
 
 interface OpenLot {
   lotId: number;
@@ -161,7 +161,8 @@ export default function LotPicker({
                     {lot.qty} open · {formatCurrency(lot.costPerShare, currency)}/sh
                   </span>
                 </div>
-                <AmountInput native
+                <Field
+                  control="amount"
                   step="any"
                   min="0"
                   value={qty || ""}
