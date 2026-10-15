@@ -25,9 +25,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -224,16 +222,18 @@ export default function DividendsPage() {
 
       <section aria-label="Dividend groups" className="space-y-2">
         {loading ? (
-          <PageSkeleton variant="list" rows={3} />
+          <Notice variant="skeleton" skeleton="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={reloadGrouped} />
+          <Notice variant="error" title="Couldn't load dividends" retry={reloadGrouped}>{"We couldn't load your dividend income. Please try again."}</Notice>
         ) : !data || !data.groups || data.groups.length === 0 ? (
-          <EmptyState
+          <Notice
+            variant="empty"
             icon={Coins}
             title="No dividend income yet"
-            description='Tag dividend payouts with a category named "Dividends" for them to show up here.'
             action={{ label: "Record a dividend", href: "/portfolio/new?op=income-expense" }}
-          />
+          >
+            {'Tag dividend payouts with a category named "Dividends" for them to show up here.'}
+          </Notice>
         ) : (
           <>
               <SectionCard label={firstHeader} icon={Coins} tone="emerald" list>

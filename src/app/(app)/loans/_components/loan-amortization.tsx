@@ -8,7 +8,8 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Percent, TrendingDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
+import { Notice } from "@/components/notice";
+import { Chart } from "@/components/chart";
 import { TxRow } from "@/components/mobile";
 import { formatCurrency } from "@/lib/currency";
 import type { Loan } from "./loan-types";
@@ -53,7 +54,7 @@ export function LoanAmortization({ loan, compact = false }: { loan: Loan; compac
   }, [loan]);
 
   if (failed) return <p className="text-sm text-muted-foreground">Couldn&apos;t load the schedule.</p>;
-  if (!amort || !Array.isArray(amort.schedule)) return <div className="h-40 animate-shimmer rounded-xl" />;
+  if (!amort || !Array.isArray(amort.schedule)) return <Notice variant="skeleton" skeleton="list" rows={2} />;
   const sampled = amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0);
   const rowsMax = compact ? "max-h-72" : "max-h-[60dvh]";
   return (
@@ -65,19 +66,27 @@ export function LoanAmortization({ loan, compact = false }: { loan: Loan; compac
         <TabsTrigger value="whatif">What-If</TabsTrigger>
       </TabsList>
       <TabsContent value="chart">
-        <ResponsiveContainer width="100%" height={compact ? 180 : 300}>
-          <BarChart data={sampled}>
-            <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} hide={compact} /><YAxis fontSize={10} tickLine={false} axisLine={false} hide={compact} /><Tooltip /><Legend />
-            <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-        <ResponsiveContainer width="100%" height={compact ? 140 : 200} className="mt-4">
-          <LineChart data={sampled}>
-            <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} hide={compact} /><YAxis fontSize={10} tickLine={false} axisLine={false} hide={compact} /><Tooltip />
-            <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
-          </LineChart>
-        </ResponsiveContainer>
+        <Chart
+          kind="stacked-bar"
+          data={sampled}
+          xKey="date"
+          height={compact ? 180 : 300}
+          currency={loan.currency}
+          series={[
+            { key: "principal", name: "Principal", color: "#10b981" },
+            { key: "interest", name: "Interest", color: "#f43f5e" },
+          ]}
+          legend
+        />
+        <Chart
+          kind="line"
+          className="mt-4"
+          data={sampled}
+          xKey="date"
+          height={compact ? 140 : 200}
+          currency={loan.currency}
+          series={[{ key: "balance", name: "Balance" }]}
+        />
       </TabsContent>
       <TabsContent value="table">
         <div className={`${rowsMax} overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]`}>

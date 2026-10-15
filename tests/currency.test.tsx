@@ -53,6 +53,10 @@ vi.mock("@/hooks/use-animations", () => ({
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="chart">{children}</div>,
   AreaChart: ({ children }: any) => <div>{children}</div>,
+  ComposedChart: ({ children }: any) => <div>{children}</div>,
+  CartesianGrid: () => null,
+  Bar: () => null,
+  Line: () => null,
   PieChart: ({ children }: any) => <div>{children}</div>,
   Pie: ({ data }: any) => <div>{data?.length || 0} items</div>,
   Area: () => null,
@@ -61,18 +65,6 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   Tooltip: ({ content }: any) => <div>{content}</div>,
   ReferenceLine: () => null,
-}));
-
-vi.mock("@/components/chart-breakdown-list", () => ({
-  TooltipBreakdownList: () => null,
-}));
-
-vi.mock("@/components/chart-stack-tooltip", () => ({
-  StackedAreaTooltip: () => null,
-}));
-
-vi.mock("@/components/chart-stack-legend", () => ({
-  StackedChartLegend: () => null,
 }));
 
 vi.mock("framer-motion", () => ({
@@ -117,7 +109,6 @@ import { MetricCard } from "@/components/metric-card";
 import { AvailableToSpend } from "@/app/(app)/dashboard/_components/available-to-spend";
 import { SpendingCategoryChart } from "@/app/(app)/dashboard/_components/spending-category-chart";
 import { InsightsSection } from "@/app/(app)/dashboard/_components/insights-section";
-import { ChartTooltip } from "@/app/(app)/dashboard/_components/chart-tooltip";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { Sparkline } from "@/components/sparkline";
 import { IncomeExpenseChart } from "@/app/(app)/dashboard/_components/income-expense-chart";
@@ -234,9 +225,4 @@ describe("Dashboard Currency Display", () => {
     expect(container).toBeTruthy();
   });
 
-  it("ChartTooltip renders with required currency", () => {
-    const tooltip = <ChartTooltip active payload={[]} label="Test" currency="VND" />;
-    const { container } = render(tooltip);
-    expect(container).toBeTruthy();
-  });
 });

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Bell, BellOff, Pause, Play, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -172,10 +172,7 @@ export function SubscriptionDetail({ id: idProp, onChanged }: { id: string | num
     return loading
       ? <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-16 animate-shimmer rounded-xl" />)}</div>
       : (
-        <ErrorState
-          title={error ? "Couldn't load subscription" : "Subscription not found"}
-          message={error ? "We couldn't load this subscription. Please try again." : "This subscription doesn't exist, or it isn't one of yours."}
-        />
+        <Notice variant="error" title={error ? "Couldn't load subscription" : "Subscription not found"}>{error ? "We couldn't load this subscription. Please try again." : "This subscription doesn't exist, or it isn't one of yours."}</Notice>
       );
   }
 

@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),
   useSessionUserId: () => ({ userId: "remount-user", ready: true }),
@@ -43,7 +43,6 @@ vi.mock("@/app/(app)/dashboard/_components/spending-category-chart", () => ({ Sp
 vi.mock("@/app/(app)/dashboard/_components/available-to-spend", () => ({ AvailableToSpend: () => null }));
 vi.mock("@/app/(app)/dashboard/_components/insights-section", () => ({ InsightsSection: () => null }));
 vi.mock("@/components/net-worth-history-chart", () => ({ NetWorthHistoryChart: () => null }));
-vi.mock("@/components/currency-audit-banner", () => ({ CurrencyAuditBanner: () => null }));
 vi.mock("@/components/onboarding-wizard", () => ({ OnboardingWizard: () => null }));
 vi.mock("@/components/subscriptions/due-card", () => ({ DueCard: () => null }));
 vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: () => null }));
@@ -51,7 +50,7 @@ vi.mock("@/components/portfolio/lot-inspector-dialog", () => ({ LotInspectorDial
 vi.mock("@/components/holdings/holding-edit-form", () => ({ HoldingEditForm: () => null }));
 vi.mock("@/app/(app)/portfolio/_components/allocation-charts", () => ({ AllocationCharts: () => null }));
 vi.mock("@/app/(app)/reports/_components/account-filter", () => ({ AccountFilter: () => null }));
-vi.mock("@/components/sankey-chart", () => ({ SankeyChart: () => null }));
+vi.mock("@/components/chart/sankey", () => ({ SankeyView: () => null }));
 vi.mock("@/components/reports/income-expense-trend-card", () => ({ IncomeExpenseTrendCard: () => null }));
 vi.mock("recharts", () => {
   const Leaf = () => null;

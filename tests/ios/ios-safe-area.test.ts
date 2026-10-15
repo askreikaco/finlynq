@@ -8,7 +8,7 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 const css = read("src/app/globals.css");
 const search = read("src/components/filter-sort-page.tsx");
 const newTx = read("src/components/transactions/entry/transaction-entry-screen.tsx");
-const banner = read("src/components/announcement-banner.tsx");
+const banner = read("src/components/notice/body.tsx");
 const toast = read("src/components/inbox/lens-toast.tsx");
 const bulk = read("src/components/reconcile/bulk-link-action-bar.tsx");
 const switcher = read("src/components/account-switcher.tsx");

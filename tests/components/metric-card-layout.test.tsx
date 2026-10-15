@@ -9,13 +9,19 @@ import { DollarSign } from "lucide-react";
 
 // Mock recharts to avoid canvas/DOM issues in jsdom
 vi.mock("recharts", () => ({
-  AreaChart: ({ children, ...props }: any) => (
+  ComposedChart: ({ children, ...props }: any) => (
     <div data-testid="area-chart" {...props}>
       {children}
     </div>
   ),
   Area: (props: any) => <div data-testid="area" {...props} />,
   YAxis: (props: any) => <div data-testid="yaxis" {...props} />,
+  XAxis: () => null,
+  CartesianGrid: () => null,
+  ReferenceLine: () => null,
+  Bar: () => null,
+  Line: () => null,
+  Cell: () => null,
   Tooltip: (props: any) => <div data-testid="tooltip" {...props} />,
   ResponsiveContainer: ({ children, height }: any) => (
     <div data-testid="responsive-container" style={{ height }}>

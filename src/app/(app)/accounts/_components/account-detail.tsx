@@ -11,7 +11,7 @@ import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Inbox, Info, MoreHorizonta
 import { Button } from "@/components/ui/button";
 import { Overlay } from "@/components/ui/overlay";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
@@ -327,10 +327,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
   if (!account && loadFailed) return (
     <div className="w-full space-y-6">
       {!embedded && <PageHeader title="Account" back={{ href: "/accounts", label: "Back to Accounts" }} />}
-      <ErrorState
-        title="Account not found"
-        message="This account doesn't exist, or it isn't one of yours."
-      />
+      <Notice variant="error" title="Account not found">{"This account doesn't exist, or it isn't one of yours."}</Notice>
     </div>
   );
 

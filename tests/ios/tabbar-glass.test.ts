@@ -144,7 +144,7 @@ describe("clearance above the bar", () => {
 
   it("floating UI above the bar uses the clearance var, not the old fixed heights", () => {
     for (const p of [
-      "src/components/announcement-banner.tsx",
+      "src/components/notice/body.tsx",
       "src/components/inbox/lens-toast.tsx",
       "src/components/reconcile/bulk-link-action-bar.tsx",
       "src/components/account-switcher.tsx",

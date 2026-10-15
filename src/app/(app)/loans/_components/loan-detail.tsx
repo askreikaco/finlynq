@@ -7,8 +7,8 @@
  */
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { CspSafeBar } from "@/components/csp-safe-bar";
-import { ErrorState } from "@/components/error-state";
+import { Chart } from "@/components/chart";
+import { Notice } from "@/components/notice";
 import { formatCurrency } from "@/lib/currency";
 import { isLoanCompleted } from "@/lib/loan-status";
 import { localDateISO } from "@/lib/utils/date";
@@ -63,7 +63,7 @@ export function LoanProgress({ loan }: { loan: Loan }) {
         <span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span>
         <span>{Math.round(paidPct)}%</span>
       </div>
-      <CspSafeBar percent={paidPct} className="bg-destructive/10" fillClassName="bg-pos" ariaLabel={`Loan ${loan.name} paid`} />
+      <Chart kind="progress" value={paidPct} tone="pos" ariaLabel={`Loan ${loan.name} paid`} />
     </div>
   );
 }
@@ -84,10 +84,7 @@ export function LoanDetail({ id: idProp, compact = false }: { id: string | numbe
     return loading
       ? <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-16 animate-shimmer rounded-xl" />)}</div>
       : (
-        <ErrorState
-          title={error ? "Couldn't load loan" : "Loan not found"}
-          message={error ? "We couldn't load this loan. Please try again." : "This loan doesn't exist, or it isn't one of yours."}
-        />
+        <Notice variant="error" title={error ? "Couldn't load loan" : "Loan not found"}>{error ? "We couldn't load this loan. Please try again." : "This loan doesn't exist, or it isn't one of yours."}</Notice>
       );
   }
 

@@ -2,17 +2,10 @@
 
 import { PieChart as PieChartIcon } from "lucide-react";
 import { SectionCard } from "@/components/mobile/section-card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { PieTooltip } from "./chart-tooltip";
-import { formatCurrency } from "@/lib/currency";
+import { Chart } from "@/components/chart";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { motion } from "framer-motion";
 import { useAnimations } from "@/hooks/use-animations";
-
-const CHART_COLORS = [
-  "#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b",
-  "#f43f5e", "#14b8a6", "#ec4899", "#f97316", "#84cc16",
-];
 
 const itemVariants = {
   hidden: { opacity: 1, y: 0 },
@@ -30,7 +23,6 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
   const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const animationsEnabled = useAnimations();
-  const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
@@ -38,73 +30,7 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
         {/* /api/dashboard defaults to a trailing 12-month window (plus the current
             month), not the current month alone. */}
         <p className="text-xs text-muted-foreground mb-3">Last 12 months breakdown</p>
-        <div>
-          <div className="flex items-center gap-5">
-            {/* Donut chart */}
-            <div className="w-44 h-44 shrink-0 relative">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <PieChart>
-                  <Pie
-                    data={data}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={52}
-                    outerRadius={72}
-                    strokeWidth={2}
-                    stroke="var(--color-card)"
-                    paddingAngle={2}
-                    isAnimationActive={animationsEnabled}
-                  >
-                    {data.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<PieTooltip currency={resolvedCurrency} />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xs text-muted-foreground">Total</span>
-                <span className="text-sm font-bold tabular-nums">{formatCurrency(total, resolvedCurrency)}</span>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex-1 space-y-2 min-w-0">
-              {data.slice(0, 6).map((cat, i) => {
-                const pct = total > 0 ? Math.round((cat.value / total) * 100) : 0;
-                return (
-                  <div key={cat.name} className="group/legend">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      {/* Dot color set via ref-callback (CSP, FINLYNQ-83) */}
-                      <div
-                        className="h-2 w-2 rounded-full shrink-0"
-                        ref={(el) => {
-                          if (el) el.style.background = CHART_COLORS[i];
-                        }}
-                      />
-                      <span className="truncate text-xs text-muted-foreground flex-1">{cat.name}</span>
-                      <span className="text-xs font-semibold tabular-nums">{pct}%</span>
-                    </div>
-                    {/* Mini bar — width + color set via ref-callback (CSP, FINLYNQ-83) */}
-                    <div className="ml-4 h-1 rounded-full bg-muted/40 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        ref={(el) => {
-                          if (el) {
-                            el.style.width = `${pct}%`;
-                            el.style.background = CHART_COLORS[i];
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <Chart kind="donut" data={data} currency={resolvedCurrency} size="lg" center="total" breakdownList breakdownBars breakdownLimit={6} />
       </SectionCard>
     </motion.div>
   );

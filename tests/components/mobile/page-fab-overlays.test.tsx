@@ -20,7 +20,7 @@ vi.mock("next/link", () => ({
 import { PageFab, PageFabProvider } from "@/components/mobile/page-fab";
 import { BulkLinkActionBar } from "@/components/reconcile/bulk-link-action-bar";
 import { LensToast } from "@/components/inbox/lens-toast";
-import { AnnouncementBanner } from "@/components/announcement-banner";
+import { Notice } from "@/components/notice";
 
 const fab = () => screen.queryByTestId("page-fab");
 
@@ -88,7 +88,7 @@ describe("PageFab hides while bottom overlays are shown", () => {
     expect(fab()).not.toBeNull();
   });
 
-  it("AnnouncementBanner: hidden while an item is displayed, visible when none", async () => {
+  it("Notice source=announcement: hidden while an item is displayed, visible when none", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => [
@@ -104,7 +104,7 @@ describe("PageFab hides while bottom overlays are shown", () => {
     }));
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithFab(<AnnouncementBanner />);
+    renderWithFab(<Notice source="announcement" />);
     await waitFor(() => expect(screen.getByText("Heads up")).not.toBeNull());
     // The hide effect runs after the banner paints, so wait for the FAB to drop out.
     await waitFor(() => expect(fab()).toBeNull());
@@ -114,7 +114,7 @@ describe("PageFab hides while bottom overlays are shown", () => {
       "fetch",
       vi.fn(async () => ({ ok: true, json: async () => [] })),
     );
-    renderWithFab(<AnnouncementBanner />);
+    renderWithFab(<Notice source="announcement" />);
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText("Heads up")).toBeNull());
     expect(fab()).not.toBeNull();

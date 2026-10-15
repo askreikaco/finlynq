@@ -36,11 +36,9 @@ import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { DueActions, STATUS_BADGE, SubscriptionDetail, SubscriptionStatusActions, dueLabel, isDue, relativeDue, subDetailItems } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
-import { EmptyState } from "@/components/empty-state";
+import { Notice } from "@/components/notice";
 import { Card, CardContent } from "@/components/ui/card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
@@ -79,7 +77,7 @@ const DUE_SOON_DAYS = 30;
 
 export default function SubscriptionsPage() {
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={5} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={5} />}>
       <SubscriptionsPageContent />
     </Suspense>
   );
@@ -303,14 +301,16 @@ function SubscriptionsPageContent() {
 
   const deletingSub = subs.find((s) => s.id === deleteId) ?? null;
 
-  if (loading) return <PageSkeleton variant="list" rows={5} />;
+  if (loading) return <Notice variant="skeleton" skeleton="list" rows={5} />;
   if (loadError) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load subscriptions"
-        message="We couldn't load your subscriptions. Please try again."
-        onRetry={() => { loadSubs(); loadRecurring(); }}
-      />
+        retry={() => { loadSubs(); loadRecurring(); }}
+      >
+        {"We couldn't load your subscriptions. Please try again."}
+      </Notice>
     );
   }
 
@@ -422,12 +422,14 @@ function SubscriptionsPageContent() {
                   )}
 
                   {subs.length === 0 && (
-                    <Card className="col-span-full"><CardContent className="p-0"><EmptyState
+                    <Card className="col-span-full"><CardContent className="p-0"><Notice
+                      variant="empty"
                       icon={CreditCard}
                       title="No subscriptions tracked yet"
-                      description="Add streaming, insurance, memberships and other repeating bills."
                       action={{ label: "Add subscription", onClick: openAdd }}
-                    /></CardContent></Card>
+                    >
+                      Add streaming, insurance, memberships and other repeating bills.
+                    </Notice></CardContent></Card>
                   )}
 
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}

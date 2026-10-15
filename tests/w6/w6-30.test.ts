@@ -7,8 +7,7 @@ const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|r
 const FILES: string[] = [
   "src/components/account-switcher.tsx",
   "src/components/active-currencies-section.tsx",
-  "src/components/announcement-banner.tsx",
-  "src/components/currency-audit-banner.tsx",
+  "src/components/chart/shared.tsx",
   "src/components/fx-overrides-section.tsx",
 ];
 const ARIA: [string, string, number][] = [

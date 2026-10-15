@@ -8,9 +8,7 @@ import { TW } from "@/lib/design/tokens";
 import { useRecord } from "@/lib/forms/use-record";
 import type { LoadState, LoadStatus, UseLoad } from "@/lib/forms/load-state";
 import { PageHeader, type PageHeaderProps } from "@/components/mobile/page-header";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
+import { Notice } from "@/components/notice";
 
 export interface ReportLoad<TRaw, T> {
   /** Request URL (useApi key). `null` skips the request. */
@@ -32,7 +30,7 @@ export interface ReportStates<T> {
   loadingChrome?: boolean;
   /** Shown on a load error, with a retry that re-requests the key. `chrome: false` = render bare. */
   error?: { title?: string; message?: string; chrome?: boolean };
-  /** Shown when the data is empty (`isEmpty`) or `select` found nothing. `action` is EmptyState's action object. */
+  /** Shown when the data is empty (`isEmpty`) or `select` found nothing. `action` is the Notice action object. */
   empty?: { title: string; description: string; icon?: LucideIcon; action?: ReportEmptyAction };
   /** True when the loaded data has nothing to show. */
   isEmpty?: (data: T) => boolean;
@@ -139,10 +137,10 @@ export function ReportPage<TRaw, T>({
     };
   }
 
-  const loadingNode = states?.loading ?? <PageSkeleton variant="cards" rows={3} />;
+  const loadingNode = states?.loading ?? <Notice variant="skeleton" skeleton="cards" rows={3} />;
 
   if (status === "error" && states?.error?.chrome === false) {
-    return <ErrorState title={states.error.title} message={states.error.message} onRetry={retry} />;
+    return <Notice variant="error" title={states.error.title} retry={retry}>{states.error.message}</Notice>;
   }
   if (status === "loading" && states?.loadingChrome === false) {
     return <>{loadingNode}</>;
@@ -151,18 +149,20 @@ export function ReportPage<TRaw, T>({
   let body: React.ReactNode;
   if (status === "error") {
     body = (
-      <ErrorState title={states?.error?.title} message={states?.error?.message} onRetry={retry} />
+      <Notice variant="error" title={states?.error?.title} retry={retry}>{states?.error?.message}</Notice>
     );
   } else if (status === "loading") {
     body = loadingNode;
   } else if (status === "notFound" || data === undefined || (states?.isEmpty && states.isEmpty(data))) {
     body = states?.empty ? (
-      <EmptyState
+      <Notice
+        variant="empty"
         icon={states.empty.icon ?? BarChart3}
         title={states.empty.title}
-        description={states.empty.description}
         action={states.empty.action}
-      />
+      >
+        {states.empty.description}
+      </Notice>
     ) : null;
   } else {
     body = children(data);

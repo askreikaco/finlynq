@@ -55,7 +55,7 @@ vi.mock("@/lib/client/user-storage", async (orig) => ({
 vi.mock("recharts", () => {
   const Leaf = () => null;
   const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
-  return { PieChart: Wrap, Pie: Wrap, Cell: Leaf, ResponsiveContainer: Wrap, AreaChart: Wrap, Area: Leaf, Tooltip: Leaf, YAxis: Leaf };
+  return { PieChart: Wrap, Pie: Wrap, Cell: Leaf, ResponsiveContainer: Wrap, ComposedChart: Wrap, AreaChart: Wrap, Area: Leaf, Bar: Leaf, Line: Leaf, XAxis: Leaf, CartesianGrid: Leaf, ReferenceLine: Leaf, Tooltip: Leaf, YAxis: Leaf };
 });
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
 vi.mock("@/lib/utils/date", async (orig) => ({ ...(await orig<typeof import("@/lib/utils/date")>()), localDateISO: () => "2026-10-14" }));

@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/admin/inbox",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import { MetricGrid } from "@/components/mobile/metric-grid";
 import { ListRow } from "@/components/mobile/list-row";

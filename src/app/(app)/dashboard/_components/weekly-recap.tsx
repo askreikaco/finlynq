@@ -5,12 +5,11 @@ import { SectionCard } from "@/components/mobile/section-card";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { Chart } from "@/components/chart";
 import { ArrowDownRight, ArrowUpRight, Calendar, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { WeeklyRecapData } from "./types";
-import { CspSafeBar } from "@/components/csp-safe-bar";
 import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
@@ -101,36 +100,15 @@ export function WeeklyRecap() {
           {chartData.length > 0 && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Top categories</p>
-              <ResponsiveContainer width="100%" height={110} minWidth={0}>
-                <BarChart data={chartData} layout="vertical" barSize={12}>
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={85}
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: "var(--color-muted-foreground)" }}
-                  />
-                  <Tooltip
-                    formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "10px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="amount"
-                    fill="var(--color-primary)"
-                    radius={[0, 6, 6, 0]}
-                    name="Spent"
-                    isAnimationActive={animationsEnabled}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <Chart
+                kind="bar"
+                horizontal
+                data={chartData}
+                xKey="name"
+                height={110}
+                currency={displayCurrency}
+                series={[{ key: "amount", name: "Spent", color: "var(--color-primary)" }]}
+              />
             </div>
           )}
 
@@ -158,16 +136,11 @@ export function WeeklyRecap() {
                                 {b.pctUsed}%
                               </span>
                             </div>
-                            <CspSafeBar
-                              percent={Math.min(100, b.pctUsed)}
-                              className="bg-muted/60 h-1.5"
-                              fillClassName={
-                                b.pctUsed > 100
-                                  ? "bg-destructive"
-                                  : b.pctUsed > 80
-                                    ? "bg-warning"
-                                    : "bg-primary"
-                              }
+                            <Chart
+                              kind="progress"
+                              size="sm"
+                              value={b.pctUsed}
+                              tone={b.pctUsed > 100 ? "destructive" : b.pctUsed > 80 ? "warning" : "primary"}
                             />
                           </div>
                         ))}

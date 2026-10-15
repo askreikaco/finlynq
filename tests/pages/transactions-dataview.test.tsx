@@ -42,7 +42,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => H.IDENT }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 const ACTIVE = ["USD"];
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ACTIVE }));
 vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", () => {

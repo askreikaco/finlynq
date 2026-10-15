@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useParams } from "next/navigation";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { CategoryDetail } from "../_components/category-detail";
 
 /**
@@ -12,7 +12,7 @@ import { CategoryDetail } from "../_components/category-detail";
 export default function CategoryPage() {
   const { id } = useParams<{ id: string }>();
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={4} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={4} />}>
       <CategoryDetail id={id} />
     </Suspense>
   );

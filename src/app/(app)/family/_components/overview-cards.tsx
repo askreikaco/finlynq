@@ -3,21 +3,21 @@
 /**
  * Dashboard / reports / portfolio cards as rendered on the Family overview. Cards sit in SectionCard,
  * income and expenses in MetricGrid, and the rest reuse the source page's own component (NetWorthHeroCard,
- * KeyMetrics, NetWorthAreaChart, IncomeExpenseTrendCard, PerformanceBadges/PerformanceLineChart), fed from
+ * KeyMetrics, Chart (net worth, performance), IncomeExpenseTrendCard, PerformanceBadges), fed from
  * the allow-listed overview DTO, so the figures and the look match those pages.
  */
 import { useMemo } from "react";
 import { ArrowLeftRight, TrendingDown, TrendingUp, Users } from "lucide-react";
-import { ResponsiveContainer } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { MetricGrid, SectionCard, metricGridClass } from "@/components/mobile";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { KeyMetrics, type SavingsTrend } from "@/app/(app)/dashboard/_components/key-metrics";
-import { NetWorthAreaChart } from "@/components/net-worth-history-chart";
+import { Chart } from "@/components/chart";
+import { dateTick } from "@/lib/chart-format";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
-import { PerformanceBadges, PerformanceLineChart } from "@/components/portfolio/PerformanceChart";
+import { PerformanceBadges, PERFORMANCE_SERIES } from "@/components/portfolio/PerformanceChart";
 import type { OverviewResponse, PerformanceDto } from "./types";
 import { seriesChange, type Point } from "./household";
 import { resolvePeriod, type Period as MetricPeriod } from "@/lib/metrics/period";
@@ -220,14 +220,12 @@ export function NetWorthOverTimeCard({
   currency,
   period,
   name,
-  gradientId,
   note,
 }: {
   history: Point[];
   currency: string;
   period: Period;
   name: string;
-  gradientId: string;
   note?: string;
 }) {
   const prepared = useMemo(
@@ -257,13 +255,17 @@ export function NetWorthOverTimeCard({
               end: `${formatDate(last.date)} ${formatCurrency(last.value, currency)}`,
             })}
           >
-            <NetWorthAreaChart
-              series={prepared.data}
-              domain={prepared.domain}
-              spansZero={prepared.spansZero}
+            <Chart
+              kind="area"
+              data={prepared.data}
+              xKey="date"
+              height={260}
               currency={currency}
-              period={period === "all" ? "all" : "1y"}
-              gradientId={gradientId}
+              series={[{ key: "value", name: "Net Worth" }]}
+              formatX={(d) => dateTick(d, period === "all")}
+              formatLabel={formatDate}
+              yDomain={prepared.domain}
+              zeroLine={prepared.spansZero}
             />
           </div>
         )}
@@ -279,13 +281,11 @@ export function IncomeVsExpensesCard({
   period,
   currency,
   asOf,
-  idPrefix,
 }: {
   series: FlowSeries;
   period: Period;
   currency: string;
   asOf: string;
-  idPrefix: string;
 }) {
   const { points, daily } = flowPoints(series, period);
   if (points.length === 0) {
@@ -302,7 +302,6 @@ export function IncomeVsExpensesCard({
       timeseries={points.map((p) => ({ label: flowLabel(p.key, daily), income: p.income, expenses: p.expenses }))}
       currency={currency}
       daily={daily}
-      idPrefix={idPrefix}
       description={
         fill(FAMILY_STRINGS.overview_card_ie_description, {
           granularity: daily ? "Daily" : "Monthly",
@@ -334,16 +333,7 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
           <>
             <PerformanceBadges twrr={performance.twrr} mwrr={performance.mwrr} gapsFilledDays={performance.gapsFilledDays} />
             <p className="text-xs text-muted-foreground mb-1">{`Market value (${currency})`}</p>
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PerformanceLineChart
-                  chartData={prepared.data}
-                  domain={prepared.domain}
-                  spansZero={prepared.spansZero}
-                  currency={currency}
-                />
-              </ResponsiveContainer>
-            </div>
+            <Chart kind="line" data={prepared.data} xKey="date" height={288} currency={currency} series={PERFORMANCE_SERIES} yDomain={prepared.domain} zeroLine={prepared.spansZero} />
           </>
         )}
       </div>

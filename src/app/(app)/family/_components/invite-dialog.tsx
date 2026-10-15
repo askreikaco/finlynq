@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Notice } from "@/components/notice";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
@@ -141,9 +142,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
             <div aria-live="polite">
               {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <Notice tone="danger">{error}</Notice>
               )}
             </div>
 

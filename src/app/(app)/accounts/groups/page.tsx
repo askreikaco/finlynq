@@ -11,7 +11,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/mobile";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { type AccountGroupType } from "@/lib/accounts/groups";
 import { safeReturnTo } from "@/lib/nav/return-to";
 import { ManageGroupsPanel } from "../_components/manage-groups-panel";
@@ -55,7 +55,7 @@ function AccountGroupsContent() {
     <div className={`w-full space-y-4 pb-[max(1.5rem,var(--sab,0px))]`}>
       <PageHeader title="Account groups" back={{ href: backHref, label: "Back to accounts" }} />
       {error ? (
-        <ErrorState onRetry={load} />
+        <Notice variant="error" retry={load} />
       ) : balances === null ? (
         <p className="px-1 text-sm text-muted-foreground">Loading…</p>
       ) : (

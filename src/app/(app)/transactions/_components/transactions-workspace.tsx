@@ -5,10 +5,8 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { ErrorState } from "@/components/error-state";
 import { Overlay } from "@/components/ui/overlay";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { OnboardingTips } from "@/components/onboarding-tips";
+import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine, Plus, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -37,7 +35,6 @@ import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { TransactionFormScreen } from "./transaction-form-screen";
 import { withSel } from "@/lib/list-detail/selection";
-import { EmptyState } from "@/components/empty-state";
 import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
@@ -642,7 +639,7 @@ export function TransactionsWorkspace({
     !!(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag) ||
     colFilters.length > 0 ||
     tb.list.activeCount > 0;
-  if (loadError) return <ErrorState title="Couldn't load transactions" message="We couldn't load your transactions. Please try again." onRetry={() => { void loadTxns(); }} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load transactions" retry={() => { void loadTxns(); }}>{"We couldn't load your transactions. Please try again."}</Notice>;
 
   return (
     /* FINLYNQ-52 (was issue #59 workaround): the (app)-shell width clamp
@@ -693,7 +690,7 @@ export function TransactionsWorkspace({
           />
         )}
       >
-      {showHeader && <OnboardingTips page="transactions" />}
+      {showHeader && <Notice source="tips:transactions" />}
       {/* One toolbar at every size: range, month, search, filter (PageToolbar). Split view sits at the far right. */}
       <div className="flex flex-wrap items-center gap-2">
         {!toolbarProp && (
@@ -971,12 +968,14 @@ export function TransactionsWorkspace({
             selectedId={splitView ? listDetail.selectedId === null ? null : Number(listDetail.selectedId) : null}
             transferPeers={transferPeers}
             emptyState={
-              <EmptyState
+              <Notice
+                variant="empty"
                 icon={Receipt}
                 title="No transactions yet"
-                description="Add or import your first transactions."
                 action={{ label: "Import data", href: "/import" }}
-              />
+              >
+                Add or import your first transactions.
+              </Notice>
             }
             selection={selectMode ? { selected, onToggle: toggleOne } : undefined}
           />
@@ -1059,7 +1058,7 @@ export function TransactionsWorkspace({
         }
       >
         {deleteError && (
-          <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
+          <Notice tone="danger">{deleteError}</Notice>
         )}
         {deleteBlockedError && (
           <div className="space-y-3">

@@ -33,7 +33,7 @@ describe("W7 contrast tokens in globals.css", () => {
 
 describe("W7 contrast class strings", () => {
   it("onboarding tips label uses text-primary-text", () => {
-    expect(read("src/components/onboarding-tips.tsx")).toContain(
+    expect(read("src/components/notice/body.tsx")).toContain(
       '<span className="text-sm font-medium text-primary-text">',
     );
   });

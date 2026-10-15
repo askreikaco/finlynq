@@ -9,8 +9,8 @@ import { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CspSafeBar } from "@/components/csp-safe-bar";
-import { ErrorState } from "@/components/error-state";
+import { Chart } from "@/components/chart";
+import { Notice } from "@/components/notice";
 import { formatCurrency } from "@/lib/currency";
 import { goalStatus } from "@/lib/status-colour";
 import { localDateISO } from "@/lib/utils/date";
@@ -32,8 +32,8 @@ export function progressTextClass(progress: number): string {
   return "text-pos";
 }
 
-function progressFillClass(progress: number): string {
-  return progress < 33 ? "bg-destructive" : progress <= 66 ? "bg-warning" : "bg-pos";
+function progressTone(progress: number): "destructive" | "warning" | "pos" {
+  return progress < 33 ? "destructive" : progress <= 66 ? "warning" : "pos";
 }
 
 /** Mark a goal complete / active again (PUT /api/goals). */
@@ -76,7 +76,7 @@ export function GoalDetail({ id: idProp, onChanged }: { id: string | number; onC
   if (!goal) {
     return load.status === "loading"
       ? <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-16 animate-shimmer rounded-xl" />)}</div>
-      : <ErrorState title="Goal not found" message="This goal doesn't exist, or it isn't one of yours." />;
+      : <Notice variant="error" title="Goal not found">{"This goal doesn't exist, or it isn't one of yours."}</Notice>;
   }
 
   const currency = goal.currency || displayCurrency;
@@ -106,12 +106,7 @@ export function GoalDetail({ id: idProp, onChanged }: { id: string | number; onC
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">Saved</p>
         <p className="text-xl font-semibold tabular-nums">{formatCurrency(goal.currentAmount, currency)}</p>
-        <CspSafeBar
-          percent={goal.progress}
-          className="bg-muted"
-          fillClassName={done ? "bg-pos" : progressFillClass(goal.progress)}
-          ariaLabel={`Goal ${goal.name} saved`}
-        />
+        <Chart kind="progress" value={goal.progress} tone={done ? "pos" : progressTone(goal.progress)} ariaLabel={`Goal ${goal.name} saved`} />
         <div className="flex justify-between gap-2 text-xs text-muted-foreground">
           <span>of {formatCurrency(goal.targetAmount, currency)}</span>
           <span className={`font-semibold ${progressTextClass(goal.progress)}`}>{Math.max(0, goal.progress)}%</span>

@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
-import { formatCompactNumber } from "@/lib/utils/number";
 import { exportCsv } from "@/lib/csv-export";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { todayISO } from "@/lib/utils/date";
@@ -22,20 +21,10 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod } from "@/lib/metrics/period";
 import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
 import { parseAccountIdsParam, serializeAccountIds } from "@/lib/reports/account-filter";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { SankeyChart } from "@/components/sankey-chart";
+import { Notice } from "@/components/notice";
+import { Chart } from "@/components/chart";
 import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MetricGrid, useCardLayout, usePageCustomize, CardLayoutEditor } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
@@ -319,16 +308,18 @@ export default function ReportsPage() {
   usePageCustomize(trendsData ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   if (loading && !trendsData) {
-    return <PageSkeleton variant="cards" rows={6} />;
+    return <Notice variant="skeleton" skeleton="cards" rows={6} />;
   }
 
   if (loadError && !trendsData) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load reports"
-        message="We couldn't load your reports. Please try again."
-        onRetry={trendsRes.reload}
-      />
+        retry={trendsRes.reload}
+      >
+        {"We couldn't load your reports. Please try again."}
+      </Notice>
     );
   }
 
@@ -491,35 +482,22 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trendsData.timeseries} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis
-                            dataKey="label"
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 11 }}
-                            interval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
-                            angle={period === "daily" ? -45 : 0}
-                            textAnchor={period === "daily" ? "end" : "middle"}
-                            height={period === "daily" ? 60 : 30}
-                          />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={(v) => formatCompactNumber(Number(v))}
-                            width={90}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar dataKey="income" name="Income" fill={CHART_COLORS.positive} radius={[3, 3, 0, 0]} />
-                          <Bar dataKey="expenses" name="Expenses" fill={CHART_COLORS.negative} radius={[3, 3, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={trendsData.timeseries}
+                      xKey="label"
+                      height={288}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "income", name: "Income", color: CHART_COLORS.positive },
+                        { key: "expenses", name: "Expenses", color: CHART_COLORS.negative },
+                      ]}
+                      xInterval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
+                      xAngle={period === "daily" ? -45 : undefined}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -751,7 +729,7 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <SankeyChart incomeData={sankeyIncome} expenseData={sankeyExpenses} currency={displayCurrency} />
+                <Chart kind="sankey" sankey={{ income: sankeyIncome, expenses: sankeyExpenses }} currency={displayCurrency} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -801,36 +779,21 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={yoyData.monthly} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis dataKey="month" className="text-xs fill-muted-foreground" tick={{ fontSize: 12 }} />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar
-                            dataKey="year1Expenses"
-                            name={`${yoyData.year1} Expenses`}
-                            fill={CHART_COLORS.categories[0]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                          <Bar
-                            dataKey="year2Expenses"
-                            name={`${yoyData.year2} Expenses`}
-                            fill={CHART_COLORS.categories[1]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={yoyData.monthly}
+                      xKey="month"
+                      height={320}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "year1Expenses", name: `${yoyData.year1} Expenses`, color: CHART_COLORS.categories[0] },
+                        { key: "year2Expenses", name: `${yoyData.year2} Expenses`, color: CHART_COLORS.categories[1] },
+                      ]}
+                      formatY={(v) => formatCurrency(v, displayCurrency)}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
 
@@ -839,36 +802,21 @@ export default function ReportsPage() {
                     <CardTitle icon={BarChart3} tone="emerald" infoLabel="About income comparison" info={`${yoyData.year1} vs ${yoyData.year2} income by month`}>Monthly Income Comparison</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={yoyData.monthly} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis dataKey="month" className="text-xs fill-muted-foreground" tick={{ fontSize: 12 }} />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar
-                            dataKey="year1Income"
-                            name={`${yoyData.year1} Income`}
-                            fill={CHART_COLORS.positive}
-                            radius={[3, 3, 0, 0]}
-                          />
-                          <Bar
-                            dataKey="year2Income"
-                            name={`${yoyData.year2} Income`}
-                            fill={CHART_COLORS.categories[3]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={yoyData.monthly}
+                      xKey="month"
+                      height={320}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "year1Income", name: `${yoyData.year1} Income`, color: CHART_COLORS.positive },
+                        { key: "year2Income", name: `${yoyData.year2} Income`, color: CHART_COLORS.categories[3] },
+                      ]}
+                      formatY={(v) => formatCurrency(v, displayCurrency)}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
                 </div>

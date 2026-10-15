@@ -24,7 +24,7 @@ describe("desktop rail: fixed elements clear it at regular+", () => {
   });
 
   it("announcement banner (left-4) is offset past the rail", () => {
-    expect(read("src/components/announcement-banner.tsx")).toContain(RAIL_OFFSET_PLUS_GAP);
+    expect(read("src/components/notice/body.tsx")).toContain(RAIL_OFFSET_PLUS_GAP);
   });
 
   it("account alert (left-4, z-[60]) is offset past the rail", () => {

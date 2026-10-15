@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render, fireEvent } from "@testing-library/react";
-import { EmptyState } from "@/components/empty-state";
+import { Notice } from "@/components/notice";
 import { FileText } from "lucide-react";
 
 // Mock framer-motion
@@ -22,14 +22,10 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href, ...props }, children),
 }));
 
-describe("EmptyState", () => {
+describe("Notice variant=empty", () => {
   it("renders title and description", () => {
     const { getByText } = render(
-      <EmptyState
-        icon={FileText}
-        title="No transactions"
-        description="Add your first transaction to get started"
-      />
+      <Notice variant="empty" icon={FileText} title="No transactions">Add your first transaction to get started</Notice>
     );
     expect(getByText("No transactions")).toBeTruthy();
     expect(getByText("Add your first transaction to get started")).toBeTruthy();
@@ -37,12 +33,7 @@ describe("EmptyState", () => {
 
   it("renders link action when href provided", () => {
     const { getByText } = render(
-      <EmptyState
-        icon={FileText}
-        title="No data"
-        description="Import your data"
-        action={{ label: "Import", href: "/import" }}
-      />
+      <Notice variant="empty" icon={FileText} title="No data" action={{ label: "Import", href: "/import" }}>Import your data</Notice>
     );
     const link = getByText("Import");
     expect(link.tagName).toBe("A");
@@ -52,12 +43,7 @@ describe("EmptyState", () => {
   it("renders button action when onClick provided", () => {
     const handleClick = vi.fn();
     const { getByText } = render(
-      <EmptyState
-        icon={FileText}
-        title="Empty"
-        description="Click to add"
-        action={{ label: "Add Item", onClick: handleClick }}
-      />
+      <Notice variant="empty" icon={FileText} title="Empty" action={{ label: "Add Item", onClick: handleClick }}>Click to add</Notice>
     );
     const button = getByText("Add Item");
     expect(button.tagName).toBe("BUTTON");
@@ -67,11 +53,7 @@ describe("EmptyState", () => {
 
   it("renders without action", () => {
     const { container } = render(
-      <EmptyState
-        icon={FileText}
-        title="Empty"
-        description="Nothing here"
-      />
+      <Notice variant="empty" icon={FileText} title="Empty">Nothing here</Notice>
     );
     const buttons = container.querySelectorAll("button");
     const links = container.querySelectorAll("a");
@@ -81,7 +63,7 @@ describe("EmptyState", () => {
 
   it("renders the icon", () => {
     const { container } = render(
-      <EmptyState icon={FileText} title="Test" description="Test desc" />
+      <Notice variant="empty" icon={FileText} title="Test">Test desc</Notice>
     );
     // Lucide icons render as SVG
     const svg = container.querySelector("svg");

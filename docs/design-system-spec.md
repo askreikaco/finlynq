@@ -53,7 +53,6 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | File | Export (file:line) | Purpose (from export only) |
 |---|---|---|
 | `ui/accordion.tsx` | `:97` | Accordion, AccordionItem |
-| `ui/alert.tsx` | `:60` | Alert, AlertTitle, AlertDescription |
 | `ui/badge.tsx` | `:52` | Badge, badgeVariants |
 | `ui/button.tsx` | `:61` (cva `:8-43`, sizes `:24-36`) | Button; touch sizes via `max-md:h-11` / `max-md:size-11` |
 | `ui/card.tsx` | `:95` | Card family |
@@ -69,7 +68,6 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | `ui/label.tsx` | `:20` | Label |
 | `ui/lazy-view.tsx` | `:37` | LazyView |
 | `ui/pagination.tsx` | `:33`, `:67` | Pagination, getPageNumbers |
-| `ui/progress.tsx` | `:77` | Progress |
 | `ui/select.tsx` | `:226` | Select family |
 | `ui/separator.tsx` | `:25` | Separator |
 | `ui/sheet.tsx` | `:126` | Sheet family |
@@ -111,9 +109,8 @@ Excluded from the adaptive guard scan (see 3e).
 | `.mobile-glass-bar` css | `src/app/globals.css:280-289` | Opaque `--sidebar` fallback (no backdrop-filter / color-mix / reduced transparency) |
 | SettingsShell | `src/components/settings-shell.tsx:98` | Settings layout; mobile pill row `md:hidden` (`:105-109`) |
 | AccountShell | `src/components/account-shell.tsx:32` | Account layout; renders PageHeader "Account" (`:51`) |
-| ErrorState | `src/components/error-state.tsx:12` | role=alert block with optional "Try again" (`min-h-11`, `:32`) |
-| EmptyState | `src/components/empty-state.tsx:19` | Icon, title, description, optional action |
-| PageSkeleton | `src/components/page-skeleton.tsx:10` (`variant` type `:6-7`) | Shimmer skeleton, variants table / cards / list |
+| Notice | `src/components/notice/` (`index.tsx`, `body.tsx`, `feeds.tsx`) | The one message component: `variant` inline / banner / card / empty / error / skeleton, `tone`, icon, title, `info`, action, retry, dismissible (+ `dismissKey`), `source` for self-fetching notices. Replaces EmptyState, ErrorState, PageSkeleton, Alert and the banners. |
+| Chart | `src/components/chart/` (`index.tsx`, `cartesian.tsx`, `donut.tsx`, `sankey.tsx`, `progress.tsx`) | The one chart component: `kind` sparkline / line / area / bar / stacked-bar / stacked-area / donut / sankey / progress, optional legend, tooltip, axes, grid, breakdownList, lines, zeroLine, delta. Replaces Sparkline, Progress, CspSafeBar, SankeyChart and the inline recharts blocks. |
 | PageFab | `src/components/mobile/page-fab.tsx` | Per-page FAB (mobile only, `md:hidden`); mounted once in `(app)/layout.tsx`; action from `fab-registry.ts` `FAB_ROUTES` |
 | UnlockPanel (locked DEK) | `src/components/unlock-panel.tsx` | No banner. Auto passkey once per page load (`UnlockGate` ref), then a compact password card (`fixed`, bottom clears `--mobile-bar-clearance` / `--kb-inset`, `regular:` offset past rail). Escape hides; it returns on the next 423. "Use passkey" link only with a PRF passkey. Tests: `tests/components/unlock-auto.test.tsx` |
 

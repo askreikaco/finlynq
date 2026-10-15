@@ -11,7 +11,7 @@ vi.mock("next/link", () => ({
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));
 vi.mock("@/app/(app)/reports/_components/account-filter", () => ({ AccountFilter: () => null }));
-vi.mock("@/components/sankey-chart", () => ({ SankeyChart: () => null }));
+vi.mock("@/components/chart/sankey", () => ({ SankeyView: () => null }));
 vi.mock("@/components/reports/income-expense-trend-card", () => ({ IncomeExpenseTrendCard: () => null }));
 
 import ReportsPage from "@/app/(app)/reports/page";

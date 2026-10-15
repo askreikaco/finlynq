@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  AreaChart, Area, Legend,
-} from "recharts";
+import { Chart } from "@/components/chart";
 import { Calculator, CalendarClock, Coins, Home, Landmark, Percent, PiggyBank, Receipt, SlidersHorizontal, Sparkles, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
+
+/** Y-axis tick: $12k. */
+const fmtK = (v: number) => `$${(v / 1000).toFixed(0)}k`;
 
 // --- Types ---
 type HomePurchaseResult = {
@@ -151,16 +151,20 @@ function HomePurchaseTab() {
             ]}
           />
           <SectionCard label="Mortgage balance over time" icon={TrendingDown} tone="rose">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={result.balanceOverTime}>
-                <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                <Legend />
-                <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Remaining Balance" />
-                <Line type="monotone" dataKey="equity" stroke="#10b981" strokeWidth={2} dot={false} name="Equity" />
-              </LineChart>
-            </ResponsiveContainer>
+            <Chart
+              kind="line"
+              data={result.balanceOverTime}
+              xKey="year"
+              height={280}
+              currency={displayCurrency}
+              series={[
+                { key: "balance", name: "Remaining Balance", color: "#6366f1" },
+                { key: "equity", name: "Equity", color: "#10b981" },
+              ]}
+              legend
+              formatX={(v) => `Yr ${v}`}
+              formatY={fmtK}
+            />
           </SectionCard>
           <MetricGrid
             metrics={[
@@ -242,16 +246,20 @@ function ExtraSavingsTab() {
             ]}
           />
           <SectionCard label="Growth over time" icon={TrendingUp} tone="emerald">
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={result.projections}>
-                <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                <Legend />
-                <Area type="monotone" dataKey="contributions" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Contributions" />
-                <Area type="monotone" dataKey="growth" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name="Investment Growth" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Chart
+              kind="stacked-area"
+              data={result.projections}
+              xKey="year"
+              height={300}
+              currency={displayCurrency}
+              series={[
+                { key: "contributions", name: "Contributions", color: "#6366f1", fillOpacity: 0.3 },
+                { key: "growth", name: "Investment Growth", color: "#10b981", fillOpacity: 0.3 },
+              ]}
+              legend
+              formatX={(v) => `Yr ${v}`}
+              formatY={fmtK}
+            />
           </SectionCard>
         </>
       ) : (
@@ -393,16 +401,20 @@ function DebtPayoffTab() {
           )}
 
           <SectionCard label="Total debt over time" icon={TrendingDown} tone="rose">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={chartData}>
-                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Mo ${v}`} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                <Legend />
-                <Line type="monotone" dataKey="avalanche" stroke="#6366f1" strokeWidth={2} dot={false} name="Avalanche" />
-                <Line type="monotone" dataKey="snowball" stroke="#f59e0b" strokeWidth={2} dot={false} name="Snowball" />
-              </LineChart>
-            </ResponsiveContainer>
+            <Chart
+              kind="line"
+              data={chartData}
+              xKey="month"
+              height={280}
+              currency={displayCurrency}
+              series={[
+                { key: "avalanche", name: "Avalanche", color: "#6366f1" },
+                { key: "snowball", name: "Snowball", color: "#f59e0b" },
+              ]}
+              legend
+              formatX={(v) => `Mo ${v}`}
+              formatY={fmtK}
+            />
           </SectionCard>
         </>
       ) : (

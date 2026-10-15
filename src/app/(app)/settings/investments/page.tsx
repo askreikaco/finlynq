@@ -28,9 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Overlay } from "@/components/ui/overlay";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
+import { Notice } from "@/components/notice";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -310,14 +308,14 @@ function InvestmentsSettingsPage() {
   if (loading && !securities) {
     return (
       <SectionPage {...pageProps}>
-        <PageSkeleton variant="cards" rows={4} />
+        <Notice variant="skeleton" skeleton="cards" rows={4} />
       </SectionPage>
     );
   }
   if (error && !securities) {
     return (
       <SectionPage {...pageProps}>
-        <ErrorState title="Couldn't load investments" message={error} onRetry={load} />
+        <Notice variant="error" title="Couldn't load investments" retry={load}>{error}</Notice>
       </SectionPage>
     );
   }
@@ -470,12 +468,14 @@ function InvestmentsSettingsPage() {
           })()}
 
           {allSecurities.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No securities yet"
-              description="Add one, then link it to accounts."
               action={{ label: "Add security", onClick: openAdd }}
-            />
+            >
+              Add one, then link it to accounts.
+            </Notice>
           ) : (
             <div className="space-y-3">
               <div role="group" aria-label="Sort securities" className="flex flex-wrap gap-2">
@@ -531,11 +531,13 @@ function InvestmentsSettingsPage() {
         {/* ── Tab 2: By security → accounts ─────────────────────────────── */}
         <TabsContent value="by-security" className="space-y-2">
           {allSecurities.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No securities yet"
-              description="Add one on the Securities tab."
-            />
+            >
+              Add one on the Securities tab.
+            </Notice>
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {allSecurities.map((s) => {
@@ -592,11 +594,13 @@ function InvestmentsSettingsPage() {
         {/* ── Tab 3: By account → securities ────────────────────────────── */}
         <TabsContent value="by-account" className="space-y-2">
           {byAccount.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No investment accounts"
-              description="Create an investment account first."
-            />
+            >
+              Create an investment account first.
+            </Notice>
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {byAccount.map(({ account, items }) => {

@@ -19,9 +19,8 @@ import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
 import { Sparkline } from "@/components/sparkline";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Chart } from "@/components/chart";
+import { ChartDemos, NoticeDemos } from "./chart-notice-demos";
 import { TW } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,8 +28,6 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
@@ -549,26 +546,12 @@ function GalleryContent() {
             </SectionCard>
           </Group>
 
-          <Group id="charts" title="Sparkline / Progress" file="components/sparkline.tsx · ui/progress.tsx">
-            <Item name="Sparkline (hover tooltip)">
-              <Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />
-            </Item>
-            <Item name="Sparkline tall">
-              <Sparkline data={SPARK} color="#10b981" height={80} className="h-[80px] w-full" />
-            </Item>
-            <Progress value={65}><ProgressLabel>Progress</ProgressLabel><ProgressValue /></Progress>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="h-8 flex-1 rounded-md" style={{ background: `var(--chart-${n})` }} />
-              ))}
-            </div>
+          <Group id="charts" title="Chart" file="components/chart/ (sparkline · line · area · bar · stacked-bar · stacked-area · donut · sankey · progress)" span>
+            <ChartDemos />
           </Group>
 
-          <Group id="states" title="Empty / Error / Alert" file="empty-state.tsx · error-state.tsx · ui/alert.tsx">
-            <SectionCard><EmptyState icon={Inbox} title="Nothing here" description="Add your first item." action={{ label: "Add", onClick: () => {} }} /></SectionCard>
-            <SectionCard><ErrorState onRetry={() => {}} /></SectionCard>
-            <Alert><AlertTitle>Alert</AlertTitle><AlertDescription>Default alert.</AlertDescription></Alert>
-            <Alert variant="destructive"><AlertTitle>Alert</AlertTitle><AlertDescription>Destructive alert.</AlertDescription></Alert>
+          <Group id="states" title="Notice" file="components/notice/ (inline · banner · card · empty · error · skeleton)" span>
+            <NoticeDemos />
           </Group>
 
           <Group id="controls" title="Tabs / Toggles / Accordion" file="ui/tabs.tsx · switch.tsx · accordion.tsx · separator.tsx">
@@ -596,12 +579,6 @@ function GalleryContent() {
             <SectionCard label="On a card label" info="Pass `info` to SectionCard to put it next to the label.">
               <p className="text-sm">See the SectionCard group for every placement.</p>
             </SectionCard>
-          </Group>
-
-          <Group id="skeleton" title="Skeleton / Shimmer" file="page-skeleton.tsx · .animate-shimmer">
-            <div className="h-6 w-2/3 animate-shimmer rounded-md" />
-            <div className="h-16 w-full animate-shimmer rounded-xl" />
-            <PageSkeleton variant="list" rows={2} />
           </Group>
 
           <Group id="colors" title="Color tokens" file="app/globals.css :root / .dark" span>

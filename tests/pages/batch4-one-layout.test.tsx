@@ -28,7 +28,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/dev-mode-guard", () => ({ DevModeGuard: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import { ColumnList } from "@/components/mobile/column-list";
 import { TwoPaneLayout } from "@/components/import/reconcile/two-pane-layout";

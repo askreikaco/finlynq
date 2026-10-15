@@ -6,7 +6,7 @@ import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Chart } from "@/components/chart";
 import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
 import { localDateISO } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/currency";
@@ -37,12 +37,6 @@ const GOAL_CARDS: readonly PageCard[] = [
   { id: "active", title: "Active goals" },
   { id: "completed", title: "Completed goals" },
 ];
-
-function progressColorClass(progress: number): string {
-  if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-destructive";
-  if (progress <= 66) return "[&_[data-slot=progress-indicator]]:bg-warning";
-  return "[&_[data-slot=progress-indicator]]:bg-pos";
-}
 
 function progressTone(progress: number): ProgressTone {
   return progress < 33 ? "destructive" : progress <= 66 ? "warning" : "pos";
@@ -245,7 +239,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
                 <span>{formatCurrency(detail.currentAmount, detail.currency || displayCurrency)} saved</span>
                 <span className={`font-bold ${progressTextClass(detail.progress)}`}>{detail.progress}%</span>
               </div>
-              <Progress value={detail.progress} className={`h-3 ${progressColorClass(detail.progress)}`} />
+              <Chart kind="progress" size="lg" value={detail.progress} tone={progressTone(detail.progress)} ariaLabel={`${detail.name} progress`} />
             </div>
             <Button variant="outline" render={<Link href={`/goals/${detail.id}/edit`} />} aria-label={`Edit goal ${detail.name}`}>
               <Pencil className="h-4 w-4 mr-1" /> Edit

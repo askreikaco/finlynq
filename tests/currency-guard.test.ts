@@ -32,30 +32,6 @@ const ALLOW_LIST = [
   { file: "src/app/(app)/dev/gallery/page.tsx", line: `<Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />`, count: 2, reason: "dev gallery sample specimen (dev-mode page)" },
   // OUT OF SCOPE: Mobile, portfolio, chat, and other advanced features
   {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlinePieChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlineLineChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/components/sankey-chart.tsx",
-    line: `export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: SankeyChartProps) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
     file: "src/components/fx-overrides-section.tsx",
     line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
     count: 2, // matches property-key and ternary patterns

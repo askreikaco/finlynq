@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2 } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2, Percent, Plus, TrendingDown } from "lucide-react";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
-import { CspSafeBar } from "@/components/csp-safe-bar";
 import { MetricGrid, SectionCard, ListRow, ListDetailLayout, useListDetail, TxRow } from "@/components/mobile";
+import { Notice } from "@/components/notice";
+import { Chart } from "@/components/chart";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { LoanDetail, LoanProgress, FREQUENCY_LABELS, loanDetailItems } from "./_components/loan-detail";
 import { LoanAmortization } from "./_components/loan-amortization";
@@ -211,7 +210,7 @@ function LoansPageContent() {
   ];
 
   if (loading) return <LoansSkeleton />;
-  if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={load} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load loans" retry={load}>{"We couldn't load your loans. Please try again."}</Notice>;
 
   const detailPaidOff = detailLoan ? isLoanCompleted(detailLoan) : false;
   const detailNextDue = detailLoan ? loanNextDue(detailLoan, detailPaidOff, today) : null;
@@ -252,12 +251,14 @@ function LoansPageContent() {
 
             <div className="space-y-6">
               {loans.length === 0 && (
-                <EmptyState
+                <Notice
+                  variant="empty"
                   icon={Landmark}
                   title="No loans tracked yet"
-                  description="Add a mortgage, car loan or other debt."
                   action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
-                />
+                >
+                  Add a mortgage, car loan or other debt.
+                </Notice>
               )}
           {activeList.length > 0 && (
             <SectionCard label="Active" icon={Landmark} tone="indigo" list className="[&>*]:min-w-0">

@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render, fireEvent } from "@testing-library/react";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 
 // Mock framer-motion to avoid animation issues in test
 vi.mock("framer-motion", () => ({
@@ -15,9 +15,9 @@ vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: React.PropsWithChildren) => children,
 }));
 
-describe("ErrorState", () => {
+describe("Notice variant=error", () => {
   it("renders default title and message", () => {
-    const { getByText } = render(<ErrorState />);
+    const { getByText } = render(<Notice variant="error" />);
     expect(getByText("Something went wrong")).toBeTruthy();
     expect(
       getByText("We couldn't load this data. Please try again.")
@@ -26,7 +26,7 @@ describe("ErrorState", () => {
 
   it("renders custom title and message", () => {
     const { getByText } = render(
-      <ErrorState title="Network Error" message="Check your connection" />
+      <Notice variant="error" title="Network Error">Check your connection</Notice>
     );
     expect(getByText("Network Error")).toBeTruthy();
     expect(getByText("Check your connection")).toBeTruthy();
@@ -34,38 +34,38 @@ describe("ErrorState", () => {
 
   it("shows retry button when onRetry provided", () => {
     const handleRetry = vi.fn();
-    const { getByText } = render(<ErrorState onRetry={handleRetry} />);
+    const { getByText } = render(<Notice variant="error" retry={handleRetry} />);
     const button = getByText("Try again");
     expect(button).toBeTruthy();
   });
 
   it("calls onRetry when button clicked", () => {
     const handleRetry = vi.fn();
-    const { getByText } = render(<ErrorState onRetry={handleRetry} />);
+    const { getByText } = render(<Notice variant="error" retry={handleRetry} />);
     fireEvent.click(getByText("Try again"));
     expect(handleRetry).toHaveBeenCalledOnce();
   });
 
   it("hides retry button when no onRetry", () => {
-    const { queryByText } = render(<ErrorState />);
+    const { queryByText } = render(<Notice variant="error" />);
     expect(queryByText("Try again")).toBeNull();
   });
 
   it("retry button has min-h-11 and min-w-11 classes", () => {
     const handleRetry = vi.fn();
-    const { getByText } = render(<ErrorState onRetry={handleRetry} />);
+    const { getByText } = render(<Notice variant="error" retry={handleRetry} />);
     const button = getByText("Try again");
     expect(button.className).toContain("min-h-11");
     expect(button.className).toContain("min-w-11");
   });
 
   it("has role alert on wrapper element", () => {
-    const { getByRole } = render(<ErrorState />);
+    const { getByRole } = render(<Notice variant="error" />);
     const alert = getByRole("alert");
     expect(alert).toBeTruthy();
   });
   it("icon container uses destructive tokens and no rose classes", () => {
-    const { container } = render(<ErrorState />);
+    const { container } = render(<Notice variant="error" />);
     const iconContainer = container.querySelector('[class~="bg-destructive/10"]');
     expect(iconContainer).not.toBeNull();
     expect(container.querySelector('[class~="text-destructive"]')).not.toBeNull();

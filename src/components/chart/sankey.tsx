@@ -1,17 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { formatCurrency } from "@/lib/currency";
 import { formatPercent } from "@/lib/locale";
-
-type DataItem = { name: string; value: number };
-
-type SankeyChartProps = {
-  incomeData: DataItem[];
-  expenseData: DataItem[];
-  currency?: string;
-};
+import { cn } from "@/lib/utils";
+import { useDisplayCurrency } from "@/components/currency-provider";
+import type { ChartProps } from "./types";
 
 type HoverInfo = {
   x: number;
@@ -36,14 +31,21 @@ function truncateLabel(text: string, maxLen: number): string {
   return text.length > maxLen ? text.slice(0, maxLen - 1) + "\u2026" : text;
 }
 
-export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: SankeyChartProps) {
+/** Sankey kind of Chart: income sources flowing into expense categories (+ an optional savings bar). Width follows its container. */
+export function SankeyView(p: ChartProps) {
+  const incomeData = useMemo(() => p.sankey?.income ?? [], [p.sankey?.income]);
+  const expenseData = useMemo(() => p.sankey?.expenses ?? [], [p.sankey?.expenses]);
+  const showSavings = p.sankey?.savings ?? true;
+  const showTooltip = p.tooltip ?? true;
+  const { displayCurrency } = useDisplayCurrency();
+  const currency = p.currency?.trim() ? p.currency : displayCurrency;
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800);
   const [hover, setHover] = useState<HoverInfo>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || typeof ResizeObserver === "undefined") return;
     const obs = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width;
       if (w) setWidth(w);
@@ -188,8 +190,8 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
   const maxLabelChars = Math.floor(maxLabelWidth / 7.5);
 
   return (
-    <div ref={containerRef} className="relative w-full select-none">
-      <svg width={width} height={height + (savings > 0 ? 44 : 0)} className="overflow-visible">
+    <div ref={containerRef} data-slot="chart" data-kind="sankey" className={cn("@container relative w-full min-w-0 select-none", p.className)}>
+      <svg width={width} height={height + (showSavings && savings > 0 ? 44 : 0)} className="overflow-visible">
         {/* Flows */}
         {flows.map((flow, i) => {
           const x0 = flowAreaLeft + nodeWidth;
@@ -278,7 +280,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
         </text>
 
         {/* Savings bar */}
-        {savings > 0 && (
+        {showSavings && savings > 0 && (
           <g>
             <rect
               x={flowAreaLeft}
@@ -301,7 +303,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
       </svg>
 
       {/* Tooltip \u2014 position set via ref + useEffect to keep inline `style=` off the HTML (CSP) */}
-      {hover && (
+      {showTooltip && hover && (
         <div
           ref={tooltipRef}
           className="absolute z-50 pointer-events-none px-3 py-2 bg-popover text-popover-foreground border rounded-lg shadow-lg text-xs whitespace-nowrap -translate-x-1/2 -translate-y-full"

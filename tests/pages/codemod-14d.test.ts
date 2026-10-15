@@ -39,8 +39,8 @@ const SCOPE_DIRS = [
 // Single files owned by G2-14d.
 const SCOPE_FILES = [
   "src/components/net-worth-history-chart.tsx",
-  "src/components/reporting-recompute-indicator.tsx",
-  "src/components/announcement-banner.tsx",
+  "src/components/notice/body.tsx",
+  "src/components/notice/feeds.tsx",
   "src/components/analytics-consent.tsx",
 ];
 

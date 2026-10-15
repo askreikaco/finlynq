@@ -15,7 +15,7 @@ import type { Announcement } from "@shared/types";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
@@ -57,14 +57,16 @@ export default function WhatsNewPage() {
     <SectionPage id="whats-new" title="What's new" info="Product news, updates, and announcements." width="report" center>
 
       {error && (
-        <ErrorState
+        <Notice
+          variant="error"
           title="Couldn't load announcements"
-          message="Please try again."
-          onRetry={() => {
+          retry={() => {
             setError(null);
             setReloadKey((k) => k + 1);
           }}
-        />
+        >
+          Please try again.
+        </Notice>
       )}
 
       {items && items.length === 0 && !error && (

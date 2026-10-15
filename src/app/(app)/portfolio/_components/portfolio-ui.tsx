@@ -12,52 +12,9 @@ import { METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
-import { ColorDot } from "@/components/csp-safe-bar";
 import { formatPercent } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_CONFIG, type FilterType } from "../_types";
-
-// ── Tooltip Components ──────────────────────────────────────────────
-export function GlassTooltip({
-  active, payload, label, formatter,
-}: {
-  active?: boolean;
-  payload?: { name: string; value: number; color?: string; payload?: Record<string, unknown> }[];
-  label?: string;
-  formatter?: (value: number, name: string) => string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-lg">
-      {label && <p className="text-xs text-muted-foreground mb-1">{label}</p>}
-      {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2 text-sm">
-          {entry.color && <ColorDot color={entry.color} />}
-          <span className="text-muted-foreground">{entry.name}:</span>
-          <span className="font-semibold">
-            {formatter ? formatter(entry.value, entry.name) : entry.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function ExposurePieTooltip({
-  active, payload,
-}: {
-  active?: boolean;
-  payload?: { name: string; value: number; payload: { name: string; pct: number } }[];
-}) {
-  if (!active || !payload?.length) return null;
-  const entry = payload[0];
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/95 backdrop-blur-sm px-3 py-2 shadow-lg">
-      <p className="text-xs font-semibold">{entry.payload.name}</p>
-      <p className="text-sm font-bold">{entry.payload.pct}%</p>
-    </div>
-  );
-}
 
 // ── Change Badge ────────────────────────────────────────────────────
 export function ChangeBadge({ value, className = "" }: { value: number | null; className?: string }) {

@@ -16,30 +16,19 @@
 import { TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceLine,
-  ResponsiveContainer,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate } from "@/lib/currency";
+import { formatDate } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { formatCompactNumber } from "@/lib/utils/number";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { prepareTimeSeries } from "@/lib/chart-series";
-import { TooltipBreakdownList, type BreakdownRow } from "@/components/chart-breakdown-list";
-import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
+import { Chart } from "@/components/chart";
 import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
-import { StackedChartLegend } from "@/components/chart-stack-legend";
-import type { BreakdownMember } from "@/lib/chart-breakdown";
+import type { BreakdownMember, BreakdownRow } from "@/lib/chart-breakdown";
 import { getDisplayLocale } from "@/lib/locale";
 import { useAnimations } from "@/hooks/use-animations";
 import { InfoTip } from "@/components/ui/info-tip";
+import { dateTick } from "@/lib/chart-format";
 
 export type Period = "6m" | "1y" | "all";
 
@@ -79,133 +68,8 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "all", label: "ALL" },
 ];
 
-function fmtTick(d: string, period: Period): string {
-  const dt = new Date(`${d}T00:00:00Z`);
-  return dt.toLocaleDateString(
-    getDisplayLocale(),
-    period === "all"
-      ? { month: "short", year: "2-digit", timeZone: "UTC" }
-      : { month: "short", day: "numeric", timeZone: "UTC" },
-  );
-}
-
 function fmtFullDate(d: string): string {
   return formatDate(d);
-}
-
-function HistoryTooltip({
-  active,
-  payload,
-  label,
-  currency,
-  accountScoped,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload?: NetWorthPoint }[];
-  label?: string;
-  currency: string;
-  /** True for a single-account "Balance Over Time" chart — hide the (redundant) per-account breakdown. */
-  accountScoped?: boolean;
-}) {
-  if (!active || !payload?.length) return null;
-  const breakdown = accountScoped ? undefined : payload[0].payload?.breakdown;
-  return (
-    <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm px-3.5 py-2.5 shadow-lg max-w-[260px]">
-      <p className="text-xs font-medium text-muted-foreground mb-1">
-        {label ? fmtFullDate(label) : ""}
-      </p>
-      <p className="text-sm font-semibold tabular-nums">
-        {formatCurrency(Number(payload[0].value), currency)}
-      </p>
-      <TooltipBreakdownList rows={breakdown} currency={currency} heading="By account" />
-    </div>
-  );
-}
-
-export interface NetWorthAreaChartProps {
-  /** Already prepared (prepareTimeSeries) points. */
-  series: NetWorthPoint[];
-  domain: [number, number] | ["auto", "auto"] | undefined;
-  spansZero: boolean;
-  currency: string;
-  period: Period;
-  /** True for a single-account "Balance Over Time" chart. */
-  accountScoped?: boolean;
-  /** SVG gradient id; must be unique on the page when several charts render. */
-  gradientId?: string;
-  height?: number;
-}
-
-/**
- * The single-series "Net Worth Over Time" area chart (the non-stacked view of
- * NetWorthHistoryChart). Exported so the Family overview renders the identical
- * chart from its own (already-loaded) series.
- */
-export function NetWorthAreaChart({
-  series,
-  domain,
-  spansZero,
-  currency,
-  period,
-  accountScoped = false,
-  gradientId = "nwHistGradient",
-  height = 260,
-}: NetWorthAreaChartProps) {
-  const animationsEnabled = useAnimations();
-
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={series} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
-            <stop offset="50%" stopColor="#6366f1" stopOpacity={0.08} />
-            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis
-          dataKey="date"
-          fontSize={10}
-          tickLine={false}
-          axisLine={false}
-          minTickGap={48}
-          interval="preserveStartEnd"
-          tickFormatter={(d) => fmtTick(String(d), period)}
-          tick={{ fill: "var(--color-muted-foreground)" }}
-        />
-        <YAxis
-          fontSize={10}
-          tickLine={false}
-          axisLine={false}
-          width={48}
-          tick={{ fill: "var(--color-muted-foreground)" }}
-          tickFormatter={(v) => formatCompactNumber(Number(v))}
-          domain={domain}
-        />
-        <Tooltip
-          content={
-            <HistoryTooltip currency={currency} accountScoped={accountScoped} />
-          }
-          cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
-        />
-        {/* FINLYNQ-192 — visible zero line when the (single-line) series
-            crosses zero (e.g. a liability account's Balance Over Time, or
-            a net worth that dips negative). Mirrors PerformanceChart. */}
-        {spansZero && <ReferenceLine y={0} stroke="#888" />}
-        <Area
-          type="monotone"
-          dataKey="value"
-          stroke="#6366f1"
-          strokeWidth={2.5}
-          fill={`url(#${gradientId})`}
-          name={accountScoped ? "Balance" : "Net Worth"}
-          dot={false}
-          activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
-          isAnimationActive={animationsEnabled}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
 }
 
 export interface NetWorthHistoryChartProps {
@@ -240,7 +104,6 @@ export function NetWorthHistoryChart({
   // per-account "By account" stack is hidden for single-account (balance) charts.
   const [stacked, setStacked] = useState(false);
   const stackable = accountId == null;
-  const animationsEnabled = useAnimations();
 
   // Cache-first (same SWR key as any other reader of this URL): a remounted page paints the last chart at once and
   // revalidates in the background; the Refresh button revalidates it with the rest of the page.
@@ -372,79 +235,36 @@ export function NetWorthHistoryChart({
         ) : (
           <>
             {showStacked ? (
-            <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={stackedRows} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
-                  <XAxis
-                    dataKey="date"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    minTickGap={48}
-                    interval="preserveStartEnd"
-                    tickFormatter={(d) => fmtTick(String(d), period)}
-                    tick={{ fill: "var(--color-muted-foreground)" }}
-                  />
-                  <YAxis
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    width={48}
-                    tick={{ fill: "var(--color-muted-foreground)" }}
-                    tickFormatter={(v) => formatCompactNumber(Number(v))}
-                  />
-                  <Tooltip
-                    content={
-                      // FINLYNQ-192 — unified stacked-area tooltip: one row per
-                      // account with a colored dot matching its band + legend
-                      // color, full (untruncated) names, and a date + total
-                      // heading. Replaces the recharts-default `Name : value` text.
-                      <StackedAreaTooltip
-                        currency={currency}
-                        legend={legend}
-                        formatLabel={(d) => fmtFullDate(String(d))}
-                        showTotal
-                        wide
-                      />
-                    }
-                    cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
-                  />
-                  {/* FINLYNQ-187 sign-split puts liability accounts below the
-                      axis, so a stacked "By account" view spans zero whenever
-                      liabilities exist — always draw a visible zero line. */}
-                  <ReferenceLine y={0} stroke="#888" />
-                  {legend.map((b) => (
-                    <Area
-                      key={b.key}
-                      type="monotone"
-                      dataKey={b.key}
-                      name={b.name}
-                      // FINLYNQ-187 — per-band stackId from the sign-split:
-                      // positive→above-axis, negative→below-axis. Falls back to
-                      // the single "nw" stack if sign-split were ever disabled.
-                      stackId={b.stackId ?? "nw"}
-                      stroke={b.color}
-                      strokeWidth={1}
-                      fill={b.color}
-                      // FINLYNQ-192 — raise fill opacity so adjacent bands read
-                      // as more solid/distinct (paired with the wider palette).
-                      fillOpacity={0.7}
-                      dot={false}
-                      isAnimationActive={animationsEnabled}
-                    />
-                  ))}
-                </AreaChart>
-            </ResponsiveContainer>
-            ) : (
-              <NetWorthAreaChart
-                series={series}
-                domain={domain}
-                spansZero={spansZero}
+              // FINLYNQ-187: sign-split stacks put liability accounts below the axis, so the zero line is always drawn.
+              <Chart
+                kind="stacked-area"
+                data={stackedRows}
+                series={legend}
+                xKey="date"
+                height={260}
                 currency={currency}
-                period={period}
-                accountScoped={accountId != null}
+                formatX={(d) => dateTick(d, period === "all")}
+                formatLabel={fmtFullDate}
+                tooltipTotal
+                tooltipWide
+                zeroLine
+                legend
+              />
+            ) : (
+              <Chart
+                kind="area"
+                data={series}
+                xKey="date"
+                height={260}
+                currency={currency}
+                series={[{ key: "value", name: accountId != null ? "Balance" : "Net Worth", strokeWidth: 2.5, breakdownKey: accountId == null ? "breakdown" : undefined }]}
+                breakdownHeading="By account"
+                formatX={(d) => dateTick(d, period === "all")}
+                formatLabel={fmtFullDate}
+                yDomain={domain}
+                zeroLine={spansZero}
               />
             )}
-            {showStacked && <StackedChartLegend legend={legend} />}
             {!data.hasInvestmentData && accountId == null && (
               <p className="text-xs text-muted-foreground mt-2">
                 Cash &amp; liabilities only — no investment snapshots found.

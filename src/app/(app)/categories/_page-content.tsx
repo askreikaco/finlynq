@@ -21,8 +21,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overlay } from "@/components/ui/overlay";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Chart } from "@/components/chart";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/notice";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { localDateISO } from "@/lib/utils/date";
@@ -30,7 +31,6 @@ import { parseSaveError } from "@/lib/save-error";
 import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-overview";
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
-import { useAnimations } from "@/hooks/use-animations";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
 import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Receipt, Save, Tags, Wallet } from "lucide-react";
 import type { FormCategory } from "./_components/category-budget-form";
@@ -125,7 +125,7 @@ function prevOf(trend: number[] | null): number | null {
 
 export default function CategoriesPageContent() {
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={6} />}>
       <CategoriesOverview />
     </Suspense>
   );
@@ -160,7 +160,6 @@ function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
 function CategoriesOverview() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const animationsEnabled = useAnimations();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   // Expanded top-level groups per type (several may be open). Empty = all collapsed.
   const [openByType, setOpenByType] = useState<Record<CatType, Set<string>>>(() => ({ E: new Set(), I: new Set() }));
@@ -275,9 +274,9 @@ function CategoriesOverview() {
 
   const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
 
-  if (loading) return <PageSkeleton variant="list" rows={6} />;
+  if (loading) return <Notice variant="skeleton" skeleton="list" rows={6} />;
   if (failed || shown.some((t) => !dataOf[t])) {
-    return <ErrorState title="Couldn't load" message="Try again." onRetry={overviewReload} />;
+    return <Notice variant="error" title="Couldn't load" retry={overviewReload}>Try again.</Notice>;
   }
 
   const cur = (dataOf[type] ?? dataE ?? dataI)!.displayCurrency;
@@ -403,11 +402,11 @@ function CategoriesOverview() {
       const i = sliceIndex.get(key);
       return i == null ? OTHER_COLOR : CHART_COLORS.categories[i % CHART_COLORS.categories.length];
     };
-    const pieData = [
-      ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key) })),
-      ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR }] : []),
-    ];
     const pct = (amount: number) => (data.total > 0 ? Math.round((amount / data.total) * 100) : 0);
+    const pieData = [
+      ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key), pct: pct(r.amount) })),
+      ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR, pct: pct(other), disabled: true }] : []),
+    ];
     const topRow = slices[0];
     const pieLabel = topRow
       ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
@@ -484,65 +483,35 @@ function CategoriesOverview() {
     const groupLink = (row: OverviewRow) =>
       selectableRow(groupSelId(t, row.label), row.label, (rp) => groupRow(row, rp));
 
+    const summaryHeading = (
+      <div>
+        <p className="text-sm text-muted-foreground">
+          {getMonthLabel(month)}{data.partial ? " · so far" : ""}
+        </p>
+        <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
+      </div>
+    );
     const summary = (
       <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
-        <div className="flex flex-col @md:flex-row @md:items-center gap-5">
-          {slices.length > 0 && (
-            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 @md:mx-0">
-              <PieChart width={160} height={160}>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={48}
-                  outerRadius={80}
-                  stroke="none"
-                  isAnimationActive={animationsEnabled}
-                  onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {pieData.map((d) => (
-                    <Cell key={d.key} fill={d.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </div>
-          )}
-
-          <div className="min-w-0 flex-1 space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {getMonthLabel(month)}{data.partial ? " · so far" : ""}
-              </p>
-              <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
-            </div>
-            {slices.length > 0 ? (
-              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-                {pieData.map((d) => {
-                  const isOther = d.key === OTHER_KEY;
-                  const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
-                  return (
-                    <li key={d.key}>
-                      <button
-                        type="button"
-                        disabled={isOther}
-                        onClick={() => openPieKey(d.key)}
-                        className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
-                      >
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
-                        <span className="truncate">{d.name} {share}%</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No {noun}.</p>
-            )}
+        {slices.length > 0 ? (
+          <Chart
+            kind="donut"
+            data={pieData}
+            currency={cur}
+            size="md"
+            tooltip={false}
+            ariaLabel={pieLabel}
+            breakdownList
+            breakdownValue="inline"
+            heading={summaryHeading}
+            onSliceClick={(row) => openPieKey(row.key)}
+          />
+        ) : (
+          <div className="space-y-3">
+            {summaryHeading}
+            <p className="text-sm text-muted-foreground">No {noun}.</p>
           </div>
-        </div>
+        )}
       </SectionCard>
     );
 
