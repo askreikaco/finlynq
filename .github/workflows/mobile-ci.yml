@@ -17,6 +17,13 @@ on:
       - 'shared/**'
       - '.github/workflows/mobile-ci.yml'
 
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner label (set by the watchdog/rescue jobs: PC -> GitHub-hosted -> droplet)"
+        required: false
+        default: ""
+
 concurrency:
   group: mobile-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -24,7 +31,8 @@ concurrency:
 jobs:
   test:
     name: Typecheck & Test (mobile)
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || vars.CI_RUNNER || 'reika-pc' }}
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: mobile
@@ -48,3 +56,112 @@ jobs:
 
       - name: Jest
         run: npm test -- --ci
+
+  # Tier chain (owner 2026-10-15): PC runner (reika-pc) -> GitHub-hosted (ubuntu-latest) -> droplet (reika-droplet).
+  # watchdog/rescue run on ubuntu-latest and re-dispatch this workflow ONE tier down; the droplet is the last tier.
+  # Kill switch: repo var CI_RUNNER (reika-droplet = droplet only, reika-pc = start on the PC).
+
+  # Watchdog: if test has not started within 120 s, re-dispatch mobile-ci.yml one tier down and cancel
+  # this run. A cancelled run is not "failure", so `rescue` below does not also re-dispatch it.
+  watchdog:
+    if: ${{ (inputs.runner || vars.CI_RUNNER || 'reika-pc') != 'reika-droplet' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Re-dispatch one tier down if test does not start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API: ${{ github.api_url }}/repos/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          REF: ${{ github.head_ref || github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          CUR: ${{ inputs.runner || vars.CI_RUNNER || 'reika-pc' }}
+        run: |
+          set -euo pipefail
+          api() { curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$@"; }
+          case "$CUR" in reika-pc|reika-ci) next=ubuntu-latest ;; reika-droplet) next=none ;; *) next=reika-droplet ;; esac
+          [ "$next" = none ] && { echo "$CUR is the last tier: nothing to re-dispatch"; exit 0; }
+          for _ in $(seq 1 12); do
+            status=$(api "$API/actions/runs/$RUN_ID/jobs?per_page=100" | jq -r '[.jobs[] | select(.name == "Typecheck & Test (mobile)")][0].status // "queued"')
+            if [ "$status" != "queued" ]; then
+              echo "runner $CUR picked up the job (test: $status); no re-dispatch"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "test still queued on $CUR after 120 s ($EVENT on $REF): re-dispatching mobile-ci.yml to $next"
+          body=$(jq -nc --arg ref "$REF" --arg r "$next" '{ref:$ref, inputs:{runner:$r}}')
+          if ! api -X POST -H "Content-Type: application/json" "$API/actions/workflows/mobile-ci.yml/dispatches" -d "$body" > /dev/null; then
+            echo "::error::dispatch of mobile-ci.yml on $REF to $next failed; run $RUN_ID NOT cancelled"
+            exit 1
+          fi
+          echo "Dispatched mobile-ci.yml on $REF with runner=$next"
+          api -X POST "$API/actions/runs/$RUN_ID/cancel" > /dev/null
+          echo "Cancelled run $RUN_ID ($CUR did not start test within 120 s)"
+
+  # Rescue: test ended without really testing (refused: failed with no step ever run, e.g. hosted
+  # billing limit; or runner lost / shutdown signal / Set up job failure) -> re-dispatch mobile-ci.yml one
+  # tier down. In-run on purpose: runs dispatched with GITHUB_TOKEN (every hop after the first) do not
+  # fire workflow_run, so fallback.yml cannot see them. A real test failure (steps ran, no
+  # runner-lost annotation) is never re-dispatched. Loop-safe: tiers only go down and the droplet has
+  # none; one re-dispatch per sha (a later workflow_dispatch run at the same sha blocks another);
+  # a superseded sha (branch moved on) is skipped.
+  rescue:
+    needs: test
+    if: ${{ always() && (needs.test.result == 'failure' || needs.test.result == 'cancelled') && (inputs.runner || vars.CI_RUNNER || 'reika-pc') != 'reika-droplet' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+
+    steps:
+      - name: Re-dispatch one tier down if test was refused or its runner was lost
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API: ${{ github.api_url }}/repos/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          REF: ${{ github.head_ref || github.ref_name }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUR: ${{ inputs.runner || vars.CI_RUNNER || 'reika-pc' }}
+        run: |
+          set -euo pipefail
+          api() { curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$@"; }
+          case "$CUR" in reika-pc|reika-ci) next=ubuntu-latest ;; reika-droplet) next=none ;; *) next=reika-droplet ;; esac
+          [ "$next" = none ] && { echo "$CUR is the last tier: nothing to re-dispatch"; exit 0; }
+          job=$(api "$API/actions/runs/$RUN_ID/jobs?per_page=100" | jq -c '[.jobs[] | select(.name == "Typecheck & Test (mobile)")][0] // empty')
+          if [ -z "$job" ]; then echo "no test job in run $RUN_ID: nothing to do"; exit 0; fi
+          cand=$(jq -r '.id' <<<"$job")
+          nsteps=$(jq '(.steps // []) | length' <<<"$job")
+          concl=$(jq -r '.conclusion // ""' <<<"$job")
+          refused=0
+          if [ "$concl" = failure ] && [ "$nsteps" -eq 0 ]; then refused=1; fi
+          setup_failed=$(jq -r '[(.steps // [])[] | select((.name == "Set up job" or .name == "Set up runner") and .conclusion == "failure")] | length' <<<"$job")
+          ann=$(api "$API/check-runs/$cand/annotations?per_page=50" | jq -r '[.[].message] | join("\n")') || { ann=""; echo "::warning::could not read annotations of job $cand"; }
+          lost=0
+          if grep -qE '^(The (self-hosted |hosted )?runner: .*lost communication with the server|The runner has received a shutdown signal)' <<<"$ann"; then lost=1; fi
+          # Timeout on reika-pc = runner-side hang (test ran past timeout-minutes 25): one hop down. Hosted/droplet timeouts stay red.
+          timed_out=0; if [ "$CUR" = reika-pc ] && grep -q 'exceeded the maximum execution time' <<<"$ann"; then timed_out=1; fi
+          if [ "$refused" -eq 0 ] && [ "$setup_failed" -eq 0 ] && [ "$lost" -eq 0 ] && [ "$timed_out" -eq 0 ]; then
+            echo "test job $cand on $CUR ended '$concl' for a real reason (steps ran, no refusal / runner-lost signal): not re-dispatching"
+            exit 0
+          fi
+          head_now=$(api "$API/git/ref/heads/$REF" | jq -r '.object.sha // empty') || head_now=""
+          if [ "$head_now" != "$SHA" ]; then
+            echo "branch $REF is at '${head_now:-gone}', run was for $SHA: superseded, not re-dispatching"
+            exit 0
+          fi
+          created=$(api "$API/actions/runs/$RUN_ID" | jq -r '.created_at')
+          later=$(api "$API/actions/workflows/mobile-ci.yml/runs?event=workflow_dispatch&head_sha=$SHA&per_page=50" | jq --arg c "$created" --argjson me "$RUN_ID" '[.workflow_runs[] | select(.id != $me and .created_at > $c)] | length')
+          if [ "$later" -gt 0 ]; then
+            echo "$later later workflow_dispatch run(s) of mobile-ci.yml exist for $SHA: already re-dispatched, not again"
+            exit 0
+          fi
+          body=$(jq -nc --arg ref "$REF" --arg r "$next" '{ref:$ref, inputs:{runner:$r}}')
+          api -X POST -H "Content-Type: application/json" "$API/actions/workflows/mobile-ci.yml/dispatches" -d "$body"
+          echo "test on $CUR refused/lost (job $cand, refused=$refused setup_failed=$setup_failed lost=$lost): re-dispatched mobile-ci.yml on $REF (sha $SHA) to $next"
