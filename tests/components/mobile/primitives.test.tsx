@@ -12,7 +12,7 @@ vi.mock("next/link", () => ({
 
 import { MetricCard } from "@/components/metric-card";
 import { Hash } from "lucide-react";
-import { Amount, ListRow, SectionCard, SectionLabel, PillButton } from "@/components/mobile";
+import { Amount, ListRow, SectionCard, PillButton } from "@/components/mobile";
 import { Overlay } from "@/components/ui/overlay";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
@@ -110,14 +110,7 @@ describe("ListRow", () => {
   });
 });
 
-describe("SectionCard / SectionLabel / MetricCard", () => {
-  it("SectionLabel is text-xs/700 uppercase tracking-normal muted", () => {
-    render(<SectionLabel>Cash</SectionLabel>);
-    expect(cls(screen.getByRole("heading", { name: "Cash" }))).toEqual(
-      expect.arrayContaining(["text-xs", "font-bold", "uppercase", "tracking-normal", "text-muted-foreground"]),
-    );
-  });
-
+describe("SectionCard / MetricCard", () => {
   it("SectionCard: label inside a 12px-radius card using theme tokens, body padded", () => {
     const { container } = render(<SectionCard label="Net worth">body</SectionCard>);
     expect(screen.getByRole("heading", { name: "Net worth" })).toBeTruthy();

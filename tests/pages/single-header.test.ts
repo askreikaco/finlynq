@@ -67,7 +67,6 @@ const TEMPLATE_FILES: Record<string, string> = {
   ListPage: "list-page.tsx",
   FormPage: "form-page.tsx",
   DetailPage: "detail-page.tsx",
-  HubPage: "hub-page.tsx",
   ReportPage: "report-page.tsx",
 };
 const TEMPLATE_MULTI: Record<string, { count: number; reason: string }> = {

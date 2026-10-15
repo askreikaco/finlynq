@@ -76,14 +76,13 @@ describe("one list row", () => {
   it("the hubs, menus and settings lists render ListRow, not their own row markup", () => {
     for (const f of [
       "src/components/settings-hub.tsx",
-      "src/components/templates/hub-page.tsx",
       "src/components/more-menu.tsx",
       "src/components/account-switcher.tsx",
       "src/app/(app)/portfolio/new/page.tsx",
     ]) {
       expect(read(f), f).toContain("<ListRow");
     }
-    for (const f of ["src/components/more-menu.tsx", "src/components/templates/hub-page.tsx", "src/components/account-switcher.tsx"]) {
+    for (const f of ["src/components/more-menu.tsx", "src/components/account-switcher.tsx"]) {
       expect(read(f), f).not.toMatch(/<(InsetRow|AccountCard)\b/);
     }
   });
