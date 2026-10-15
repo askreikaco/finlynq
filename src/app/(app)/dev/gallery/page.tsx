@@ -11,6 +11,7 @@ import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
 import { Amount } from "@/components/mobile/amount";
+import { InsetRow } from "@/components/mobile/inset-row";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { DetailSheet } from "@/components/mobile/detail-sheet";
@@ -182,26 +183,88 @@ function GalleryContent() {
             </Item>
           </Group>
 
-          <Group id="section-card" title="SectionCard / ListRow" file="mobile/section-card.tsx · mobile/list-row.tsx">
-            <SectionCard label="Label inside card">
-              <p className="text-sm">Body content. The label is the card&apos;s first row.</p>
-            </SectionCard>
-            <SectionCard label="With action" action={<Button size="sm" variant="ghost">Edit</Button>}>
-              <p className="text-sm">Action sits right of the label.</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-sm">No label (padded body only).</p>
-            </SectionCard>
-            <SectionCard label="ListRow (list-divider)" padded={false} className="px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-              <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
-              <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
-              <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
-            </SectionCard>
-            <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]", CARD_ROW_GRID)}>
-              {["A", "B", "C", "D"].map((n) => (
-                <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
-              ))}
-            </SectionCard>
+          <Group id="section-card" title="SectionCard / ListRow" file="mobile/section-card.tsx · mobile/list-row.tsx · mobile/inset-row.tsx" span>
+            <div className={TW.grid3}>
+              <Item name="Label inside (default)" file="labelPlacement">
+                <SectionCard label="Label inside" icon={Wallet} tone="indigo">
+                  <p className="text-sm">Body content. The label is the card&apos;s first row.</p>
+                </SectionCard>
+              </Item>
+              <Item name="Label outside" file='labelPlacement="outside"'>
+                <SectionCard label="Label outside" labelPlacement="outside">
+                  <p className="text-sm">The label sits above the card box (px-4).</p>
+                </SectionCard>
+              </Item>
+              <Item name="Outside + bare" file="bare">
+                <SectionCard label="Bare" labelPlacement="outside" bare>
+                  <p className="px-4 text-sm">No card surface; label and body sit on the page.</p>
+                </SectionCard>
+              </Item>
+              <Item name="Description inside" file="description">
+                <SectionCard label="Plan" description="Billed monthly, renews on the 1st.">
+                  <p className="text-sm">Follows the label: inside the card.</p>
+                </SectionCard>
+              </Item>
+              <Item name="Description outside" file='labelPlacement="outside"'>
+                <SectionCard label="Plan" labelPlacement="outside" description="Billed monthly, renews on the 1st.">
+                  <p className="text-sm">Follows the label: under the heading.</p>
+                </SectionCard>
+              </Item>
+              <Item name="Description placement override" file="descriptionPlacement">
+                <SectionCard label="Plan" labelPlacement="outside" description="Billed monthly." descriptionPlacement="inside">
+                  <p className="text-sm">Outside label, description inside the card.</p>
+                </SectionCard>
+              </Item>
+              <Item name="InfoTip inside" file="info">
+                <SectionCard label="Budget" info="Resets on the first of each month." icon={PiggyBank} tone="amber">
+                  <p className="text-sm">(i) next to the label.</p>
+                </SectionCard>
+              </Item>
+              <Item name="InfoTip outside" file="info">
+                <SectionCard label="Budget" labelPlacement="outside" info="Resets on the first of each month.">
+                  <p className="text-sm">(i) next to the outside label.</p>
+                </SectionCard>
+              </Item>
+              <Item name="Description + InfoTip + action" file="description, info, action">
+                <SectionCard label="Everything" info="Tap the icon for help." description="One line under the label." action={<Button size="sm" variant="ghost">Edit</Button>}>
+                  <p className="text-sm">All options together.</p>
+                </SectionCard>
+              </Item>
+              <Item name="No label" file="plain card">
+                <SectionCard>
+                  <p className="text-sm">No label (padded body only).</p>
+                </SectionCard>
+              </Item>
+            </div>
+            <Item name="list, label inside (ListRow)" file="list">
+              <SectionCard label="Accounts" list className="px-4" icon={Wallet} tone="indigo">
+                <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
+                <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
+                <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
+              </SectionCard>
+            </Item>
+            <div className={TW.grid3}>
+              <Item name="list, label outside, edge-to-edge InsetRow" file="list + InsetRow">
+                <SectionCard label="Explore" labelPlacement="outside" list>
+                  <InsetRow href="/reports" label="Reports" icon={TrendingUp} />
+                  <InsetRow href="/goals" label="Goals" icon={PiggyBank} badge={2} />
+                  <InsetRow href="/settings" label="Settings" icon={Inbox} value="On" />
+                </SectionCard>
+              </Item>
+              <Item name="list, label inside, InsetRow" file="list + InsetRow">
+                <SectionCard label="Tools" list description="Descriptions fit lists too." icon={Plus} tone="amber">
+                  <InsetRow href="/import" label="Import" icon={Inbox} />
+                  <InsetRow destructive icon={Wallet} label="Log out" onClick={() => {}} />
+                </SectionCard>
+              </Item>
+            </div>
+            <Item name="CARD_ROW_GRID" file="regular: 2 columns, wide: 3">
+              <SectionCard label="CARD_ROW_GRID" list className={cn("px-4", CARD_ROW_GRID)}>
+                {["A", "B", "C", "D"].map((n) => (
+                  <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
+                ))}
+              </SectionCard>
+            </Item>
             <Item name="Amount / PillButton">
               <div className="flex flex-wrap items-center gap-3">
                 <Amount value={1234.56} />
@@ -385,11 +448,12 @@ function GalleryContent() {
           </Group>
 
           <Group id="info-tip" title="InfoTip" file="ui/info-tip.tsx">
-            <SectionCard>
-              <div className="flex items-center gap-1 p-4 text-sm font-semibold">
-                Label
-                <InfoTip label="About label" text="Tap, click or focus the icon to read the help text." />
-              </div>
+            <div className="flex items-center gap-1 text-sm font-semibold">
+              Standalone
+              <InfoTip label="About standalone" text="Tap, click or focus the icon to read the help text." />
+            </div>
+            <SectionCard label="On a card label" info="Pass `info` to SectionCard to put it next to the label.">
+              <p className="text-sm">See the SectionCard group for every placement.</p>
             </SectionCard>
           </Group>
 

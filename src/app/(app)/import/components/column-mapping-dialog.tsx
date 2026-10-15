@@ -556,7 +556,7 @@ export function ColumnMappingDialog({
             <div className="space-y-1.5">
               <Label className="text-sm">Sample (first {mappedSample.length} rows)</Label>
               <div className="max-h-64 overflow-y-auto">
-                <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                <SectionCard list className="px-3">
                   {mappedSample.map((r, i) => {
                     const invParts = isInvestment ? [r.ticker, r.security, r.quantity ? `qty ${r.quantity}` : null] : [];
                     const subtitle = [r.date || "—", r.account || null, r.note || null, ...invParts].filter(Boolean).join(" · ");

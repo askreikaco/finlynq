@@ -14,7 +14,7 @@ const comboSrc = read("src/components/ui/combobox.tsx");
 const workspace = read("src/app/(app)/transactions/_components/transactions-workspace.tsx");
 const accountPage = read("src/app/(app)/accounts/_components/account-detail.tsx");
 const moreMenu = read("src/components/more-menu.tsx");
-const insetGroup = read("src/components/mobile/inset-group.tsx");
+const insetRow = read("src/components/mobile/inset-row.tsx");
 const portfolio = read("src/app/(app)/portfolio/page.tsx");
 const family = read("src/app/(app)/family/_components/overview-tab.tsx");
 const shell = read("src/components/account-shell.tsx");
@@ -85,11 +85,11 @@ describe("page-level targets", () => {
     expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="pointer-coarse:w-11 pointer-coarse:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
     expect(accountPage).not.toContain("max-md:w-11");
   });
-  it("more theme picker (ThemePicker in mobile/inset-group): each thumbnail is a 44px touch target with a pressed state", () => {
+  it("more theme picker (ThemePicker in mobile/inset-row): each thumbnail is a 44px touch target with a pressed state", () => {
     expect(moreMenu).toContain("<ThemePicker");
-    expect(insetGroup).toContain("role=\"radiogroup\"");
-    expect(insetGroup).toContain("min-h-11");
-    expect(insetGroup).toContain("active:opacity-80");
+    expect(insetRow).toContain("role=\"radiogroup\"");
+    expect(insetRow).toContain("min-h-11");
+    expect(insetRow).toContain("active:opacity-80");
   });
   it("portfolio 'Add Account' link has min-h-11", () => {
     expect(portfolio).toContain("inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2");

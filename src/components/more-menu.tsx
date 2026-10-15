@@ -2,7 +2,7 @@
 
 /**
  * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
- * inset groups (src/components/mobile/inset-group.tsx), one column on phone, a grid of group cards (2 cols at regular) from regular up; at wide it is column 1 of the cascading columns (src/components/mobile/column-nav.tsx): one single-column list, current row marked. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
+ * inset groups (SectionCard `list` + src/components/mobile/inset-row.tsx), one column on phone, a grid of group cards (2 cols at regular) from regular up; at wide it is column 1 of the cascading columns (src/components/mobile/column-nav.tsx): one single-column list, current row marked. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
  */
 
 import { useEffect, useRef, useState, useMemo, memo } from "react";
@@ -16,7 +16,9 @@ import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
-import { InsetGroup, InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
+import { InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-row";
+import { SectionCard } from "@/components/mobile/section-card";
+import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
@@ -222,42 +224,41 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
 
       {/* Card groups: one column on phone, 2 at regular, 3 at wide; each group is one grid cell (never split). */}
       <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-1" data-testid="more-grid">
-      <section data-testid="more-account" className="space-y-2">
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
-        <InsetGroup header="Account" inset="avatar" data-testid="more-account-card">
+        <SectionCard list label="Account" {...groupLabelIcon("Account")} data-testid="more-account">
           <AccountSwitcher variant="list" />
-        </InsetGroup>
-      </section>
+        </SectionCard>
 
         {groups.map((g) => (
-          <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-            <InsetGroup header={g.header} headerPlacement={g.id === "explore" ? "outside" : "inside"}>
-              {g.rows.map((r) => (
-                <InsetRow
-                  key={r.id}
-                  href={r.href}
-                  label={r.label}
-                  icon={r.icon}
-                  badge={badges[r.href] ?? 0}
-                  current={isCurrentRoute(columnCurrent, r.href)}
-                  data-testid="more-row"
-                />
-              ))}
-            </InsetGroup>
-          </section>
+          <SectionCard
+            key={g.id}
+            list
+            label={g.header}
+            {...groupLabelIcon(g.header)}
+            labelPlacement={g.id === "explore" ? "outside" : "inside"}
+            data-testid={`more-group-${g.id}`}
+          >
+            {g.rows.map((r) => (
+              <InsetRow
+                key={r.id}
+                href={r.href}
+                label={r.label}
+                icon={r.icon}
+                badge={badges[r.href] ?? 0}
+                current={isCurrentRoute(columnCurrent, r.href)}
+                data-testid="more-row"
+              />
+            ))}
+          </SectionCard>
         ))}
 
-        <section data-testid="more-group-appearance" className="space-y-2">
-          <InsetGroup header="Appearance" data-testid="more-appearance">
-            <ThemePicker value={current} onChange={(v) => setTheme(v)} />
-          </InsetGroup>
-        </section>
+        <SectionCard list label="Appearance" {...groupLabelIcon("Appearance")} data-testid="more-group-appearance">
+          <ThemePicker value={current} onChange={(v) => setTheme(v)} />
+        </SectionCard>
 
-      <section data-testid="more-group-session" className="space-y-2">
-        <InsetGroup>
+        <SectionCard list data-testid="more-group-session">
           <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
-        </InsetGroup>
-      </section>
+        </SectionCard>
       </div>
     </div>
   );

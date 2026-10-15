@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Lock, UserCog, Check } from "lucide-react";
-import { AccountCard, InsetRow } from "@/components/mobile/inset-group";
+import { AccountCard, InsetRow } from "@/components/mobile/inset-row";
 import { cn } from "@/lib/utils";
 import { ACCOUNT_PAGE_HREF, MANAGE_ACCOUNTS_HREF } from "@/lib/client/account-page";
 import {

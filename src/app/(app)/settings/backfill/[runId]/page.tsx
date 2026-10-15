@@ -681,7 +681,7 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" list className="px-3">
         {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
@@ -783,7 +783,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" list className="px-3">
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -798,7 +798,7 @@ function ReplacementPreviewTable({
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3" cardClassName="border-warning/40 bg-warning/5">
+          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" list className="px-3" cardClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -1888,7 +1888,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" list className="px-3">
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}

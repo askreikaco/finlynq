@@ -41,7 +41,7 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
   const [open, setOpen] = useState<{ stock: EtfStock; index: number } | null>(null);
   return (
     <>
-      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard list className="px-3">
         {rows.map((s, i) => (
           <ListRow
             key={s.ticker}
@@ -292,7 +292,7 @@ export function EtfXrayCard({
         {/* ── Per ETF Tab ── */}
         {etfXrayTab === "etfs" && (
           <div className="space-y-3">
-            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard list className="px-3">
               {etfXray.etfs.map((etf) => (
                 <ListRow
                   key={`${etf.symbol}-${etf.account}`}

@@ -180,7 +180,7 @@ export function OfxConfirmDialog({
               </span>
             </div>
             <div className="max-h-[42dvh] overflow-auto">
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard list className="px-3">
                 {previewRows.slice(0, 50).map((r) => (
                   <ListRow
                     key={r.fitId}

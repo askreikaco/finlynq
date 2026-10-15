@@ -127,7 +127,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
 
         {result && (
           <div className="space-y-3">
-            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard list className="px-3">
               {result.rows.map((row) => (
                 <div key={row.finlynqAccountId} className="py-1">
                   <ListRow

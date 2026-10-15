@@ -3,7 +3,7 @@
 /**
  * HubPage template (C-09): an iOS grouped-list hub. Owns the root testid (`<id>-root`), the
  * global PageHeader, the width token (TW.section), the bottom pad (TW.formPad) and the
- * Suspense boundary. Rows render with InsetGroup and InsetRow from mobile/inset-group.tsx.
+ * Suspense boundary. Each group is a SectionCard `list`; rows are InsetRow (mobile/inset-row.tsx) or the card-look rows below.
  *
  * Groups come from one of two sources (exactly one):
  *  - `groups`: an explicit list.
@@ -11,8 +11,8 @@
  *    Unknown paths and groups left with no rows are dropped.
  *
  * Variants (all optional; omitted = the default look above, unchanged):
- *  - look="card": plain rounded card group with divider rows (settings hub, portfolio/new).
- *  - sectionLabel, columns, width, padBottom, back, useRedirect, outerSuspense: layout and chrome.
+ *  - look="card": plain divider rows (settings hub, portfolio/new) instead of InsetRow.
+ *  - columns, width, padBottom, back, useRedirect, outerSuspense: layout and chrome.
  *  - iconSize, chevronSize, activeBg, rowSlot, iconSlot, chevronSlot: card look only.
  *    groupSlot and `description` on a row apply in both looks.
  */
@@ -24,8 +24,8 @@ import { getEntriesBySurface, type Surface } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
-import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
-import { CardLabel } from "@/components/mobile/card-label";
+import { InsetRow } from "@/components/mobile/inset-row";
+import { SectionCard } from "@/components/mobile/section-card";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 
 export interface HubRow {
@@ -76,10 +76,8 @@ export function groupsFromSurface(surface: Surface, order: HubGroupOrder[]): Hub
 
 /** Optional look and layout variants. Every field is optional; omitted = today's behaviour. */
 export interface HubPageVariants {
-  /** "inset" (default): InsetGroup rows. "card": rounded card group with divider rows. */
+  /** "inset" (default): InsetRow rows. "card": plain divider rows. */
   look?: "inset" | "card";
-  /** Group heading style. "inset" (default) = InsetSectionHeader; "caps" = small uppercase h2; "section-label" = SectionLabel. */
-  sectionLabel?: "inset" | "caps" | "section-label";
   /** 1 (default) = groups stacked. "wide-2" = two columns from the `wide` breakpoint. */
   columns?: 1 | "wide-2";
   /** "section" (default) = TW.section. "form-report" = max-w-form, widening to max-w-report from `wide`. */
@@ -128,16 +126,6 @@ export type HubPageProps = HubPageBase &
 
 function useNoRedirect(): boolean {
   return false;
-}
-
-/** Group title: always rendered INSIDE the group card as its first row (shared CardLabel: icon tile + uppercase label). */
-function renderSectionLabel(title: string, style: NonNullable<HubPageVariants["sectionLabel"]>) {
-  const { icon, tone } = groupLabelIcon(title);
-  return (
-    <CardLabel as="h2" slot={style === "caps" ? "hub-section-label" : "section-label"} icon={icon} tone={tone}>
-      {title}
-    </CardLabel>
-  );
 }
 
 interface CardRowOptions {
@@ -247,7 +235,6 @@ function HubPageBody(props: HubPageProps) {
     empty,
     className,
     look = "inset",
-    sectionLabel = "inset",
     padBottom = true,
     back,
     iconSize = "4",
@@ -271,41 +258,35 @@ function HubPageBody(props: HubPageProps) {
       key={group.id}
       data-slot={groupSlot ?? "hub-group"}
       data-testid={`${id}-group-${group.id}`}
-      className="space-y-2"
     >
-      {look === "card" ? (
-        <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-group bg-card">
-          {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
-          {group.rows.map((row) => renderCardRow(row, cardOpts))}
-        </div>
-      ) : (
-        <InsetGroup aria-label={group.title} header={group.title}>
-          {group.rows.map((row) => (
-            <InsetRow
-              key={row.id}
-              label={
-                row.description !== undefined ? (
-                  <>
-                    <span className="block truncate">{row.label}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{row.description}</span>
-                  </>
-                ) : (
-                  row.label
-                )
-              }
-              icon={row.icon}
-              value={row.value}
-              badge={row.badge}
-              href={row.href}
-              onClick={row.onClick}
-              accent={row.accent}
-              destructive={row.destructive}
-              disabled={row.disabled}
-              data-testid={`${id}-row-${row.id}`}
-            />
-          ))}
-        </InsetGroup>
-      )}
+      <SectionCard list label={group.title} {...(group.title ? groupLabelIcon(group.title) : {})}>
+        {look === "card"
+          ? group.rows.map((row) => renderCardRow(row, cardOpts))
+          : group.rows.map((row) => (
+              <InsetRow
+                key={row.id}
+                label={
+                  row.description !== undefined ? (
+                    <>
+                      <span className="block truncate">{row.label}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{row.description}</span>
+                    </>
+                  ) : (
+                    row.label
+                  )
+                }
+                icon={row.icon}
+                value={row.value}
+                badge={row.badge}
+                href={row.href}
+                onClick={row.onClick}
+                accent={row.accent}
+                destructive={row.destructive}
+                disabled={row.disabled}
+                data-testid={`${id}-row-${row.id}`}
+              />
+            ))}
+      </SectionCard>
     </section>
   ));
 
