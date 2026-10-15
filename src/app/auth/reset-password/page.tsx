@@ -104,10 +104,8 @@ function ResetPasswordForm() {
       </div>
 
       <div>
-        <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
-          New password
-        </label>
         <Field
+          label="New password"
           id="new-password"
           type="password"
           value={newPassword}
@@ -121,10 +119,8 @@ function ResetPasswordForm() {
       </div>
 
       <div>
-        <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
-          Confirm new password
-        </label>
         <Field
+          label="Confirm new password"
           id="confirm-password"
           type="password"
           value={confirmPassword}
@@ -137,10 +133,8 @@ function ResetPasswordForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmation" className="mb-1.5 block text-sm font-medium max-regular:mb-1 text-foreground">
-          Type <span className="font-mono">WIPE</span> to confirm
-        </label>
         <Field
+          label={<>Type <span className="font-mono">WIPE</span> to confirm</>}
           id="confirmation"
           value={confirmation}
           onChange={(e) => setConfirmation(e.target.value)}

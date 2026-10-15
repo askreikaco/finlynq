@@ -371,8 +371,8 @@ export default function AdminIntegrationsPage() {
                 const saved = src === "db" || src === "env";
                 return (
                   <div key={field} className="space-y-2">
-                    <Label htmlFor={`email-${field}`}>{label}</Label>
                     <Field
+                      label={label}
                       id={`email-${field}`}
                       type="password"
                       autoComplete="new-password"
@@ -413,10 +413,8 @@ export default function AdminIntegrationsPage() {
                   <p className="text-sm">You will be asked to confirm with your passkey.</p>
                 ) : (
                   <>
-                    <Label htmlFor="email-step-up">
-                      {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
-                    </Label>
                     <Field
+                      label={status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
                       id="email-step-up"
                       type={status.stepUp === "password" ? "password" : "text"}
                       inputMode={status.stepUp === "password" ? undefined : "numeric"}

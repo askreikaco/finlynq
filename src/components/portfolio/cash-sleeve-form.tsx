@@ -59,10 +59,8 @@ export function CashSleeveForm({
       }}
     >
       <div className="rounded-xl border bg-card px-4 py-2">
-        <label htmlFor="cash-currency" className="block pb-1 text-sm text-muted-foreground">
-          Currency
-        </label>
         <Field
+          label="Currency"
           id="cash-currency"
           value={currency}
           onChange={(e) => setCurrency(e.target.value.toUpperCase())}

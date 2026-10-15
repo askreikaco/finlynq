@@ -95,8 +95,8 @@ export function ColumnFilterPopover({
       <DropdownMenuContent align="end" className="min-w-64 p-3 space-y-2">
         {filterType === "date" && (
           <>
-            <Label className="text-xs">From</Label>
             <Field
+              label="From"
               control="date"
               value={(draft as { from?: string } | null)?.from ?? ""}
               onChange={(e) => {
@@ -107,8 +107,8 @@ export function ColumnFilterPopover({
               onKeyDown={swallowMenuKeys}
               compact
             />
-            <Label className="text-xs">To</Label>
             <Field
+              label="To"
               control="date"
               value={(draft as { to?: string } | null)?.to ?? ""}
               onChange={(e) => {
@@ -123,8 +123,8 @@ export function ColumnFilterPopover({
         )}
         {filterType === "text" && (
           <>
-            <Label className="text-xs">Contains</Label>
             <Field
+              label="Contains"
               placeholder="Substring…"
               value={(draft as { value?: string } | null)?.value ?? ""}
               onChange={(e) =>
@@ -137,8 +137,8 @@ export function ColumnFilterPopover({
         )}
         {filterType === "numeric" && (
           <>
-            <Label className="text-xs">Operator</Label>
             <Field
+              label="Operator"
               control="select"
               value={(draft as { op?: string } | null)?.op ?? "eq"}
               onValueChange={(v) => {
@@ -157,8 +157,8 @@ export function ColumnFilterPopover({
                 { value: "between", label: "Between" },
               ]}
             />
-            <Label className="text-xs">Value</Label>
             <Field
+              label="Value"
               control="amount"
               value={(draft as { value?: number } | null)?.value ?? ""}
               onValueChange={(nv) => {
@@ -180,8 +180,8 @@ export function ColumnFilterPopover({
             />
             {draft?.type === "numeric" && draft.op === "between" && (
               <>
-                <Label className="text-xs">Upper bound</Label>
                 <Field
+                  label="Upper bound"
                   control="amount"
                   value={draft.value2 ?? ""}
                   onValueChange={(nv) => {

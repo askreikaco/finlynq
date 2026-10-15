@@ -196,10 +196,8 @@ export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
             aria-hidden="true"
           />
         )}
-        <label htmlFor="unlock-password" className="text-sm font-medium">
-          Password
-        </label>
         <Field
+          label="Password"
           id="unlock-password"
           name="password"
           type="password"

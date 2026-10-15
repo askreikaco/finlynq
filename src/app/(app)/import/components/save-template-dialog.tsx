@@ -8,12 +8,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 import { autoDetectColumnMapping } from "@/lib/import-templates";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
 import { DialogHeading } from "@/components/ui/dialog-heading";
-import { Field } from "@/components/ui/field";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -161,33 +160,25 @@ export function SaveTemplateDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-0.5">
-              <Label className="text-sm font-medium">Column Mapping</Label>
-              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
-            </div>
-            <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
-              {MAPPING_FIELDS.map((field) => (
-                <div key={field} className="flex items-center gap-2 px-2 py-1.5">
-                  <span className="w-row-label text-xs text-muted-foreground shrink-0">
-                    {FIELD_LABELS[field]}
-                  </span>
-                  <Field
-                    control="select"
-                    value={mapping[field] ?? "__none__"}
-                    onValueChange={(v) => setMappingField(field, (!v || v === "__none__") ? "" : v)}
-                    placeholder="—"
-                    compact
-                    className="flex-1"
-                    options={[
-                      { value: "__none__", label: "— not mapped —" },
-                      ...csvHeaders.map((h) => ({ value: h, label: h })),
-                    ]}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <FieldGroup label="Column mapping" info="Map CSV columns to transaction fields.">
+            {MAPPING_FIELDS.map((field) => (
+              <Field
+                key={field}
+                label={FIELD_LABELS[field]}
+                control="select"
+                value={mapping[field] ?? "__none__"}
+                onValueChange={(v) =>
+                  setMappingField(field, (!v || v === "__none__") ? "" : v)
+                }
+                placeholder="—"
+                compact
+                options={[
+                  { value: "__none__", label: "— not mapped —" },
+                  ...csvHeaders.map((h) => ({ value: h, label: h })),
+                ]}
+              />
+            ))}
+          </FieldGroup>
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
@@ -217,22 +208,19 @@ export function SaveTemplateDialog({
                   value={skipFooterRows}
                   onChange={(e) => setSkipFooterRows(e.target.value)}
                 />
-                <div className="space-y-1">
-                  <Label className="text-xs">Date format</Label>
-                  <Field
-                    control="select"
-                    value={dateFormatOverride}
-                    onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
-                    compact
-                    className="w-full"
-                    options={[
-                      { value: "auto", label: "Auto-detect" },
-                      { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
-                      { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
-                      { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
-                    ]}
-                  />
-                </div>
+                <Field
+                  label="Date format"
+                  control="select"
+                  value={dateFormatOverride}
+                  onValueChange={(v) => setDateFormatOverride(v as DateFormatUi)}
+                  compact
+                  options={[
+                    { value: "auto", label: "Auto-detect" },
+                    { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                    { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                    { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+                  ]}
+                />
                 <Field
                   label="Default currency (rows missing one)"
                   control="select"
@@ -247,21 +235,13 @@ export function SaveTemplateDialog({
                   ]}
                 />
               </div>
-              <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
-                <span className="flex-1">
-                  <span className="block text-sm font-medium">Flip sign of amounts</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Multiply every amount by -1 on import. Use when this source
-                    exports expenses as positive (or income as negative).
-                  </span>
-                </span>
-                <Field
-                  control="switch"
-                  checked={mapping.flipSign === true}
-                  onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
-                  className="shrink-0"
-                />
-              </label>
+              <Field
+                label="Flip sign of amounts"
+                control="switch"
+                info="Multiply every amount by -1 on import. Use when this source exports expenses as positive (or income as negative)."
+                checked={mapping.flipSign === true}
+                onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
+              />
             </div>
           </details>
 

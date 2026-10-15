@@ -1016,8 +1016,8 @@ function VarBindingRow({
   const from = value?.from ?? "";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Label className="w-28 text-xs text-muted-foreground">{label}{optional ? " (optional)" : ""}</Label>
       <Field
+        label={<>{label}{optional ? " (optional)" : ""}</>}
         control="select"
         value={from || "__unset"}
         onValueChange={(v) => {

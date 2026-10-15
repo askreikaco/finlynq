@@ -428,11 +428,10 @@ export function StagedRowEditor({
       />
 
       <div className="space-y-1">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-          Note <Spinner shown={savingField === "note"} />
-          <InfoTip label="About note" text="Free-form notes (max 2000 characters)." />
-        </Label>
         <Field
+          label={<>Note <Spinner shown={savingField === "note"} /></>}
+          info="Free-form notes (max 2000 characters)."
+          infoLabel="About note"
           control="textarea"
           value={local.note ?? ""}
           onChange={(e) => setLocal({ ...local, note: e.target.value })}

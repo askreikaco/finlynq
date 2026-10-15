@@ -403,10 +403,8 @@ export function PasskeysCard() {
 
                   {enabling?.id === p.id && enabling.needsPassword && (
                     <div className="mt-3 space-y-2" role="group" aria-label="Enable password-free unlock">
-                      <label htmlFor={`prf-pw-${p.id}`} className="text-sm font-medium">
-                        {STRINGS.passwordLabel}
-                      </label>
                       <Field
+                        label={STRINGS.passwordLabel}
                         id={`prf-pw-${p.id}`}
                         type="password"
                         autoComplete="current-password"
@@ -428,10 +426,8 @@ export function PasskeysCard() {
                     <div className="mt-3 space-y-2" role="group" aria-label="Remove passkey">
                       <p className="text-sm font-medium text-foreground">{STRINGS.removeConfirmTitle}</p>
                       <p className="text-xs text-muted-foreground" data-keep="warning">{STRINGS.removeConfirmBody}</p>
-                      <label htmlFor={`rm-pw-${p.id}`} className="text-sm font-medium">
-                        {STRINGS.passwordLabel}
-                      </label>
                       <Field
+                        label={STRINGS.passwordLabel}
                         id={`rm-pw-${p.id}`}
                         type="password"
                         autoComplete="current-password"
@@ -443,10 +439,8 @@ export function PasskeysCard() {
                           <p className="text-xs text-warning">{STRINGS.secondFactorNote}</p>
                           {removing.totpOffered && (
                             <>
-                              <label htmlFor={`rm-totp-${p.id}`} className="text-sm font-medium">
-                                {STRINGS.totpLabel}
-                              </label>
                               <Field
+                                label={STRINGS.totpLabel}
                                 id={`rm-totp-${p.id}`}
                                 inputMode="numeric"
                                 maxLength={6}

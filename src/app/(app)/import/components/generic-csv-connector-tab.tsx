@@ -404,11 +404,8 @@ export function GenericCsvConnectorTab() {
                 <div className="grid gap-2 regular:grid-cols-2">
                   {FIELDS.map((f) => (
                     <div key={f.key} className="flex items-center gap-2">
-                      <label className="w-40 shrink-0 text-xs text-muted-foreground">
-                        {f.label}
-                        {f.required && <span className="text-destructive"> *</span>}
-                      </label>
                       <Field
+                        label={<>{f.label} {f.required && <span className="text-destructive"> *</span>}</>}
                         control="select"
                         value={mapping[f.key] ?? NONE}
                         onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}

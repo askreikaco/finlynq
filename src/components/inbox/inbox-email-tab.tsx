@@ -536,8 +536,8 @@ export function InboxEmailTab() {
                             className="w-[110px]"
                           />
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Date</label>
                             <Field
+                              label="Date"
                               control="date"
                               value={editDate}
                               onChange={(e) => setEditDate(e.target.value)}
@@ -546,8 +546,8 @@ export function InboxEmailTab() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Payee</label>
                             <Field
+                              label="Payee"
                               value={editPayee}
                               onChange={(e) => setEditPayee(e.target.value)}
                               compact

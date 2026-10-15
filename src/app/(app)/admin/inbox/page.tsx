@@ -379,10 +379,8 @@ export default function AdminInboxPage() {
               {/* Reply box */}
               {thread.category === "mailbox" && (
                 <div className="border-t px-4 py-3 space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Reply to <span className="font-mono">{thread.counterparty}</span>
-                  </label>
                   <Field
+                    label={<>Reply to <span className="font-mono">{thread.counterparty}</span></>}
                     control="textarea"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}

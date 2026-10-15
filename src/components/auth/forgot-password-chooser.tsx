@@ -392,10 +392,8 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
       <h2 className="text-base font-semibold text-foreground">Reset with a recovery code</h2>
       <p className="text-sm text-muted-foreground">Each code works once. Your data stays intact.</p>
       <div>
-        <label htmlFor="rc-identifier" className="mb-1.5 block text-sm font-medium text-foreground">
-          Email or username
-        </label>
         <Field
+          label="Email or username"
           id="rc-identifier"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
@@ -405,10 +403,8 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
         />
       </div>
       <div>
-        <label htmlFor="rc-code" className="mb-1.5 block text-sm font-medium text-foreground">
-          Recovery code
-        </label>
         <Field
+          label="Recovery code"
           id="rc-code"
           value={code}
           onChange={(e) => setCode(formatRecoveryInput(e.target.value))}
@@ -476,10 +472,8 @@ function EmailReset({ onBack }: { onBack: () => void }) {
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-              Email
-            </label>
             <Field
+              label="Email"
               id="email"
               type="email"
               value={email}

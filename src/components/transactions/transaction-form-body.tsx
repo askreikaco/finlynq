@@ -187,8 +187,8 @@ export function TransactionFormBody({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Note</Label>
               <Field
+                label="Note"
                 control="textarea"
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
@@ -778,8 +778,8 @@ export function TransactionFormBody({
                         )}
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Destination quantity</Label>
                         <Field
+                          label="Destination quantity"
                           control="amount"
                           step="0.0001"
                           min="0"
@@ -983,8 +983,8 @@ export function TransactionFormBody({
             })()}
 
             <div className="space-y-1.5">
-              <Label>Note (applied to both legs)</Label>
               <Field
+                label="Note (applied to both legs)"
                 control="textarea"
                 value={transferForm.note}
                 onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}

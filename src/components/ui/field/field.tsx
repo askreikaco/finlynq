@@ -525,6 +525,7 @@ export function FieldGroup({
   className,
   bare = false,
   label,
+  info,
   icon,
   tone,
   children,
@@ -532,6 +533,8 @@ export function FieldGroup({
 }: React.HTMLAttributes<HTMLDivElement> & {
   bare?: boolean;
   label?: React.ReactNode;
+  /** Help text for an (i) tip in the title row. */
+  info?: React.ReactNode;
   icon?: LucideIcon;
   tone?: MetricTone | (string & {});
 }) {
@@ -555,7 +558,13 @@ export function FieldGroup({
       {...props}
     >
       {label ? (
-        <CardLabel as="h2" slot="section-label" icon={icon} tone={tone}>
+        <CardLabel
+          as="h2"
+          slot="section-label"
+          icon={icon}
+          tone={tone}
+          action={info ? <InfoTip text={info} label={typeof label === "string" ? `About ${label.toLowerCase()}` : undefined} /> : undefined}
+        >
           {label}
         </CardLabel>
       ) : null}

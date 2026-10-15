@@ -506,23 +506,21 @@ export function BankFeedsSection() {
           ) : (
             /* ── Not connected: paste setup token ── */
             <div className="space-y-3">
-              <label htmlFor="simplefin-token" className="block text-sm font-medium">
-                Setup token
-              </label>
-                    <Field
-                      control="textarea"
-                      id="simplefin-token"
-                      value={token}
-                      onChange={(e) => setToken(e.target.value)}
-                      rows={3}
-                      placeholder="Paste setup token"
-                      disabled={connecting}
-                      className={cn(
-                        "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
-                        "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                        "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
-                      )}
-                    />
+              <Field
+                label="Setup token"
+                control="textarea"
+                id="simplefin-token"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                rows={3}
+                placeholder="Paste setup token"
+                disabled={connecting}
+                className={cn(
+                  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
+                  "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+                )}
+              />
               {connectError && <p className="text-sm text-destructive">{connectError}</p>}
               <div className="flex items-center justify-between gap-3">
                 <a

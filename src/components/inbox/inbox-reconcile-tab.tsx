@@ -931,10 +931,8 @@ export function InboxReconcileTab({
         role="group"
         aria-label="Date window"
       >
-        <label className="text-muted-foreground" htmlFor="inbox-date-from">
-          From
-        </label>
         <Field
+          label="From"
           control="date"
           id="inbox-date-from"
           value={dateFrom ?? ""}
@@ -946,10 +944,8 @@ export function InboxReconcileTab({
           compact
         />
         <span className="text-muted-foreground">→</span>
-        <label className="text-muted-foreground" htmlFor="inbox-date-to">
-          To
-        </label>
         <Field
+          label="To"
           control="date"
           id="inbox-date-to"
           value={dateTo ?? ""}

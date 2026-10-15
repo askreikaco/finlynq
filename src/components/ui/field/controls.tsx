@@ -495,7 +495,7 @@ export function SegmentedControl({
       className={cn(
         CONTROL_SURFACE,
         "inline-flex max-w-full items-stretch overflow-hidden rounded-lg p-0.5",
-        compact ? "h-8 pointer-coarse:h-11 dense:pointer-fine:h-7" : "h-11 dense:pointer-fine:h-9",
+        compact ? "min-h-8 pointer-coarse:min-h-11 dense:pointer-fine:min-h-7" : "min-h-11 dense:pointer-fine:min-h-9",
         fill && "grid w-full",
         invalid && "border-destructive",
         className,
@@ -527,7 +527,7 @@ export function SegmentedControl({
               }
             }}
             className={cn(
-              "inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
+              "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-sm font-medium leading-tight transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40",
               selected ? (o.selectedClassName ?? "bg-primary/10 text-primary-text") : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
             )}
           >
