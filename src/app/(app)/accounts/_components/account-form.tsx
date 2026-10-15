@@ -417,7 +417,7 @@ export function AccountForm({
           <>
             <Field variant={v} label="Type" info={INFO.type} error={errors.type}>
               <Select items={ACCOUNT_TYPE_LABELS} value={form.type} onValueChange={(t) => setType(t ?? "A")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ACCOUNT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>

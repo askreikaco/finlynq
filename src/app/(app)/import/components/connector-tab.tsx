@@ -22,6 +22,7 @@ import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
 import { getDisplayLocale } from "@/lib/locale";
+import { FieldLabel } from "@/components/forms";
 import { InfoTip } from "@/components/ui/info-tip";
 
 interface PreviewRow extends RawTransaction {
@@ -511,13 +512,17 @@ export function ConnectorTab() {
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="wp-api-key" className="text-xs">API key</Label>
+                <FieldLabel
+                  label="API key"
+                  htmlFor="wp-api-key"
+                  info="Paste your key from wealthposition.com → Profile → Security → Developer API."
+                />
                 <Input
                   id="wp-api-key"
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Paste your key from wealthposition.com → Profile → Security → Developer API"
+                  placeholder="API key"
                   disabled={credsBusy}
                 />
                 <Button onClick={saveApiKey} disabled={credsBusy || !apiKey.trim()} size="sm">
