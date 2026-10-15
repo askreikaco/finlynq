@@ -342,7 +342,7 @@ function LoansPageContent() {
                 />
               )}
           {activeList.length > 0 && (
-            <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+            <SectionCard label="Active" icon={Landmark} tone="indigo" list className="[&>*]:min-w-0">
               {activeList.map((loan) => (
                 <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
               ))}

@@ -9,6 +9,11 @@
  */
 
 import type { ReactNode } from "react";
+import { SectionCard } from "@/components/mobile/section-card";
+
+/** Each pane is a SectionCard capped in height; only its body scrolls. */
+const PANE_CARD = "flex max-h-[55dvh] flex-col overflow-hidden";
+const PANE_BODY = "min-h-0 overflow-y-auto";
 
 export function TwoPaneLayout({
   leftLabel,
@@ -25,22 +30,12 @@ export function TwoPaneLayout({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
-      <section className="flex max-h-[55dvh] flex-col overflow-hidden rounded-lg border bg-card">
-        <h2 className="px-4 pb-2 pt-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {leftLabel}
-        </h2>
-        <div className="min-h-0 overflow-y-auto">
-          {left}
-        </div>
-      </section>
-      <section className="flex max-h-[55dvh] flex-col overflow-hidden rounded-lg border bg-card">
-        <h2 className="px-4 pb-2 pt-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {rightLabel}
-        </h2>
-        <div className="min-h-0 overflow-y-auto">
-          {right}
-        </div>
-      </section>
+      <SectionCard label={leftLabel} padded={false} cardClassName={PANE_CARD} className={PANE_BODY}>
+        {left}
+      </SectionCard>
+      <SectionCard label={rightLabel} padded={false} cardClassName={PANE_CARD} className={PANE_BODY}>
+        {right}
+      </SectionCard>
     </div>
   );
 }

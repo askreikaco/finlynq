@@ -11,7 +11,7 @@ import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Layers } from "lucide-react";
-import { CardLabel } from "@/components/mobile/card-label";
+import { SectionCard } from "@/components/mobile/section-card";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   OP_GROUPS,
@@ -53,32 +53,29 @@ function PortfolioNewInner() {
       {OP_GROUPS.map((group) => {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
-          <section key={group.key}>
-            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-              <CardLabel as="h2" slot="section-label" icon={Layers} tone="indigo">{group.label}</CardLabel>
-              {ops.map((o) => {
-                const Icon = o.icon;
-                return (
-                  <Link
-                    key={o.key}
-                    href={opHref(o.key)}
-                    className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Icon className="size-4" aria-hidden />
+          <SectionCard key={group.key} list label={group.label} icon={Layers} tone="indigo">
+            {ops.map((o) => {
+              const Icon = o.icon;
+              return (
+                <Link
+                  key={o.key}
+                  href={opHref(o.key)}
+                  className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 active:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="size-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base text-foreground">{o.title}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {o.description}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-base text-foreground">{o.title}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {o.description}
-                      </span>
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                </Link>
+              );
+            })}
+          </SectionCard>
         );
       })}
     </SectionPage>

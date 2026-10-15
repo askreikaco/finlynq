@@ -179,7 +179,7 @@ export function ExcelMapperDialog({
         {/* Sample data preview: one list row per sample row (no table). */}
         {sheet.sampleRows.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <SectionCard label="Sample rows" icon={Table2} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard label="Sample rows" icon={Table2} tone="muted" list className="px-3">
               {sheet.sampleRows.map((row, i) => (
                 <ListRow
                   key={i}

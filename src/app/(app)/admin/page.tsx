@@ -491,7 +491,7 @@ export default function AdminPage() {
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" list className="px-3">
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -635,7 +635,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard list className="px-3">
                 {users.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
                 ) : (

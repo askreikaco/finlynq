@@ -449,7 +449,7 @@ export function ConnectorTab() {
                   <div className="pt-2 border-t border-pos/20 space-y-2">
                     <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
                     <div className="max-h-56 overflow-y-auto">
-                      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                      <SectionCard list className="px-3">
                         {zipSummary.reconciliation.rows.map((r) => (
                           <ListRow
                             key={r.finlynqAccountId}
