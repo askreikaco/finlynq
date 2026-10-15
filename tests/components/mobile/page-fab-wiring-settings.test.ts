@@ -7,7 +7,7 @@ import { FAB_ROUTES, resolveFab } from "@/components/mobile/fab-registry";
 // and the create/edit pages themselves are hidden from the FAB.
 
 const ROUTE_FABS = [
-  { route: "/categories", href: "/categories?edit=new", label: "Add category" },
+  { route: "/categories", href: "/categories/new", label: "Add category" },
   { route: "/settings/rules", href: "/settings/rules/new", label: "Add rule" },
 ] as const;
 

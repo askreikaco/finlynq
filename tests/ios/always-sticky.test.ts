@@ -257,7 +257,7 @@ describe("non-admin pages", () => {
     "src/app/(app)/whats-new/page.tsx",
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",
-    "src/app/(app)/categories/[id]/page.tsx",
+    "src/app/(app)/categories/_components/category-detail.tsx",
     "src/app/(app)/portfolio/new/page.tsx",
     "src/app/(app)/portfolio/realized-gains/page.tsx",
     "src/app/(app)/portfolio/dividends/page.tsx",

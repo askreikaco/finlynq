@@ -48,7 +48,7 @@ const LIST_FILES = [
   "src/components/transactions/entry/grouped-picker.tsx",
   "src/app/(app)/accounts/page.tsx",
   "src/app/(app)/accounts/_components/manage-groups-panel.tsx",
-  "src/app/(app)/categories/[id]/page.tsx",
+  "src/app/(app)/categories/_components/category-detail.tsx",
   "src/app/(app)/categories/_page-content.tsx",
   "src/app/(app)/categories/_components/category-row.tsx",
   "src/components/mobile/progress-row.tsx",

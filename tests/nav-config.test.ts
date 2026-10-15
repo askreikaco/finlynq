@@ -183,6 +183,8 @@ describe("nav-config", () => {
         "/subscriptions/new", // create-subscription page, opened from the subscriptions header / Review
         "/subscriptions/[id]/edit", // edit-subscription page, opened from a row (no nav entry)
         "/accounts/[id]/edit", // edit-account page, opened from the account page (no nav entry)
+        "/categories/new", // create-category page, opened from the categories header / FAB (no nav entry)
+        "/categories/[id]/edit", // edit-category page, opened from the category page (no nav entry)
         "/portfolio/new/buy", // level-2 operation pages (create flow, no nav entry)
         "/portfolio/new/sell",
         "/portfolio/new/swap",
@@ -617,7 +619,7 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have complete REDIRECTS array with all 16 entries in exact form", () => {
+    it("should have complete REDIRECTS array with all 14 entries in exact form", () => {
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -627,10 +629,8 @@ describe("nav-config", () => {
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
         { source: "/budgets", destination: "/categories", permanent: false },
-        { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/budgets/new", destination: "/categories/new", permanent: false },
         { source: "/settings/categorization", destination: "/categories", permanent: false },
-        { source: "/categories/new", destination: "/categories?edit=new", permanent: false },
-        { source: "/categories/:id(\\d+)/edit", destination: "/categories?edit=:id", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
@@ -651,7 +651,7 @@ describe("nav-config", () => {
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
-      // Expected 16 entries (full table)
+      // Expected 14 entries (full table)
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -661,10 +661,8 @@ describe("nav-config", () => {
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
         { source: "/budgets", destination: "/categories", permanent: false },
-        { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
+        { source: "/budgets/new", destination: "/categories/new", permanent: false },
         { source: "/settings/categorization", destination: "/categories", permanent: false },
-        { source: "/categories/new", destination: "/categories?edit=new", permanent: false },
-        { source: "/categories/:id(\\d+)/edit", destination: "/categories?edit=:id", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
