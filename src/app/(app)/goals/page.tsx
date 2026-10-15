@@ -214,7 +214,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: activeList.length > 0 ? (
-      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Active" icon={Target} tone="indigo" list className="[&>*]:min-w-0">
         {activeList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
@@ -231,7 +231,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       </Card>
     ),
     completed: completedList.length > 0 ? (
-      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" list className="[&>*]:min-w-0">
         {completedList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}

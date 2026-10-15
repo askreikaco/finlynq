@@ -255,7 +255,7 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <SectionCard label={firstHeader} icon={Coins} tone="emerald" list>
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}

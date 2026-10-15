@@ -163,8 +163,7 @@ export default function AdminEmailInboxPage() {
       {/* ─── Per-user grouped counts ──────────────────────────────────────── */}
       <SectionCard
         label="By user" icon={Users} tone="indigo"
-        padded={false}
-        className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]"
+        list
       >
         <p className="px-4 pt-3 text-xs text-muted-foreground">
           Counts honor the action / source / date filters (not the selected user).
@@ -255,7 +254,7 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Rows" icon={List} tone="muted" list>
         {loading && !data && (
           <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}

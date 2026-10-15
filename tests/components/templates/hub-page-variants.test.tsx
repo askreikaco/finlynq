@@ -44,32 +44,31 @@ describe("HubPage variants: defaults", () => {
     );
   });
 
-  it("default look renders InsetGroup and no card group", () => {
+  it("default look renders a SectionCard list and no card group", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="inset-group"]')).not.toBeNull();
+    expect(main.querySelector('[data-slot="section-card-body"]')).not.toBeNull();
     expect(main.querySelector(".divide-y")).toBeNull();
     expect(main.getAttribute("data-slot")).toBe("hub-group");
     expect(screen.getByTestId("more-root").querySelector('[data-slot="hub-columns"]')).toHaveClass("grid", "grid-cols-1", "regular:grid-cols-2", "wide:grid-cols-3", "items-start");
   });
 
-  it("default section label is the inset header", () => {
+  it("section label is the shared card label", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="inset-section-header"]')).not.toBeNull();
-    expect(main.querySelector('[data-slot="hub-section-label"]')).toBeNull();
+    expect(main.querySelector('[data-slot="section-card-label"]')).not.toBeNull();
   });
 });
 
 describe("HubPage variants: look=card", () => {
-  it("renders a rounded card group with divider rows and no InsetGroup", () => {
+  it("renders a SectionCard list with divider rows", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const main = screen.getByTestId("settings-group-main");
-    const card = main.querySelector('[class*="list-divider"]');
-    expect(card).not.toBeNull();
-    expect(card).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]", "overflow-hidden", "rounded-group", "bg-card");
-    expect(card!.className).not.toMatch(/divide-/);
-    expect(main.querySelector('[data-slot="inset-group"]')).toBeNull();
+    const body = main.querySelector('[data-slot="section-card-body"]');
+    expect(body).not.toBeNull();
+    expect(body).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
+    expect(body!.className).not.toMatch(/divide-/);
+    expect(main.querySelector('[data-slot="section-card"]')).toHaveClass("surface-card", "overflow-hidden");
   });
 
   it("link row is a ListRow link with href, icon tile and chevron", () => {
@@ -156,8 +155,8 @@ describe("HubPage variants: description", () => {
 });
 
 describe("HubPage variants: section labels", () => {
-  it("sectionLabel caps renders an uppercase h2", () => {
-    render(<HubPage id="settings" title="Settings" look="card" sectionLabel="caps" groups={groups} />);
+  it("a titled group renders an uppercase h2 on the shared CardLabel row", () => {
+    render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const h = within(screen.getByTestId("settings-group-main")).getByRole("heading", { name: "Main" });
     expect(h.tagName).toBe("H2");
     expect(h).toHaveClass("text-xs", "font-medium", "uppercase", "tracking-wide", "text-muted-foreground");
@@ -165,15 +164,8 @@ describe("HubPage variants: section labels", () => {
     expect(h.closest('[data-slot="card-label"]')).toHaveClass("px-3", "@[11rem]:px-5");
   });
 
-  it("sectionLabel section-label renders SectionLabel", () => {
-    render(<HubPage id="p" title="P" look="card" sectionLabel="section-label" groups={groups} />);
-    const main = screen.getByTestId("p-group-main");
-    expect(main.querySelector('[data-slot="section-label"]')).toHaveTextContent("Main");
-    expect(main.querySelector('[data-slot="inset-section-header"]')).toBeNull();
-  });
-
-  it("no heading is rendered for an untitled group under any style", () => {
-    render(<HubPage id="p" title="P" sectionLabel="caps" groups={groups} />);
+  it("no heading is rendered for an untitled group", () => {
+    render(<HubPage id="p" title="P" groups={groups} />);
     expect(within(screen.getByTestId("p-group-tools")).queryByRole("heading")).toBeNull();
   });
 });

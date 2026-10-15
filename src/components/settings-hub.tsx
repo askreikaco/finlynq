@@ -4,7 +4,7 @@
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
-import { CardLabel } from "@/components/mobile/card-label";
+import { SectionCard } from "@/components/mobile/section-card";
 import { ListRow } from "@/components/mobile/list-row";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { cn } from "@/lib/utils";
@@ -60,24 +60,19 @@ export function SettingsHub() {
         )}
       >
         {groups.map((group) => (
-          <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
-            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-              <CardLabel as="h2" icon={groupLabelIcon(group.title).icon} tone={groupLabelIcon(group.title).tone}>
-                {group.title}
-              </CardLabel>
-              {group.entries.map((entry) => (
-                <ListRow
-                  key={entry.path}
-                  slot="settings-hub"
-                  href={entry.path}
-                  icon={entry.icon}
-                  tile="primary"
-                  title={entry.label}
-                  selected={isCurrentRoute(columnCurrent, entry.path)}
-                />
-              ))}
-            </div>
-          </section>
+          <SectionCard key={group.title} data-slot="settings-hub-group" list label={group.title} {...groupLabelIcon(group.title)}>
+            {group.entries.map((entry) => (
+              <ListRow
+                key={entry.path}
+                slot="settings-hub"
+                href={entry.path}
+                icon={entry.icon}
+                tile="primary"
+                title={entry.label}
+                selected={isCurrentRoute(columnCurrent, entry.path)}
+              />
+            ))}
+          </SectionCard>
         ))}
       </div>
     </div>

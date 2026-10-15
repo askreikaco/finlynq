@@ -8,15 +8,10 @@ import { render, screen, cleanup, fireEvent, within } from "@testing-library/rea
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Inbox } from "lucide-react";
-import {
-  InsetGroup,
-  InsetRow,
-  InsetSectionHeader,
-  AccountCard,
-  ThemePicker,
-} from "@/components/mobile/inset-group";
+import { InsetRow, AccountCard, ThemePicker } from "@/components/mobile/inset-row";
+import { SectionCard } from "@/components/mobile/section-card";
 
-const SRC = readFileSync(join(__dirname, "../../../src/components/mobile/inset-group.tsx"), "utf8");
+const SRC = readFileSync(join(__dirname, "../../../src/components/mobile/inset-row.tsx"), "utf8");
 
 afterEach(() => cleanup());
 
@@ -87,41 +82,16 @@ describe("InsetRow", () => {
 
   it("rows carry the --list-divider shadow on every row but the last (no pseudo-element hairline)", () => {
     const { container } = render(
-      <InsetGroup>
+      <SectionCard list>
         <InsetRow href="/a" label="A" icon={Inbox} />
         <InsetRow href="/b" label="B" icon={Inbox} />
-      </InsetGroup>,
+      </SectionCard>,
     );
     const rows = container.querySelectorAll("[data-slot='inset-row']");
     expect(rows).toHaveLength(2);
     expect(rows[0].className).toContain("not-last:shadow-[var(--list-divider)]");
     expect(rows[0].className).not.toMatch(/before:/);
-    const group = container.querySelector("[data-slot='inset-group']") as HTMLElement;
-    expect(group.style.getPropertyValue("--inset-sep")).toBe("3.125rem");
-  });
-});
-
-describe("InsetGroup and InsetSectionHeader", () => {
-  it("is one rounded container on the card surface with no outer border", () => {
-    const { container } = render(<InsetGroup data-testid="g"><InsetRow href="/a" label="A" /></InsetGroup>);
-    const g = screen.getByTestId("g");
-    expect(g.className).toMatch(/\brounded-3xl\b/);
-    expect(g.className).toMatch(/\bbg-card\b/);
-    expect(g.className).not.toMatch(/\bborder\b/);
-    expect(container.querySelectorAll("[data-slot='inset-group']")).toHaveLength(1);
-  });
-
-  it("the avatar inset moves hairlines to after the avatar", () => {
-    const { container } = render(<InsetGroup inset="avatar"><InsetRow href="/a" label="A" /></InsetGroup>);
-    const g = container.querySelector("[data-slot='inset-group']") as HTMLElement;
-    expect(g.style.getPropertyValue("--inset-sep")).toBe("4rem");
-  });
-
-  it("section header is a level-2 heading in small grey text", () => {
-    render(<InsetSectionHeader>Account</InsetSectionHeader>);
-    const h = screen.getByRole("heading", { level: 2, name: "Account" });
-    expect(h.className).toMatch(/text-muted-foreground/);
-    expect(h.className).toMatch(/\btext-sm\b/);
+    expect(container.querySelector("[data-slot='section-card-body']")!.className).toContain("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
   });
 });
 

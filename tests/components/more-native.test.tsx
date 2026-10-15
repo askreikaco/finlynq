@@ -68,8 +68,8 @@ describe("More account card", () => {
     render(<MoreMenu />);
     const sec = screen.getByTestId("more-account");
     expect(within(sec).getByRole("heading", { level: 2, name: "Account" })).toBeInTheDocument();
-    const card = within(sec).getByTestId("more-account-card");
-    expect(card).toHaveAttribute("data-slot", "inset-group");
+    const card = sec;
+    expect(card).toHaveAttribute("data-slot", "section-card");
     await waitFor(() => expect(within(card).getAllByTestId("account-row")).toHaveLength(2));
     const [current, other] = within(card).getAllByTestId("account-row");
     expect(current).toHaveAttribute("aria-current", "true");
@@ -89,7 +89,7 @@ describe("More account card", () => {
 
   it("the Add account row is the accent (primary) colour and sits inside the card before Manage accounts", async () => {
     render(<MoreMenu />);
-    const card = screen.getByTestId("more-account-card");
+    const card = screen.getByTestId("more-account");
     await waitFor(() => expect(within(card).getAllByTestId("account-row")).toHaveLength(2));
     const add = within(card).getByRole("button", { name: /add another account/i });
     expect(add).toHaveAttribute("data-variant", "accent");
@@ -108,17 +108,17 @@ describe("More section headers and groups", () => {
     await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
     const headers = screen
       .getByTestId("more-menu")
-      .querySelectorAll("[data-slot='inset-group'] [data-slot='inset-section-header']");
-    // Explore's label sits OUTSIDE its card (headerPlacement="outside"); the others are inside.
+      .querySelectorAll("[data-slot='section-card'] [data-slot='section-card-label']");
+    // Explore's label sits OUTSIDE its card (labelPlacement="outside"); the others are inside.
     expect(Array.from(headers).map((h) => h.textContent)).toEqual(["Account", "Tools", "Admin", "Appearance"]);
     const outside = Array.from(
-      screen.getByTestId("more-menu").querySelectorAll("[data-slot='inset-section-header']"),
+      screen.getByTestId("more-menu").querySelectorAll("[data-slot='section-card-label-outside']"),
     ).find((h) => h.textContent === "Explore");
     expect(outside).toBeTruthy();
-    expect(outside!.closest("[data-slot='inset-group']")).toBeNull();
+    expect(outside!.closest("[data-slot='section-card-body']")).toBeNull();
     for (const id of ["main", "explore", "tools", "admin", "appearance"]) {
       const g = screen.getByTestId(`more-group-${id}`);
-      expect(g.querySelector("[data-slot='inset-group']")).not.toBeNull();
+      expect(g.matches("[data-slot='section-card']") || g.querySelector("[data-slot='section-card-body']")).toBeTruthy();
     }
   });
 
@@ -129,7 +129,7 @@ describe("More section headers and groups", () => {
     expect(rows.length).toBeGreaterThan(5);
     for (const r of rows) {
       expect(r).toHaveAttribute("data-slot", "list-row");
-      expect(r.closest("[data-slot='inset-group']")).not.toBeNull();
+      expect(r.closest("[data-slot='section-card-body']")).not.toBeNull();
       expect(r.getAttribute("href")).toMatch(/^\//);
     }
   });

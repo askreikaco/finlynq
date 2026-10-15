@@ -10,7 +10,7 @@
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader } from "@/components/mobile";
-import { CardLabel } from "@/components/mobile/card-label";
+import { SectionCard } from "@/components/mobile/section-card";
 import { Check, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,10 +80,9 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <section className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-      {label ? <CardLabel as="h2" slot="section-label" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
+    <SectionCard list label={label} icon={ClipboardList} tone="indigo">
       {children}
-    </section>
+    </SectionCard>
   );
 }
 

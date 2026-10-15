@@ -490,7 +490,7 @@ function InvestmentsSettingsPage() {
                 {filterInput("type", "Type")}
                 {filterInput("currency", "Currency")}
               </div>
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <SectionCard list>
                 {rows.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
                     {hasActiveFilter ? "No matches." : "No securities."}

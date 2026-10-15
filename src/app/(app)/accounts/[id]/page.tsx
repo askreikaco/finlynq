@@ -547,8 +547,7 @@ export default function AccountDetailPage() {
         <SectionCard
           data-slot="account-information"
           label="Information" icon={Info} tone="cyan"
-          padded={false}
-          className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]"
+          list
           action={
         <Button
           size="sm"

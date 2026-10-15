@@ -210,7 +210,7 @@ describe("More Appearance card", () => {
   it("is its own Appearance section (not Account, not Tools) and shows the current choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const card = screen.getByTestId("more-appearance");
+    const card = screen.getByTestId("more-group-appearance");
     expect(group("appearance").contains(card)).toBe(true);
     expect(group("tools").contains(card)).toBe(false);
     expect(screen.getByTestId("more-account").contains(card)).toBe(false);
@@ -223,7 +223,7 @@ describe("More Appearance card", () => {
   it("drives the same setTheme call for every choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const card = screen.getByTestId("more-appearance");
+    const card = screen.getByTestId("more-group-appearance");
     fireEvent.click(within(card).getByRole("radio", { name: "Light" }));
     expect(setTheme).toHaveBeenCalledWith("light");
     fireEvent.click(within(card).getByRole("radio", { name: "System" }));

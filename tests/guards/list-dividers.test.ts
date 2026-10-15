@@ -33,7 +33,7 @@ describe("--list-divider token", () => {
 // List / group components: separators between items are the --list-divider shadow, never divide-y / border-b.
 const LIST_FILES = [
   "src/components/mobile/list-row.tsx",
-  "src/components/mobile/inset-group.tsx",
+  "src/components/mobile/inset-row.tsx",
   "src/components/mobile/detail-sheet.tsx",
   "src/components/mobile/column-list.tsx",
   "src/components/mobile/section-card.tsx",
@@ -98,7 +98,7 @@ describe("list components use the divider shadow, not divide-y / border-b", () =
   });
 
   it("rows carry the shared utility", () => {
-    for (const f of ["src/components/mobile/inset-group.tsx", "src/components/mobile/detail-sheet.tsx", "src/components/mobile/section-card.tsx"]) {
+    for (const f of ["src/components/mobile/inset-row.tsx", "src/components/mobile/detail-sheet.tsx", "src/components/mobile/section-card.tsx"]) {
       expect(read(f)).toContain("shadow-[var(--list-divider)]");
     }
   });

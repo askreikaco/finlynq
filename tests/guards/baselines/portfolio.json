@@ -9,7 +9,6 @@
       "backdrop-blur": 2
     },
     "src/app/(app)/portfolio/new/page.tsx": {
-      "rounded-2xl": 1,
       "suspense-null": 1
     },
     "src/app/(app)/portfolio/page.tsx": {

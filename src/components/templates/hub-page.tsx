@@ -3,7 +3,7 @@
 /**
  * HubPage template (C-09): an iOS grouped-list hub. Owns the root testid (`<id>-root`), the
  * global PageHeader, the width token (TW.section), the bottom pad (TW.formPad) and the
- * Suspense boundary. Every row is the shared ListRow (mobile/list-row.tsx).
+ * Suspense boundary. Each group is a SectionCard `list`; every row is the shared ListRow (mobile/list-row.tsx).
  *
  * Groups come from one of two sources (exactly one):
  *  - `groups`: an explicit list.
@@ -11,8 +11,8 @@
  *    Unknown paths and groups left with no rows are dropped.
  *
  * Variants (all optional; omitted = the default look above, unchanged):
- *  - look="card": plain rounded card group instead of the inset group (settings hub, portfolio/new).
- *  - sectionLabel, columns, width, padBottom, back, useRedirect, outerSuspense: layout and chrome.
+ *  - look="card": kept for call sites; both looks render the same ListRow rows.
+ *  - columns, width, padBottom, back, useRedirect, outerSuspense: layout and chrome.
  *  - groupSlot and `description` on a row apply in both looks.
  */
 
@@ -22,9 +22,8 @@ import { getEntriesBySurface, type Surface } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
-import { InsetGroup } from "@/components/mobile/inset-group";
 import { ListRow } from "@/components/mobile/list-row";
-import { CardLabel } from "@/components/mobile/card-label";
+import { SectionCard } from "@/components/mobile/section-card";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 
 export interface HubRow {
@@ -75,10 +74,8 @@ export function groupsFromSurface(surface: Surface, order: HubGroupOrder[]): Hub
 
 /** Optional look and layout variants. Every field is optional; omitted = today's behaviour. */
 export interface HubPageVariants {
-  /** "inset" (default): InsetGroup container. "card": plain rounded card container. */
+  /** "inset" (default) or "card": both render the same ListRow rows in a SectionCard list. */
   look?: "inset" | "card";
-  /** Group heading style. "inset" (default) = InsetSectionHeader; "caps" = small uppercase h2; "section-label" = SectionLabel. */
-  sectionLabel?: "inset" | "caps" | "section-label";
   /** 1 (default) = groups stacked. "wide-2" = two columns from the `wide` breakpoint. */
   columns?: 1 | "wide-2";
   /** "section" (default) = TW.section. "form-report" = max-w-form, widening to max-w-report from `wide`. */
@@ -117,16 +114,6 @@ function useNoRedirect(): boolean {
   return false;
 }
 
-/** Group title: always rendered INSIDE the group card as its first row (shared CardLabel: icon tile + uppercase label). */
-function renderSectionLabel(title: string, style: NonNullable<HubPageVariants["sectionLabel"]>) {
-  const { icon, tone } = groupLabelIcon(title);
-  return (
-    <CardLabel as="h2" slot={style === "caps" ? "hub-section-label" : "section-label"} icon={icon} tone={tone}>
-      {title}
-    </CardLabel>
-  );
-}
-
 /** One hub row: maps a HubRow to ListRow props (no layout of its own). */
 function HubRowView({ row, id }: { row: HubRow; id: string }) {
   return (
@@ -158,7 +145,6 @@ function HubPageBody(props: HubPageProps) {
     empty,
     className,
     look = "inset",
-    sectionLabel = "inset",
     padBottom = true,
     back,
     groupSlot,
@@ -174,22 +160,12 @@ function HubPageBody(props: HubPageProps) {
       key={group.id}
       data-slot={groupSlot ?? "hub-group"}
       data-testid={`${id}-group-${group.id}`}
-      className="space-y-2"
     >
-      {look === "card" ? (
-        <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-group bg-card">
-          {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
-          {group.rows.map((row) => (
-            <HubRowView key={row.id} row={row} id={id} />
-          ))}
-        </div>
-      ) : (
-        <InsetGroup aria-label={group.title} header={group.title} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-          {group.rows.map((row) => (
-            <HubRowView key={row.id} row={row} id={id} />
-          ))}
-        </InsetGroup>
-      )}
+      <SectionCard list label={group.title} {...(group.title ? groupLabelIcon(group.title) : {})}>
+        {group.rows.map((row) => (
+          <HubRowView key={row.id} row={row} id={id} />
+        ))}
+      </SectionCard>
     </section>
   ));
 

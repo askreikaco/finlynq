@@ -1,10 +1,7 @@
 "use client";
 
 /**
- * iOS-style grouped (inset) lists. Pieces:
- *  - InsetSectionHeader: small grey heading above a group.
- *  - InsetGroup: one rounded container (rounded-3xl, bg-card, no border). Divider (--list-divider inset shadow)
- *    between its rows, never after the last row.
+ * Rows for iOS-style grouped lists. The container + its title is SectionCard (`list`, label inside or outside).
  *  - InsetRow: 56px row with optional outline icon, label, muted value, badge, chevron, or a switch.
  *    Variants: default, accent (primary text), destructive, toggle.
  *  - AccountCard: an avatar row for the signed-in account and the account list.
@@ -17,68 +14,6 @@ import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import { CardLabel, type MetricTone } from "./card-label";
-import { groupLabelIcon } from "./group-label-icon";
-
-/* ---------- section header ---------- */
-
-export function InsetSectionHeader({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <h2 data-slot="inset-section-header" className={cn("px-4 text-sm font-medium text-muted-foreground", className)}>
-      {children}
-    </h2>
-  );
-}
-
-/* ---------- group ---------- */
-
-export interface InsetGroupProps {
-  children: React.ReactNode;
-  className?: string;
-  /** Where hairlines start: after a 22px icon (default) or after a 36-40px avatar. */
-  inset?: "icon" | "avatar";
-  /** Group title, rendered INSIDE the group card as its first row (never above the card). */
-  header?: React.ReactNode;
-  /** Icon tile before the header (defaults from the title: Account, Explore, Tools, ...). */
-  headerIcon?: LucideIcon;
-  headerTone?: MetricTone | (string & {});
-  /** "inside" (default): header is the card's first row. "outside": small heading above the card. */
-  headerPlacement?: "inside" | "outside";
-  "data-testid"?: string;
-  "aria-label"?: string;
-}
-
-const INSET_SEP: Record<NonNullable<InsetGroupProps["inset"]>, string> = {
-  icon: "3.125rem",
-  avatar: "4rem",
-};
-
-export function InsetGroup({ children, className, inset = "icon", header, headerIcon, headerTone, headerPlacement = "inside", ...rest }: InsetGroupProps) {
-  const fallback = groupLabelIcon(header);
-  const outside = headerPlacement === "outside" && !!header;
-  const card = (
-    <div
-      data-slot="inset-group"
-      className={cn("@container overflow-hidden rounded-3xl bg-card", className)}
-      style={{ ["--inset-sep" as string]: INSET_SEP[inset] } as React.CSSProperties}
-      {...rest}
-    >
-      {header && !outside ? (
-        <CardLabel as="h2" slot="inset-section-header" icon={headerIcon ?? fallback.icon} tone={headerTone ?? fallback.tone}>
-          {header}
-        </CardLabel>
-      ) : null}
-      {children}
-    </div>
-  );
-  if (!outside) return card;
-  return (
-    <div data-slot="inset-group-outside" className="flex flex-col gap-2">
-      <InsetSectionHeader>{header}</InsetSectionHeader>
-      {card}
-    </div>
-  );
-}
 
 /* ---------- row ---------- */
 

@@ -525,7 +525,7 @@ function SubscriptionsPageContent() {
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] ${CARD_ROW_GRID}`}>
+                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}

@@ -25,8 +25,6 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
   Plus,
   FolderCog,
 } from "lucide-react";
@@ -241,17 +239,9 @@ function AccountsPage() {
     </span>
   );
 
-  const renderSection = (
-    title: string,
-    list: AccountBalance[],
-    tone: "emerald" | "rose",
-    SectionIcon: typeof TrendingUp,
-    type: "asset" | "liability",
-  ) => (
+  const renderSection = (title: string, list: AccountBalance[], type: "asset" | "liability") => (
     <SectionCard
       label={title}
-      icon={SectionIcon}
-      tone={tone}
       labelPlacement="outside"
       bare
       labelClassName="px-1"
@@ -440,8 +430,8 @@ function AccountsPage() {
               />
             </div>
           ),
-          assets: renderSection("Assets", assets, "emerald", ArrowUpRight, "asset"),
-          liabilities: renderSection("Liabilities", liabilities, "rose", ArrowDownRight, "liability"),
+          assets: renderSection("Assets", assets, "asset"),
+          liabilities: renderSection("Liabilities", liabilities, "liability"),
         };
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {

@@ -551,8 +551,8 @@ function CategoriesOverview() {
         label="Categories"
         icon={Tags}
         tone="indigo"
-        padded={false}
-        className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]"
+        list
+        className="[&>*]:min-w-0"
       >
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No {noun}.</p>

@@ -11,7 +11,7 @@ import { Suspense, useEffect } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Layers } from "lucide-react";
-import { CardLabel } from "@/components/mobile/card-label";
+import { SectionCard } from "@/components/mobile/section-card";
 import { ListRow } from "@/components/mobile/list-row";
 import { SectionPage } from "@/components/templates/section-page";
 import {
@@ -54,14 +54,11 @@ function PortfolioNewInner() {
       {OP_GROUPS.map((group) => {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
-          <section key={group.key}>
-            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-              <CardLabel as="h2" slot="section-label" icon={Layers} tone="indigo">{group.label}</CardLabel>
-              {ops.map((o) => (
-                <ListRow key={o.key} href={opHref(o.key)} icon={o.icon} tile="primary" title={o.title} subtitle={o.description} />
-              ))}
-            </div>
-          </section>
+          <SectionCard key={group.key} list label={group.label} icon={Layers} tone="indigo">
+            {ops.map((o) => (
+              <ListRow key={o.key} href={opHref(o.key)} icon={o.icon} tile="primary" title={o.title} subtitle={o.description} />
+            ))}
+          </SectionCard>
         );
       })}
     </SectionPage>

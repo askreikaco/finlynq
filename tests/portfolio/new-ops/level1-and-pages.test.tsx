@@ -55,7 +55,7 @@ afterEach(() => {
 describe("level 1: /portfolio/new operation list", () => {
   it("renders three grouped inset lists with a header each", () => {
     const { container } = render(<PortfolioNewPage />);
-    const headers = [...container.querySelectorAll("[data-slot='section-label']")].map((n) => n.textContent);
+    const headers = [...container.querySelectorAll("[data-slot='section-card-label']")].map((n) => n.textContent);
     expect(headers).toEqual(["Trades", "Transfers", "Income and other"]);
     const groups = container.querySelectorAll('div[class*="list-divider"]');
     expect(groups.length).toBe(3);

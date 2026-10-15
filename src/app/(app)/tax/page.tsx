@@ -133,7 +133,7 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* Marginal Tax Rates */}
-      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" list>
         {Object.entries(data.marginalRates).map(([key, rates]) => (
           <ListRow
             key={key}
@@ -146,7 +146,7 @@ function TaxPageContent() {
 
       {/* Asset Location Advice: tap a holding for the reason */}
       {data.assetLocationAdvice.length > 0 && (
-        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" list>
           {data.assetLocationAdvice.map((a, i) => (
             <ListRow
               key={`${a.symbol}-${i}`}
