@@ -42,6 +42,8 @@ Pages with PageSkeleton: `/categories/[id]`, `/categories`, `/goals`, `/reports`
 | `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:377) | no | yes (page.tsx:351) | - |
 | `/accounts/new` | `src/app/(app)/accounts/new/page.tsx` | app | yes (page.tsx:56) | no | no | - |
 | `/accounts/[id]/edit` | `src/app/(app)/accounts/[id]/edit/page.tsx` | app | yes (page.tsx) | no | no | edit form: _components/account-form.tsx |
+| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | yes (via FormPage) | no | no | create form: _components/category-form-panel.tsx |
+| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | yes (via FormPage) | no | no | edit form: _components/category-form-panel.tsx |
 | `/admin/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |

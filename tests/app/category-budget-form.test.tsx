@@ -43,7 +43,7 @@ describe("CategoryBudgetForm", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Gym" } });
     fireEvent.change(screen.getByLabelText("Budget"), { target: { value: "50" } });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(undefined));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(undefined, 9));
     expect(calls.map((c) => [c.method, c.url])).toEqual([["POST", "/api/categories"], ["POST", "/api/budgets"]]);
     expect(calls[0].body).toEqual({ name: "Gym", type: "E", group: "" });
     expect(calls[1].body).toEqual({ categoryId: 9, month: "2026-10", amount: 50, currency: "USD" });
@@ -98,11 +98,11 @@ describe("CategoryBudgetForm", () => {
 describe("one form, one page", () => {
   const page = fs.readFileSync(path.join(ROOT, "src/app/(app)/categories/_page-content.tsx"), "utf-8");
 
-  it("the page renders the shared form in the wide pane and the below-wide sheet, and has a topbar Add that opens it", () => {
-    expect(page.match(/<CategoryBudgetForm\b/g)).toHaveLength(2);
-    expect(page).toContain('href="/categories?edit=new"');
-    expect(page).toMatch(/<ListDetailNewButton href="\/categories\?edit=new" label="Add">/);
-    expect(page).toContain("setEdit(c.id)");
+  it("the page renders the shared form panel in the wide pane (no sheet), and has a topbar Add that opens it", () => {
+    expect(page.match(/<CategoryFormPanel\b/g)).toHaveLength(1);
+    expect(page).not.toMatch(/<CategoryBudgetForm\b|<Sheet\b/);
+    expect(page).toMatch(/<ListDetailNewButton href=\{`\/categories\/new\?month=\$\{month\}`\} label="Add">/);
+    expect(page).toContain("openEdit(id)");
   });
 
   it("the old manage page, tabs, budget form and their routes are gone and redirect", () => {
@@ -113,7 +113,7 @@ describe("one form, one page", () => {
       "src/app/(app)/budgets/_components/set-budget-form.tsx",
     ]) expect(fs.existsSync(path.join(ROOT, f)), f).toBe(false);
     expect(REDIRECTS).toContainEqual({ source: "/settings/categorization", destination: "/categories", permanent: false });
-    expect(REDIRECTS).toContainEqual({ source: "/budgets/new", destination: "/categories?edit=new", permanent: false });
+    expect(REDIRECTS).toContainEqual({ source: "/budgets/new", destination: "/categories/new", permanent: false });
     expect(page).not.toMatch(/CategoryManagement|TabsContent|Manage/);
     expect(NAV_REGISTRY.some((e) => e.path === "/settings/categorization")).toBe(false);
   });

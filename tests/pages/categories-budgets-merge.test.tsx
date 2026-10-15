@@ -104,7 +104,7 @@ describe("shared CategoryRow", () => {
     const list = document.querySelector('[data-slot="category-list"], [data-slot="section-card-body"] [data-slot="category-group"]')!.closest("section")!;
     // closed group (Housing) + ungrouped (Coffee) = 2 rows; open the group for its 2 children
     expect(within(list).getAllByText("Housing").length).toBeGreaterThan(0);
-    fireEvent.click(within(list).getByText("Housing"));
+    fireEvent.click(within(list).getByRole("button", { name: "Expand Housing" })); // only the chevron expands
     const rows = Array.from(list.querySelectorAll('[data-slot="category-row"]'));
     expect(rows).toHaveLength(4);
     for (const r of rows) {
@@ -135,7 +135,7 @@ describe("Edit mode and column alignment", () => {
     expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(0); // no pencil anywhere
     const toggle = screen.getByRole("button", { name: "Edit list" }); // the shared PageHeader bulkEdit button
     expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
+    expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toMatch(/^\/categories\/new\?month=\d{4}-\d{2}$/);
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
     const coffee = screen.getByRole("button", { name: "Edit: Coffee" });
@@ -145,8 +145,9 @@ describe("Edit mode and column alignment", () => {
 
   it("child rows indent the name only: group and category rows share the right-hand value columns", () => {
     const src = read(PAGE);
-    expect(src).toContain('py-3 pl-4 pr-11'); // = group trigger px-4 + chevron slot
-    expect(src).not.toMatch(/ROW_LINK\} pl-8/);
+    expect(src).toContain("PROGRESS_ROW_LINK"); // the shared tappable row (py-3 pl-4 pr-11 = row padding + chevron slot)
+    expect(read("src/components/mobile/progress-row.tsx")).toContain("py-3 pl-4 pr-11");
+    expect(src).not.toMatch(/PROGRESS_ROW_LINK\} pl-8/);
     expect(read("src/components/mobile/progress-row.tsx")).toContain('indent && "pl-5"');
   });
 });
@@ -316,10 +317,12 @@ describe("Spending + Income in two columns (regular+), tabs on phones", () => {
     expect(screen.getByRole("link", { name: "Add" })).toBeTruthy();
   });
 
-  it("source: pane wiring is one block (paneBody) using the shared CategoryBudgetForm", () => {
+  it("source: pane wiring is detail-first (CategoryDetail) with the shared CategoryFormPanel; no sheet", () => {
     const src = read(PAGE);
     expect(src).toContain("ListDetailLayout");
-    expect(src.match(/pane=\{paneBody\}/g)).toHaveLength(1);
-    expect(src.match(/<CategoryBudgetForm\b/g)).toHaveLength(2); // pane + below-wide sheet
+    expect(src.match(/renderDetail=/g)).toHaveLength(1);
+    expect(src.match(/<CategoryDetail\b/g)).toHaveLength(1);
+    expect(src.match(/<CategoryFormPanel\b/g)).toHaveLength(1);
+    expect(src).not.toMatch(/<CategoryBudgetForm\b|<Sheet\b|paneBody/);
   });
 });
