@@ -12,11 +12,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check, Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
-import type { OverflowAction } from "@/components/mobile/page-header";
+import type { MoreItem } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { useTransactionForm } from "@/components/transactions/use-transaction-form";
 import { TransactionFormBody } from "@/components/transactions/transaction-form-body";
@@ -106,7 +106,7 @@ export function TransactionEditForm({
     }
   }
 
-  const overflow: OverflowAction[] = isTransfer
+  const more: MoreItem[] = isTransfer
     ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
     : [
         {
@@ -122,21 +122,16 @@ export function TransactionEditForm({
     <div data-testid="tx-edit-root" className="w-full">
       <PageHeader
         title={isTransfer ? "Edit transfer" : "Edit transaction"}
-        backHref={returnTo}
-        backLabel="Back"
-        overflow={overflow}
-        actions={
-          <Button
-            type="submit"
-            form={FORM_ID}
-            data-testid="tx-edit-save"
-            disabled={f.saving || f.transferDeleting}
-            className="h-11 gap-1.5"
-          >
-            <Check className="size-4" aria-hidden="true" />
-            Save
-          </Button>
-        }
+        back={{ href: returnTo }}
+        more={more}
+        primary={{
+          kind: "save",
+          label: "Save",
+          form: FORM_ID,
+          busy: f.saving,
+          disabled: f.saving || f.transferDeleting,
+          testId: "tx-edit-save",
+        }}
       />
       <div className={`mt-3 px-4 ${TW.form} ${TW.formPad}`}>
         <TransactionFormBody
@@ -147,46 +142,32 @@ export function TransactionEditForm({
         />
       </div>
 
-      <Dialog
+      <Overlay
+        variant="confirm"
         open={confirmOpen}
-        onOpenChange={(open) => {
-          setConfirmOpen(open);
-          if (!open) setDeleteError(null);
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteError(null);
+        }}
+        title={isTransfer ? "Delete this transfer?" : "Delete this transaction?"}
+        message={
+          isTransfer
+            ? "Both legs of this transfer will be deleted. This cannot be undone."
+            : "This transaction will be deleted. This cannot be undone."
+        }
+        confirmLabel="Delete"
+        busy={deleting || f.transferDeleting}
+        onConfirm={() => {
+          if (isTransfer) {
+            setConfirmOpen(false);
+            void f.handleTransferDelete();
+          } else {
+            void deleteTransaction();
+          }
         }}
       >
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{isTransfer ? "Delete this transfer?" : "Delete this transaction?"}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {isTransfer
-              ? "Both legs of this transfer will be deleted. This cannot be undone."
-              : "This transaction will be deleted. This cannot be undone."}
-          </p>
-          {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="flex-1"
-              disabled={deleting || f.transferDeleting}
-              onClick={() => {
-                if (isTransfer) {
-                  setConfirmOpen(false);
-                  void f.handleTransferDelete();
-                } else {
-                  void deleteTransaction();
-                }
-              }}
-            >
-              {deleting || f.transferDeleting ? "Deleting…" : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+      </Overlay>
     </div>
   );
 }

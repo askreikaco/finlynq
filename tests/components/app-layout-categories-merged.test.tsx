@@ -31,8 +31,8 @@ vi.mock("@/components/unlock-gate", () => ({
   UnlockGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/announcement-banner", () => ({
-  AnnouncementBanner: () => null,
+vi.mock("@/components/notice/feeds", () => ({
+  NoticeFeed: () => null,
 }));
 
 vi.mock("@/components/prompt-gate", () => ({
@@ -59,9 +59,6 @@ vi.mock("@/components/animation-provider", () => ({
   AnimationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/reporting-recompute-indicator", () => ({
-  ReportingRecomputeIndicator: () => null,
-}));
 
 
 vi.mock("@/lib/data", () => ({

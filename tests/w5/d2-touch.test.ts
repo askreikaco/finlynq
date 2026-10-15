@@ -19,13 +19,11 @@ describe("W5-13 mobile touch targets", () => {
     );
   });
 
-  it("announcement-banner dismiss button has label and 44px mobile target", () => {
-    const src = read("src/components/announcement-banner.tsx");
-    expect(src).toContain(
-      'aria-label="Dismiss announcement"\n          className="text-muted-foreground hover:text-foreground shrink-0 max-regular:p-3 max-regular:-m-3"'
-    );
-    expect(src).not.toContain(
-      'aria-label="Dismiss announcement"\n          className="text-muted-foreground hover:text-foreground"'
-    );
+  it("notice dismiss button has label and 44px mobile target", () => {
+    const src = read("src/components/notice/body.tsx");
+    // The one Notice dismiss button: named by `dismissLabel` (the announcement feed passes "Dismiss announcement") and 44px on phones.
+    expect(src).toContain("aria-label={label}");
+    expect(src).toContain("max-regular:-m-3 max-regular:p-3");
+    expect(read("src/components/notice/feeds.tsx")).toContain('dismissLabel="Dismiss announcement"');
   });
 });

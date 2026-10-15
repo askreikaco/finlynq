@@ -1,26 +1,25 @@
 "use client";
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Chart } from "@/components/chart";
 import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
 import { localDateISO } from "@/lib/utils/date";
-import type { ProgressTone } from "@/components/mobile/progress-row";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
-import {
-  MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ProgressRow, ProgressRowButton,
-  useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem,
-} from "@/components/mobile";
+import { MetricGrid, SectionCard, ListRow, type ProgressTone, useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, CardLayoutEditor } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
 import { GOAL_FILTER_KEYS, GOAL_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
 import { GoalFormPanel } from "./_components/goal-form-panel";
+import { GoalDetail, goalDetailItems, goalTypeConfig, progressTextClass, toggleGoalStatus } from "./_components/goal-detail";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -32,25 +31,12 @@ import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
 import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
-const goalTypeConfig: Record<string, { label: string }> = {
-  savings: { label: "Savings" },
-  debt_payoff: { label: "Debt Payoff" },
-  investment: { label: "Investment" },
-  emergency_fund: { label: "Emergency Fund" },
-};
-
 /** Cards of the goals page, default order (Customize). */
 const GOAL_CARDS: readonly PageCard[] = [
   { id: "summary", title: "Summary" },
   { id: "active", title: "Active goals" },
   { id: "completed", title: "Completed goals" },
 ];
-
-function progressColorClass(progress: number): string {
-  if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-destructive";
-  if (progress <= 66) return "[&_[data-slot=progress-indicator]]:bg-warning";
-  return "[&_[data-slot=progress-indicator]]:bg-pos";
-}
 
 function progressTone(progress: number): ProgressTone {
   return progress < 33 ? "destructive" : progress <= 66 ? "warning" : "pos";
@@ -62,32 +48,24 @@ function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; dis
   const status = goalStatus(g, today);
   const done = status === "completed";
   return (
-    <ProgressRowButton onPress={onOpen} selected={selected}>
-      <ProgressRow
-        slot="goal"
-        label={g.name}
-        dot={STATUS_DOT[status]}
-        meta={g.deadline ? `Due ${g.deadline}` : "No deadline"}
-        value={formatCurrency(g.currentAmount, currency)}
-        delta={`of ${formatCurrency(g.targetAmount, currency)}`}
-        deltaTitle="Saved of target"
-        trend={null}
-        cur={currency}
-        pct={g.progress}
-        barTone={done ? "pos" : progressTone(g.progress)}
-        progressLabel={`${Math.max(0, g.progress)}%`}
-        progressAria={`Goal ${g.name} saved`}
-        badge={g.pendingSync ? <SyncMarkBadge mark={g.pendingSync} /> : undefined}
-        strike={done}
-      />
-    </ProgressRowButton>
+    <ListRow
+      slot="goal"
+      title={g.name}
+      subtitle={g.deadline ? `Due ${g.deadline}` : "No deadline"}
+      dot={STATUS_DOT[status]}
+      value={formatCurrency(g.currentAmount, currency)}
+      delta={`of ${formatCurrency(g.targetAmount, currency)}`}
+      deltaTitle="Saved of target"
+      trend={null}
+      currency={currency}
+      progress={{ pct: g.progress, tone: done ? "pos" : progressTone(g.progress), label: `${Math.max(0, g.progress)}%`, aria: `Goal ${g.name} saved` }}
+      badge={g.pendingSync ? <SyncMarkBadge mark={g.pendingSync} /> : undefined}
+      strike={done}
+      chevron={false}
+      selected={selected}
+      onPress={onOpen}
+    />
   );
-}
-
-function progressTextClass(progress: number): string {
-  if (progress < 33) return "text-destructive";
-  if (progress <= 66) return "text-warning";
-  return "text-pos";
 }
 
 /** Prefilled create links for the empty-state chips (name + type go in the query, read by /goals/new). */
@@ -100,11 +78,6 @@ const EMPTY_STATE_CHIPS = [
 
 type GoalCtx = ListPageContext<Goal>;
 
-async function toggleStatus(goal: Goal, reload: () => void) {
-  await fetch("/api/goals", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: goal.id, status: goal.status === "active" ? "completed" : "active" }) });
-  reload();
-}
-
 /** Empty state: no goals at all. */
 const emptyGoals = (
   <Card className="border-dashed">
@@ -114,7 +87,7 @@ const emptyGoals = (
       </div>
       <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-6">
-        Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
+        Start with an emergency fund, debt payoff or savings goal.
       </p>
       <div className="flex flex-wrap gap-2 justify-center">
         {EMPTY_STATE_CHIPS.map(({ label, type }) => (
@@ -130,23 +103,6 @@ const emptyGoals = (
     </CardContent>
   </Card>
 );
-
-/** One goal's detail sheet items: every field a row leaves out. */
-function goalDetailItems(g: Goal, displayCurrency: string): DetailItem[] {
-  const currency = g.currency || displayCurrency;
-  const items: DetailItem[] = [
-    { label: "Type", value: goalTypeConfig[g.type]?.label ?? "Savings" },
-    { label: "Target", value: formatCurrency(g.targetAmount, currency) },
-    { label: "Saved", value: formatCurrency(g.currentAmount, currency) },
-    { label: "Remaining", value: formatCurrency(g.remaining, currency) },
-  ];
-  if (g.monthlyNeeded > 0) items.push({ label: "Needed per month", value: formatCurrency(g.monthlyNeeded, currency) });
-  items.push({ label: "Deadline", value: g.deadline ?? "—" });
-  const accounts = (g.accounts ?? []).filter((n) => n);
-  if (accounts.length > 0) items.push({ label: "Accounts", value: accounts.join(", ") });
-  if (g.currency && g.currency !== displayCurrency) items.push({ label: "Currency", value: g.currency });
-  return items;
-}
 
 /**
  * The centred body under the ListPage header: summary tiles, the active and completed goals as ListRows, and the
@@ -203,20 +159,20 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
     points: progressPoints, period, mode: "last", isDefault: !explicit, pageValue: totalCurrent,
     kind: "money", currency: displayCurrency, caption: compareCaption(selection),
   });
-  const summaryMetrics: MetricItem[] = [
-    { id: "total-target", label: "Total Target", icon: Target, iconTone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
+  const summaryMetrics: MetricCardProps[] = [
+    { id: "total-target", label: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
     {
-      id: "current-progress", label: "Current Progress", icon: PiggyBank, iconTone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
-      valueClassName: "text-pos", sub: progressCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: progressCard.badgePct,
+      id: "current-progress", label: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
+      valueClassName: "text-pos", delta: { pct: progressCard.badgePct, text: progressCard.delta ?? NO_HISTORY_CAPTION }, note: caveat,
       sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
     },
-    { id: "completed", label: "Completed", icon: CheckCircle2, iconTone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
+    { id: "completed", label: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
   ];
 
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: activeList.length > 0 ? (
-      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Active" icon={Target} tone="indigo" list className="[&>*]:min-w-0">
         {activeList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
@@ -228,12 +184,12 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
         <CardContent className="py-10 flex flex-col items-center text-center">
           <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
           <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
-          <p className="text-sm text-muted-foreground">Add a new goal to keep building momentum.</p>
+          <p className="text-sm text-muted-foreground">Add a new goal.</p>
         </CardContent>
       </Card>
     ),
     completed: completedList.length > 0 ? (
-      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" list className="[&>*]:min-w-0">
         {completedList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
@@ -248,13 +204,16 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       <ListDetailLayout
         entity="goal"
         newLabel="Add Goal"
-        pane={(api) => (
+        detailTitle="Goal"
+        detailHref={(id) => `/goals/${id}`}
+        renderDetail={(id) => <GoalDetail id={id} onChanged={reload} />}
+        renderForm={(api) => (
           <GoalFormPanel
             embedded
             mode={api.isNew ? "create" : "edit"}
             id={api.selectedId ?? undefined}
             onSaved={() => { reload(); api.afterSaved(); }}
-            onCancel={api.clear}
+            onCancel={api.cancel}
             onDeleted={() => { reload(); api.afterDeleted(); }}
           />
         )}
@@ -266,11 +225,11 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
       </ListDetailLayout>
 
-      <DetailSheet
+      <Overlay
         open={detail !== null}
-        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+        onClose={() => setDetailId(null)}
         title={detail?.name ?? "Goal"}
-        description={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
+        subtitle={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
         items={detail ? goalDetailItems(detail, displayCurrency) : []}
       >
         {detail && (
@@ -280,7 +239,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
                 <span>{formatCurrency(detail.currentAmount, detail.currency || displayCurrency)} saved</span>
                 <span className={`font-bold ${progressTextClass(detail.progress)}`}>{detail.progress}%</span>
               </div>
-              <Progress value={detail.progress} className={`h-3 ${progressColorClass(detail.progress)}`} />
+              <Chart kind="progress" size="lg" value={detail.progress} tone={progressTone(detail.progress)} ariaLabel={`${detail.name} progress`} />
             </div>
             <Button variant="outline" render={<Link href={`/goals/${detail.id}/edit`} />} aria-label={`Edit goal ${detail.name}`}>
               <Pencil className="h-4 w-4 mr-1" /> Edit
@@ -288,7 +247,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
             <Button
               variant="outline"
               aria-label={detail.status === "completed" ? `Reactivate goal ${detail.name}` : `Mark goal ${detail.name} complete`}
-              onClick={() => { const g = detail; setDetailId(null); void toggleStatus(g, reload); }}
+              onClick={() => { const g = detail; setDetailId(null); void toggleGoalStatus(g).then(() => reload()); }}
             >
               <CheckCircle2 className="h-4 w-4 mr-1" /> {detail.status === "completed" ? "Reactivate" : "Mark complete"}
             </Button>
@@ -302,13 +261,13 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
             </Button>
           </>
         )}
-      </DetailSheet>
+      </Overlay>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize goals"
-        description="Show, hide and reorder the cards on your goals page."
+        info="Show, hide and reorder the cards on your goals page."
         cards={GOAL_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
@@ -320,6 +279,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
 
 export default function GoalsPage() {
   const { displayCurrency } = useDisplayCurrency();
+  const detailApi = useListDetail();
   // One body for every view: the ListPage has no Cards / List toggle any more (ListRows at every width).
   const tb = useListToolbar({ filterPath: "/filter/goals", sorts: GOAL_SORTS, filterKeys: GOAL_FILTER_KEYS });
   const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} tb={tb} />;
@@ -334,7 +294,7 @@ export default function GoalsPage() {
         useLoad={useGoalsLoad}
         empty={{
           title: "Set your first financial goal",
-          body: "Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.",
+          body: "Start with an emergency fund, debt payoff or savings goal.",
         }}
         toolbarPlacement="none"
         cards={goalsBody}
@@ -345,9 +305,7 @@ export default function GoalsPage() {
         error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
         header={{
           filter: { href: tb.filterHref, activeCount: tb.activeCount },
-          actions: (
-            <ListDetailNewButton href="/goals/new" label="Add Goal" />
-          ),
+          primary: { kind: "add", label: "Add Goal", href: "/goals/new", onSelect: detailApi.split ? detailApi.selectNew : undefined },
         }}
         deleteFlow={{
           label: "Delete goal",

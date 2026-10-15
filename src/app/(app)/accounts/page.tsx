@@ -2,19 +2,13 @@
 
 
 import { Fragment, Suspense, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { SectionCard } from "@/components/mobile/section-card";
-import { Badge } from "@/components/ui/badge";
-import { InvisibleMark } from "@/components/invisible-mark";
-import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { OnboardingTips } from "@/components/onboarding-tips";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import {
   orderGroups,
@@ -27,13 +21,11 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-  Plus,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { AccountRow, ListDetailLayout, useListDetail, metricGridClass, useCardLayout, usePageCustomize, type TopBarPrimary, CardLayoutEditor, Amount, ListRow } from "@/components/mobile";
 import { AccountFormPanel } from "./_components/account-form-panel";
+import { AccountDetail } from "./_components/account-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
@@ -243,16 +235,9 @@ function AccountsPage() {
     </span>
   );
 
-  const renderSection = (
-    title: string,
-    list: AccountBalance[],
-    tone: "emerald" | "rose",
-    SectionIcon: typeof TrendingUp,
-  ) => (
+  const renderSection = (title: string, list: AccountBalance[], type: "asset" | "liability") => (
     <SectionCard
       label={title}
-      icon={SectionIcon}
-      tone={tone}
       labelPlacement="outside"
       bare
       labelClassName="px-1"
@@ -271,28 +256,22 @@ function AccountsPage() {
           >
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
-              <ListRow
+              <AccountRow
                 key={a.accountId}
-                {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
+                accountId={a.accountId}
+                accountName={a.accountName}
+                alias={a.alias}
+                currency={a.currency}
+                balance={a.balance}
+                convertedBalance={a.convertedBalance}
+                displayCurrency={displayCurrency}
+                archived={a.archived}
+                type={type}
+                group={a.accountGroup}
+                isInvestment={a.isInvestment}
+                invisible={a.invisible}
                 selected={detail.selectedId === String(a.accountId)}
-                className={a.archived ? "px-4 opacity-60" : "px-4"}
-                title={
-                  <span className="inline-flex max-w-full items-center gap-2 align-middle">
-                    <span className="truncate">
-                      {a.accountName}
-                      {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
-                    </span>
-                    <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
-                    {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
-                    {a.invisible && <InvisibleMark />}
-                  </span>
-                }
-                value={<Amount value={a.balance} currency={a.currency} size="md" tone={a.balance < 0 ? "neg" : "none"} />}
-                secondary={
-                  a.convertedBalance != null && a.currency.toUpperCase() !== displayCurrency.toUpperCase()
-                    ? formatCurrency(a.convertedBalance, displayCurrency)
-                    : undefined
-                }
+                onPress={detail.split ? () => detail.select(a.accountId) : undefined}
               />
             ))}
             </div>
@@ -316,16 +295,12 @@ function AccountsPage() {
   const liabilitiesCard = card(runningTotal(series.liabilities, thisMonth), "last", totalLiabilitiesConverted);
 
   // Create account is its own page (/accounts/new), not a dialog.
-  const createAccountLink = (
-    <ListDetailNewButton
-      href="/accounts/new"
-      label="Create Account"
-      size="sm"
-      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-    >
-      <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
-    </ListDetailNewButton>
-  );
+  const createAccount: TopBarPrimary = {
+    kind: "add",
+    label: "Create Account",
+    href: "/accounts/new",
+    onSelect: detail.split ? detail.selectNew : undefined,
+  };
 
   const cardLayout = useCardLayout("accounts", ACCOUNT_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -336,7 +311,7 @@ function AccountsPage() {
   if (error) {
     return (
       <div className="w-full">
-        <ErrorState title="Couldn't load accounts" message="We had trouble loading your account data." onRetry={loadAccounts} />
+        <Notice variant="error" title="Couldn't load accounts" retry={loadAccounts}>We had trouble loading your account data.</Notice>
       </div>
     );
   }
@@ -348,15 +323,17 @@ function AccountsPage() {
         title="Accounts"
         info="Overview of your assets, liabilities, and net worth"
         width="report"
-        header={{ actions: createAccountLink }}
+        header={{ primary: createAccount }}
       >
-        <OnboardingTips page="accounts" />
-        <EmptyState
+        <Notice source="tips:accounts" />
+        <Notice
+          variant="empty"
           icon={Wallet}
           title="No accounts yet"
-          description="Create your first account or import bank data to start tracking your net worth."
           action={{ label: "Import data", href: "/import" }}
-        />
+        >
+          Add your first account to track net worth.
+        </Notice>
       </SectionPage>
     );
   }
@@ -368,41 +345,34 @@ function AccountsPage() {
       info="Overview of your assets, liabilities, and net worth"
       width="report"
       header={{
-        className: "flex items-center justify-between",
-        overflow: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
+        more: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
-        actions: (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className={HEADER_DESKTOP_ONLY}
-              render={<Link href="/accounts/groups" />}
-              title="Rename, reorder, or merge account groups"
-            >
-              <FolderCog className="h-4 w-4 mr-1.5" />
-              Manage groups
-            </Button>
-            {createAccountLink}
-          </>
-        ),
+        primary: createAccount,
       }}
     >
       <ListDetailLayout
         entity="account"
         newLabel="Create Account"
-        pane={(api) => (
+        detailTitle="Account"
+        detailHref={(id) => `/accounts/${id}`}
+        renderDetail={(id, api) => (
+          <AccountDetail
+            id={id}
+            embedded={{ onEdit: (tab) => api.edit(tab && tab !== "details" ? { tab } : undefined), onDeleted: () => { loadAccounts(); api.afterDeleted(); }, onChanged: loadAccounts }}
+          />
+        )}
+        renderForm={(api) => (
                 <AccountFormPanel
                   embedded
                   mode={api.isNew ? "create" : "edit"}
                   id={api.selectedId ?? undefined}
                   onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
-                  onCancel={api.clear}
+                  onCancel={api.cancel}
                   onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
                 />
               )}
       >
-      <OnboardingTips page="accounts" />
+      <Notice source="tips:accounts" />
 
       <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
@@ -447,8 +417,8 @@ function AccountsPage() {
               />
             </div>
           ),
-          assets: renderSection("Assets", assets, "emerald", ArrowUpRight),
-          liabilities: renderSection("Liabilities", liabilities, "rose", ArrowDownRight),
+          assets: renderSection("Assets", assets, "asset"),
+          liabilities: renderSection("Liabilities", liabilities, "liability"),
         };
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {
@@ -487,11 +457,11 @@ function AccountsPage() {
       })()}
       </ListDetailLayout>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize accounts"
-        description="Show, hide and reorder the cards on your accounts page."
+        info="Show, hide and reorder the cards on your accounts page."
         cards={ACCOUNT_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

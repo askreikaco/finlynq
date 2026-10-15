@@ -1,24 +1,28 @@
 "use client";
 
 /**
- * Categories hub: spending / income by category with the month's budgets. Everything lives here: the topbar Add
- * button and each row's Edit open the ONE shared CategoryBudgetForm (?edit=new | ?edit=<id>). /budgets and
- * /settings/categorization redirect to /categories.
+ * Categories hub: spending / income by category with the month's budgets. /budgets and /settings/categorization
+ * redirect to /categories.
  *
  * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the Categories
  * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
+ *
+ * Split view (wide): a click on a category OR a group (parent) row selects it (?sel=<id>; group ids look like
+ * g-E-housing) and the pane shows its detail first (CategoryDetail: chart, totals, transactions; a group aggregates its
+ * children). Edit / Add switch the pane to the ONE shared CategoryFormPanel (?mode=edit | ?sel=new). A group expands
+ * and collapses ONLY from its chevron button, which never selects. Below wide a row opens /categories/<id>
+ * (/categories/new and /categories/<id>/edit hold the form), no sheet.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Cell, Pie, PieChart } from "recharts";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Overlay } from "@/components/ui/overlay";
+import { Chart } from "@/components/chart";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/notice";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { localDateISO } from "@/lib/utils/date";
@@ -26,15 +30,19 @@ import { parseSaveError } from "@/lib/save-error";
 import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-overview";
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
-import { useAnimations } from "@/hooks/use-animations";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
-import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
-import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
-import { CategoryRow } from "./_components/category-row";
+import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Receipt, Save, Tags, Wallet } from "lucide-react";
+import type { FormCategory } from "./_components/category-budget-form";
+import { CategoryDetail } from "./_components/category-detail";
+import { CategoryFormPanel } from "./_components/category-form-panel";
+import { CategoryGroup } from "./_components/category-group";
+import { groupSelId, isGroupSelId } from "@/lib/categories/group-key";
+import { withMode, withSel } from "@/lib/list-detail/selection";
+import { sizeClassFor } from "@/components/ui/size-class";
+import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
-  type MetricItem, type OverflowAction,
+  CardLayoutEditor, ListDetailLayout, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
+  type ListDetailPaneApi, type MoreItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -46,8 +54,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import type { PageCard } from "@/lib/card-layout";
 import type { Budget } from "../budgets/_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
-import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
-import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { usePendingBudgets } from "@/lib/data/local-write-queue";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -117,7 +124,7 @@ function prevOf(trend: number[] | null): number | null {
 
 export default function CategoriesPageContent() {
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={6} />}>
       <CategoriesOverview />
     </Suspense>
   );
@@ -152,13 +159,12 @@ function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
 function CategoriesOverview() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const animationsEnabled = useAnimations();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   // Expanded top-level groups per type (several may be open). Empty = all collapsed.
   const [openByType, setOpenByType] = useState<Record<CatType, Set<string>>>(() => ({ E: new Set(), I: new Set() }));
   // regular+ (tablet, desktop): Spending and Income side by side. compact (phone): the Spending / Income tabs.
   const twoCol = useAppSizeClass() !== "compact";
-  // wide (>= 1024px): the split pane is a third column (?sel=<id>|new); below wide the ?edit= sheet stays.
+  // wide (>= 1024px): the split pane is a third column (?sel=<id>|new); below wide rows open the /categories/<id> routes.
   const detail = useListDetail();
   const [copying, setCopying] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -219,29 +225,33 @@ function CategoriesOverview() {
     catsReload();
   }, [overviewReload, budgetsReload, catsReload]);
 
-  // ?edit=new | ?edit=<id> opens the shared category + budget form.
+  // Legacy deep link ?edit=new | ?edit=<id>: wide maps it to the pane (?sel=, one address for the same form), below wide
+  // to the form route. Read the live width: the size class is "compact" for one render before it is measured.
   const editParam = searchParams.get("edit");
-  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
-  const formOpen = (editParam === "new" || editId != null) && !detail.split;
-  const { split: paneOn } = detail;
-  // ?edit= is a deep link: at wide it maps to the pane (?sel=), one address for the same form.
   useEffect(() => {
-    if (!paneOn || !editParam || !(editParam === "new" || /^\d+$/.test(editParam))) return;
+    if (!editParam || !(editParam === "new" || /^\d+$/.test(editParam))) return;
+    const wide = sizeClassFor(document.documentElement.clientWidth) === "wide";
     const qs = new URLSearchParams(window.location.search);
     qs.delete("edit");
-    qs.set("sel", editParam);
-    router.replace(`/categories?${qs}`, { scroll: false });
-  }, [paneOn, editParam, router]);
-  function setEdit(next: "new" | number | null) {
-    if (detail.split && next != null) {
-      if (next === "new") detail.selectNew();
-      else detail.select(next);
-      return;
+    if (wide) {
+      qs.set("sel", editParam);
+      if (editParam !== "new") qs.set("mode", "edit");
+      router.replace(`/categories?${qs}`, { scroll: false });
+    } else {
+      const m = qs.get("month");
+      router.replace(`/categories/${editParam === "new" ? "new" : `${editParam}/edit`}${m ? `?month=${m}` : ""}`, { scroll: false });
     }
-    const qs = new URLSearchParams(searchParams.toString());
-    if (next == null) qs.delete("edit");
-    else qs.set("edit", String(next));
-    router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
+  }, [editParam, router]);
+
+  /** Open a category / group (id or group id): the pane at wide, its detail route below. */
+  function open(id: string | number) {
+    if (detail.split) detail.select(id);
+    else router.push(`/categories/${id}`);
+  }
+  /** Open a category / group's edit form (Edit list mode): the pane in edit mode at wide, the form route below. */
+  function openEdit(id: string | number) {
+    if (detail.split) router.push(`/categories${withMode(withSel(window.location.search, id), "edit")}`, { scroll: false });
+    else router.push(`/categories/${id}/edit?month=${month}`);
   }
 
   function go(next: { type: CatType }) {
@@ -263,9 +273,9 @@ function CategoriesOverview() {
 
   const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
 
-  if (loading) return <PageSkeleton variant="list" rows={6} />;
+  if (loading) return <Notice variant="skeleton" skeleton="list" rows={6} />;
   if (failed || shown.some((t) => !dataOf[t])) {
-    return <ErrorState title="Couldn't load" message="Try again." onRetry={overviewReload} />;
+    return <Notice variant="error" title="Couldn't load" retry={overviewReload}>Try again.</Notice>;
   }
 
   const cur = (dataOf[type] ?? dataE ?? dataI)!.displayCurrency;
@@ -301,48 +311,25 @@ function CategoriesOverview() {
   const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
   const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalLeft });
   // Exactly these three cards.
-  const metrics: MetricItem[] = [
+  const metrics: MetricCardProps[] = [
     {
-      id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
-      sub: budgetCard.delta ?? NO_HISTORY_CAPTION, badgePct: budgetCard.badgePct,
+      id: "total-budget", label: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
+      delta: { pct: budgetCard.badgePct, text: budgetCard.delta ?? NO_HISTORY_CAPTION },
       sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
     },
     {
-      id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
+      id: "total-spent", label: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
       valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
-      sub: spentCard.delta ?? NO_HISTORY_CAPTION, badgePct: spentCard.badgePct, invertTone: true,
+      delta: { pct: spentCard.badgePct, text: spentCard.delta ?? NO_HISTORY_CAPTION, invert: true },
       sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
-      id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
+      id: "remaining", label: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
       valueClassName: totalLeft >= 0 ? "text-pos" : "text-destructive",
-      sub: leftCard.delta ?? NO_HISTORY_CAPTION, badgePct: leftCard.badgePct,
+      delta: { pct: leftCard.badgePct, text: leftCard.delta ?? NO_HISTORY_CAPTION },
       sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
     },
   ];
-
-  /** Server row of a budget (no overlay fields) as the offline queue's baseline. */
-  function serverRowOf(b: Budget) {
-    return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
-  }
-
-  /** Remove a budget (server or queued on this device). False = failed (the reason is in actionError). */
-  async function clearBudget(b: Budget): Promise<boolean> {
-    // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
-    if (b.pendingSync?.kind === "create") {
-      const dropped = await discardQueuedCreate(b.pendingSync.opId);
-      if (!dropped) setActionError("Being sent now. Try again.");
-      return dropped;
-    }
-    try {
-      const res = await fetch(`/api/budgets?id=${b.id}`, { method: "DELETE" });
-      return res.ok;
-    } catch (netErr) {
-      // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
-      const serverRow = serverBudgets.find((x) => x.id === b.id) ?? b;
-      return isLocalWriteQueueActive() && isNetworkFailure(netErr) ? await queueOfflineBudgetDelete(serverRowOf(serverRow)) : false;
-    }
-  }
 
   // Copy last month's budgets into the selected month (the upserting POST /api/budgets, native amount + currency).
   async function handleCopyFromPrevMonth() {
@@ -379,7 +366,7 @@ function CategoriesOverview() {
   }
 
   /** Budget tools: Copy last month, Save template, Apply template, Rules, Move money (top bar More). */
-  const overflow: OverflowAction[] = [
+  const budgetMore: MoreItem[] = [
     { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
     ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
     { label: "Apply template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` },
@@ -388,8 +375,6 @@ function CategoriesOverview() {
   ];
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
-
-  const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   /** One type's pieces: heading total, the share (pie) card and the category list card. */
   function panelFor(t: CatType) {
@@ -416,11 +401,11 @@ function CategoriesOverview() {
       const i = sliceIndex.get(key);
       return i == null ? OTHER_COLOR : CHART_COLORS.categories[i % CHART_COLORS.categories.length];
     };
-    const pieData = [
-      ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key) })),
-      ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR }] : []),
-    ];
     const pct = (amount: number) => (data.total > 0 ? Math.round((amount / data.total) * 100) : 0);
+    const pieData = [
+      ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key), pct: pct(r.amount) })),
+      ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR, pct: pct(other), disabled: true }] : []),
+    ];
     const topRow = slices[0];
     const pieLabel = topRow
       ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
@@ -432,7 +417,7 @@ function CategoriesOverview() {
       const row = findRow(allRows, key);
       if (!row) return;
       if (row.kind === "category") {
-        router.push(`/categories/${row.categories[0].id}`);
+        open(row.categories[0].id);
         return;
       }
       setOpen(t, key, true);
@@ -442,7 +427,7 @@ function CategoriesOverview() {
     }
 
     /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
+    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean; row?: CategoryRowProps["row"] }) => (
       <CategoryRow
         label={r.label}
         dot={r.dot}
@@ -456,101 +441,76 @@ function CategoriesOverview() {
         count={r.count}
         badge={r.badge}
         indent={r.indent}
+        row={r.row}
       />
     );
 
-    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false, row?: CategoryRowProps["row"]) =>
       rowFor({
-        indent,
+        indent, row,
         label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
         badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
       });
 
-    const groupRow = (row: OverviewRow) =>
-      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+    const groupRow = (row: OverviewRow, rowProps?: CategoryRowProps["row"]) =>
+      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key), row: rowProps });
 
-    /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
-    function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
-      const body = categoryRow(c, group, dot, indent);
-      return editMode ? (
-        <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
-          {body}
-        </button>
-      ) : (
-        <Link
-        href={`/categories/${c.id}`}
-        className={`${className}${detail.selectedId === String(c.id) ? " bg-primary/5" : ""}`}
-        aria-current={detail.selectedId === String(c.id) ? "true" : undefined}
-        onClick={(e) => {
-          if (!detail.split) return;
-          e.preventDefault();
-          detail.select(c.id); // wide: the row selects into the pane; the detail page stays one click away from the form
-        }}
-      >
-        {body}
-      </Link>
-      );
+    /**
+     * A selectable row (category or group): a link to its detail route that, at wide, selects it into the pane instead;
+     * in Edit list mode a button that opens the shared form prefilled. Never toggles a group (only the chevron does).
+     * `chevron: "reserve"` keeps the slot where the group's toggle button sits, so value columns line up.
+     */
+    function selectableRow(id: string | number, name: string, build: (row: CategoryRowProps["row"]) => ReactNode) {
+      const selected = detail.selectedId === String(id);
+      return editMode
+        ? build({ onPress: () => openEdit(id), "aria-label": `Edit: ${name}`, "data-edit-row": "", className: "bg-primary/5", chevron: "reserve" })
+        : build({
+            href: `/categories/${id}`,
+            selected,
+            chevron: "reserve",
+            onPress: (e) => {
+              if (!detail.split) return;
+              e.preventDefault();
+              detail.select(id); // wide: the row selects into the pane; below wide the link opens the detail route
+            },
+          });
     }
 
+    const categoryLink = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+      selectableRow(c.id, subLabel(c.name, group), (rp) => categoryRow(c, group, dot, indent, rp));
+
+    const groupLink = (row: OverviewRow) =>
+      selectableRow(groupSelId(t, row.label), row.label, (rp) => groupRow(row, rp));
+
+    const summaryHeading = (
+      <div>
+        <p className="text-sm text-muted-foreground">
+          {getMonthLabel(month)}{data.partial ? " · so far" : ""}
+        </p>
+        <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
+      </div>
+    );
     const summary = (
       <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
-        <div className="flex flex-col @md:flex-row @md:items-center gap-5">
-          {slices.length > 0 && (
-            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 @md:mx-0">
-              <PieChart width={160} height={160}>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={48}
-                  outerRadius={80}
-                  stroke="none"
-                  isAnimationActive={animationsEnabled}
-                  onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {pieData.map((d) => (
-                    <Cell key={d.key} fill={d.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </div>
-          )}
-
-          <div className="min-w-0 flex-1 space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {getMonthLabel(month)}{data.partial ? " · so far" : ""}
-              </p>
-              <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
-            </div>
-            {slices.length > 0 ? (
-              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-                {pieData.map((d) => {
-                  const isOther = d.key === OTHER_KEY;
-                  const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
-                  return (
-                    <li key={d.key}>
-                      <button
-                        type="button"
-                        disabled={isOther}
-                        onClick={() => openPieKey(d.key)}
-                        className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
-                      >
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
-                        <span className="truncate">{d.name} {share}%</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No {noun}.</p>
-            )}
+        {slices.length > 0 ? (
+          <Chart
+            kind="donut"
+            data={pieData}
+            currency={cur}
+            size="md"
+            tooltip={false}
+            ariaLabel={pieLabel}
+            breakdownList
+            breakdownValue="inline"
+            heading={summaryHeading}
+            onSliceClick={(row) => openPieKey(row.key)}
+          />
+        ) : (
+          <div className="space-y-3">
+            {summaryHeading}
+            <p className="text-sm text-muted-foreground">No {noun}.</p>
           </div>
-        </div>
+        )}
       </SectionCard>
     );
 
@@ -559,8 +519,8 @@ function CategoriesOverview() {
         label="Categories"
         icon={Tags}
         tone="indigo"
-        padded={false}
-        className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]"
+        list
+        className="[&>*]:min-w-0"
       >
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No {noun}.</p>
@@ -568,28 +528,22 @@ function CategoriesOverview() {
           rows.map((row) =>
             row.kind === "group" ? (
               <div key={row.key} id={groupDomId(t, row.key)} data-slot="category-group">
-                <Accordion
-                  value={openKeys.has(row.key) ? row.key : null}
-                  onValueChange={(v) => setOpen(t, row.key, v === row.key)}
-                  className="gap-0"
+                <CategoryGroup
+                  label={row.label}
+                  panelId={`${groupDomId(t, row.key)}-panel`}
+                  open={openKeys.has(row.key)}
+                  onToggle={() => setOpen(t, row.key, !openKeys.has(row.key))}
+                  header={groupLink(row)}
                 >
-                  <AccordionItem
-                    value={row.key}
-                    title={groupRow(row)}
-                    className="rounded-none border-0 bg-transparent"
-                    triggerClassName="rounded-none px-4 py-3"
-                    panelClassName="border-t border-border/50 p-0"
-                  >
-                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                      {row.categories.map((c) => (
-                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
-                      ))}
-                    </ul>
-                  </AccordionItem>
-                </Accordion>
+                  <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {row.categories.map((c) => (
+                      <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), true)}</li>
+                    ))}
+                  </ul>
+                </CategoryGroup>
               </div>
             ) : (
-              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key), ROW_LINK)}</div>
+              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key))}</div>
             ),
           )
         )}
@@ -637,28 +591,6 @@ function CategoriesOverview() {
     </section>
   );
 
-  // ---- split pane (wide): the ONE block that wires the third column; the sheet below is the below-wide twin ------------
-  const paneBody = (api: ListDetailPaneApi) => {
-    const id = api.selectedId != null && /^\d+$/.test(api.selectedId) ? Number(api.selectedId) : null;
-    const cat = id != null ? (allCategories.find((c) => c.id === id) ?? null) : null;
-    if (!api.isNew && !cat) return <p className="text-sm text-muted-foreground">Category not found.</p>;
-    return (
-      <CategoryBudgetForm
-        key={`${api.selectedId ?? "new"}-${budgetsKnown}-${allCategories.length}`}
-        category={cat}
-        categories={allCategories}
-        budgets={budgets}
-        month={month}
-        currency={displayCurrency}
-        defaultType="E"
-        onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); api.afterSaved(cat?.id); }}
-        onCancel={api.clear}
-        onDeleted={() => { reloadAll(); api.afterDeleted(); }}
-        onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
-      />
-    );
-  };
-
   /** What one card id renders: metrics are spending only (full width above the columns); the type cards are per column. */
   const nodeFor = (id: string): ReactNode => {
     if (id === "metrics") return isIncome && !twoCol ? null : metricsNode;
@@ -674,16 +606,39 @@ function CategoriesOverview() {
     <div className="space-y-6">
       <PageHeader
         title="Categories"
-        actions={
-          <ListDetailNewButton href="/categories?edit=new" label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
-        }
+        primary={{ kind: "add", label: "Add", href: `/categories/new?month=${month}`, onSelect: detail.split ? detail.selectNew : undefined }}
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
-        overflow={isIncome && !twoCol ? undefined : overflow}
+        more={isIncome && !twoCol ? undefined : budgetMore}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
-      {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 2/3, the pane is the right 1/3 at full page height. */}
-      <ListDetailLayout entity="category" newLabel="Add" enabled={twoCol} pane={paneBody}>
+      {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 3/4, the pane is the right 1/4 at full page height. */}
+      <ListDetailLayout
+        entity="category"
+        newLabel="Add"
+        enabled={twoCol}
+        detailTitle="Category"
+        detailHref={(id) => `/categories/${id}`}
+        renderDetail={(id, api) => <CategoryDetail id={id} embedded={{ onEdit: api.edit, onOpen: api.select }} />}
+        renderForm={(api) => (
+          <CategoryFormPanel
+            embedded
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            month={month}
+            defaultType={type}
+            onSaved={(id, warning) => {
+              setActionError(warning ? `Budget: ${warning}` : "");
+              reloadAll();
+              // A renamed group has a new id: stay on it.
+              if (typeof id === "string" && isGroupSelId(id) && id !== api.selectedId) api.replaceWith(id);
+              else api.afterSaved(id);
+            }}
+            onCancel={api.cancel}
+            onDeleted={() => { reloadAll(); api.afterDeleted(); }}
+          />
+        )}
+      >
         {toolbar}
         {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
@@ -692,39 +647,16 @@ function CategoriesOverview() {
         ))}
       </ListDetailLayout>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize"
-        description="Show, hide, reorder cards."
+        info="Show, hide, reorder cards."
         cards={CATEGORY_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
-
-      <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
-        <SheetContent side="right" className="w-full overflow-y-auto regular:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
-          </SheetHeader>
-          {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
-            <CategoryBudgetForm
-              key={`${editParam}-${budgetsKnown}-${allCategories.length}`}
-              category={editId != null ? (allCategories.find((c) => c.id === editId) ?? null) : null}
-              categories={allCategories}
-              budgets={budgets}
-              month={month}
-              currency={displayCurrency}
-              defaultType={type}
-              onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); setEdit(null); }}
-              onCancel={() => setEdit(null)}
-              onDeleted={() => { reloadAll(); setEdit(null); }}
-              onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
 
       {partial && (
         <p className="text-xs text-muted-foreground">

@@ -14,14 +14,12 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { GroupCombobox } from "@/components/ui/group-combobox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Overlay } from "@/components/ui/overlay";
 import { getMonthLabel } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { isLocalWriteQueueActive, queueOfflineBudgetSet, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { Field } from "@/components/ui/field";
 import type { Budget } from "../../budgets/_components/budget-types";
 
 export type FormCategory = { id: number; type: string; group: string; name: string };
@@ -39,16 +37,18 @@ export interface CategoryBudgetFormProps {
   currency: string;
   /** Type for a new category (the page's Spending / Income tab). */
   defaultType?: "E" | "I";
-  /** Saved; `warning` = the category saved but its budget did not. */
-  onSaved: (warning?: string) => void;
+  /** Saved; `warning` = the category saved but its budget did not; `id` = the category (the new one after an add). */
+  onSaved: (warning?: string, id?: number) => void;
   onCancel: () => void;
   onDeleted: () => void;
   /** Remove an existing budget (server or queued). Resolves false on failure. */
   onClearBudget: (b: Budget) => Promise<boolean>;
+  /** No own horizontal padding: the host (pane, page body) already pads. */
+  flush?: boolean;
 }
 
 export function CategoryBudgetForm({
-  category, categories, budgets, month, currency, defaultType = "E", onSaved, onCancel, onDeleted, onClearBudget,
+  category, categories, budgets, month, currency, defaultType = "E", onSaved, onCancel, onDeleted, onClearBudget, flush,
 }: CategoryBudgetFormProps) {
   const isEdit = category != null;
   const existing = category ? budgets.find((b) => b.categoryId === category.id) : undefined;
@@ -141,7 +141,7 @@ export function CategoryBudgetForm({
         id = (await res.json()).id;
       }
       const warning = canBudget ? await saveBudget(id, name.trim(), group.trim()) : null;
-      onSaved(warning ?? undefined);
+      onSaved(warning ?? undefined, id);
     } catch {
       setFormError("Network error");
     } finally {
@@ -170,7 +170,7 @@ export function CategoryBudgetForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate data-form="category-budget" className="space-y-4 px-4 pb-4">
+    <form onSubmit={handleSubmit} noValidate data-form="category-budget" className={flush ? "space-y-4" : "space-y-4 px-4 pb-4"}>
       {formError && (
         <div role="alert" className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -179,10 +179,9 @@ export function CategoryBudgetForm({
       )}
 
       <div>
-        <Input
+        <Field
           aria-label="Name"
           aria-invalid={!!nameError || undefined}
-          className="h-11 text-base regular:pointer-fine:text-sm"
           value={name}
           onChange={(e) => { setName(e.target.value); setNameError(""); }}
           placeholder="Name"
@@ -192,29 +191,30 @@ export function CategoryBudgetForm({
       </div>
 
       {!isEdit && (
-        <Select items={TYPE_LABELS} value={type} onValueChange={(v) => setType(v ?? "E")}>
-          <SelectTrigger aria-label="Type" className="h-11 w-full">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="E">Expense</SelectItem>
-            <SelectItem value="I">Income</SelectItem>
-            <SelectItem value="R">Reconciliation</SelectItem>
-          </SelectContent>
-        </Select>
+        <Field
+          control="select"
+          value={type}
+          onValueChange={(v) => setType(v ?? "E")}
+          aria-label="Type"
+          placeholder="Type"
+          options={[
+            { value: "E", label: "Expense" },
+            { value: "I", label: "Income" },
+            { value: "R", label: "Reconciliation" },
+          ]}
+        />
       )}
 
-      <GroupCombobox value={group} onChange={setGroup} options={groups} placeholder="Group" ariaLabel="Group" />
+      <Field control="group-combobox" aria-label="Group" value={group} onValueChange={setGroup} options={groups} placeholder="Group" />
 
       {canBudget && (
         <div>
-          <Input
+          <Field
+            control="number"
             aria-label="Budget"
-            type="number"
             inputMode="decimal"
             min="0"
             step="0.01"
-            className="h-11 text-base regular:pointer-fine:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={`Budget · ${getMonthLabel(month)}`}
@@ -234,11 +234,12 @@ export function CategoryBudgetForm({
         </div>
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmDelete}
-        onOpenChange={setConfirmDelete}
+        onClose={() => setConfirmDelete(false)}
         title="Delete category"
-        description={<>Delete <strong>{category?.name}</strong>? Categories in use can&apos;t be deleted.</>}
+        message={<>Delete <strong>{category?.name}</strong>? Categories in use can&apos;t be deleted.</>}
         confirmLabel="Delete"
         busy={submitting}
         onConfirm={handleDelete}

@@ -5,11 +5,9 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { AlertTriangle, Check, RefreshCw, X } from "lucide-react";
-import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 
 type AuditRow = {
@@ -110,29 +108,18 @@ export default function CurrencyAuditPage() {
     <SectionPage
       id="transactions-audit"
       title="Currency Review"
-      backFallback="/transactions"
-      backLabel="Back to Transactions"
+      back={{ href: "/transactions", label: "Back to Transactions" }}
       width="doc"
       stack="5"
       minW0={false}
       padBottom="none"
       header={{
-        className: "flex flex-wrap items-center justify-between gap-3",
-        overflow: [
+        more: [
           {
             label: includeResolved ? "Hide resolved" : "Show resolved",
             onSelect: () => setIncludeResolved((v) => !v),
           },
         ],
-        actions: (
-          <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-            <Switch
-              checked={includeResolved}
-              onCheckedChange={(v) => setIncludeResolved(v)}
-            />
-            Show resolved
-          </label>
-        ),
       }}
     >
       <p className="text-sm text-muted-foreground mt-1">

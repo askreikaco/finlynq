@@ -18,7 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { List, Lock, RefreshCw, Users } from "lucide-react";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface ByUser {
   userId: string;
@@ -136,24 +138,13 @@ export default function AdminEmailInboxPage() {
     <SectionPage
       id="admin-email-inbox"
       title="Email Oversight"
+      info="Cross-user view of inbound email-import rows. Metadata is always shown; from/subject preview is available only for service-tier rows (before the owner's next login). User-tier content is encrypted with the owner's key and cannot be read here."
       width="report"
       center
       header={{
-        actions: (
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        ),
+        more: [{ label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading }],
       }}
     >
-      <p className="text-sm text-muted-foreground mt-0.5">
-        Cross-user view of inbound email-import rows. Metadata is always
-        shown; from/subject preview is available only for service-tier rows
-        (before the owner&apos;s next login). User-tier content is encrypted
-        with the owner&apos;s key and cannot be read here.
-      </p>
-
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
@@ -162,13 +153,16 @@ export default function AdminEmailInboxPage() {
 
       {/* ─── Per-user grouped counts ──────────────────────────────────────── */}
       <SectionCard
-        label="By user" icon={Users} tone="indigo"
-        padded={false}
-        className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
+        label={
+          <>
+            By user
+            <InfoTip label="About user counts" text="Counts honor the action / source / date filters (not the selected user)." />
+          </>
+        }
+        icon={Users}
+        tone="indigo"
+        list
       >
-        <p className="px-1 pt-3 text-xs text-muted-foreground">
-          Counts honor the action / source / date filters (not the selected user).
-        </p>
         {data?.byUser.map((g) => (
           <ListRow
             key={g.userId}
@@ -188,7 +182,7 @@ export default function AdminEmailInboxPage() {
           />
         ))}
         {data && data.byUser.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p data-keep="empty" className="py-8 text-center text-sm text-muted-foreground">
             No email-import rows match these filters.
           </p>
         )}
@@ -226,24 +220,8 @@ export default function AdminEmailInboxPage() {
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          From
-          <input
-            type="date"
-            value={since}
-            onChange={(e) => setSince(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          To
-          <input
-            type="date"
-            value={until}
-            onChange={(e) => setUntil(e.target.value)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          />
-        </label>
+        <Field label="From" control="date" value={since} onChange={(e) => setSince(e.target.value)} />
+        <Field label="To" control="date" value={until} onChange={(e) => setUntil(e.target.value)} />
         {selectedUserLabel && (
           <Badge variant="outline" className="gap-1">
             user: {selectedUserLabel}
@@ -255,12 +233,12 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard label="Rows" icon={List} tone="muted" list>
         {loading && !data && (
-          <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
+          <p data-keep="status" className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}
         {data && data.rows.length === 0 && (
-          <p className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
+          <p data-keep="empty" className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
         )}
         {data && data.rows.map((r) => (
           <div key={r.id} className="py-1">
@@ -291,7 +269,7 @@ export default function AdminEmailInboxPage() {
               }
               secondary={fmt(r.receivedAt)}
             />
-            <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 pb-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-2 text-xs text-muted-foreground">
               <span>Source {r.sourceKind}</span>
               <span>Confidence {r.parseConfidence ?? "—"}</span>
               <span>Tier {r.encryptionTier ?? "service"}</span>

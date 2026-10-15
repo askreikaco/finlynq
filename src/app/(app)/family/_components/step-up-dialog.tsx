@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { Loader2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 
 interface StepUpDialogProps {
@@ -42,37 +41,33 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
   const shownError = localError ?? error;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && cancel()}>
-      <DialogContent className="regular:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{FAMILY_STRINGS.step_up_title}</DialogTitle>
-          <DialogDescription>{FAMILY_STRINGS.step_up_message}</DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={isOpen}
+      onClose={() => cancel()}
+      size="sm"
+      title={FAMILY_STRINGS.step_up_title}
+      info={FAMILY_STRINGS.step_up_message}
+    >
         <form onSubmit={submit} className="space-y-4" noValidate>
-          <div>
-            <Label htmlFor="family-step-up-password">{FAMILY_STRINGS.step_up_password_label}</Label>
-            <Input
-              id="family-step-up-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setLocalError(null);
-              }}
-              disabled={busy}
-              aria-invalid={shownError ? true : undefined}
-              aria-describedby={shownError ? "family-step-up-error" : undefined}
-              className="mt-2"
-              autoFocus
-            />
-          </div>
+          <Field
+            label={FAMILY_STRINGS.step_up_password_label}
+            id="family-step-up-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setLocalError(null);
+            }}
+            disabled={busy}
+            aria-invalid={shownError ? true : undefined}
+            aria-describedby={shownError ? "family-step-up-error" : undefined}
+            autoFocus
+            className="mt-2"
+          />
 
           {shownError && (
-            <Alert variant="destructive" id="family-step-up-error">
-              <AlertDescription>{shownError}</AlertDescription>
-            </Alert>
+            <Notice tone="danger" id="family-step-up-error">{shownError}</Notice>
           )}
 
           <div className="flex gap-2 pt-2">
@@ -85,7 +80,6 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

@@ -14,13 +14,7 @@
  * so this intentionally does NOT reuse the destructive ConfirmDialog.
  */
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { formatCurrency } from "@/lib/currency";
 
 export interface InvestmentOpPreview {
@@ -65,17 +59,18 @@ export function InvestmentOpPreviewDialog({
   const amountAbs = formatCurrency(Math.abs(preview.amount), preview.currency || "CAD");
 
   return (
-    <Dialog
+    <Overlay
+      variant="confirm"
+      destructive={false}
+      size="md"
       open={open}
-      onOpenChange={(next) => {
-        if (busy && !next) return;
-        onOpenChange(next);
-      }}
+      busy={busy}
+      onClose={() => onOpenChange(false)}
+      title="Record investment transaction"
+      confirmLabel={`Record ${op}`}
+      busyLabel="Recording…"
+      onConfirm={onConfirm}
     >
-      <DialogContent className="regular:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Record investment transaction</DialogTitle>
-        </DialogHeader>
         <div className="text-sm space-y-3">
           <p className="text-muted-foreground">
             A matching rule will record this bank row as the operation below.
@@ -111,24 +106,6 @@ export function InvestmentOpPreviewDialog({
                 : "Records the cash entry on the account's sleeve and links the bank row."}
           </p>
         </div>
-        <div className="flex gap-2 mt-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            disabled={busy}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="flex-1"
-            disabled={busy}
-            onClick={onConfirm}
-          >
-            {busy ? "Recording…" : `Record ${op}`}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

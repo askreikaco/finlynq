@@ -3,18 +3,17 @@
 /**
  * DetailPage: one record's view (accounts/[id], categories/[id], settings/backfill/[runId]).
  *
- * The template owns the chrome: Suspense, the global PageHeader (back, title, actions, overflow),
+ * The template owns the chrome: Suspense, the global PageHeader (back, title, primary, more),
  * the width token, the bottom pad and the `<id>-root` testid. The page passes the record source
  * (`load`) and its slots. Loading, error (with retry) and not-found states all render the same
  * PageHeader, so the back control is always there.
  *
- * Slots (`title`, `actions`, `overflow`, `sections`) take either a node or a function of the record.
+ * Slots (`title`, `primary`, `more`, `sections`) take either a node or a function of the record.
  */
 
 import { Suspense, type ReactNode } from "react";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { PageHeader, type OverflowAction } from "@/components/mobile";
+import { PageHeader, type MoreItem, type TopBarPrimary } from "@/components/mobile";
+import { Notice } from "@/components/notice";
 import { useRecord } from "@/lib/forms/use-record";
 import { useReturnTo } from "@/lib/forms/use-return-to";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,7 @@ export interface DetailPageProps<D, R> {
   /** Root testid prefix: the root element is `data-testid="<id>-root"`. */
   id: string;
   /** Header title, from the record. Shown as `placeholderTitle` until the record loads. */
-  title: DetailSlot<R, ReactNode>;
+  title: DetailSlot<R, string>;
   /** Header title while loading, on error and when not found. */
   placeholderTitle?: string;
   /** Back target when the URL has no valid `?returnTo=`. */
@@ -41,10 +40,10 @@ export interface DetailPageProps<D, R> {
     /** Not-found copy for the empty state. */
     notFound?: { title?: string; message?: string };
   };
-  /** Primary and secondary actions. Secondary buttons need HEADER_SECONDARY and an `overflow` entry. */
-  actions?: DetailSlot<R, ReactNode>;
-  /** Overflow (⋯) menu entries. */
-  overflow?: DetailSlot<R, OverflowAction[]>;
+  /** The primary action (Edit / Add) in the top bar. */
+  primary?: DetailSlot<R, TopBarPrimary | undefined>;
+  /** More (⋯) menu entries. */
+  more?: DetailSlot<R, MoreItem[]>;
   /** The page body, below the header. */
   sections: DetailSlot<R, ReactNode>;
 }
@@ -81,8 +80,8 @@ function DetailShell({
 }) {
   return (
     <div data-testid={`${id}-root`} className={cn("w-full space-y-6", TW.formPad)}>
-      <PageHeader title={placeholderTitle ?? ""} backHref={backFallback} backLabel={backLabel ?? "Back"} />
-      {children ?? <PageSkeleton variant="list" rows={3} />}
+      <PageHeader title={placeholderTitle ?? ""} back={{ href: backFallback, label: backLabel ?? "Back" }} />
+      {children ?? <Notice variant="skeleton" skeleton="list" rows={3} />}
     </div>
   );
 }
@@ -94,8 +93,8 @@ function DetailContent<D, R>({
   backFallback,
   backLabel = "Back",
   load,
-  actions,
-  overflow,
+  primary,
+  more,
   sections,
 }: DetailPageProps<D, R>) {
   const returnTo = useReturnTo(backFallback);
@@ -105,32 +104,33 @@ function DetailContent<D, R>({
     if (error !== undefined && error !== null) {
       return (
         <DetailShell id={id} backFallback={returnTo} backLabel={backLabel} placeholderTitle={placeholderTitle}>
-          <ErrorState title="Couldn't load this record" message="Please try again." onRetry={() => void mutate()} />
+          <Notice variant="error" title="Couldn't load this record" retry={() => void mutate()}>Please try again.</Notice>
         </DetailShell>
       );
     }
     if (notFound) {
       return (
         <DetailShell id={id} backFallback={returnTo} backLabel={backLabel} placeholderTitle={placeholderTitle}>
-          <ErrorState
+          <Notice
+            variant="error"
             title={load.notFound?.title ?? "Not found"}
-            message={load.notFound?.message ?? "This doesn't exist, or it isn't one of yours."}
-          />
+          >
+            {load.notFound?.message ?? "This doesn't exist, or it isn't one of yours."}
+          </Notice>
         </DetailShell>
       );
     }
     return <DetailShell id={id} backFallback={returnTo} backLabel={backLabel} placeholderTitle={placeholderTitle} />;
   }
 
-  const overflowItems = resolve(overflow, record, [] as OverflowAction[]);
+  const moreItems = resolve(more, record, [] as MoreItem[]);
   return (
     <div data-testid={`${id}-root`} className={cn("w-full space-y-6", TW.formPad)}>
       <PageHeader
         title={resolve(title, record, placeholderTitle)}
-        backHref={returnTo}
-        backLabel={backLabel}
-        actions={resolve(actions, record, null)}
-        overflow={overflowItems}
+        back={{ href: returnTo, label: backLabel }}
+        primary={resolve(primary, record, undefined)}
+        more={moreItems}
       />
       <div data-slot="detail-grid" className={TW.grid3}>{resolve(sections, record, null)}</div>
     </div>

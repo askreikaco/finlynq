@@ -18,14 +18,14 @@ const DEFAULT_ROOT = "min-w-0 space-y-6 pb-[var(--form-bottom-pad)]";
 describe("SectionPage variants", () => {
   it("default props render the original root className literal", () => {
     render(
-      <SectionPage id="v-default" title="D" backFallback="/settings">
+      <SectionPage id="v-default" title="D" back={{ href: "/settings" }}>
         <p>body</p>
       </SectionPage>,
     );
     expect(screen.getByTestId("v-default-root").className).toBe(DEFAULT_ROOT);
   });
 
-  it("omitted backFallback passes no backHref: header matches a bare PageHeader", () => {
+  it("omitted back: header matches a bare PageHeader", () => {
     const { container: a, unmount } = render(
       <SectionPage id="v-noback" title="N">
         <p>body</p>
@@ -41,7 +41,7 @@ describe("SectionPage variants", () => {
 
   it("backLabel reaches the back control", () => {
     render(
-      <SectionPage id="v-label" title="L" backFallback="/settings" backLabel="Up">
+      <SectionPage id="v-label" title="L" back={{ href: "/settings", label: "Up" }}>
         <p>body</p>
       </SectionPage>,
     );
@@ -55,7 +55,7 @@ describe("SectionPage variants", () => {
     ["section", "max-w-section"],
   ] as const)("width=%s applies no %s cap (full width on desktop)", (width, cls) => {
     render(
-      <SectionPage id={`v-w-${width}`} title="W" backFallback="/x" width={width}>
+      <SectionPage id={`v-w-${width}`} title="W" back={{ href: "/x" }} width={width}>
         <p>body</p>
       </SectionPage>,
     );
@@ -65,7 +65,7 @@ describe("SectionPage variants", () => {
 
   it("width=report is full width (no max-width token, no mx-auto even with center)", () => {
     render(
-      <SectionPage id="v-w-report" title="W" backFallback="/x" width="report" center>
+      <SectionPage id="v-w-report" title="W" back={{ href: "/x" }} width="report" center>
         <p>body</p>
       </SectionPage>,
     );
@@ -74,7 +74,7 @@ describe("SectionPage variants", () => {
 
   it("width=none applies no max-width token", () => {
     render(
-      <SectionPage id="v-w-none" title="W" backFallback="/x" width="none">
+      <SectionPage id="v-w-none" title="W" back={{ href: "/x" }} width="none">
         <p>body</p>
       </SectionPage>,
     );
@@ -84,7 +84,7 @@ describe("SectionPage variants", () => {
 
   it("padBottom=max uses the max pad token and not the default pad", () => {
     render(
-      <SectionPage id="v-pad-max" title="P" backFallback="/x" padBottom="max">
+      <SectionPage id="v-pad-max" title="P" back={{ href: "/x" }} padBottom="max">
         <p>body</p>
       </SectionPage>,
     );
@@ -95,7 +95,7 @@ describe("SectionPage variants", () => {
 
   it("padBottom=none applies no pb- class", () => {
     render(
-      <SectionPage id="v-pad-none" title="P" backFallback="/x" padBottom="none">
+      <SectionPage id="v-pad-none" title="P" back={{ href: "/x" }} padBottom="none">
         <p>body</p>
       </SectionPage>,
     );
@@ -104,7 +104,7 @@ describe("SectionPage variants", () => {
 
   it("minW0=false drops min-w-0", () => {
     render(
-      <SectionPage id="v-minw0" title="M" backFallback="/x" minW0={false}>
+      <SectionPage id="v-minw0" title="M" back={{ href: "/x" }} minW0={false}>
         <p>body</p>
       </SectionPage>,
     );
@@ -113,7 +113,7 @@ describe("SectionPage variants", () => {
 
   it("center=true adds mx-auto", () => {
     render(
-      <SectionPage id="v-center" title="C" backFallback="/x" center>
+      <SectionPage id="v-center" title="C" back={{ href: "/x" }} center>
         <p>body</p>
       </SectionPage>,
     );
@@ -125,7 +125,7 @@ describe("SectionPage variants", () => {
     ["4", "space-y-4"],
   ] as const)("stack=%s applies %s and not space-y-6", (stack, cls) => {
     render(
-      <SectionPage id={`v-stack-${stack}`} title="S" backFallback="/x" stack={stack}>
+      <SectionPage id={`v-stack-${stack}`} title="S" back={{ href: "/x" }} stack={stack}>
         <p>body</p>
       </SectionPage>,
     );
@@ -134,13 +134,13 @@ describe("SectionPage variants", () => {
     expect(root).not.toHaveClass("space-y-6");
   });
 
-  it("header.actions renders in the PageHeader", () => {
+  it("header.primary renders in the PageHeader", () => {
     render(
       <SectionPage
         id="v-actions"
         title="A"
-        backFallback="/x"
-        header={{ actions: <button type="button">Save changes</button> }}
+        back={{ href: "/x" }}
+        header={{ primary: { kind: "save", label: "Save changes", onSelect: () => {} } }}
       >
         <p>body</p>
       </SectionPage>,
@@ -148,13 +148,13 @@ describe("SectionPage variants", () => {
     expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
   });
 
-  it("header.overflow renders the overflow trigger", () => {
+  it("header.more renders the More trigger", () => {
     render(
       <SectionPage
         id="v-overflow"
         title="O"
-        backFallback="/x"
-        header={{ overflow: [{ label: "Export", onSelect: () => {} }] }}
+        back={{ href: "/x" }}
+        header={{ more: [{ label: "Export", onSelect: () => {} }] }}
       >
         <p>body</p>
       </SectionPage>,
@@ -164,7 +164,7 @@ describe("SectionPage variants", () => {
 
   it("className is appended last to the root", () => {
     render(
-      <SectionPage id="v-class" title="X" backFallback="/x" className="p-6">
+      <SectionPage id="v-class" title="X" back={{ href: "/x" }} className="p-6">
         <p>body</p>
       </SectionPage>,
     );
@@ -175,7 +175,7 @@ describe("SectionPage variants", () => {
 
   it("suspense=false renders the body without a boundary", () => {
     render(
-      <SectionPage id="v-nosusp" title="X" backFallback="/x" suspense={false}>
+      <SectionPage id="v-nosusp" title="X" back={{ href: "/x" }} suspense={false}>
         <p>direct body</p>
       </SectionPage>,
     );
@@ -186,7 +186,7 @@ describe("SectionPage variants", () => {
 describe("SectionPage variants: grid", () => {
   it("grid renders the body in the 1 / 2 / 3 column card grid", () => {
     render(
-      <SectionPage id="v-grid" title="G" backFallback="/x" grid>
+      <SectionPage id="v-grid" title="G" back={{ href: "/x" }} grid>
         <p>a</p>
         <p>b</p>
       </SectionPage>,
@@ -198,7 +198,7 @@ describe("SectionPage variants: grid", () => {
 
   it("without grid there is no grid wrapper", () => {
     render(
-      <SectionPage id="v-nogrid" title="G" backFallback="/x">
+      <SectionPage id="v-nogrid" title="G" back={{ href: "/x" }}>
         <p>a</p>
       </SectionPage>,
     );

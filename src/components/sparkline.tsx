@@ -1,145 +1,28 @@
 "use client";
 
-import { AreaChart, Area, ResponsiveContainer, Tooltip, YAxis } from "recharts";
-import { formatCurrency, getMonthLabel } from "@/lib/currency";
-import { useDisplayCurrency } from "@/components/currency-provider";
-import { useAnimations } from "@/hooks/use-animations";
+/**
+ * TEMPORARY re-export for metric-card.tsx and mobile/progress-row.tsx (rewritten by another agent; they still import
+ * `Sparkline` from here). Delete this file once they render <Chart kind="sparkline" values labels color /> directly.
+ */
 
-type SparklineProps = {
+import { Chart } from "@/components/chart";
+
+export function Sparkline({
+  data,
+  color,
+  labels,
+  currency,
+  height = 30,
+  className = "w-full h-[30px]",
+}: {
   data: number[];
   color: string;
-  /**
-   * Optional point labels, parallel to `data`. When provided the sparkline
-   * becomes interactive: hovering a point shows a tooltip with that point's
-   * value + date. Labels are "YYYY-MM" month keys (rendered via getMonthLabel).
-   */
   labels?: string[];
-  /** Chart height: px (default 30, the card-footer strip) or "100%" to fill a sized wrapper. */
   height?: number | `${number}%`;
-  /** Wrapper classes (default "w-full h-[30px]"). */
   className?: string;
-  /** Currency used to format the tooltip value. */
   currency?: string;
-};
-
-/**
- * Compute a padded domain for the sparkline chart.
- * Adds padding to prevent the chart from appearing flat when values are tightly clustered.
- * Ignores non-finite values (NaN, Infinity).
- * @param data Array of numeric values
- * @returns [min, max] domain with padding applied
- */
-export function sparkDomain(data: number[]): [number, number] {
-  if (!data || data.length === 0) {
-    return [0, 1];
-  }
-
-  // Filter to only finite values
-  const finiteData = data.filter(Number.isFinite);
-
-  // Return safe fallback if no finite values
-  if (finiteData.length === 0) {
-    return [0, 1];
-  }
-
-  const min = Math.min(...finiteData);
-  const max = Math.max(...finiteData);
-
-  // Handle flat data (all values the same)
-  if (min === max) {
-    const pad = Math.abs(max) * 0.05;
-    return [max - pad, max + pad];
-  }
-
-  // Regular case: add 10% of the range as padding
-  const range = max - min;
-  const pad = range * 0.1;
-  return [min - pad, max + pad];
-}
-
-type SparkRow = { index: number; value: number; label?: string };
-
-/** Compact value + date tooltip for the interactive sparkline. */
-function SparklineTooltip({
-  active,
-  payload,
-  color,
-  currency,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload: SparkRow }[];
-  color: string;
-  currency: string;
 }) {
-  if (!active || !payload?.length) return null;
-  const point = payload[0];
-  const label = point.payload?.label;
   return (
-    <div className="rounded-lg border border-border/50 bg-card/95 backdrop-blur-sm px-2.5 py-1.5 shadow-lg">
-      {label && (
-        <p className="text-xs font-medium text-muted-foreground mb-0.5">{getMonthLabel(label)}</p>
-      )}
-      <div className="flex items-center gap-1.5 text-xs font-semibold tabular-nums">
-        {/* Dot color set via ref-callback to keep inline style= off the HTML (CSP). */}
-        <span
-          className="h-1.5 w-1.5 rounded-full shrink-0"
-          ref={(el) => {
-            if (el) el.style.background = color;
-          }}
-        />
-        {formatCurrency(Number(point.value), currency)}
-      </div>
-    </div>
-  );
-}
-
-export function Sparkline({ data, color, labels, currency, height = 30, className = "w-full h-[30px]" }: SparklineProps) {
-  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
-  const animationsEnabled = useAnimations();
-  const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
-  const interactive = Boolean(labels?.length);
-  const [minDomain, maxDomain] = sparkDomain(data);
-
-  return (
-    <div className={className}>
-      <ResponsiveContainer width="100%" height={height} minWidth={0}>
-        <AreaChart data={chartData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-          <defs>
-            <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <YAxis hide domain={[minDomain, maxDomain]} />
-          {interactive && (
-            <Tooltip
-              content={<SparklineTooltip color={color} currency={resolvedCurrency} />}
-              cursor={{ stroke: color, strokeOpacity: 0.35, strokeWidth: 1 }}
-              // The chart is only 30px tall and sits at the bottom of an
-              // overflow-hidden card. Render the tooltip ABOVE the cursor
-              // (escape + reverse on the Y axis) so it lands inside the card
-              // body, and keep X inside the viewbox so it never clips the card
-              // edges. (Do NOT use the `portal` prop — recharts then drops the
-              // positioning transform entirely.)
-              allowEscapeViewBox={{ x: false, y: true }}
-              reverseDirection={{ x: false, y: true }}
-              offset={8}
-              wrapperStyle={{ zIndex: 50, pointerEvents: "none" }}
-              isAnimationActive={animationsEnabled}
-            />
-          )}
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            strokeWidth={1.5}
-            fill={`url(#spark-${color.replace("#", "")})`}
-            isAnimationActive={animationsEnabled}
-            activeDot={interactive ? { r: 3, stroke: color, strokeWidth: 1, fill: color } : false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <Chart kind="sparkline" values={data} labels={labels} color={color} currency={currency} height={typeof height === "number" ? height : "fill"} className={className} />
   );
 }

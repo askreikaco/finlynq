@@ -1,19 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Notice } from "@/components/notice";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { SectionChecklist } from "./section-checklist";
 import { getSectionDescription, getSectionLabel } from "./section-labels";
 import { useStepUp } from "./use-step-up";
+import { Field } from "@/components/ui/field";
 import { errorMessage, postJson } from "./api";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface InviteDialogProps {
   onClose: () => void;
@@ -68,30 +67,28 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
   return (
     <>
-      <Dialog open={!stepUp.open} onOpenChange={(open) => !open && !busy && onClose()}>
-        <DialogContent className="regular:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{FAMILY_STRINGS.invite_dialog_title}</DialogTitle>
-            <DialogDescription>{FAMILY_STRINGS.page_description}</DialogDescription>
-          </DialogHeader>
-
+      <Overlay
+        open={!stepUp.open}
+        onClose={() => !busy && onClose()}
+        size="md"
+        title={FAMILY_STRINGS.invite_dialog_title}
+        info={FAMILY_STRINGS.page_description}
+      >
           <form onSubmit={submit} className="space-y-5" noValidate>
-            <div>
-              <Label htmlFor="family-invite-email">{FAMILY_STRINGS.invite_dialog_email_label}</Label>
-              <Input
-                id="family-invite-email"
-                type="email"
-                autoComplete="off"
-                placeholder={FAMILY_STRINGS.invite_dialog_email_placeholder}
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError(null);
-                }}
-                disabled={busy}
-                className="mt-2"
-              />
-            </div>
+            <Field
+              label={FAMILY_STRINGS.invite_dialog_email_label}
+              id="family-invite-email"
+              type="email"
+              autoComplete="off"
+              placeholder={FAMILY_STRINGS.invite_dialog_email_placeholder}
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              disabled={busy}
+              className="mt-2"
+            />
 
             <SectionChecklist
               legend={FAMILY_STRINGS.invite_dialog_sections_label}
@@ -100,23 +97,16 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
               disabled={busy}
             />
 
-            <div className="flex items-center justify-between gap-3 min-h-row">
-              <div className="flex-1">
-                <Label htmlFor="family-invite-must-share-back" className="font-normal cursor-pointer">
-                  {FAMILY_STRINGS.invite_dialog_must_share_back}
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {FAMILY_STRINGS.invite_dialog_must_share_back_description}
-                </p>
-              </div>
-              <Switch
-                id="family-invite-must-share-back"
-                checked={mustShareBack}
-                onCheckedChange={(v) => setMustShareBack(v)}
-                disabled={busy}
-                className="shrink-0"
-              />
-            </div>
+            <Field
+              label={FAMILY_STRINGS.invite_dialog_must_share_back}
+              info={FAMILY_STRINGS.invite_dialog_must_share_back_description}
+              infoLabel="About requiring them to share back"
+              control="switch"
+              id="family-invite-must-share-back"
+              checked={mustShareBack}
+              onCheckedChange={(v) => setMustShareBack(v)}
+              disabled={busy}
+            />
 
             <section
               aria-labelledby="family-invite-disclosure"
@@ -151,9 +141,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
             <div aria-live="polite">
               {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <Notice tone="danger">{error}</Notice>
               )}
             </div>
 
@@ -167,8 +155,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </Overlay>
       {stepUp.dialog}
     </>
   );

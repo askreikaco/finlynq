@@ -18,20 +18,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matrix";
 import { formatCurrency } from "@/lib/currency";
-import { AmountInput } from "@/components/amount-input";
+import { Field } from "@/components/ui/field";
 import { getDisplayLocale } from "@/lib/locale";
+import { InfoTip } from "@/components/ui/info-tip";
+import { ListRow } from "@/components/mobile/list-row";
 
 interface LotRow {
   id: number;
@@ -311,22 +306,25 @@ export function LotInspectorDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={showMatrix ? "regular:max-w-[97vw] w-[97vw] h-[95dvh] max-h-[95dvh] flex flex-col overflow-hidden overflow-y-hidden" : "regular:max-w-2xl"}>
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            Lot inspector
-            {holdingName ? <span className="text-muted-foreground font-normal"> — {holdingName}</span> : null}
-            {accountName ? <span className="text-muted-foreground font-normal text-sm"> ({accountName})</span> : null}
-          </DialogTitle>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size={showMatrix ? "full" : "xl"}
+      title={
+        <span>
+          Lot inspector
+          {holdingName ? <span className="text-muted-foreground font-normal"> — {holdingName}</span> : null}
+          {accountName ? <span className="text-muted-foreground font-normal text-sm"> ({accountName})</span> : null}
+        </span>
+      }
+    >
 
-        {loading && <p className="text-sm text-muted-foreground">Loading lots…</p>}
+        {loading && <p data-keep="status" className="text-sm text-muted-foreground">Loading lots…</p>}
         {error && !loading && (
           <p className="text-sm text-destructive">{error}</p>
         )}
         {!loading && !error && lots.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p data-keep="empty" className="text-sm text-muted-foreground">
             No lots tracked for this holding yet.
           </p>
         )}
@@ -350,10 +348,13 @@ export function LotInspectorDialog({
         {!loading && !error && editTxId == null && !showMatrix && lots.length > 0 && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Rebuild replays this ticker&apos;s transactions in date order to
-                fix lots. It changes lots only, never your transactions.
-              </p>
+              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                Rebuild lots
+                <InfoTip
+                  label="About rebuilding lots"
+                  text="Rebuild replays this ticker's transactions in date order to fix lots. It changes lots only, never your transactions."
+                />
+              </span>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowMatrix(true)}>
                   Edit all allocations
@@ -409,8 +410,12 @@ export function LotInspectorDialog({
         {!loading && !error && editTxId != null && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">
+              <h3 className="flex items-center gap-0.5 text-sm font-medium">
                 Reassign sell tx #{editTxId}
+                <InfoTip
+                  label="About reassigning lots"
+                  text={`Choose how many shares to close from each open lot. The total must equal ${closureTotalForEdit.toLocaleString(getDisplayLocale())} shares. Requesting more than a lot holds opens a short for the overflow.`}
+                />
               </h3>
               <span
                 className={`text-xs font-mono ${sumMatches ? "text-pos" : "text-destructive"}`}
@@ -418,15 +423,10 @@ export function LotInspectorDialog({
                 {allocTotal.toLocaleString(getDisplayLocale())} / {closureTotalForEdit.toLocaleString(getDisplayLocale())} sh
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Choose how many shares to close from each open lot. The total must
-              equal {closureTotalForEdit.toLocaleString(getDisplayLocale())} shares. Requesting more
-              than a lot holds opens a short for the overflow.
-            </p>
 
             <div className="space-y-1.5 max-h-[40dvh] overflow-y-auto">
               {openLongLots.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p data-keep="warning" className="text-xs text-muted-foreground">
                   No open long lots available — the closure will open a short.
                 </p>
               )}
@@ -442,16 +442,19 @@ export function LotInspectorDialog({
                       {formatCurrency(lot.costPerShare, lot.currency)}
                     </span>
                   </span>
-                  <AmountInput
+                  <Field
+                    control="amount"
                     min={0}
                     step="any"
-                    className="h-7 w-24 text-right"
                     value={alloc[lot.id] ?? ""}
                     onValueChange={(nv) => {
                       const v = nv;
                       setPreview(null);
                       setAlloc((a) => ({ ...a, [lot.id]: v }));
                     }}
+                    compact
+                    className="w-24"
+                    controlClassName="text-right"
                   />
                 </div>
               ))}
@@ -544,53 +547,48 @@ export function LotInspectorDialog({
                     </div>
                   </div>
                   {lotClosures.length > 0 ? (
-                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] text-xs">
+                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {lotClosures.map((c) => (
-                        <li
-                          key={c.id}
-                          className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5"
-                        >
-                          <span className="text-muted-foreground flex items-center gap-1.5">
-                            {c.openAfterClose && (
-                              <span
-                                className="text-warning"
-                                title={`This closure (${c.closeDate}) consumes a lot that opened later — likely a sell imported before its buy. Rebuild this ticker to fix.`}
-                              >
-                                ⚠
+                        <li key={c.id}>
+                          <ListRow
+                            size="dense"
+                            title={
+                              <span className="flex items-center gap-1.5">
+                                {c.openAfterClose && (
+                                  <span
+                                    className="text-warning"
+                                    title={`This closure (${c.closeDate}) consumes a lot that opened later — likely a sell imported before its buy. Rebuild this ticker to fix.`}
+                                  >
+                                    ⚠
+                                  </span>
+                                )}
+                                {c.closeKind} · tx #{c.closeTxId} · {c.closeDate}
                               </span>
-                            )}
-                            {c.closeKind} · tx #{c.closeTxId} · {c.closeDate}
-                          </span>
-                          <span className="flex items-center gap-3 font-mono">
-                            <span>{c.qtyClosed.toLocaleString(getDisplayLocale())} sh</span>
-                            <span className="text-muted-foreground">
-                              @ {formatCurrency(c.proceedsPerShare, c.currency)}
-                            </span>
-                            <span
-                              className={
-                                c.realizedGain >= 0
-                                  ? "text-pos"
-                                  : "text-destructive"
-                              }
-                            >
-                              {c.realizedGain >= 0 ? "+" : ""}
-                              {formatCurrency(c.realizedGain, c.currency)}
-                            </span>
-                            {c.closeKind === "sell" && (
-                              <button
-                                type="button"
-                                className="text-xs text-primary underline-offset-2 hover:underline"
-                                onClick={() => startEdit(c.closeTxId)}
-                              >
-                                Edit allocation
-                              </button>
-                            )}
-                          </span>
+                            }
+                            subtitle={`${c.qtyClosed.toLocaleString(getDisplayLocale())} sh @ ${formatCurrency(c.proceedsPerShare, c.currency)}`}
+                            value={
+                              <span className={c.realizedGain >= 0 ? "text-pos" : "text-destructive"}>
+                                {c.realizedGain >= 0 ? "+" : ""}
+                                {formatCurrency(c.realizedGain, c.currency)}
+                              </span>
+                            }
+                            actions={
+                              c.closeKind === "sell" ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary underline-offset-2 hover:underline"
+                                  onClick={() => startEdit(c.closeTxId)}
+                                >
+                                  Edit allocation
+                                </button>
+                              ) : undefined
+                            }
+                          />
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="px-3 py-1.5 text-xs text-muted-foreground">
+                    <p data-keep="empty" className="px-3 py-1.5 text-xs text-muted-foreground">
                       No closures — fully open.
                     </p>
                   )}
@@ -599,14 +597,14 @@ export function LotInspectorDialog({
             })}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
 
-    <ConfirmDialog
+    <Overlay
+      variant="confirm"
       open={rebuildConfirmOpen}
-      onOpenChange={setRebuildConfirmOpen}
+      onClose={() => setRebuildConfirmOpen(false)}
       title="Rebuild lots for this ticker?"
-      description={
+      message={
         `This wipes and recreates the lot history for ${holdingName ?? "this holding"}` +
         `${accountName ? ` in ${accountName}` : ""} by replaying its transactions in date ` +
         `order. It changes lot allocation and realized-gain figures, but never ` +

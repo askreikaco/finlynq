@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as React from "react";
+import userEvent from "@testing-library/user-event";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 vi.mock("next/link", () => ({
@@ -25,6 +26,16 @@ function mount(over: Partial<React.ComponentProps<typeof RepeatSection>> = {}) {
   return { onChange, last };
 }
 const toggle = () => screen.getByRole("switch", { name: "Repeat" });
+const frequencyBox = () => screen.getByRole("combobox", { name: "Frequency" });
+const frequencyValue = () => frequencyBox().textContent ?? "";
+/** Choose a frequency in the Frequency select (open it, tap the option). */
+async function pickFrequency(label: string) {
+  const user = userEvent.setup();
+  await user.click(frequencyBox());
+  await user.click(await screen.findByRole("option", { name: label }));
+}
+const summary = () => document.getElementById("txnew-repeat-toggle-hint")?.textContent ?? null;
+
 const turnOn = () => fireEvent.click(toggle());
 
 describe("RepeatSection: toggle", () => {
@@ -33,7 +44,7 @@ describe("RepeatSection: toggle", () => {
     expect(toggle().getAttribute("aria-checked")).toBe("false");
     expect(screen.getByTestId("txnew-repeat").getAttribute("data-state")).toBe("closed");
     expect(screen.queryByRole("radiogroup", { name: "Series type" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Frequency" })).toBeNull();
     expect(last()).toEqual({ series: null, invalid: false });
   });
 
@@ -41,16 +52,16 @@ describe("RepeatSection: toggle", () => {
     const { last } = mount();
     turnOn();
     expect(screen.getByTestId("txnew-repeat").getAttribute("data-state")).toBe("open");
-    expect(screen.getByRole("button", { name: "Monthly" }).getAttribute("aria-current")).toBe("true");
+    expect(frequencyValue()).toContain("Monthly");
     expect(last().series).toEqual({ kind: "repeat", frequency: "monthly", end: { type: "forever" } });
-    expect(screen.getByTestId("txnew-repeat-summary").textContent).toBe("Monthly");
+    expect(summary()).toBe("Monthly");
   });
 
   it("turning off collapses and clears the series", () => {
     const { last } = mount();
     turnOn();
     turnOn();
-    expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Frequency" })).toBeNull();
     expect(last()).toEqual({ series: null, invalid: false });
   });
 
@@ -62,19 +73,18 @@ describe("RepeatSection: toggle", () => {
 });
 
 describe("RepeatSection: segmented control", () => {
-  it("opens on Repeat with ONE flat list (no No-repeat row), and switches to Installment", () => {
+  it("opens on Repeat with ONE flat frequency list (no No-repeat row), and switches to Installment", async () => {
     mount();
     turnOn();
     expect(screen.getByRole("radio", { name: "Repeat" }).getAttribute("aria-checked")).toBe("true");
-    for (const l of ["Daily", "Weekly", "Monthly", "Quarterly", "Annually", "Custom"]) {
-      expect(screen.getByRole("button", { name: l })).toBeTruthy();
-    }
-    for (const l of ["No repeat", "Weekdays", "Weekend", "Every 4 weeks", "Every 2 months", "Last day of month", "Every 2 weeks", "Every 6 months"]) {
-      expect(screen.queryByRole("button", { name: l })).toBeNull();
-    }
+    const user = userEvent.setup();
+    await user.click(frequencyBox());
+    const names = (await screen.findAllByRole("option")).map((o) => o.textContent);
+    expect(names).toEqual(["Daily", "Weekly", "Monthly", "Quarterly", "Annually", "Custom"]);
+    await user.keyboard("{Escape}");
     fireEvent.click(screen.getByRole("radio", { name: "Installment" }));
     expect(screen.getByRole("radio", { name: "Installment" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.queryByRole("button", { name: "Weekly" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Frequency" })).toBeNull();
     expect(screen.getByRole("button", { name: "Decrease months" })).toBeTruthy();
   });
 
@@ -84,48 +94,39 @@ describe("RepeatSection: segmented control", () => {
     fireEvent.keyDown(screen.getByRole("radio", { name: "Repeat" }), { key: "ArrowRight" });
     expect(screen.getByRole("radio", { name: "Installment" }).getAttribute("aria-checked")).toBe("true");
   });
-
-  it("lists Daily .. Custom in order", () => {
-    mount();
-    turnOn();
-    const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");
-    const order = ["Daily", "Weekly", "Monthly", "Quarterly", "Annually", "Custom"].map((l) => names.indexOf(l));
-    expect(order.every((i) => i >= 0)).toBe(true);
-    expect([...order].sort((x, y) => x - y)).toEqual(order);
-  });
 });
 
 describe("RepeatSection: Custom (every N days)", () => {
-  const pickCustom = () => fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+  const pickCustom = () => pickFrequency("Custom");
   const input = () => screen.getByTestId("repeat-interval-days") as HTMLInputElement;
 
-  it("is hidden until Custom is chosen, then defaults to 2 with a numeric keypad", () => {
+  it("is hidden until Custom is chosen, then defaults to 2 with a numeric keypad", async () => {
     mount();
     turnOn();
     expect(screen.queryByTestId("repeat-interval-days")).toBeNull();
-    pickCustom();
+    await pickCustom();
     expect(input().value).toBe("2");
     expect(input().getAttribute("inputmode")).toBe("numeric");
     expect(screen.getByLabelText("Every")).toBe(input());
     expect(screen.getByText("days")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    await pickFrequency("Monthly");
     expect(screen.queryByTestId("repeat-interval-days")).toBeNull();
   });
 
-  it("reports { every_n_days, intervalDays }", () => {
+  it("reports { every_n_days, intervalDays }", async () => {
     const { last } = mount();
     turnOn();
-    pickCustom();
+    await pickCustom();
     expect(screen.getByRole("radiogroup", { name: "Repeat end" })).toBeTruthy();
     fireEvent.change(input(), { target: { value: "10" } });
     expect(last().series).toEqual({ kind: "repeat", frequency: "every_n_days", intervalDays: 10, end: { type: "forever" } });
-    expect(screen.getByTestId("txnew-repeat-summary").textContent).toBe("Every 10 days");
+    expect(summary()).toBe("Every 10 days");
   });
 
-  it("strips non-digits and reports invalid (null series) on empty, 0 and > 365", () => {
+  it("strips non-digits and reports invalid (null series) on empty, 0 and > 365", async () => {
     const { last } = mount();
     turnOn();
-    pickCustom();
+    await pickCustom();
     fireEvent.change(input(), { target: { value: "1a2" } });
     expect(input().value).toBe("12");
     expect(last().invalid).toBe(false);
@@ -148,11 +149,11 @@ describe("RepeatSection: each row maps to its API frequency", () => {
     ["Quarterly", "quarterly"],
     ["Annually", "annual"],
   ];
-  it.each(CASES)("%s -> %s (forever)", (label, frequency) => {
+  it.each(CASES)("%s -> %s (forever)", async (label, frequency) => {
     const { last } = mount();
     turnOn();
-    fireEvent.click(screen.getByRole("button", { name: label }));
-    expect(screen.getByRole("button", { name: label }).getAttribute("aria-current")).toBe("true");
+    await pickFrequency(label);
+    expect(frequencyValue()).toContain(label);
     expect(last().series).toEqual({ kind: "repeat", frequency, end: { type: "forever" } });
   });
 
@@ -172,7 +173,7 @@ describe("RepeatSection: each row maps to its API frequency", () => {
     expect(input.value).toBe("2028-01-10");
     fireEvent.change(input, { target: { value: "2027-12-31" } });
     expect(last().series).toEqual({ kind: "repeat", frequency: "monthly", end: { type: "until", date: "2027-12-31" } });
-    expect(screen.getByTestId("txnew-repeat-summary").textContent).toBe("Monthly until 31 Dec 2027");
+    expect(summary()).toBe("Monthly until 31 Dec 2027");
   });
 
   it("On date on or before the first payment is invalid and explains", () => {
@@ -184,12 +185,12 @@ describe("RepeatSection: each row maps to its API frequency", () => {
     expect(screen.getByText("Pick a date after the first payment")).toBeTruthy();
   });
 
-  it("After N times: stepper 2..120, reports the count", () => {
+  it("After N times: stepper 2..120, reports the count", async () => {
     const { last } = mount();
     turnOn();
-    fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
+    await pickFrequency("Weekly");
     fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
-    const value = () => Number(screen.getByTestId("repeat-count-value").textContent);
+    const value = () => Number((screen.getByTestId("repeat-count") as HTMLInputElement).value);
     expect(value()).toBe(12);
     const dec = screen.getByRole("button", { name: "Decrease times" }) as HTMLButtonElement;
     const inc = screen.getByRole("button", { name: "Increase times" }) as HTMLButtonElement;
@@ -201,7 +202,7 @@ describe("RepeatSection: each row maps to its API frequency", () => {
     expect(inc.disabled).toBe(true);
     fireEvent.click(dec);
     expect(last().series).toEqual({ kind: "repeat", frequency: "weekly", end: { type: "count", count: 119 } });
-    expect(screen.getByTestId("txnew-repeat-summary").textContent).toBe("Weekly · 119×");
+    expect(summary()).toBe("Weekly · 119×");
   });
 });
 
@@ -214,7 +215,7 @@ describe("RepeatSection: Installment mode", () => {
   };
   it("months stepper is bounded 2..60 and starts at 6", () => {
     open();
-    const value = () => Number(screen.getByTestId("installment-count-value").textContent);
+    const value = () => Number((screen.getByTestId("installment-count") as HTMLInputElement).value);
     const dec = screen.getByRole("button", { name: "Decrease months" }) as HTMLButtonElement;
     const inc = screen.getByRole("button", { name: "Increase months" }) as HTMLButtonElement;
     expect(value()).toBe(6);

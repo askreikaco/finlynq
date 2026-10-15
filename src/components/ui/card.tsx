@@ -3,6 +3,7 @@ import * as React from "react"
 import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { InfoTip } from "@/components/ui/info-tip"
 import { CARD_ICON_TILE, CARD_LABEL_GAP, CARD_LABEL_TEXT, resolveTone, type MetricTone } from "@/components/mobile/card-label"
 
 function Card({
@@ -40,9 +41,18 @@ function CardTitle({
   className,
   icon: Icon,
   tone = "muted",
+  info,
+  infoLabel,
   children,
   ...props
-}: React.ComponentProps<"div"> & { icon?: LucideIcon; tone?: MetricTone | (string & {}) }) {
+}: React.ComponentProps<"div"> & {
+  icon?: LucideIcon
+  tone?: MetricTone | (string & {})
+  /** Help text shown in an (i) tip after the title (replaces a visible CardDescription). */
+  info?: React.ReactNode
+  /** Accessible name of the (i) button. Default "More info". */
+  infoLabel?: string
+}) {
   return (
     <div
       data-slot="card-title"
@@ -55,6 +65,7 @@ function CardTitle({
         </span>
       )}
       {Icon ? <span className="min-w-0 break-words">{children}</span> : children}
+      {info ? <InfoTip text={info} label={infoLabel} className="ml-0.5" /> : null}
     </div>
   )
 }

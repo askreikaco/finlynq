@@ -158,7 +158,7 @@ describe("PageToolbar trailing slot", () => {
 describe("wiring: every page with cached cards / charts mounts the Refresh button", () => {
   const ROOT = path.resolve(__dirname, "../..");
   const PAGES = [
-    "dashboard/page.tsx", "accounts/page.tsx", "accounts/[id]/page.tsx", "categories/_page-content.tsx", "categories/[id]/page.tsx",
+    "dashboard/page.tsx", "accounts/page.tsx", "accounts/_components/account-detail.tsx", "categories/_page-content.tsx", "categories/_components/category-detail.tsx",
     "goals/page.tsx", "loans/page.tsx", "subscriptions/page.tsx", "reports/page.tsx", "portfolio/page.tsx",
     "portfolio/dividends/page.tsx", "portfolio/realized-gains/page.tsx",
   ];

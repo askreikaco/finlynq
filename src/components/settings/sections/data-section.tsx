@@ -10,7 +10,6 @@ import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertTriangle, ArrowLeftRight, Briefcase, Database, Download, Eye, FileText, History, RefreshCw, Tag, Trash2, Upload, Wallet } from "lucide-react";
@@ -20,6 +19,7 @@ import { getSessionInfo } from "@/lib/data/session-info";
 import { PendingSyncCard } from "./pending-sync-card";
 import { OfflineModeCard } from "./offline-mode-card";
 import { PasskeyUnlockCard } from "./passkey-unlock-card";
+import { Field } from "@/components/ui/field";
 import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type ImportRow = Record<string, string>;
@@ -405,7 +405,7 @@ export function DataSection() {
                 <span className="font-medium truncate">{importFileName}</span>
                 <Badge variant="outline" className="text-xs">Preview</Badge>
               </div>
-              <SectionCard label="Preview" icon={Eye} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard label="Preview" icon={Eye} tone="muted" list>
                 {importPreview.map((row, i) => (
                   <ListRow
                     key={i}
@@ -545,7 +545,7 @@ export function DataSection() {
             <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
               <p className="text-sm font-medium text-destructive">Type DELETE to confirm permanent deletion of all data:</p>
               <div className="flex gap-2">
-                <Input
+                <Field
                   value={clearConfirm}
                   onChange={(e) => setClearConfirm(e.target.value)}
                   placeholder="Type DELETE"
@@ -589,7 +589,7 @@ export function DataSection() {
               <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
                 <p className="text-sm font-medium text-destructive">Confirm permanent account deletion:</p>
                 <div className="space-y-2">
-                  <Input
+                  <Field
                     type="password"
                     value={delPassword}
                     onChange={(e) => setDelPassword(e.target.value)}
@@ -597,14 +597,14 @@ export function DataSection() {
                     autoComplete="current-password"
                     className="max-w-xs"
                   />
-                  <Input
+                  <Field
                     value={delConfirm}
                     onChange={(e) => setDelConfirm(e.target.value)}
                     placeholder="Type DELETE"
                     className="max-w-40"
                   />
                   {delMfaRequired && (
-                    <Input
+                    <Field
                       value={delMfaCode}
                       onChange={(e) => setDelMfaCode(e.target.value)}
                       placeholder="6-digit code"

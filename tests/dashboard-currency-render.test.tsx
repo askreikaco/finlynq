@@ -117,6 +117,10 @@ vi.mock("@/hooks/use-animations", () => ({
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="chart">{children}</div>,
   AreaChart: ({ children }: any) => <div>{children}</div>,
+  ComposedChart: ({ children }: any) => <div>{children}</div>,
+  CartesianGrid: () => null,
+  Bar: () => null,
+  Line: () => null,
   PieChart: ({ children }: any) => <div>{children}</div>,
   Pie: ({ data }: any) => <div>{data?.length || 0} items</div>,
   Area: () => null,
@@ -142,31 +146,6 @@ vi.mock("recharts", () => ({
     return <div data-testid="tooltip">{rendered}</div>;
   },
   ReferenceLine: () => null,
-}));
-
-vi.mock("@/components/chart-breakdown-list", () => ({
-  TooltipBreakdownList: () => null,
-}));
-
-vi.mock("@/app/(app)/dashboard/_components/chart-tooltip", () => ({
-  ChartTooltip: ({ currency }: any) => (
-    <div>
-      {currency && formatCurrency(1000000, currency)}
-    </div>
-  ),
-  PieTooltip: ({ currency }: any) => (
-    <div>
-      {currency && formatCurrency(500000, currency)}
-    </div>
-  ),
-}));
-
-vi.mock("@/components/chart-stack-tooltip", () => ({
-  StackedAreaTooltip: () => null,
-}));
-
-vi.mock("@/components/chart-stack-legend", () => ({
-  StackedChartLegend: () => null,
 }));
 
 vi.mock("framer-motion", () => ({

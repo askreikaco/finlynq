@@ -1,44 +1,30 @@
 "use client";
 
 
+import { MetricCard, type MetricCardProps } from "@/components/metric-card";
 import { Fragment, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
-import { formatCompactNumber } from "@/lib/utils/number";
 import { exportCsv } from "@/lib/csv-export";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { todayISO } from "@/lib/utils/date";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { REPORT_FILTER_KEYS } from "@/lib/toolbar/list-configs";
-import { MetricCard } from "@/components/metric-card";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod } from "@/lib/metrics/period";
 import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
 import { parseAccountIdsParam, serializeAccountIds } from "@/lib/reports/account-filter";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { SankeyChart } from "@/components/sankey-chart";
+import { Notice } from "@/components/notice";
+import { Chart } from "@/components/chart";
 import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import { CustomizeCardsSheet, MetricGrid, MetricItemCard, useCardLayout, usePageCustomize, type MetricItem } from "@/components/mobile";
+import { MetricGrid, useCardLayout, usePageCustomize, CardLayoutEditor } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   GroupedStatementRows,
@@ -48,6 +34,7 @@ import {
   YoYStatementRows,
 } from "./_components/statement-rows";
 import type { PageCard } from "@/lib/card-layout";
+import { Field } from "@/components/ui/field";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
 // ── Types ──
@@ -320,16 +307,18 @@ export default function ReportsPage() {
   usePageCustomize(trendsData ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   if (loading && !trendsData) {
-    return <PageSkeleton variant="cards" rows={6} />;
+    return <Notice variant="skeleton" skeleton="cards" rows={6} />;
   }
 
   if (loadError && !trendsData) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load reports"
-        message="We couldn't load your reports. Please try again."
-        onRetry={trendsRes.reload}
-      />
+        retry={trendsRes.reload}
+      >
+        {"We couldn't load your reports. Please try again."}
+      </Notice>
     );
   }
 
@@ -345,25 +334,25 @@ export default function ReportsPage() {
   const netCard = resolveFlow(netPts, "sum");
   const rateCard = resolveRatioCard({ num: netPts, den: incomePts, period: metricRange.period, caption });
   const reportNote = (v: string) => `${startDate} to ${endDate}: ${v}`;
-  const summaryMetrics: MetricItem[] = trendsData
+  const summaryMetrics: MetricCardProps[] = trendsData
     ? [
         {
-          id: "report-income", label: "Total Income", icon: TrendingUp, iconTone: "emerald", tone: "pos", sparkColor: "#10b981",
+          id: "report-income", label: "Total Income", icon: TrendingUp, tone: "emerald", valueTone: "pos", sparkColor: "#10b981",
           value: incomeCard.value ?? trendsData.totalIncome, currency: displayCurrency, ...cardProps(incomeCard),
           ...(incomeCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalIncome, displayCurrency)) } : {}),
         },
         {
-          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, iconTone: "rose", tone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e", invertTone: true,
-          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard),
+          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, tone: "rose", valueTone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e",
+          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard, true),
           ...(expenseCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalExpenses, displayCurrency)) } : {}),
         },
         {
-          id: "report-net-savings", label: "Net Savings", icon: DollarSign, iconTone: "indigo", tone: "auto", sparkColor: "#6366f1",
+          id: "report-net-savings", label: "Net Savings", icon: DollarSign, tone: "indigo", valueTone: "auto", sparkColor: "#6366f1",
           value: netCard.value ?? trendsData.netSavings, currency: displayCurrency, ...cardProps(netCard),
           ...(netCard.value != null ? { note: reportNote(formatCurrency(trendsData.netSavings, displayCurrency)) } : {}),
         },
         {
-          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, iconTone: "violet", sparkColor: "#8b5cf6",
+          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, tone: "violet", sparkColor: "#8b5cf6",
           value: <span>{rateCard.value ?? trendsData.savingsRate}%</span>,
           valueClassName: (rateCard.value ?? trendsData.savingsRate) >= 0 ? "text-pos" : "text-destructive",
           ...cardProps(rateCard),
@@ -389,7 +378,7 @@ export default function ReportsPage() {
       {trendsData && (
         <>
           <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
-            {summaryMetrics.map((m) => <MetricItemCard key={m.id ?? m.label} m={m} />)}
+            {summaryMetrics.map((m) => <MetricCard key={m.id ?? String(m.label)} {...m} />)}
           </div>
         </>
       )}
@@ -428,11 +417,11 @@ export default function ReportsPage() {
           <Fragment key={id}>{cardNodes[id]}</Fragment>
         ))}
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize reports"
-        description="Show, hide and reorder the summary and trend cards."
+        info="Show, hide and reorder the summary and trend cards."
         cards={REPORT_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
@@ -487,41 +476,27 @@ export default function ReportsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle icon={BarChart3} tone="indigo">{periodLabels[period]} Breakdown</CardTitle>
-                        <CardDescription>Stacked income and expenses per {period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}</CardDescription>
+                        <CardTitle icon={BarChart3} tone="indigo" info={`Stacked income and expenses per ${period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}`} infoLabel="About breakdown">{periodLabels[period]} Breakdown</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trendsData.timeseries} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis
-                            dataKey="label"
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 11 }}
-                            interval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
-                            angle={period === "daily" ? -45 : 0}
-                            textAnchor={period === "daily" ? "end" : "middle"}
-                            height={period === "daily" ? 60 : 30}
-                          />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={(v) => formatCompactNumber(Number(v))}
-                            width={90}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar dataKey="income" name="Income" fill={CHART_COLORS.positive} radius={[3, 3, 0, 0]} />
-                          <Bar dataKey="expenses" name="Expenses" fill={CHART_COLORS.negative} radius={[3, 3, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={trendsData.timeseries}
+                      xKey="label"
+                      height={288}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "income", name: "Income", color: CHART_COLORS.positive },
+                        { key: "expenses", name: "Expenses", color: CHART_COLORS.negative },
+                      ]}
+                      xInterval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
+                      xAngle={period === "daily" ? -45 : undefined}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -649,20 +624,21 @@ export default function ReportsPage() {
                   <MetricGrid
                     columns={3}
                     metrics={[
-                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto", sub: "Asset price moves, period change" },
-                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto", sub: "Currency translation, period change" },
-                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto", sub: "Valuation + FX" },
+                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, valueTone: "auto", sub: "Asset price moves, period change" },
+                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, valueTone: "auto", sub: "Currency translation, period change" },
+                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, valueTone: "auto", sub: "Valuation + FX" },
                     ]}
                   />
                   <Card>
                     <CardHeader>
-                      <CardTitle icon={TrendingUp} tone="amber">Unrealized gains / losses (period change)</CardTitle>
-                      <CardDescription>
-                        How asset valuations and FX translation moved during the
-                        selected period. Computed as snapshot at period end −
-                        snapshot at period start, so the totals match what you&apos;d
-                        get reporting monthly, quarterly, or annually.
-                      </CardDescription>
+                      <CardTitle
+                        icon={TrendingUp}
+                        tone="amber"
+                        infoLabel="About unrealized gains"
+                        info="How asset valuations and FX translation moved during the selected period. Computed as snapshot at period end − snapshot at period start, so the totals match what you'd get reporting monthly, quarterly, or annually."
+                      >
+                        Unrealized gains / losses
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {/* Per-account drilldown */}
@@ -747,15 +723,12 @@ export default function ReportsPage() {
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle icon={ArrowLeftRight} tone="cyan">Cash Flow Diagram</CardTitle>
-                    <CardDescription>
-                      How income flows into expense categories ({startDate} to {endDate})
-                    </CardDescription>
+                    <CardTitle icon={ArrowLeftRight} tone="cyan" infoLabel="About cash flow" info={`How income flows into expense categories (${startDate} to ${endDate})`}>Cash Flow Diagram</CardTitle>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <SankeyChart incomeData={sankeyIncome} expenseData={sankeyExpenses} currency={displayCurrency} />
+                <Chart kind="sankey" sankey={{ income: sankeyIncome, expenses: sankeyExpenses }} currency={displayCurrency} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -767,28 +740,24 @@ export default function ReportsPage() {
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="pt-4">
                 <div className="flex items-end gap-4 flex-wrap">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Year 1</Label>
-                    <Input
-                      type="number"
-                      value={yoyYear1}
-                      onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
-                      className="mt-1 w-28"
-                      min={2000}
-                      max={currentYear}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Year 2</Label>
-                    <Input
-                      type="number"
-                      value={yoyYear2}
-                      onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
-                      className="mt-1 w-28"
-                      min={2000}
-                      max={currentYear}
-                    />
-                  </div>
+                  <Field
+                    label="Year 1"
+                    control="number"
+                    value={yoyYear1}
+                    onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
+                    min={2000}
+                    max={currentYear}
+                    className="mt-1 w-28"
+                  />
+                  <Field
+                    label="Year 2"
+                    control="number"
+                    value={yoyYear2}
+                    onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
+                    min={2000}
+                    max={currentYear}
+                    className="mt-1 w-28"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -804,93 +773,56 @@ export default function ReportsPage() {
                         <GitCompareArrows className="h-5 w-5" />
                       </div>
                       <div>
-                        <CardTitle icon={BarChart3} tone="rose">Monthly Spending Comparison</CardTitle>
-                        <CardDescription>
-                          {yoyData.year1} vs {yoyData.year2} expenses by month
-                        </CardDescription>
+                        <CardTitle icon={BarChart3} tone="rose" infoLabel="About spending comparison" info={`${yoyData.year1} vs ${yoyData.year2} expenses by month`}>Monthly Spending Comparison</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={yoyData.monthly} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis dataKey="month" className="text-xs fill-muted-foreground" tick={{ fontSize: 12 }} />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar
-                            dataKey="year1Expenses"
-                            name={`${yoyData.year1} Expenses`}
-                            fill={CHART_COLORS.categories[0]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                          <Bar
-                            dataKey="year2Expenses"
-                            name={`${yoyData.year2} Expenses`}
-                            fill={CHART_COLORS.categories[1]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={yoyData.monthly}
+                      xKey="month"
+                      height={320}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "year1Expenses", name: `${yoyData.year1} Expenses`, color: CHART_COLORS.categories[0] },
+                        { key: "year2Expenses", name: `${yoyData.year2} Expenses`, color: CHART_COLORS.categories[1] },
+                      ]}
+                      formatY={(v) => formatCurrency(v, displayCurrency)}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle icon={BarChart3} tone="emerald">Monthly Income Comparison</CardTitle>
-                    <CardDescription>
-                      {yoyData.year1} vs {yoyData.year2} income by month
-                    </CardDescription>
+                    <CardTitle icon={BarChart3} tone="emerald" infoLabel="About income comparison" info={`${yoyData.year1} vs ${yoyData.year2} income by month`}>Monthly Income Comparison</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={yoyData.monthly} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                          <XAxis dataKey="month" className="text-xs fill-muted-foreground" tick={{ fontSize: 12 }} />
-                          <YAxis
-                            className="text-xs fill-muted-foreground"
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                          />
-                          <Tooltip
-                            formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "12px" }} />
-                          <Bar
-                            dataKey="year1Income"
-                            name={`${yoyData.year1} Income`}
-                            fill={CHART_COLORS.positive}
-                            radius={[3, 3, 0, 0]}
-                          />
-                          <Bar
-                            dataKey="year2Income"
-                            name={`${yoyData.year2} Income`}
-                            fill={CHART_COLORS.categories[3]}
-                            radius={[3, 3, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <Chart
+                      kind="bar"
+                      data={yoyData.monthly}
+                      xKey="month"
+                      height={320}
+                      currency={displayCurrency}
+                      grid
+                      legend
+                      series={[
+                        { key: "year1Income", name: `${yoyData.year1} Income`, color: CHART_COLORS.positive },
+                        { key: "year2Income", name: `${yoyData.year2} Income`, color: CHART_COLORS.categories[3] },
+                      ]}
+                      formatY={(v) => formatCurrency(v, displayCurrency)}
+                      yWidth={90}
+                    />
                   </CardContent>
                 </Card>
                 </div>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle icon={Tags} tone="violet">Category Comparison</CardTitle>
-                    <CardDescription>Expense categories year-over-year change</CardDescription>
+                    <CardTitle icon={Tags} tone="violet" infoLabel="About category comparison" info="Expense categories year-over-year change">Category Comparison</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <YoYStatementRows rows={yoyData.categories} year1={yoyData.year1} year2={yoyData.year2} currency={displayCurrency} />

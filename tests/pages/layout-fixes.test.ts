@@ -14,7 +14,7 @@ const SETTINGS_GENERAL = "src/app/(app)/settings/general/page.tsx";
 // Budgets were merged into /categories (2026-10); /budgets redirects there.
 const BUDGETS = "src/app/(app)/categories/_page-content.tsx";
 const PERF_CHART = "src/components/portfolio/PerformanceChart.tsx";
-const ACCOUNT_DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
+const ACCOUNT_DETAIL = "src/app/(app)/accounts/_components/account-detail.tsx";
 const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holding-account-groups.tsx";
 const LOT_DIALOG = "src/components/portfolio/lot-inspector-dialog.tsx";
 const APP_LAYOUT = "src/app/(app)/layout.tsx";
@@ -42,30 +42,30 @@ describe("no fixed-px text on touched pages (system font sizes only)", () => {
 describe("settings/general at 390", () => {
   it("PageHeader is the bare global header (no lead hack): the back control comes from the registry", () => {
     const src = read(SETTINGS_GENERAL);
-    // The page header comes from the SectionPage template (single PageHeader, back from the registry when backFallback is omitted).
+    // The page header comes from the SectionPage template (single PageHeader, back from the registry when `back` is omitted).
     expect(src).toContain("<SectionPage");
     expect(src).not.toContain('lead={<span aria-hidden className="hidden" />}');
     expect(read("src/components/templates/section-page.tsx")).not.toMatch(/\blead=/);
   });
 
-  it("Display Currency row is a column below regular and a row from wide (control full width below regular)", () => {
+  it("Display Currency and UI Font are inline Fields: label takes the spare width, the control column is fixed", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-4">');
-    expect(src).toContain('<div className="w-full wide:w-56 wide:shrink-0">');
+    expect(src).toMatch(/label="Currency"\s+labelPlacement="inline"\s+control="combobox"/);
+    expect(src).toContain('controlWidth="w-44 regular:w-56"');
+    expect(src).toMatch(/label="Font"\s+labelPlacement="inline"\s+control="select"/);
+    expect(src).toContain('controlWidth="w-44 regular:w-48"');
     expect(src).not.toContain('<div className="w-56">');
   });
 
-  it("UI Font and Animation rows keep label-left / control-right on phones (label takes the spare width)", () => {
+  it("Animations keeps label-left / switch-right on phones (inline Field)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label>Font</Label>');
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label htmlFor="animation-toggle">');
-    expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
+    expect(src).toMatch(/label="Animations"\s+labelPlacement="inline"\s+control="switch"/);
   });
 
-  it("Appearance row stacks below wide; segmented control is not forced to full width", () => {
+  it("Theme is an inline segmented Field; the control is not forced to full width", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">');
-    expect(src).toContain('self-start rounded-lg border p-0.5 wide:self-auto');
+    expect(src).toMatch(/label="Theme"\s+labelPlacement="inline"\s+control="segmented"/);
+    expect(src).not.toMatch(/label="Theme"[^>]*\bfill\b/);
   });
 
   it("general page has no hidden lead node (the settings shell bar that needed it is gone)", () => {
@@ -84,7 +84,7 @@ describe("categories (with budgets) at 390", () => {
   it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
     expect(src).toMatch(/label="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
-    expect(src).toContain("padded={false}");
+    expect(src).toMatch(/label="Categories"[\s\S]*?\blist\b/);
     expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");
   });
@@ -118,17 +118,18 @@ describe("portfolio performance controls at 390", () => {
 describe("accounts/[id] at 390", () => {
   it("header actions capsule is not 100% wide (it ran off the right edge)", () => {
     const src = read(ACCOUNT_DETAIL);
-    // The right group is the fixed bar layout (PHONE_BAR_RIGHT: col 3, min-w-0, shrink-0); the page passes no override.
+    // The right group is the fixed bar layout (col 3, min-w-0, shrink-0); the page passes no override.
     expect(src).not.toMatch(/actionsClassName=/);
     const bar = read("src/components/mobile/page-header.tsx");
-    expect(bar).toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*min-w-0/);
-    expect(bar).not.toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*\bw-full/);
+    expect(bar).toMatch(/data-slot="page-header-actions"\s+className="[^"]*min-w-0/);
+    expect(bar).not.toMatch(/data-slot="page-header-actions"\s+className="[^"]*\bw-full/);
   });
 
-  it("type / currency badge row can wrap inside the header and is capped to the viewport", () => {
+  it("type / currency badge row sits under the bar (not in it), can wrap and is capped to the viewport", () => {
     const src = read(ACCOUNT_DETAIL);
-    const row = src.slice(src.indexOf("belowTitle={"), src.indexOf("belowTitle={") + 200);
-    expect(row).toContain("max-w-full flex-wrap");
+    expect(src).not.toContain("belowTitle");
+    const at = src.indexOf("account.currency}</Badge>");
+    expect(src.slice(at - 200, at)).toContain("max-w-full flex-wrap");
   });
 
   it("bottom clearance comes from the (app) layout <main> (clearance + 16px below md), which every page inherits", () => {
@@ -163,7 +164,7 @@ describe("holdings rows at every width (one layout)", () => {
 
 describe("reporting toast on phones", () => {
   it("sits above the tab bar via the clearance var, not over content rows", () => {
-    const src = read("src/components/reporting-recompute-indicator.tsx");
+    const src = read("src/components/notice/body.tsx");
     expect(src).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
     expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+16px)]");
   });

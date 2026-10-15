@@ -42,7 +42,7 @@ describe("settings inner pages render the page header", () => {
 
   it("the SectionPage template renders PageHeader with title, info and back", () => {
     const src = code("src/components/templates/section-page.tsx");
-    expect(src).toMatch(/<PageHeader[\s\S]*title=\{title\}[\s\S]*info=\{info \?\? subtitle\}[\s\S]*backHref=/);
+    expect(src).toMatch(/<PageHeader[\s\S]*title=\{title\}[\s\S]*info=\{info\}[\s\S]*back=\{back\}/);
   });
 });
 

@@ -1,26 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { File, Eye, ArrowRight } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
 interface PdfPreviewProps {
@@ -70,18 +58,17 @@ export function PdfPreview({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <File className="h-5 w-5 text-info" />
-            PDF Import Preview
-          </DialogTitle>
-          <DialogDescription>
-            {rows.length} transactions extracted from the PDF.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="PDF Import Preview"
+      info={<>{rows.length} transactions extracted from the PDF.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false) },
+        { label: !selectedAccount ? "Select an account first" : `Preview ${rows.length} transactions`, kind: "primary", onClick: handleConfirm, disabled: rows.length === 0 || !selectedAccount },
+      ]}
+    >
         {/* Confidence + account selector */}
         <div className="flex flex-wrap items-center gap-3">
           <Badge className={confidenceColor}>
@@ -89,16 +76,15 @@ export function PdfPreview({
           </Badge>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Assign to account:</span>
-            <Select value={selectedAccount} onValueChange={(v) => setSelectedAccount(v ?? "")}>
-              <SelectTrigger className="w-48" size="sm">
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((acc) => (
-                  <SelectItem key={acc} value={acc}>{acc}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={selectedAccount}
+              onValueChange={(v) => setSelectedAccount(v ?? "")}
+              placeholder="Select account"
+              compact
+              className="w-48"
+              options={accounts.map((acc) => ({ value: acc, label: acc }))}
+            />
           </div>
         </div>
 
@@ -130,14 +116,17 @@ export function PdfPreview({
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {rows.slice(0, 100).map((row, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
-                  <span className="font-mono text-muted-foreground w-20 shrink-0">{row.date}</span>
-                  <span className="flex-1 truncate">{row.payee}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
-                    {formatCurrency(row.amount, row.currency ?? displayCurrency)}
-                  </span>
-                </div>
+                <ListRow
+                  key={i}
+                  size="dense"
+                  title={row.payee}
+                  subtitle={row.date}
+                  value={
+                    <span className={`font-mono ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
+                      {formatCurrency(row.amount, row.currency ?? displayCurrency)}
+                    </span>
+                  }
+                />
               ))}
               {rows.length > 100 && (
                 <div className="text-center text-xs text-muted-foreground py-3">
@@ -152,19 +141,6 @@ export function PdfPreview({
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={rows.length === 0 || !selectedAccount}
-          >
-            {!selectedAccount ? "Select an account first" : `Preview ${rows.length} transactions`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

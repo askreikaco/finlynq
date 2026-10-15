@@ -20,6 +20,7 @@ import { SectionPage } from "@/components/templates/section-page";
 import { TW } from "@/lib/design/tokens";
 import { Badge } from "@/components/ui/badge";
 import type { EffectiveConfig } from "@/lib/admin/effective-config";
+import { InfoTip } from "@/components/ui/info-tip";
 
 const SECTIONS = [
   {
@@ -91,8 +92,17 @@ interface SectionProps {
 
 function ConfigSection({ title, description, children }: SectionProps) {
   return (
-    <SectionCard label={title} icon={Server} tone="indigo">
-      <p className="text-sm text-muted-foreground mb-2">{description}</p>
+    <SectionCard
+      label={
+        <>
+          {title}
+          <InfoTip label={`About ${title}`} text={description} />
+        </>
+      }
+      icon={Server}
+      tone="indigo"
+      padded={false}
+    >
       <ul className="flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</ul>
     </SectionCard>
   );

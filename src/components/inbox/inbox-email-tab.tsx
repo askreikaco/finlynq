@@ -18,18 +18,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
 import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
 import { EmailRuleDialog } from "./email-rule-dialog";
-import { AmountInput } from "@/components/amount-input";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type Action =
   | "pending"
@@ -281,10 +275,13 @@ export function InboxEmailTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Transactions emailed to your import address. Body emails matching an
-          email rule auto-record; the rest wait here for review.
-        </p>
+        <span className="flex items-center gap-0.5 text-sm text-muted-foreground">
+          Emailed transactions
+          <InfoTip
+            label="About emailed transactions"
+            text="Transactions emailed to your import address. Body emails matching an email rule auto-record; the rest wait here for review."
+          />
+        </span>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </Button>
@@ -303,8 +300,7 @@ export function InboxEmailTab() {
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <Mail className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No emails yet. Forward a bank alert or statement to your import
-              address and it&apos;ll show up here.
+              No emails yet.
             </p>
           </CardContent>
         </Card>
@@ -470,83 +466,52 @@ export function InboxEmailTab() {
 
                       {canRecord && (
                         <div className="flex flex-wrap items-end gap-2">
+                          <Field
+                            label="Account"
+                            control="select"
+                            value={pickAccount != null ? String(pickAccount) : ""}
+                            onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
+                            placeholder="Pick account"
+                            compact
+                            options={recordableAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency}</> }))}
+                            className="w-[200px]"
+                          />
+                          <Field
+                            label="Category"
+                            control="select"
+                            value={pickCategory != null ? String(pickCategory) : ""}
+                            onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
+                            placeholder="Pick category"
+                            compact
+                            options={categories.map((c) => ({ value: String(c.id), label: safeName(c.name, "category", c.id) }))}
+                            className="w-[200px]"
+                          />
+                          <Field
+                            label="Amount"
+                            control="amount"
+                            step="0.01"
+                            value={editAmount}
+                            onValueChange={(nv) => setEditAmount(nv)}
+                            compact
+                            className="w-[110px]"
+                          />
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Account</label>
-                            <Select
-                              value={pickAccount != null ? String(pickAccount) : ""}
-                              onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
-                            >
-                              <SelectTrigger className="w-[200px] h-9">
-                                {/* Explicit render — base-ui SelectValue otherwise
-                                 *  shows the raw account id, not the name. */}
-                                <SelectValue placeholder="Pick account">
-                                  {pickAccount != null
-                                    ? (() => {
-                                        const a = recordableAccounts.find((x) => x.id === pickAccount);
-                                        return a ? `${safeAccountName(a)} · ${a.currency}` : "Pick account";
-                                      })()
-                                    : "Pick account"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {recordableAccounts.map((a) => (
-                                  <SelectItem key={a.id} value={String(a.id)}>
-                                    {safeAccountName(a)} · {a.currency}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Category</label>
-                            <Select
-                              value={pickCategory != null ? String(pickCategory) : ""}
-                              onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
-                            >
-                              <SelectTrigger className="w-[200px] h-9">
-                                <SelectValue placeholder="Pick category">
-                                  {pickCategory != null
-                                    ? safeName(
-                                        categories.find((c) => c.id === pickCategory)?.name ?? null,
-                                        "category",
-                                        pickCategory,
-                                      )
-                                    : "Pick category"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((c) => (
-                                  <SelectItem key={c.id} value={String(c.id)}>
-                                    {safeName(c.name, "category", c.id)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Amount</label>
-                            <AmountInput native
-                              step="0.01"
-                              className="h-9 w-[110px] rounded-md border bg-background px-2 text-sm"
-                              value={editAmount}
-                              onValueChange={(nv) => setEditAmount(nv)}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Date</label>
-                            <input
-                              type="date"
-                              className="h-9 w-[150px] rounded-md border bg-background px-2 text-sm"
+                            <Field
+                              label="Date"
+                              control="date"
                               value={editDate}
                               onChange={(e) => setEditDate(e.target.value)}
+                              compact
+                              className="w-[150px]"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Payee</label>
-                            <input
-                              className="h-9 w-[160px] rounded-md border bg-background px-2 text-sm"
+                            <Field
+                              label="Payee"
                               value={editPayee}
                               onChange={(e) => setEditPayee(e.target.value)}
+                              compact
+                              className="w-[160px]"
                             />
                           </div>
                           <Button

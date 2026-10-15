@@ -19,18 +19,12 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export interface OfxPreviewRow {
   date: string;
@@ -111,18 +105,21 @@ export function OfxConfirmDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Confirm import — {format.toUpperCase()} statement</DialogTitle>
-          <DialogDescription>
-            Here&apos;s how{" "}
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="3xl"
+      title={<>Confirm import — {format.toUpperCase()} statement</>}
+      info={<>Here&apos;s how{" "}
             <span className="font-mono text-xs">{fileName}</span> will be added to{" "}
             <span className="font-medium text-foreground">{account}</span>. Pick
-            which field becomes the Payee, then import.
-          </DialogDescription>
-        </DialogHeader>
-
+            which field becomes the Payee, then import.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: submitting },
+        { label: submitting ? "Importing…" : "Import statement", kind: "primary", onClick: () =>
+              onConfirm({ payeeSource, dontAskAgain: futureMode === "auto" }), disabled: submitting },
+      ]}
+    >
         <div className="overflow-auto flex-1 space-y-4 pr-1">
           {/* Statement snapshot */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
@@ -143,32 +140,18 @@ export function OfxConfirmDialog({
           </div>
 
           {/* Payee source toggle — the one editable field. */}
-          <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
-            <div className="text-sm font-medium">Payee comes from</div>
-            <div className="flex gap-4">
-              {(["name", "memo"] as const).map((opt) => (
-                <label
-                  key={opt}
-                  className="flex items-center gap-1.5 text-sm cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="ofx-confirm-payee-source"
-                    value={opt}
-                    checked={payeeSource === opt}
-                    onChange={() => setPayeeSource(opt)}
-                  />
-                  {opt === "name" ? "Name field" : "Memo field"}
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              The other field becomes the transaction Note. Some banks put the
-              real merchant in Memo and a generic label in Name — flip this if the
-              Payee column below looks generic.
-            </p>
-          </div>
-
+          <Field
+            label="Payee comes from"
+            control="segmented"
+            info="The other field becomes the transaction Note. Some banks put the real merchant in Memo and a generic label in Name: flip this if the Payee column below looks generic."
+            value={payeeSource}
+            onValueChange={(v) => setPayeeSource(v as typeof payeeSource)}
+            fill
+            options={[
+              { value: "name", label: "Name field" },
+              { value: "memo", label: "Memo field" },
+            ]}
+          />
           {/* Preview table — how rows land in staging. */}
           <div className="space-y-1.5">
             <div className="text-sm font-medium">
@@ -178,7 +161,7 @@ export function OfxConfirmDialog({
               </span>
             </div>
             <div className="max-h-[42dvh] overflow-auto">
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard list>
                 {previewRows.slice(0, 50).map((r) => (
                   <ListRow
                     key={r.fitId}
@@ -190,65 +173,24 @@ export function OfxConfirmDialog({
               </SectionCard>
             </div>
             {rowCount > 50 && (
-              <p className="text-xs text-muted-foreground">
-                Showing the first 50 rows — all {rowCount} will be imported.
-              </p>
+              <p data-keep="status" className="text-xs text-muted-foreground">First 50 of {rowCount} shown; all will import.</p>
             )}
           </div>
 
           {/* Auto-vs-ask choice (shared concept with the CSV dialog). */}
-          <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
-            <div className="text-sm font-medium">On future uploads to {account}</div>
-            <div className="space-y-1.5">
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="ofx-future-mode"
-                  className="mt-0.5"
-                  checked={futureMode === "ask"}
-                  onChange={() => setFutureMode("ask")}
-                />
-                <span>
-                  <span className="font-medium">Ask me to confirm first</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Show this preview each time (recommended).
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="ofx-future-mode"
-                  className="mt-0.5"
-                  checked={futureMode === "auto"}
-                  onChange={() => setFutureMode("auto")}
-                />
-                <span>
-                  <span className="font-medium">Apply automatically</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Import silently using this Payee source — don&apos;t ask again.
-                    Reset anytime on the account&apos;s page → Import preferences.
-                  </span>
-                </span>
-              </label>
-            </div>
-          </div>
+          <Field
+            label={`On future uploads to ${account}`}
+            control="segmented"
+            info="Ask me to confirm first: show this preview each time (recommended). Apply automatically: import silently using this Payee source and don't ask again; reset anytime on the account's page, Import preferences."
+            value={futureMode}
+            onValueChange={(v) => setFutureMode(v as typeof futureMode)}
+            fill
+            options={[
+              { value: "ask", label: "Ask me to confirm first" },
+              { value: "auto", label: "Apply automatically" },
+            ]}
+          />
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() =>
-              onConfirm({ payeeSource, dontAskAgain: futureMode === "auto" })
-            }
-            disabled={submitting}
-          >
-            {submitting ? "Importing…" : "Import statement"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

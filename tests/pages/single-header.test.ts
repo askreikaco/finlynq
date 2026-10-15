@@ -27,6 +27,7 @@ const EXEMPTIONS: Record<string, string> = {
  * under a prop (showHeader={false}, embedded). Any change to these counts fails here: re-review the branch first.
  */
 const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
+  "dev/gallery/page.tsx": { count: 7, reason: "the page's own bar (1) + the six top bar specimens of the Top bar section (TopBarDemos: bordered, non-sticky demo frames)" },
   "more/page.tsx": { count: 2, reason: "ColumnShell (cascading columns, wide only) renders the More list in col 1 and the Settings hub in col 2; each has its own column header, and the stacked phone view renders only the leaf" },
   "transactions/page.tsx": { count: 5, reason: "workspace header (showHeader) + the split pane's TransactionFormScreen branches, rendered embedded (compact pane header instead of the page bar)" },
   "transactions/new/page.tsx": { count: 4, reason: "TransactionFormScreen: loading, Missing, shared entry screen and legacy form fallback branches (exclusive; the create mode renders only the entry screen)" },
@@ -36,13 +37,17 @@ const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "loans/page.tsx": { count: 3, reason: "SectionPage header (1) + the split pane's LoanFormPanel create and edit FormPage branches, rendered embedded (compact pane header)" },
   "loans/new/page.tsx": { count: 2, reason: "LoanFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
   "loans/[id]/edit/page.tsx": { count: 2, reason: "LoanFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "subscriptions/[id]/page.tsx": { count: 2, reason: "DetailPage: the loading shell header and the loaded header (exclusive); the subscriptions detail content has no header of its own (the split pane renders it under the compact pane header)" },
+  "loans/[id]/page.tsx": { count: 2, reason: "DetailPage: the loading shell header and the loaded header (exclusive); the loans detail content has no header of its own (the split pane renders it under the compact pane header)" },
+  "goals/[id]/page.tsx": { count: 2, reason: "DetailPage: the loading shell header and the loaded header (exclusive); the goals detail content has no header of its own (the split pane renders it under the compact pane header)" },
   "goals/page.tsx": { count: 3, reason: "ListPage header (1) + the split pane's GoalFormPanel create and edit FormPage branches, rendered embedded (compact pane header)" },
   "goals/new/page.tsx": { count: 2, reason: "GoalFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
   "goals/[id]/edit/page.tsx": { count: 2, reason: "GoalFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
   "accounts/new/page.tsx": { count: 2, reason: "AccountFormPanel create branch (FormPage, 1) + the edit view header; exclusive (mode picks one)" },
   "accounts/[id]/edit/page.tsx": { count: 2, reason: "AccountFormPanel: the create branch (FormPage, 1) and the edit view header (page only; the pane renders its own compact header), exclusive" },
-  "accounts/[id]/page.tsx": { count: 8, reason: "not-found, loading and main branches (exclusive) + TransactionsWorkspace header (showHeader=false here) + the 4 exclusive branches of the workspace pane's TransactionFormScreen (the pane is off for the locked workspace)" },
-  "accounts/page.tsx": { count: 4, reason: "empty-state and list branches (exclusive) + the split pane's AccountFormPanel (create FormPage + edit view header), which render a compact pane header, not the page bar" },
+  "accounts/[id]/page.tsx": { count: 6, reason: "AccountDetail (shared with the split pane): not-found, loading and main branches (exclusive; none when embedded, the pane header replaces them) + TransactionsWorkspace header (showHeader=false here) + the exclusive branches of the workspace pane's TransactionFormScreen (the pane is off for the locked workspace)" },
+  "categories/page.tsx": { count: 3, reason: "the page bar (1) + CategoryDetail page-mode header (0 when embedded in the split pane) + CategoryFormPanel FormPage (1, embedded: compact pane header); the pane never renders them together with the page bar" },
+  "accounts/page.tsx": { count: 10, reason: "empty-state and list branches (exclusive) + the split pane's AccountFormPanel (create FormPage + edit view header), which render a compact pane header, not the page bar + the split pane's AccountDetail (6, as accounts/[id]/page.tsx; embedded it renders none of them, the pane header replaces them)" },
   "admin/page.tsx": { count: 3, reason: "loading, error and main branches (exclusive), each a SectionPage call (batch 4)" },
   "admin/(env)/integrations/page.tsx": { count: 2, reason: "loading and ready branches (exclusive), each a SectionPage call (batch 5)" },
   "settings/investments/page.tsx": { count: 3, reason: "loading, error and ready branches (exclusive), each a SectionPage call (batch 4)" },

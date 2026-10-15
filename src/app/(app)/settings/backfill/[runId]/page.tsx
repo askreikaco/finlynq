@@ -19,9 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark, Layers, Loader2, PlusCircle, Receipt, RefreshCw, ShieldCheck, Undo2, Wallet } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Field } from "@/components/ui/field";
+import { Overlay } from "@/components/ui/overlay";
 
 // MUST stay in sync with the CHECK constraint on
 // backfill_proposals.chosen_kind (migration 20260609), with OverrideKind
@@ -309,18 +310,14 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       width="report"
       center
       header={{
-        actions: (
-          <>
-            <Button variant="outline" onClick={() => router.push("/settings/backfill")} className={HEADER_DESKTOP_ONLY}>
-              <RefreshCw className="size-4 mr-2" /> New run
-            </Button>
-            <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
-              {!applying && <CheckCircle2 className="hidden size-4 max-regular:block" aria-hidden />}
-              {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
-            </Button>
-          </>
-        ),
-        overflow: [{ label: "New run", onSelect: () => router.push("/settings/backfill") }],
+        more: [{ label: "New run", icon: RefreshCw, onSelect: () => router.push("/settings/backfill") }],
+        primary: {
+          kind: "save",
+          label: `Apply ${approvedCount} approved`,
+          onSelect: applyAll,
+          busy: applying,
+          disabled: applying || approvedCount === 0,
+        },
       }}
     >
       {error && <div className="border border-destructive bg-destructive/10 text-destructive rounded p-3 text-sm">{error}</div>}
@@ -339,8 +336,8 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       )}
 
       {!loading && proposals.length > 0 && (
-        <SectionCard padded={false} className="px-3">
-          <div className="flex items-center justify-between gap-2 pt-3 pb-2 text-xs">
+        <SectionCard padded={false}>
+          <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2 text-xs">
             <span className="text-muted-foreground" data-keep="status">{sortedProposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</span>
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Sort:</span>
@@ -374,14 +371,16 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
         </SectionCard>
       )}
 
-      {/* Proposal detail: a bottom sheet at every width (the list above is the one column). */}
-      <Sheet open={detailOpen && selected != null} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle className="sr-only">Proposal detail</SheetTitle>
-          </SheetHeader>
+      {/* Proposal detail (the list above is the one column). */}
+      <Overlay
+        variant="detail"
+        open={detailOpen && selected != null}
+        onClose={() => setDetailOpen(false)}
+        size="xl"
+        title="Proposal detail"
+      >
           {selected && (
-            <div className="px-4 pb-6">
+            <div className="pb-2">
               <ProposalDetail
                 runId={runId}
                 proposal={selected}
@@ -408,8 +407,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               />
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+      </Overlay>
     </SectionPage>
   );
 }
@@ -445,14 +443,13 @@ function ProposalCard({
   const realized = proposal.deltasJson.realizedGainBase;
   // The checkbox sits beside the row, not inside its button (no interactive nesting).
   return (
-    <div className={`flex items-center gap-2 ${selected ? "bg-primary/5" : ""}`}>
+    <div className={`flex items-center ${selected ? "bg-muted" : ""}`}>
       {!isRefused && !isApplied && (
-        <input
-          type="checkbox"
+        <Field
+          control="checkbox"
           aria-label={`Approve: ${proposal.summary}`}
           checked={isApproved}
           onChange={onToggleApprove}
-          className="size-4 shrink-0"
         />
       )}
       <div className="min-w-0 flex-1">
@@ -681,11 +678,11 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
-        {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
+      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" list>
+        {ids.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
-          if (!r) return <p key={id} className="py-3 text-sm text-muted-foreground" data-keep="data">Tx #{id} (row not found)</p>;
+          if (!r) return <p key={id} className="px-4 py-3 text-sm text-muted-foreground" data-keep="data">Tx #{id} (row not found)</p>;
           return (
             <div key={id}>
               <ListRow
@@ -742,7 +739,7 @@ function RowDetailsLine({
   if (row.payee) items.push({ key: "payee", value: row.payee });
   if (items.length === 0) return null;
   return (
-    <div className="px-1 pb-2 text-xs text-muted-foreground">
+    <div className="px-4 pb-2 text-xs text-muted-foreground">
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {items.map((it) => {
           const isHi = highlight?.has(it.key);
@@ -783,7 +780,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" list>
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -798,7 +795,7 @@ function ReplacementPreviewTable({
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3" cardClassName="border-warning/40 bg-warning/5">
+          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" list cardClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -902,27 +899,15 @@ function HoldingPicker({
     );
   }
   return (
-    <select
-      value={proposal.chosenHoldingId ?? ""}
-      onChange={(e) => {
-        const v = e.target.value;
-        onChange(v === "" ? null : Number(v));
-      }}
-      className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
-    >
-      <option value="">— Pick a holding —</option>
-      {candidates.map((id) => {
-        const h = holdingMap[id];
-        const label = h?.name ?? `holding #${id}`;
-        const currency = h?.currency ? ` (${h.currency})` : "";
-        return (
-          <option key={id} value={id}>
-            {label}
-            {currency}
-          </option>
-        );
-      })}
-    </select>
+    <Field
+      control="select"
+      value={String(proposal.chosenHoldingId ?? "")}
+      onValueChange={(v) => onChange(v === "" ? null : Number(v))}
+      options={[
+        { value: "", label: "— Pick a holding —" },
+        ...candidates.map((id) => { const h = holdingMap[id]; const label = h?.name ?? `holding #${id}`; const currency = h?.currency ? ` (${h.currency})` : ""; return ({ value: String(id), label: `${label}${currency}` }); }),
+      ]}
+    />
   );
 }
 
@@ -1189,41 +1174,26 @@ function KindOverridePicker({
       </div>
 
       {isPaired && (
-        <div className="space-y-1.5 rounded border border-border p-2">
-          <div className="flex items-center gap-1 text-xs font-medium">
-            Counterpart leg
-            <InfoTip
-              label="About counterpart leg"
-              text={`New cash leg: ${supportsSynth ? `creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve` : "not available for cross-account kinds; link an existing row instead"}. Link existing row: pairs the orphan with an unmatched row ${supportsSynth ? "already in this account" : "in the other account or currency"}.`}
-            />
-          </div>
-          <label className={`flex items-start gap-2 text-xs ${supportsSynth ? "cursor-pointer" : "opacity-40 cursor-not-allowed"}`}>
-            <input
-              type="radio"
-              name={`counterpart-mode-${proposal.id}`}
-              className="mt-0.5"
-              disabled={!supportsSynth}
-              checked={chosenCounterpartMode === "synth_new"}
-              onChange={() => { if (supportsSynth) { setChosenCounterpartMode("synth_new"); setCounterpartTxId(null); } }}
-            />
-            <span>
-              <span className="font-medium">New cash leg</span>
-              {!supportsSynth && <span className="text-muted-foreground"> (n/a)</span>}
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-xs cursor-pointer">
-            <input
-              type="radio"
-              name={`counterpart-mode-${proposal.id}`}
-              className="mt-0.5"
-              checked={chosenCounterpartMode === "link_existing"}
-              onChange={() => setChosenCounterpartMode("link_existing")}
-            />
-            <span>
-              <span className="font-medium">Link existing row</span>
-            </span>
-          </label>
-
+        <div className="space-y-2">
+          <Field
+            label="Counterpart leg"
+            control="segmented"
+            info={`New cash leg: ${supportsSynth ? `creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve` : "not available for cross-account kinds; link an existing row instead"}. Link existing row: pairs the orphan with an unmatched row ${supportsSynth ? "already in this account" : "in the other account or currency"}.`}
+            value={chosenCounterpartMode}
+            onValueChange={(v) => {
+              if (v === "synth_new") {
+                if (supportsSynth) {
+                  setChosenCounterpartMode("synth_new");
+                  setCounterpartTxId(null);
+                }
+              } else setChosenCounterpartMode("link_existing");
+            }}
+            fill
+            options={[
+              { value: "synth_new", label: supportsSynth ? "New cash leg" : "New cash leg (n/a)", disabled: !supportsSynth },
+              { value: "link_existing", label: "Link existing row" },
+            ]}
+          />
           {chosenCounterpartMode === "link_existing" && (
             <div className="mt-1 space-y-1">
               {loadingCandidates && (
@@ -1267,18 +1237,15 @@ function KindOverridePicker({
       {needsRelatedHolding && (
         <div className="space-y-1">
           <div className="text-xs font-medium">Related stock holding (for reporting)</div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
-            value={chosenRelatedHoldingId ?? ""}
-            onChange={(e) => setChosenRelatedHoldingId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">— pick a holding —</option>
-            {accountHoldings.map(([id, h]) => (
-              <option key={id} value={id}>
-                {h.name ?? `holding #${id}`} ({h.currency})
-              </option>
-            ))}
-          </select>
+          <Field
+            control="select"
+            value={String(chosenRelatedHoldingId ?? "")}
+            onValueChange={(v) => setChosenRelatedHoldingId(v ? Number(v) : null)}
+            options={[
+              { value: "", label: "— pick a holding —" },
+              ...accountHoldings.map(([id, h]) => ({ value: String(id), label: `${h.name ?? `holding #${id}`}(${h.currency})` })),
+            ]}
+          />
         </div>
       )}
 
@@ -1293,22 +1260,19 @@ function KindOverridePicker({
               />
             )}
           </div>
-          <select
-            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
-            value={chosenCategoryId ?? ""}
-            onChange={(e) => setChosenCategoryId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">
-              {autoCategoryName
-                ? `— auto: ${autoCategoryName} (created if needed) —`
-                : "— leave uncategorized —"}
-            </option>
-            {categoryOptions.map(([id, c]) => (
-              <option key={id} value={id}>
-                {c.name ?? `category #${id}`}
-              </option>
-            ))}
-          </select>
+          <Field
+            control="select"
+            value={String(chosenCategoryId ?? "")}
+            onValueChange={(v) => setChosenCategoryId(v ? Number(v) : null)}
+            options={[
+              {
+                value: "", label: autoCategoryName
+                  ? `— auto: ${autoCategoryName} (created if needed) —`
+                  : "— leave uncategorized —"
+              },
+              ...categoryOptions.map(([id, c]) => ({ value: String(id), label: c.name ?? `category #${id}` })),
+            ]}
+          />
         </div>
       )}
 
@@ -1664,7 +1628,7 @@ function WillBecomeTable({
   if (changedKeys.has("related")) secondaryHi.add("related");
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Will become" icon={PlusCircle} tone="emerald" padded={false} className="px-3" cardClassName="border-pos/40 bg-pos/5">
+      <SectionCard label="Will become" icon={PlusCircle} tone="emerald" padded={false} cardClassName="border-pos/40 bg-pos/5">
         <ListRow
           title={`#${willBecome.id} · ${willBecome.date}`}
           subtitle={
@@ -1888,7 +1852,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" list>
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}

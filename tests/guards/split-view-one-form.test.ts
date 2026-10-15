@@ -27,9 +27,12 @@ interface Entity {
   scan: string;
 }
 
-// Budget + category: the single category + budget form is CategoryBudgetForm on /categories (a sheet via ?edit=),
-// asserted in tests/app/category-budget-form.test.tsx; the budgets split view and the manage list are gone.
+// Budget + category: the single category + budget form is CategoryBudgetForm, wrapped by CategoryFormPanel (route pages
+// /categories/new and /categories/[id]/edit, and the /categories pane), asserted in tests/app/category-budget-form.test.tsx;
+// the budgets split view, the manage list and the old ?edit= sheet are gone.
 const ENTITIES: Entity[] = [
+  { name: "category", shared: "CategoryFormPanel", sharedFile: `${APP}/categories/_components/category-form-panel.tsx`,
+    routes: [`${APP}/categories/new/page.tsx`, `${APP}/categories/[id]/edit/page.tsx`], list: `${APP}/categories/_page-content.tsx`, inner: ["CategoryBudgetForm"], scan: `${APP}/categories` },
   { name: "transaction", shared: "TransactionFormScreen", sharedFile: `${APP}/transactions/_components/transaction-form-screen.tsx`,
     routes: [`${APP}/transactions/new/page.tsx`, `${APP}/transactions/[id]/edit/page.tsx`, `${APP}/transactions/transfer/[linkId]/edit/page.tsx`],
     list: `${APP}/transactions/_components/transactions-workspace.tsx`, inner: ["TransactionEntryScreen"], scan: `${APP}/transactions` },
@@ -91,11 +94,11 @@ describe.each(ENTITIES)("split view: $name has one form", (e) => {
 });
 
 describe("split view: shared layout", () => {
-  it("one ListDetailLayout; list 2fr | pane 1fr; sticky below the top bar", () => {
+  it("one ListDetailLayout; list 3fr | pane 1fr; sticky below the top bar", () => {
     const layout = read("src/components/mobile/list-detail-layout.tsx");
     expect(layout).toContain("export function ListDetailLayout");
     const sel = read("src/lib/list-detail/selection.ts");
-    expect(sel).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(sel).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(sel).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
   });
 
@@ -114,7 +117,8 @@ describe("split view: shared layout", () => {
     for (const { f, first } of pages) {
       const src = code(read(f));
       const open = src.indexOf("<ListDetailLayout");
-      expect(src.slice(open, src.indexOf("pane=", open)), f).not.toMatch(/\blist=\{/);
+      const formAt = Math.min(...["renderForm=", "pane="].map((k) => src.indexOf(k, open)).filter((i) => i > -1));
+      expect(src.slice(open, formAt), f).not.toMatch(/\blist=\{/);
       const close = src.indexOf("</ListDetailLayout>");
       expect(open, f).toBeGreaterThan(-1);
       expect(close, f).toBeGreaterThan(open);

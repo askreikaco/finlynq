@@ -1,25 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
 
 interface SheetInfo {
@@ -110,68 +95,57 @@ export function ExcelMapperDialog({
   if (!sheet) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-pos" />
-            Map Excel Columns
-          </DialogTitle>
-          <DialogDescription>
-            Map your spreadsheet columns to transaction fields.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="Map Excel Columns"
+      info={<>Map your spreadsheet columns to transaction fields.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },
+        { label: isMapping ? "Processing..." : "Preview Import", kind: "primary", onClick: handleSubmit, disabled: !isValid || isMapping },
+      ]}
+    >
         {/* Sheet selector */}
         {sheets.length > 1 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Sheet:</span>
-            <Select value={selectedSheet} onValueChange={(v) => setSelectedSheet(v ?? "")}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sheets.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    {s.name} ({s.totalRows} rows)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Field
+              control="select"
+              value={selectedSheet}
+              onValueChange={(v) => setSelectedSheet(v ?? "")}
+              className="w-48"
+              options={sheets.map((s) => ({ value: s.name, label: <>{s.name} ({s.totalRows} rows)</> }))}
+            />
           </div>
         )}
 
         {/* Headers toggle */}
-        <label className="flex items-center justify-between gap-3 min-h-row text-sm">
-          <span className="flex-1">First row contains headers</span>
-          <Switch
-            checked={hasHeaders}
-            onCheckedChange={(v) => setHasHeaders(v)}
-            className="shrink-0"
-          />
-        </label>
+        <Field
+          label="First row contains headers"
+          control="switch"
+          checked={hasHeaders}
+          onCheckedChange={(v) => setHasHeaders(v)}
+        />
 
         {/* Column mapping */}
         <div className="space-y-2 overflow-auto flex-1">
-          <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
+          <p data-keep="label" className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {sheet.headers.map((header) => (
             <div key={header} className="flex items-center gap-2">
               <Badge variant="outline" className="min-w-[120px] justify-center font-mono text-xs">
                 {header}
               </Badge>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Select value={mapping[header] ?? ""} onValueChange={(v) => updateMapping(header, v)}>
-                <SelectTrigger className="w-48" size="sm">
-                  <SelectValue placeholder="Skip" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FIELD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value || "_skip"}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={mapping[header] ?? ""}
+                onValueChange={(v) => updateMapping(header, v)}
+                placeholder="Skip"
+                compact
+                className="w-48"
+                options={FIELD_OPTIONS.map((opt) => ({ value: opt.value || "_skip", label: opt.label }))}
+              />
             </div>
           ))}
         </div>
@@ -179,7 +153,7 @@ export function ExcelMapperDialog({
         {/* Sample data preview: one list row per sample row (no table). */}
         {sheet.sampleRows.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <SectionCard label="Sample rows" icon={Table2} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard label="Sample rows" icon={Table2} tone="muted" list>
               {sheet.sampleRows.map((row, i) => (
                 <ListRow
                   key={i}
@@ -198,16 +172,6 @@ export function ExcelMapperDialog({
             {!hasAmount && "Amount mapping is required."}
           </p>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isMapping}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isMapping}>
-            {isMapping ? "Processing..." : "Preview Import"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

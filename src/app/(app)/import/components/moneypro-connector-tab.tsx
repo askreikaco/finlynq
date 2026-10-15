@@ -4,20 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
 import {
   AlertCircle,
   CheckCircle2,
@@ -30,7 +21,9 @@ import {
 } from "lucide-react";
 import { exportCsv } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import { getDisplayLocale } from "@/lib/locale";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface AccountPlan {
   sourceName: string;
@@ -268,16 +261,11 @@ export function MoneyProConnectorTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle icon={FileSpreadsheet} tone="violet">
-            Money Pro
-          </CardTitle>
-          <CardDescription>
-            Migrate your Money Pro history to Finlynq. In Money Pro, open the{" "}
+          <CardTitle icon={FileSpreadsheet} tone="violet" infoLabel="About money pro" info={<>Migrate your Money Pro history to Finlynq. In Money Pro, open the{" "}
             <span className="font-medium">Transactions report</span> and export
             it as <span className="font-mono">CSV</span>, then upload it here.
             Expenses, income, transfers, and opening balances are imported with
-            the right sign and currency.
-          </CardDescription>
+            the right sign and currency.</>}>Money Pro</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
@@ -340,11 +328,13 @@ export function MoneyProConnectorTab() {
               />
 
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Map accounts</h3>
-                <p className="text-xs text-muted-foreground">
-                  Each Money Pro account becomes a Finlynq account. Matched names
-                  are linked automatically; the rest are created new.
-                </p>
+                <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                  Map accounts
+                  <InfoTip
+                    label="About mapping accounts"
+                    text="Each Money Pro account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
+                  />
+                </h3>
                 <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   {summary.accounts.map((p) => {
                     const sel = target[p.sourceName] ?? "new";
@@ -359,7 +349,8 @@ export function MoneyProConnectorTab() {
                             {p.currency} · {p.txCount} tx
                           </span>
                         </div>
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={sel}
                           onValueChange={(v) =>
                             setTarget((prev) => ({
@@ -367,14 +358,16 @@ export function MoneyProConnectorTab() {
                               [p.sourceName]: v || "new",
                             }))
                           }
-                          items={accountItems}
+                          options={accountItems}
                           placeholder="Select account"
                           searchPlaceholder="Search accounts…"
                           emptyMessage="No matching account"
-                          className="h-8 w-[220px]"
+                          compact
+                          className="w-[220px]"
                         />
                         {sel === "new" && (
-                          <Select
+                          <Field
+                            control="select"
                             value={newType[p.sourceName] ?? "A"}
                             onValueChange={(v) =>
                               setNewType((prev) => ({
@@ -382,15 +375,10 @@ export function MoneyProConnectorTab() {
                                 [p.sourceName]: (v as "A" | "L") ?? "A",
                               }))
                             }
-                          >
-                            <SelectTrigger className="w-[110px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A">Asset</SelectItem>
-                              <SelectItem value="L">Liability</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            compact
+                            className="w-[110px]"
+                            options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
+                          />
                         )}
                       </div>
                     );

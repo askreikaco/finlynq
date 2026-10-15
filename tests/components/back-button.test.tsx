@@ -7,6 +7,12 @@ import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 import { BackButton, PageHeader } from "@/components/mobile";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/accounts",
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
@@ -66,168 +72,48 @@ describe("BackButton", () => {
   });
 });
 
-describe("PageHeader with backHref", () => {
-  it("renders back button before title when backHref is set", () => {
-    render(
-      <PageHeader title="Test Title" backHref="/previous" />
-    );
+describe("PageHeader with an explicit back", () => {
+  it("renders the back button before the title", () => {
+    render(<PageHeader title="Test Title" back={{ href: "/previous" }} />);
     const link = screen.getByRole("link");
     const h1 = screen.getByRole("heading", { level: 1 });
-
-    // Check that link comes before h1 in DOM order using compareDocumentPosition
-    const position = link.compareDocumentPosition(h1);
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(link.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("renders back button with custom label", () => {
-    render(
-      <PageHeader title="Test Title" backHref="/previous" backLabel="Back to accounts" />
-    );
-    const link = screen.getByRole("link", { name: "Back to accounts" });
-    expect(link).toBeTruthy();
+  it("renders the back button with a custom label", () => {
+    render(<PageHeader title="Test Title" back={{ href: "/previous", label: "Back to accounts" }} />);
+    expect(screen.getByRole("link", { name: "Back to accounts" })).toBeTruthy();
   });
 
-  it("does not render back button when backHref is not set", () => {
+  it("renders no back button on a root page without a back", () => {
     render(<PageHeader title="Test Title" />);
-    const links = screen.queryAllByRole("link");
-    expect(links).toHaveLength(0);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
 
-  it("title-only with backHref still renders bare h1 with wrapping container", () => {
-    render(
-      <PageHeader title="Test Title" backHref="/previous" />
-    );
+  it("the title is a bare h1 slot", () => {
+    render(<PageHeader title="Test Title" back={{ href: "/previous" }} />);
     const h1 = screen.getByRole("heading", { level: 1 });
-    // The h1 should still be a bare h1 element
     expect(h1.tagName).toBe("H1");
     expect(h1.getAttribute("data-slot")).toBe("page-header-title");
   });
 
-  it("with both lead and backHref, both render before title", () => {
+  it("back, title and primary render in that order", () => {
     render(
-      <PageHeader
-        title="Test Title"
-        lead={<div data-testid="lead-content">Lead</div>}
-        backHref="/previous"
-      />
+      <PageHeader title="Test Title" back={{ href: "/previous" }} info="About it" primary={{ kind: "add", label: "Action", onSelect: () => {} }} />,
     );
-
-    const lead = screen.getByTestId("lead-content");
     const link = screen.getByRole("link");
     const h1 = screen.getByRole("heading", { level: 1 });
-
-    // Back button should come before lead or title
-    const backButtonPosition = link.compareDocumentPosition(lead);
-    expect(backButtonPosition & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    const leadPosition = lead.compareDocumentPosition(h1);
-    expect(leadPosition & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const tip = screen.getByRole("button", { name: "About Test Title" });
+    const action = screen.getByRole("button", { name: "Action" });
+    expect(link.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(h1.compareDocumentPosition(tip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tip.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("title-only path without backHref returns bare h1 unchanged", () => {
-    render(
-      <PageHeader title="Test Title" />
-    );
-
-    // When title-only without backHref, should be just the h1
+  it("a button back (onBack) renders before the title too", () => {
+    render(<PageHeader title="Test Title" back={{ onBack: () => {}, label: "Back to list" }} />);
+    const back = screen.getByRole("button", { name: "Back to list" });
     const h1 = screen.getByRole("heading", { level: 1 });
-    // The h1 should be minimal - just the h1 with no wrapper
-    expect(h1.getAttribute("data-slot")).toBe("page-header-title");
-  });
-
-  it("with lead and backHref and other content renders correctly", () => {
-    render(
-      <PageHeader
-        title="Test Title"
-        subtitle="Subtitle text"
-        lead={<div data-testid="lead">Avatar</div>}
-        backHref="/previous"
-      />
-    );
-
-    const h1 = screen.getByRole("heading", { level: 1 });
-    const lead = screen.getByTestId("lead");
-    const link = screen.getByRole("link");
-    expect(screen.queryByText("Subtitle text")).toBeNull();
-    const subtitle = screen.getByRole("button", { name: "About Test Title" });
-
-    expect(h1).toBeTruthy();
-    expect(lead).toBeTruthy();
-    expect(link).toBeTruthy();
-    expect(subtitle).toBeTruthy();
-
-    // Verify back button is before lead
-    const backVsLead = link.compareDocumentPosition(lead);
-    expect(backVsLead & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("with backHref and actions renders all elements in correct order", () => {
-    render(
-      <PageHeader
-        title="Test Title"
-        backHref="/previous"
-        actions={<button>Action</button>}
-      />
-    );
-
-    const link = screen.getByRole("link");
-    const h1 = screen.getByRole("heading", { level: 1 });
-    const button = screen.getByRole("button");
-
-    // Back button should be first, then title, then actions
-    const backVsTitle = link.compareDocumentPosition(h1);
-    expect(backVsTitle & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    const titleVsAction = h1.compareDocumentPosition(button);
-    expect(titleVsAction & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-});
-
-describe("PageHeader backward compatibility", () => {
-  it("title-only path without backHref returns exactly what it did before", () => {
-    const { container: container1 } = render(
-      <PageHeader title="Test Title" />
-    );
-
-    // Should just have the h1, nothing else at root
-    const h1 = container1.querySelector('h1[data-slot="page-header-title"]');
-    expect(h1).toBeTruthy();
-    expect(h1?.textContent).toBe("Test Title");
-  });
-
-  it("lead path without backHref works as before", () => {
-    render(
-      <PageHeader
-        title="Test Title"
-        lead={<div data-testid="lead-avatar">Avatar</div>}
-      />
-    );
-
-    const lead = screen.getByTestId("lead-avatar");
-    const h1 = screen.getByRole("heading", { level: 1 });
-
-    expect(lead).toBeTruthy();
-    expect(h1).toBeTruthy();
-    // Lead should be positioned before title in the lead container
-    const leadVsTitle = lead.compareDocumentPosition(h1);
-    expect(leadVsTitle & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("with actions but no backHref works as before", () => {
-    render(
-      <PageHeader
-        title="Test Title"
-        actions={<button>Action</button>}
-      />
-    );
-
-    const h1 = screen.getByRole("heading", { level: 1 });
-    const button = screen.getByRole("button");
-
-    expect(h1).toBeTruthy();
-    expect(button).toBeTruthy();
-    // No back button should be present
-    const links = screen.queryAllByRole("link");
-    expect(links).toHaveLength(0);
+    expect(back.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

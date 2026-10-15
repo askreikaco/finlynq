@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-// Glass top bar on phones (PageHeader + settings detail row). CSS-level checks on globals.css and
+// Glass top bar (PageHeader, the one top bar). CSS-level checks on globals.css and
 // render checks on PageHeader: left-aligned title, subtitle on phones, left spacer or back circle,
 // one right capsule only when there are actions, primary action never see-through.
 import { describe, it, expect, afterEach } from "vitest";
@@ -13,7 +13,6 @@ import { resolve } from "path";
 import { resolvedDecls } from "../helpers/css-tokens";
 import { render, cleanup, screen } from "@testing-library/react";
 import { PageHeader } from "@/components/mobile/page-header";
-import { Button } from "@/components/ui/button";
 
 const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
 const pageHeaderSrc = readFileSync(resolve(__dirname, "../../src/components/mobile/page-header.tsx"), "utf-8");
@@ -80,57 +79,52 @@ describe("PageHeader phone bar (render)", () => {
   });
 
   it("shows no subtitle line on phones (InfoTip only)", () => {
-    render(h(PageHeader, { title: "Budgets", subtitle: "Set limits" }));
+    render(h(PageHeader, { title: "Budgets", info: "Set limits" }));
     expect(screen.queryByText("Set limits")).toBeNull();
     expect(screen.getByRole("button", { name: "About Budgets" })).toBeTruthy();
   });
 
   it("top-level pages have no left slot (the title sits at the left edge)", () => {
     const { container } = render(h(PageHeader, { title: "Dashboard" }));
-    const spacer = container.querySelector('[data-slot="page-header-spacer"]');
-    expect(spacer).not.toBeNull();
-    expect(cls(spacer)).toEqual(["hidden"]);
     expect(container.querySelector('[data-slot="back-button"]')).toBeNull();
+    expect(cls(container.querySelector('[data-slot="page-header-title-block"]'))).toContain("col-start-2");
   });
 
-  it("left slot is a round 44px glass back button when backHref is set", () => {
-    render(h(PageHeader, { title: "Currency Review", backHref: "/transactions", backLabel: "Back to Transactions" }));
+  it("left slot is a round 44px glass back button when a back target is set", () => {
+    render(h(PageHeader, { title: "Currency Review", back: { href: "/transactions", label: "Back to Transactions" } }));
     const back = screen.getByRole("link", { name: "Back to Transactions" });
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "size-11", "rounded-full"]));
   });
 
-  it("right capsule exists only when the page has icon cells; a lone action stands alone beside it", () => {
+  it("right capsule exists only when the page has secondary actions; the primary stands alone beside it", () => {
     const { container, rerender } = render(h(PageHeader, { title: "Plain" }));
     expect(container.querySelector('[data-slot="page-header-actions"]')).toBeNull();
-    rerender(h(PageHeader, { title: "Acts", actions: [h("button", { key: "r", type: "button", "aria-label": "Refresh" }, "R"), h("button", { key: "a", type: "button", "aria-label": "Add" }, "+")] }));
+    rerender(h(PageHeader, { title: "Acts", more: [{ label: "Export", onSelect: () => {} }], primary: { kind: "add", label: "Add", onSelect: () => {} } }));
     const capsule = container.querySelector('[data-slot="header-capsule"]');
     expect(capsule).not.toBeNull();
     expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "rounded-full", "h-11"]));
-    expect(capsule?.querySelector('[aria-label="Refresh"]')).not.toBeNull();
+    expect(capsule?.querySelector('[aria-label="More actions"]')).not.toBeNull();
     // the primary is NOT in the capsule: it is its own control, last child of the actions group (far right)
     expect(capsule?.querySelector('[aria-label="Add"]')).toBeNull();
     const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
     expect(group.lastElementChild?.getAttribute("aria-label")).toBe("Add");
     expect(group.children.length).toBe(2);
     expect(cls(group)).toContain("gap-2");
-    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
   });
 
-  it("a lone primary is its own yellow round button: no capsule, primary fill via the header-save rule", () => {
-    const { container } = render(h(PageHeader, { title: "Tx", actions: h(Button, { "aria-label": "Add transaction" }, "Add") }));
+  it("a lone primary is its own yellow round button: no capsule, primary fill via the topbar-primary rule", () => {
+    const { container } = render(h(PageHeader, { title: "Tx", primary: { kind: "add", label: "Add transaction", onSelect: () => {} } }));
     const primary = screen.getByRole("button", { name: "Add transaction" });
     expect(primary.getAttribute("data-variant")).toBe("default");
     expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
     expect(primary.parentElement).toBe(container.querySelector('[data-slot="page-header-actions"]'));
-    expect(primary.className).toContain("phone-icon-action");
-    expect(css).toContain('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
-    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
+    expect(css).toContain('[data-slot="page-header-actions"] > [data-slot="topbar-primary"] {');
     // the see-through reset is scoped to non-default buttons only
     expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n  background: transparent;');
   });
 
   it("no capsule or glass around the title (title block and h1 carry no glass classes)", () => {
-    render(h(PageHeader, { title: "Plain", subtitle: "sub" }));
+    render(h(PageHeader, { title: "Plain", info: "sub" }));
     const h1 = screen.getByRole("heading", { level: 1, name: "Plain" });
     expect(cls(h1)).not.toContain("glass-capsule");
     expect(cls(h1)).not.toContain("glass-bar");
@@ -141,7 +135,7 @@ describe("PageHeader phone bar (render)", () => {
     const { container } = render(h(PageHeader, { title: "Bar" }));
     const bar = container.querySelector('[data-slot="page-header"]');
     expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "top-[var(--sat,0px)]", "z-30"]));
-    expect(pageHeaderSrc).toContain("PHONE_BAR_TITLE");
+    expect(pageHeaderSrc).toContain("PHONE_BAR");
   });
 });
 

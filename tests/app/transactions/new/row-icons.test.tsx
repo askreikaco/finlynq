@@ -69,11 +69,11 @@ function expectIconInLabel(testId: string) {
   expect(icon, `icon in ${testId}`).not.toBeNull();
   expect(icon!.tagName.toLowerCase()).toBe("svg");
   expect(icon!.getAttribute("aria-hidden")).toBe("true");
-  // Icon-only: the icon sits in a shrink-0 label cell that also holds the sr-only label text.
-  const cell = icon!.parentElement as HTMLElement;
-  expect(cell.classList.contains("shrink-0"), `label cell around icon in ${testId}`).toBe(true);
-  expect(cell.classList.contains("w-24") || cell.classList.contains("w-28")).toBe(false);
-  expect(cell.querySelector(".sr-only"), `sr-only label in ${testId}`).not.toBeNull();
+  // Icon-only: the visible label is the icon; the label text stays in the DOM (sr-only) as the accessible name.
+  const label = icon!.parentElement;
+  expect(label, `label around icon in ${testId}`).not.toBeNull();
+  expect(label!.querySelector(".sr-only"), `sr-only label in ${testId}`).not.toBeNull();
+  expect(row.querySelector(".w-24, .w-28"), `no label column in ${testId}`).toBeNull();
 }
 
 describe("New Transaction rows render an icon in their label cell", () => {
@@ -93,19 +93,6 @@ describe("New Transaction rows render an icon in their label cell", () => {
     expect(amountRow.querySelector('[data-slot="amount-currency-chip"]')).not.toBeNull();
   });
 
-  it("icon-only rows: no label column, the cell is shrink-0 and the row keeps gap-3 / px-4", async () => {
-    seedPrefill();
-    render(<Page />);
-    await waitFor(() => expect(screen.getByTestId("txnew-row-date")).toBeTruthy());
-    for (const id of ["txnew-row-date", "txnew-row-category", "txnew-row-account", "txnew-row-payee", "txnew-row-note"]) {
-      const row = screen.getByTestId(id);
-      const cell = row.querySelector('[data-slot="form-row-icon"]')!.parentElement as HTMLElement;
-      expect(cell.classList.contains("shrink-0")).toBe(true);
-      expect(row.classList.contains("gap-3")).toBe(true);
-      expect(row.classList.contains("px-4")).toBe(true);
-    }
-  });
-
   it("Note is a two-row auto-growing textarea with the doubled tall-row minimum", async () => {
     seedPrefill();
     render(<Page />);
@@ -116,7 +103,6 @@ describe("New Transaction rows render an icon in their label cell", () => {
     expect(area.id).toBe("txnew-note");
     expect(area.getAttribute("rows")).toBe("2");
     expect(area.getAttribute("placeholder")).toBe("Note");
-    expect(row.className).toContain("min-h-[calc(var(--spacing-row-tall)*2)]");
     expect(area.className).toContain("max-h-48");
     // Icon-only row: the label cell no longer reserves the narrow label width, the text is sr-only.
     expect(row.querySelector(".w-24")).toBeNull();

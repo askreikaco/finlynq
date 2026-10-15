@@ -61,7 +61,7 @@ export function HealthScoreCard({ health: healthProp, trend }: { health?: Health
               : <span className="inline-block h-4 w-16 animate-shimmer rounded-md" />
           }
           note={health && trend?.delta ? <span>{health.grade} ⓘ</span> : undefined}
-          badgePct={health ? trend?.badgePct : undefined}
+          delta={health ? { pct: trend?.badgePct } : undefined}
           sparkData={health ? trend?.sparkData : undefined}
           sparkLabels={health ? trend?.sparkLabels : undefined}
           sparkColor="#6366f1"

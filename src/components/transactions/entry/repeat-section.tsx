@@ -2,10 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Minus, Plus, Repeat } from "lucide-react";
+import { Repeat } from "lucide-react";
 
-import { FormRow } from "@/components/forms";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { occurrenceAt } from "@/lib/subscriptions/schedule";
 import {
@@ -25,8 +23,7 @@ import {
   type Series,
 } from "@/lib/transactions/series";
 import type { SubscriptionFrequency } from "@/lib/subscriptions/schedule";
-import { PickerCard, PickerRow } from "./grouped-picker";
-import { ToggleCard } from "./toggle-card";
+import { Field, FieldGroup } from "@/components/ui/field";
 
 /** Why the Repeat toggle is disabled while splits are on (phase 1 does not combine them). */
 export const REPEAT_SPLIT_DISABLED_TITLE =
@@ -75,124 +72,6 @@ export function SeriesBadge({
     );
   }
   return null;
-}
-
-const STEP_BUTTON =
-  "flex size-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors active:bg-muted disabled:opacity-50";
-
-/** −/N/+ stepper, same look as the Splits count. */
-function Stepper({
-  value,
-  min,
-  max,
-  label,
-  testId,
-  onChange,
-}: {
-  value: number;
-  min: number;
-  max: number;
-  /** Noun for the button names: "Decrease {label}" / "Increase {label}". */
-  label: string;
-  testId: string;
-  onChange: (next: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-end gap-1">
-      <button
-        type="button"
-        aria-label={`Decrease ${label}`}
-        data-testid={`${testId}-decrease`}
-        disabled={value <= min}
-        onClick={() => onChange(Math.max(min, value - 1))}
-        className={STEP_BUTTON}
-      >
-        <Minus aria-hidden="true" className="size-[18px]" />
-      </button>
-      <span
-        data-testid={`${testId}-value`}
-        role="status"
-        aria-label={`${label}: ${value}`}
-        className="w-12 text-center text-base tabular-nums text-foreground"
-      >
-        {value}
-      </span>
-      <button
-        type="button"
-        aria-label={`Increase ${label}`}
-        data-testid={`${testId}-increase`}
-        disabled={value >= max}
-        onClick={() => onChange(Math.min(max, value + 1))}
-        className={STEP_BUTTON}
-      >
-        <Plus aria-hidden="true" className="size-[18px]" />
-      </button>
-    </div>
-  );
-}
-
-/** Two-to-three way segmented control (radio group), TypeSegmented's look. */
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-  testId,
-}: {
-  label: string;
-  value: T;
-  options: ReadonlyArray<{ value: T; label: string }>;
-  onChange: (next: T) => void;
-  testId?: string;
-}) {
-  const refs = React.useRef<Array<HTMLButtonElement | null>>([]);
-  const move = (from: number, delta: number) => {
-    const n = options.length;
-    const next = (from + delta + n) % n;
-    onChange(options[next].value);
-    refs.current[next]?.focus();
-  };
-  return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      data-testid={testId}
-      className="grid h-11 overflow-hidden rounded-xl border border-border bg-card"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((opt, i) => {
-        const selected = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            tabIndex={selected ? 0 : -1}
-            onClick={() => onChange(opt.value)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                e.preventDefault();
-                move(i, 1);
-              } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                e.preventDefault();
-                move(i, -1);
-              }
-            }}
-            className={cn(
-              "h-11 min-w-0 truncate px-2 text-sm font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              selected ? "bg-muted text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 type Tab = "repeat" | "installment";
@@ -287,138 +166,129 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
   const preview = installmentPreview({ startDate, count: months, mode, amount, currency });
 
   return (
-    <ToggleCard
-      id="txnew-repeat"
-      testId="txnew-repeat"
-      icon={Repeat}
-      title="Repeat"
-      description={series ? seriesSummary(series) : undefined}
-      open={enabled}
-      control={
-        <Switch
-          id="txnew-repeat-toggle"
-          data-testid="txnew-repeat-toggle"
-          aria-label="Repeat"
-          aria-controls={enabled ? "txnew-repeat-panel" : undefined}
-          title={disabled && !enabled ? disabledTitle : undefined}
-          checked={enabled}
-          disabled={disabled && !enabled}
-          onCheckedChange={(checked) => setEnabled(checked)}
-        />
-      }
-    >
-      <Segmented label="Series type" value={tab} options={TAB_OPTIONS} onChange={setTab} testId="repeat-tabs" />
-      {tab === "repeat" ? (
-        <>
-          <PickerCard>
-            {FREQUENCY_OPTIONS.map((o) => (
-              <PickerRow
-                key={o.value}
-                label={o.label}
-                selected={frequency === o.value}
-                onSelect={() => setFrequency(o.value as SubscriptionFrequency)}
-              />
-            ))}
-          </PickerCard>
-          {frequency === "every_n_days" && (
-            <PickerCard>
-              <FormRow
-                variant="custom"
-                label="Every"
-                htmlFor="repeat-interval-days"
-                labelWidth="narrow"
-                height="tall"
-                error={intervalInvalid ? `Enter a whole number from ${MIN_INTERVAL_DAYS} to ${MAX_INTERVAL_DAYS}` : undefined}
-              >
-                <div className="flex items-center gap-2">
-                  <input
+    <FieldGroup
+      data-testid="txnew-repeat"
+      data-state={enabled ? "open" : "closed"}
+      className="shrink-0"
+      panel={
+        enabled ? (
+          <div id="txnew-repeat-panel" className="space-y-3 py-3 animate-in fade-in duration-200">
+            <Field
+              control="segmented"
+              fill
+              aria-label="Series type"
+              data-testid="repeat-tabs"
+              value={tab}
+              onValueChange={(v) => setTab(v as Tab)}
+              options={TAB_OPTIONS}
+            />
+            {tab === "repeat" ? (
+              <>
+                <Field
+                  control="select"
+                  label="Frequency"
+                  value={frequency}
+                  onValueChange={(v) => setFrequency(v as SubscriptionFrequency)}
+                  options={FREQUENCY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                />
+                {frequency === "every_n_days" && (
+                  <Field
+                    label="Every"
                     id="repeat-interval-days"
                     data-testid="repeat-interval-days"
-                    type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     autoComplete="off"
                     maxLength={3}
                     value={intervalText}
-                    aria-invalid={intervalInvalid || undefined}
                     onChange={(e) => setIntervalText(e.target.value.replace(/\D/g, ""))}
-                    className="block min-h-row w-full min-w-0 bg-transparent text-left text-base tabular-nums text-foreground outline-none"
+                    suffix={<span className="shrink-0 text-base text-muted-foreground">days</span>}
+                    error={intervalInvalid ? `Enter a whole number from ${MIN_INTERVAL_DAYS} to ${MAX_INTERVAL_DAYS}` : undefined}
+                    controlClassName="tabular-nums"
                   />
-                  <span className="shrink-0 text-base text-muted-foreground">days</span>
-                </div>
-              </FormRow>
-            </PickerCard>
-          )}
-          <div className="space-y-2">
-            <Segmented label="Repeat end" value={endType} options={END_OPTIONS} onChange={pickEndType} />
-            {endType === "until" && (
-              <PickerCard>
-                <FormRow
-                  variant="custom"
-                  label="End date"
-                  htmlFor="repeat-end-date"
-                  labelWidth="narrow"
-                  height="tall"
-                  error={untilInvalid && endDate ? "Pick a date after the first payment" : undefined}
-                >
-                  <input
+                )}
+                <Field
+                  control="segmented"
+                  fill
+                  aria-label="Repeat end"
+                  value={endType}
+                  onValueChange={(v) => pickEndType(v as EndType)}
+                  options={END_OPTIONS}
+                />
+                {endType === "until" && (
+                  <Field
+                    control="date"
+                    label="End date"
                     id="repeat-end-date"
-                    type="date"
                     value={endDate}
                     min={startDate}
                     max="9999-12-31"
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="block min-h-row w-full min-w-0 bg-transparent text-left text-base text-foreground outline-none"
+                    error={untilInvalid && endDate ? "Pick a date after the first payment" : undefined}
                   />
-                </FormRow>
-              </PickerCard>
-            )}
-            {endType === "count" && (
-              <PickerCard>
-                <FormRow
-                  variant="custom"
-                  label="Times"
-                  labelWidth="narrow"
-                  height="tall"
-                  hint="Total payments, including this one"
-                >
-                  <Stepper
+                )}
+                {endType === "count" && (
+                  <Field
+                    control="stepper"
+                    label="Times"
+                    info="Total payments, including this one"
                     value={endCount}
                     min={MIN_REPEAT_COUNT}
                     max={MAX_REPEAT_COUNT}
-                    label="times"
-                    testId="repeat-count"
-                    onChange={setEndCount}
+                    stepLabel="times"
+                    data-testid="repeat-count"
+                    onValueChange={(v) => setEndCount(v === "" ? MIN_REPEAT_COUNT : Number(v))}
                   />
-                </FormRow>
-              </PickerCard>
+                )}
+              </>
+            ) : (
+              <>
+                <Field
+                  control="stepper"
+                  label="Months"
+                  value={months}
+                  min={MIN_INSTALLMENTS}
+                  max={MAX_INSTALLMENTS}
+                  stepLabel="months"
+                  data-testid="installment-count"
+                  onValueChange={(v) => setMonths(v === "" ? MIN_INSTALLMENTS : Number(v))}
+                />
+                <Field
+                  control="segmented"
+                  fill
+                  aria-label="Amount mode"
+                  data-testid="installment-mode"
+                  value={mode}
+                  onValueChange={(v) => setMode(v as InstallmentMode)}
+                  options={MODE_OPTIONS}
+                />
+                <p
+                  data-testid="installment-preview"
+                  role="status"
+                  data-keep="status"
+                  className={cn("px-1 text-sm", preview.ok ? "text-foreground" : "text-muted-foreground")}
+                >
+                  {preview.text}
+                </p>
+              </>
             )}
           </div>
-        </>
-      ) : (
-        <div className="space-y-3">
-          <PickerCard>
-            <FormRow variant="custom" label="Months" labelWidth="narrow" height="tall">
-              <Stepper
-                value={months}
-                min={MIN_INSTALLMENTS}
-                max={MAX_INSTALLMENTS}
-                label="months"
-                testId="installment-count"
-                onChange={setMonths}
-              />
-            </FormRow>
-          </PickerCard>
-          <Segmented label="Amount mode" value={mode} options={MODE_OPTIONS} onChange={setMode} testId="installment-mode" />
-          <p
-            data-testid="installment-preview"
-            role="status"
-            className={cn("px-1 text-sm", preview.ok ? "text-foreground" : "text-muted-foreground")}
-          >
-            {preview.text}
-          </p>
-        </div>
-      )}
-    </ToggleCard>
+        ) : undefined
+      }
+    >
+      <Field
+        control="switch"
+        icon={Repeat}
+        label="Repeat"
+        hint={series ? seriesSummary(series) : undefined}
+        id="txnew-repeat-toggle"
+        data-testid="txnew-repeat-toggle"
+        aria-controls={enabled ? "txnew-repeat-panel" : undefined}
+        title={disabled && !enabled ? disabledTitle : undefined}
+        checked={enabled}
+        disabled={disabled && !enabled}
+        onCheckedChange={(checked) => setEnabled(checked)}
+      />
+    </FieldGroup>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Field } from "@/components/ui/field";
 /**
  * AccountSelector — sits above the two panes on /import/pending and lets
  * the user pick which account's rows are shown in both panes (FINLYNQ-56).
@@ -15,13 +16,6 @@
  */
 
 import { useMemo } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export interface AccountOption {
   /** Account id from `accounts.id`. The staged batch's `boundAccountId`
@@ -83,30 +77,18 @@ export function AccountSelector({
 
   const selected = value != null ? String(value) : "";
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <label htmlFor="account-selector" className="text-muted-foreground">
-        Account:
-      </label>
-      <Select
-        items={accountLabelById}
-        value={selected}
-        onValueChange={(v) => {
-          const n = parseInt(v ?? "", 10);
-          if (Number.isFinite(n)) onChange(n);
-        }}
-      >
-        <SelectTrigger id="account-selector" className="w-[260px]">
-          <SelectValue placeholder="Select an account" />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.id} value={String(o.id)}>
-              {o.name} · {o.currency} ({o.rowCount}{" "}
-              {o.rowCount === 1 ? "row" : "rows"})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Field
+      label="Account:"
+      control="select"
+      value={selected}
+      onValueChange={(v) => {
+        const n = parseInt(v ?? "", 10);
+        if (Number.isFinite(n)) onChange(n);
+      }}
+      id="account-selector"
+      placeholder="Select an account"
+      options={options.map((o) => ({ value: String(o.id), label: <>{o.name} · {o.currency} ({o.rowCount}{" "} {o.rowCount === 1 ? "row" : "rows"})</> }))}
+      className="w-[260px]"
+    />
   );
 }

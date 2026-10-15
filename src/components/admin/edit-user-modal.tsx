@@ -1,26 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 interface AdminUser {
@@ -126,15 +110,17 @@ export function EditUserModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="md"
+      title="Edit User"
+      info={<>Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.</>}
+      actions={[
+        { label: "Cancel", type: "button", onClick: () => onOpenChange(false), disabled: loading },
+        { label: loading ? "Saving..." : "Save Changes", kind: "primary", type: "button", onClick: () => handleSubmit(), disabled: loading },
+      ]}
+    >
         <div className="space-y-4">
           {error && (
             <div
@@ -149,84 +135,77 @@ export function EditUserModal({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              aria-describedby={error ? "edit-user-error" : undefined}
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              maxLength={100}
-              disabled={loading}
-            />
-          </div>
+          <Field
+            label="Display Name"
+            id="displayName"
+            aria-describedby={error ? "edit-user-error" : undefined}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            maxLength={100}
+            disabled={loading}
+          />
 
-          <div>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              aria-describedby={error ? "edit-user-error" : undefined}
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              pattern="[a-z0-9._-]+"
-              disabled={loading}
-            />
-          </div>
+          <Field
+            label="Username"
+            id="username"
+            aria-describedby={error ? "edit-user-error" : undefined}
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            pattern="[a-z0-9._-]+"
+            disabled={loading}
+          />
 
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              aria-describedby={error ? "edit-user-error" : undefined}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-          </div>
+          <Field
+            label="Email"
+            id="email"
+            aria-describedby={error ? "edit-user-error" : undefined}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
 
-          <div className="flex min-h-row items-center justify-between gap-3">
-            <Label htmlFor="emailVerified">Email Verified</Label>
-            <Switch id="emailVerified" checked={emailVerified} onCheckedChange={setEmailVerified} disabled={loading} />
-          </div>
+          <Field
+            label="Email Verified"
+            control="switch"
+            id="emailVerified"
+            checked={emailVerified}
+            onCheckedChange={setEmailVerified}
+            disabled={loading}
+          />
 
-          <div>
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={handleRoleChange} disabled={loading}>
-              <SelectTrigger id="role">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Field
+            label="Role"
+            control="select"
+            value={role}
+            onValueChange={handleRoleChange}
+            disabled={loading}
+            id="role"
+            options={[{ value: "user", label: "User" }, { value: "admin", label: "Admin" }]}
+          />
 
-          <div>
-            <Label htmlFor="plan">Plan</Label>
-            <Select value={plan} onValueChange={(val) => val && setPlan(val)} disabled={loading}>
-              <SelectTrigger id="plan">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="pro">Pro</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Field
+            label="Plan"
+            control="select"
+            value={plan}
+            onValueChange={(val) => val && setPlan(val)}
+            disabled={loading}
+            id="plan"
+            options={[
+              { value: "free", label: "Free" },
+              { value: "pro", label: "Pro" },
+              { value: "premium", label: "Premium" },
+            ]}
+          />
 
-          <div>
-            <Label htmlFor="planExpiresAt">Plan Expires At</Label>
-            <Input
-              id="planExpiresAt"
-              type="date"
-              value={planExpiresAt}
-              onChange={(e) => setPlanExpiresAt(e.target.value)}
-              disabled={loading}
-            />
-          </div>
+          <Field
+            label="Plan Expires At"
+            control="date"
+            id="planExpiresAt"
+            value={planExpiresAt}
+            onChange={(e) => setPlanExpiresAt(e.target.value)}
+            disabled={loading}
+          />
 
           {user.mfaEnabled || user.hasPasskey ? (
             <Button
@@ -241,38 +220,20 @@ export function EditUserModal({
           ) : null}
 
           {requiresMfaCode && (
-            <div>
-              <Label htmlFor="mfaCode">Your authenticator code (6 digits)</Label>
-              <Input
-                id="mfaCode"
-                type="text"
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                maxLength={6}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                aria-describedby={error ? "edit-user-error" : undefined}
-                placeholder="000000"
-                disabled={loading}
-              />
-            </div>
+            <Field
+              label="Your authenticator code (6 digits)"
+              id="mfaCode"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              maxLength={6}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              aria-describedby={error ? "edit-user-error" : undefined}
+              placeholder="000000"
+              disabled={loading}
+            />
           )}
         </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => handleSubmit()} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

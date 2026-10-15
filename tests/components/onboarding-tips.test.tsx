@@ -21,7 +21,7 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href, ...props }, children),
 }));
 
-import { OnboardingTips } from "@/components/onboarding-tips";
+import { Notice } from "@/components/notice";
 
 const KEY = "pf-dismissed-tips:user-1"; // per-user key (multi-account): `${base}:${userId}`
 let sessionUserId: string | null = "user-1";
@@ -30,7 +30,7 @@ let sessionFetch: ReturnType<typeof vi.fn>;
 // Every test starts with no cached session answer (the cache lives for the module).
 beforeEach(() => resetSessionUserIdCache());
 
-describe("OnboardingTips", () => {
+describe("Notice source=tips", () => {
   beforeEach(() => {
   resetSessionUserIdCache();
     cleanup();
@@ -49,35 +49,35 @@ describe("OnboardingTips", () => {
   };
 
   it("renders dashboard tips", async () => {
-    const { findByText: getByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText: getByText } = render(<Notice source="tips:dashboard" />);
     expect(await getByText("This is your financial overview")).toBeTruthy();
     expect(await getByText("Import your bank statements")).toBeTruthy();
   });
 
   it("renders transaction tips", async () => {
-    const { findByText: getByText } = render(<OnboardingTips page="transactions" />);
+    const { findByText: getByText } = render(<Notice source="tips:transactions" />);
     expect(await getByText("Find any transaction")).toBeTruthy();
     expect(await getByText("Categorize for better insights")).toBeTruthy();
   });
 
   it("renders budget tips", async () => {
-    const { findByText: getByText } = render(<OnboardingTips page="budgets" />);
+    const { findByText: getByText } = render(<Notice source="tips:budgets" />);
     expect(await getByText("Set monthly spending limits")).toBeTruthy();
   });
 
   it("renders import tips", async () => {
-    const { findByText: getByText } = render(<OnboardingTips page="import" />);
+    const { findByText: getByText } = render(<Notice source="tips:import" />);
     expect(await getByText("Multiple formats supported")).toBeTruthy();
   });
 
   it("shows Dismiss all button", async () => {
-    const { findByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText } = render(<Notice source="tips:dashboard" />);
     expect(await findByText("Dismiss all")).toBeTruthy();
   });
 
   it("dismiss all hides all tips", async () => {
     const { findByText, queryByText } = render(
-      <OnboardingTips page="dashboard" />
+      <Notice source="tips:dashboard" />
     );
     fireEvent.click(await findByText("Dismiss all"));
     expect(queryByText("This is your financial overview")).toBeNull();
@@ -85,7 +85,7 @@ describe("OnboardingTips", () => {
   });
 
   it("persists dismissed tips to localStorage", async () => {
-    const { findByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText } = render(<Notice source="tips:dashboard" />);
     fireEvent.click(await findByText("Dismiss all"));
     const stored = JSON.parse(
       localStorage.getItem(KEY) || "[]"
@@ -96,7 +96,7 @@ describe("OnboardingTips", () => {
   });
 
   it("renders action links for tips that have them", async () => {
-    const { findByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText } = render(<Notice source="tips:dashboard" />);
     const link = await findByText("View accounts");
     expect(link.tagName).toBe("A");
     expect(link.getAttribute("href")).toBe("/accounts");
@@ -107,7 +107,7 @@ describe("OnboardingTips", () => {
       KEY,
       JSON.stringify(["dash-overview", "dash-import"])
     );
-    const { container } = render(<OnboardingTips page="dashboard" />);
+    const { container } = render(<Notice source="tips:dashboard" />);
     await settled();
     // All dashboard tips dismissed — component should return null
     expect(container.innerHTML).toBe("");
@@ -120,7 +120,7 @@ describe("OnboardingTips", () => {
     let release!: (v: unknown) => void;
     const gate = new Promise((r) => { release = r; });
     sessionFetch.mockImplementation(async () => { await gate; return { ok: true, json: async () => ({ userId: "user-B" }) }; });
-    const { queryByText, findByText } = render(<OnboardingTips page="dashboard" />);
+    const { queryByText, findByText } = render(<Notice source="tips:dashboard" />);
     await new Promise((r) => setTimeout(r, 10));
     expect(queryByText("This is your financial overview")).toBeNull(); // not rendered from any guessed key pre-resolve
     release(undefined);
@@ -136,7 +136,7 @@ describe("OnboardingTips", () => {
     localStorage.setItem("pf-spotlight-dismissed", "[]");
     localStorage.setItem("pf-tx-cols-v1", "{}");
     localStorage.setItem("pf-font", "inter"); // device-level key must survive
-    const { findByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText } = render(<Notice source="tips:dashboard" />);
     expect(await findByText("This is your financial overview")).toBeTruthy(); // A's legacy dismissals not applied
     expect(localStorage.getItem("pf-dismissed-tips")).toBeNull();
     expect(localStorage.getItem("pf-chat-history")).toBeNull();
@@ -149,7 +149,7 @@ describe("OnboardingTips", () => {
   it("signed-out / failed session: reads and writes nothing", async () => {
     localStorage.setItem("pf-dismissed-tips:user-A", JSON.stringify(["dash-overview"]));
     sessionFetch.mockImplementation(async () => ({ ok: true, json: async () => ({ authenticated: false, userId: null }) }));
-    const { findByText } = render(<OnboardingTips page="dashboard" />);
+    const { findByText } = render(<Notice source="tips:dashboard" />);
     fireEvent.click(await findByText("Dismiss all"));
     expect(Object.keys(localStorage).filter((k) => k.startsWith("pf-dismissed-tips"))).toEqual(["pf-dismissed-tips:user-A"]);
     expect(JSON.parse(localStorage.getItem("pf-dismissed-tips:user-A")!)).toEqual(["dash-overview"]);
@@ -162,7 +162,7 @@ describe("OnboardingTips: one tree, tips collapsed below regular", () => {
     localStorage.clear();
     sessionFetch = vi.fn(async () => ({ ok: true, json: async () => ({ authenticated: true, userId: "user-1" }) }));
     vi.stubGlobal("fetch", sessionFetch);
-    const { findByTestId, getByRole } = render(<OnboardingTips page="dashboard" />);
+    const { findByTestId, getByRole } = render(<Notice source="tips:dashboard" />);
     const root = await findByTestId("onboarding-tips-compact");
     // base classes are the phone layout; regular: carries the desktop padding
     expect(root.className).toContain("px-3 py-1");
@@ -187,7 +187,7 @@ describe("OnboardingTips: one tree, tips collapsed below regular", () => {
     localStorage.clear();
     sessionFetch = vi.fn(async () => ({ ok: true, json: async () => ({ authenticated: true, userId: "user-1" }) }));
     vi.stubGlobal("fetch", sessionFetch);
-    const { findByTestId } = render(<OnboardingTips page="dashboard" />);
+    const { findByTestId } = render(<Notice source="tips:dashboard" />);
     const root = await findByTestId("onboarding-tips-compact");
     expect(root.innerHTML).not.toMatch(/[\s"'](max-)?(sm|md|lg|xl|2xl):/);
     expect(root.innerHTML).not.toContain("md:hidden");

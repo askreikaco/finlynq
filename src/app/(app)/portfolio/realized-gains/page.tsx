@@ -17,6 +17,7 @@
  * md+ keeps the table with a sticky header inside its own scroll box.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,20 +25,10 @@ import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Re
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
-import {
-  HEADER_DESKTOP_ONLY,
-  Amount,
-  ListRow,
-  DetailSheet,
-  MetricGrid,
-  SectionCard,
-  type DetailItem,
-  type MetricItem,
-} from "@/components/mobile";
+import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { monthLabel, signedPercent } from "../_components/report-controls";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -294,17 +285,17 @@ export default function RealizedGainsPage() {
     [visibleRows],
   );
 
-  const summaryMetrics = useMemo<MetricItem[]>(() => {
-    const items: MetricItem[] = [];
+  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
+    const items: MetricCardProps[] = [];
     // Monthly history of the closed lots in view (their close dates). A tax-year load is complete for that year, so
     // its empty months are real zeros; earlier months were not loaded and give no comparison.
     const today = localDateISO().slice(0, 7);
     const through = taxYear && `${taxYear}-12` < today ? `${taxYear}-12` : today;
     const from = taxYear ? `${taxYear}-01` : undefined;
-    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricItem => {
+    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricCardProps => {
       const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
+        label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -318,7 +309,7 @@ export default function RealizedGainsPage() {
     }
     const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
+      icon: Receipt, label: "Closed lots", value: <span>{lots.value ?? visibleRows.length}</span>, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
       ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
     });
     return items;
@@ -389,28 +380,14 @@ export default function RealizedGainsPage() {
       id="realized-gains"
       title="Realized gains"
       info={periodLabel}
-      backFallback="/portfolio"
-      backLabel="Back to portfolio"
+      back={{ href: "/portfolio", label: "Back to portfolio" }}
       width="none"
       minW0={false}
       padBottom="none"
       stack="4"
       className="regular:space-y-6"
       header={{
-        actions: (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCsv}
-              disabled={exportDisabled}
-              className={HEADER_DESKTOP_ONLY}
-            >
-              <Download className="mr-2 h-4 w-4" /> CSV
-            </Button>
-          </>
-        ),
-        overflow: [{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }],
+        more: [{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >
@@ -427,16 +404,18 @@ export default function RealizedGainsPage() {
 
       <section aria-label="Closed lots" className="space-y-2">
         {loading ? (
-          <PageSkeleton variant="list" rows={3} />
+          <Notice variant="skeleton" skeleton="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={reloadGains} />
+          <Notice variant="error" title="Couldn't load realized gains" retry={reloadGains}>{"We couldn't load your realized gains. Please try again."}</Notice>
         ) : !data || data.rows.length === 0 ? (
-          <EmptyState
+          <Notice
+            variant="empty"
             icon={Coins}
             title="No closed lots yet"
-            description="Lots are created on every new sell or in-kind transfer. Pre-Phase-1 history is filled in by the lot backfill admin script."
             action={{ label: "Record a sale", href: "/portfolio/new?op=sell" }}
-          />
+          >
+            Lots are created on every new sell or in-kind transfer. Pre-Phase-1 history is filled in by the lot backfill admin script.
+          </Notice>
         ) : visibleCount === 0 ? (
           <div className="flex flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4">
             <p className="text-sm text-muted-foreground">
@@ -450,7 +429,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" list>
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -463,7 +442,7 @@ export default function RealizedGainsPage() {
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" list>
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;
@@ -492,11 +471,12 @@ export default function RealizedGainsPage() {
       </section>
 
       {openLot && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => !o && setOpenLot(null)}
+          onClose={() => setOpenLot(null)}
           title={holdingLabelOf(openLot)}
-          description={CLOSE_KIND_META[openLot.closeKind]?.tooltip}
+          info={CLOSE_KIND_META[openLot.closeKind]?.tooltip}
           items={lotDetailItems(openLot)}
         />
       )}

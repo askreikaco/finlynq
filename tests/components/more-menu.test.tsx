@@ -159,9 +159,9 @@ describe("More screen", () => {
       expect(r?.textContent).toContain("1");
       return r!;
     });
-    expect(feedbackRow.querySelector("[class*='bg-primary']")).not.toBeNull();
+    expect(feedbackRow.querySelector("[data-slot='list-row-unread']")).not.toBeNull();
     const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
-    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
+    expect(whatsnewRow?.querySelector("[data-slot='list-row-unread']")).toBeNull();
   });
 
   it("shows badge with unread announcement count on whats-new row", async () => {
@@ -178,7 +178,7 @@ describe("More screen", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
     const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
     expect(whatsnewRow?.textContent).not.toContain("2");
-    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
+    expect(whatsnewRow?.querySelector("[data-slot='list-row-unread']")).toBeNull();
   });
 });
 
@@ -210,7 +210,7 @@ describe("More Appearance card", () => {
   it("is its own Appearance section (not Account, not Tools) and shows the current choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const card = screen.getByTestId("more-appearance");
+    const card = screen.getByTestId("more-group-appearance");
     expect(group("appearance").contains(card)).toBe(true);
     expect(group("tools").contains(card)).toBe(false);
     expect(screen.getByTestId("more-account").contains(card)).toBe(false);
@@ -223,7 +223,7 @@ describe("More Appearance card", () => {
   it("drives the same setTheme call for every choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const card = screen.getByTestId("more-appearance");
+    const card = screen.getByTestId("more-group-appearance");
     fireEvent.click(within(card).getByRole("radio", { name: "Light" }));
     expect(setTheme).toHaveBeenCalledWith("light");
     fireEvent.click(within(card).getByRole("radio", { name: "System" }));

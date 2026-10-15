@@ -62,12 +62,13 @@ async function renderPage() {
   await waitFor(() => expect(header(/^Housing/)).toBeTruthy(), { timeout: 5000 });
 }
 
-// Group headers are the accordion triggers (the only buttons with aria-expanded); pie legend buttons share the names.
+// A group row has its own chevron button (aria-expanded, "Expand <group>" / "Collapse <group>"): the ONLY expand control.
 const header = (name: RegExp) => {
-  const hit = screen.getAllByRole("button", { name }).filter((b) => b.hasAttribute("aria-expanded"));
-  if (hit.length !== 1) throw new Error(`expected one group header for ${name}, got ${hit.length}`);
-  return hit[0];
+  const group = name.source.replace(/^\^/, "");
+  return screen.getByRole("button", { name: new RegExp(`^(Expand|Collapse) ${group}$`) });
 };
+// The group row body is a link that selects the group (its own detail route below wide).
+const groupRow = (name: RegExp) => screen.getByRole("link", { name });
 
 describe("By category: collapsible groups (accordion)", () => {
   it("shows one collapsed header per group and ungrouped categories as plain links", async () => {
@@ -84,9 +85,10 @@ describe("By category: collapsible groups (accordion)", () => {
 
   it("group header shows the summed amount and count", async () => {
     await renderPage();
-    const housing = header(/^Housing/);
+    const housing = groupRow(/^Housing/);
     expect(housing.textContent).toContain("$800");
     expect(housing.textContent).toContain("2"); // category count
+    expect(housing.getAttribute("href")).toBe("/categories/g-E-housing");
   });
 
   it("expanding a group shows its categories with the group prefix removed; several may be open", async () => {
@@ -113,6 +115,15 @@ describe("By category: collapsible groups (accordion)", () => {
     fireEvent.click(header(/^Housing/));
     await waitFor(() => expect(screen.getByText("Rent")).toBeTruthy());
     expect(screen.queryByRole("button", { name: /back to all categories/i })).toBeNull();
+  });
+});
+
+describe("parent rows select; only the chevron expands", () => {
+  it("clicking a group row body does not expand it", async () => {
+    await renderPage();
+    fireEvent.click(groupRow(/^Housing/));
+    expect(header(/^Housing/).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Rent")).toBeNull();
   });
 });
 

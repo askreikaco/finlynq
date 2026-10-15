@@ -38,7 +38,7 @@ describe("2. MFA 6-digit input keeps wide digit spacing", () => {
   const src = read("src/app/cloud/page.tsx");
   // Element slice: the onChange arrow contains '>', so a [^>]* regex would stop early.
   const at = src.indexOf("maxLength={6}");
-  const start = src.lastIndexOf("<input", at);
+  const start = src.lastIndexOf("<Field", at);
   const end = src.indexOf("/>", at) + 2;
   const input = at > -1 && start > -1 && end > start ? [src.slice(start, end)] : null;
 
@@ -49,8 +49,7 @@ describe("2. MFA 6-digit input keeps wide digit spacing", () => {
   });
 
   it("still fits six digits: full-width, maxLength 6, text-2xl", () => {
-    expect(input![0]).toContain("w-full");
-    expect(input![0]).toMatch(/maxLength=\{6\}/);
+    expect(input![0]).toMatch(/maxLength=\{6\}/); // a Field is full width by default
     expect(input![0]).toContain("text-2xl");
   });
 });
@@ -75,12 +74,10 @@ describe("3. mobile bottom bar labels truncate at 320-390px", () => {
 });
 
 describe("4. fixed-size boxes grown for 12px text", () => {
-  it("lot allocation matrix inputs are h-7 w-16 (not w-[58px] h-6)", () => {
+  it("lot allocation matrix inputs are compact amount Fields, w-16 (not w-[58px] h-6)", () => {
     const src = read("src/components/portfolio/lot-allocation-matrix.tsx");
-    const cls = src.match(/const inputCls = "([^"]*)"/)![1];
-    expect(cls).toContain("w-16");
-    expect(cls).toContain("h-7");
-    expect(cls).not.toMatch(/w-\[58px\]|h-6\b/);
+    expect(src).toMatch(/<Field\s+control="amount"[\s\S]*?compact[\s\S]*?className="w-16"/);
+    expect(src).not.toMatch(/w-\[58px\]|h-6\b/);
   });
 
   it("lot matrix sell and total columns use min-w-28 (not min-w-[92px])", () => {
@@ -89,11 +86,11 @@ describe("4. fixed-size boxes grown for 12px text", () => {
     expect(src.match(/min-w-28/g)?.length).toBe(2);
   });
 
-  it("split page rows are ListCard + FormRow (no fixed 6-column grid on phones)", () => {
+  it("split page rows are FieldGroup + Field rows (no fixed 6-column grid on phones)", () => {
     const src = read("src/app/(app)/transactions/_components/transaction-split-form.tsx");
     expect(src).not.toContain("1fr_1fr_96px_1fr_1fr_32px");
-    expect(src).toContain("<ListCard");
-    expect(src).toContain("<FormRow");
+    expect(src).toContain("<FieldGroup");
+    expect(src).toContain("<SplitRows"); // the shared rows are FieldGroup cards
   });
 
   it("the realized-gains list has no text-xs h-4 badge (its table badges are gone; the list rows carry no badge)", () => {

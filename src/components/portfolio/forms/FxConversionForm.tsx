@@ -15,23 +15,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
-
-import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { OpFooter, OpNote, OpPage, safeReturnHref } from "./op-page";
 
 export default function FxConversionForm() {
   const router = useRouter();
@@ -230,32 +221,32 @@ export default function FxConversionForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit FX conversion" : "FX conversion"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit FX conversion" : "FX conversion"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
       <OpPage title="FX conversion">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>
             FX conversions require an investment account with multi-currency cash sleeves.
           </OpNote>
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -268,30 +259,21 @@ export default function FxConversionForm() {
       saveDisabled={submitting || !!loadError}
       onSubmit={handleSubmit}
     >
-      <OpGroup label="Account">
-        <OpRow label="Account" error={errors.accountId}>
-          <Select
-            items={accountLabelById}
-            value={accountId}
-            onValueChange={(v) => {
-              setAccountId(v ?? "");
-              setFromCurrency("");
-              setToCurrency("");
-              setFeeOnSleeveCurrency("");
-            }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
+      <FieldGroup label="Account">
+        <Field
+          label="Account"
+          error={errors.accountId}
+          control="select"
+          value={accountId}
+          onValueChange={(v) => {
+            setAccountId(v ?? "");
+            setFromCurrency("");
+            setToCurrency("");
+            setFeeOnSleeveCurrency("");
+          }}
+          placeholder="Pick an investment account"
+          options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
         {selectedAccount && sleeveCurrencies.length < 2 && (
           <OpNote tone="warning">
             This account has fewer than 2 cash sleeves. Add another currency sleeve in the{" "}
@@ -301,69 +283,53 @@ export default function FxConversionForm() {
             before converting.
           </OpNote>
         )}
-      </OpGroup>
+      </FieldGroup>
 
-      <OpGroup label="Convert">
-        <OpRow label="From" error={errors.fromCurrency}>
-          <Select
-            value={fromCurrency}
-            onValueChange={(v) => {
-              setFromCurrency(v ?? "");
-              if (v && v === toCurrency) setToCurrency("");
-            }}
-            disabled={!selectedAccount || sleeveCurrencies.length === 0}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick currency" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {sleeveCurrencies.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-        <OpRow label={fromCurrency ? `Amount (${fromCurrency})` : "Amount"} error={errors.fromAmount}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={fromAmount}
-            onValueChange={(nv) => setFromAmount(nv)}
-            placeholder="100.00"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="To" error={errors.toCurrency}>
-          <Select
-            value={toCurrency}
-            onValueChange={(v) => setToCurrency(v ?? "")}
-            disabled={!fromCurrency || toCurrencyOptions.length === 0}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick currency" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {toCurrencyOptions.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-        <OpRow label={toCurrency ? `Amount (${toCurrency})` : "Amount"} error={errors.toAmount}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={toAmount}
-            onValueChange={(nv) => setToAmount(nv)}
-            placeholder="73.50"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Convert">
+        <Field
+          label="From"
+          error={errors.fromCurrency}
+          control="select"
+          value={fromCurrency}
+          onValueChange={(v) => {
+            setFromCurrency(v ?? "");
+            if (v && v === toCurrency) setToCurrency("");
+          }}
+          disabled={!selectedAccount || sleeveCurrencies.length === 0}
+          placeholder="Pick currency"
+          options={sleeveCurrencies.map((c) => ({ value: c, label: c }))}
+        />
+        <Field
+          label={fromCurrency ? `Amount (${fromCurrency})` : "Amount"}
+          error={errors.fromAmount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={fromAmount}
+          onValueChange={(nv) => setFromAmount(nv)}
+          placeholder="100.00"
+        />
+        <Field
+          label="To"
+          error={errors.toCurrency}
+          control="select"
+          value={toCurrency}
+          onValueChange={(v) => setToCurrency(v ?? "")}
+          disabled={!fromCurrency || toCurrencyOptions.length === 0}
+          placeholder="Pick currency"
+          options={toCurrencyOptions.map((c) => ({ value: c, label: c }))}
+        />
+        <Field
+          label={toCurrency ? `Amount (${toCurrency})` : "Amount"}
+          error={errors.toAmount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={toAmount}
+          onValueChange={(nv) => setToAmount(nv)}
+          placeholder="73.50"
+        />
+      </FieldGroup>
 
       {inferredRate !== null && fromCurrency && toCurrency && (
         <OpFooter>
@@ -374,74 +340,53 @@ export default function FxConversionForm() {
         </OpFooter>
       )}
 
-      <OpGroup label="Fee">
-        <OpRow label="Amount" error={errors.feeAmount}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={feeAmount}
-            onValueChange={(nv) => setFeeAmount(nv)}
-            placeholder="0.00 (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Charged to">
-          <Select
-            value={feeOnSleeveCurrency}
-            onValueChange={(v) => setFeeOnSleeveCurrency(v ?? "")}
-            disabled={!feeAmount.trim() || sleeveCurrencies.length === 0}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue
-                placeholder={feeAmount.trim() ? "Default = from currency" : "Enter fee first"}
-              />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {sleeveCurrencies.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Fee">
+        <Field
+          label="Amount"
+          error={errors.feeAmount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={feeAmount}
+          onValueChange={(nv) => setFeeAmount(nv)}
+          placeholder="0.00 (optional)"
+        />
+        <Field
+          label="Charged to"
+          control="select"
+          value={feeOnSleeveCurrency}
+          onValueChange={(v) => setFeeOnSleeveCurrency(v ?? "")}
+          disabled={!feeAmount.trim() || sleeveCurrencies.length === 0}
+          placeholder={feeAmount.trim() ? "Default = from currency" : "Enter fee first"}
+          options={sleeveCurrencies.map((c) => ({ value: c, label: c }))}
+        />
+      </FieldGroup>
 
-      <OpGroup label="Details">
-        <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Payee">
-          <Input
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="e.g. Norbert's Gambit (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Note">
-          <Input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Details">
+        <Field
+          label="Date"
+          error={errors.date}
+          control="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <Field
+          label="Payee"
+          value={payee}
+          onChange={(e) => setPayee(e.target.value)}
+          placeholder="e.g. Norbert's Gambit (optional)"
+        />
+        <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+      </FieldGroup>
 
       {submitError && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{submitError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
 
       {blockingClosureTxIds.length > 0 && (
-        <OpGroup label="Blocked by">
+        <FieldGroup label="Blocked by">
           <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
           {blockingClosureTxIds.map((id) => (
             <Link
@@ -452,7 +397,7 @@ export default function FxConversionForm() {
               Transaction #{id}
             </Link>
           ))}
-        </OpGroup>
+        </FieldGroup>
       )}
     </OpPage>
   );

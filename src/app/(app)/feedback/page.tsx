@@ -11,15 +11,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
-import { Paperclip, Send, X } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
@@ -30,6 +24,7 @@ import type {
 } from "@shared/types";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
+import { Field } from "@/components/ui/field";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 function fmtBytes(n: number): string {
@@ -197,18 +192,12 @@ function ThreadDialog({
   };
 
   return (
-    <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="capitalize">
-            {thread ? `${thread.type} feedback` : "Feedback"}
-          </DialogTitle>
-          <DialogDescription>
-            Replies from the team appear here. Please don&apos;t include sensitive
-            financial details.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={feedbackId != null}
+      onClose={onClose}
+      title={<span className="capitalize">{thread ? `${thread.type} feedback` : "Feedback"}</span>}
+      info="Team replies appear here. No sensitive details, please."
+    >
         {error && !thread && <p className="text-sm text-destructive">{error}</p>}
 
         {thread && (
@@ -242,7 +231,8 @@ function ThreadDialog({
               <div ref={bottomRef} />
             </div>
             <div className="space-y-2">
-              <textarea
+              <Field
+                control="textarea"
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 onPaste={(e) => {
@@ -274,7 +264,6 @@ function ThreadDialog({
                 rows={3}
                 maxLength={4000}
                 placeholder="Write a reply…"
-                className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
               <input
                 ref={fileRef}
@@ -319,8 +308,7 @@ function ThreadDialog({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
 
@@ -356,13 +344,7 @@ export default function FeedbackPage() {
       width="report"
       center
       header={{
-        className: "flex items-start justify-between gap-3",
-        actions: (
-          <Button onClick={() => setSendOpen(true)}>
-            <Send className="size-4" aria-hidden />
-            Send feedback
-          </Button>
-        ),
+        primary: { kind: "add", label: "Send feedback", onSelect: () => setSendOpen(true) },
       }}
     >
       <div>

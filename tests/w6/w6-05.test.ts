@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|ring-offset|shadow|decoration|accent|caret|placeholder|border-[trblxy]|border-[se])-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/g;
 const FILES: string[] = [
-  "src/app/(app)/accounts/[id]/page.tsx",
+  "src/app/(app)/accounts/_components/account-detail.tsx",
   "src/app/(app)/accounts/page.tsx",
 ];
 const ARIA: [string, string, number][] = [
@@ -13,7 +13,7 @@ const ARIA: [string, string, number][] = [
   ["src/app/(app)/accounts/_components/account-form-panel.tsx", "aria-label=\"Delete sleeve\"", 1],
 ];
 const SKELETON: [string, string, number][] = [
-  ["src/app/(app)/accounts/[id]/page.tsx", "bg-muted animate-pulse", 5],
+  ["src/app/(app)/accounts/_components/account-detail.tsx", "bg-muted animate-pulse", 5],
   ["src/app/(app)/accounts/page.tsx", "bg-muted animate-pulse", 10],
 ];
 

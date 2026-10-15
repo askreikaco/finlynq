@@ -24,14 +24,11 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InfoTip } from "@/components/ui/info-tip";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
+import { Overlay } from "@/components/ui/overlay";
+import { Notice } from "@/components/notice";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -58,8 +55,9 @@ import {
   type InvestmentsTab,
   type Security,
 } from "./_components/shared";
-import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { Field } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 type SortKey = "symbol" | "description" | "type" | "currency";
@@ -310,14 +308,14 @@ function InvestmentsSettingsPage() {
   if (loading && !securities) {
     return (
       <SectionPage {...pageProps}>
-        <PageSkeleton variant="cards" rows={4} />
+        <Notice variant="skeleton" skeleton="cards" rows={4} />
       </SectionPage>
     );
   }
   if (error && !securities) {
     return (
       <SectionPage {...pageProps}>
-        <ErrorState title="Couldn't load investments" message={error} onRetry={load} />
+        <Notice variant="error" title="Couldn't load investments" retry={load}>{error}</Notice>
       </SectionPage>
     );
   }
@@ -342,12 +340,12 @@ function InvestmentsSettingsPage() {
   };
 
   const filterInput = (col: FilterKey, label: string) => (
-    <Input
+    <Field
       value={filters[col]}
       onChange={(e) => setFilters((p) => ({ ...p, [col]: e.target.value }))}
       placeholder={`${label}…`}
-      className="h-8 text-xs"
       aria-label={`Filter by ${col}`}
+      compact
     />
   );
 
@@ -470,12 +468,14 @@ function InvestmentsSettingsPage() {
           })()}
 
           {allSecurities.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No securities yet"
-              description="Add one, then link it to accounts."
               action={{ label: "Add security", onClick: openAdd }}
-            />
+            >
+              Add one, then link it to accounts.
+            </Notice>
           ) : (
             <div className="space-y-3">
               <div role="group" aria-label="Sort securities" className="flex flex-wrap gap-2">
@@ -490,7 +490,7 @@ function InvestmentsSettingsPage() {
                 {filterInput("type", "Type")}
                 {filterInput("currency", "Currency")}
               </div>
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard list>
                 {rows.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
                     {hasActiveFilter ? "No matches." : "No securities."}
@@ -531,68 +531,57 @@ function InvestmentsSettingsPage() {
         {/* ── Tab 2: By security → accounts ─────────────────────────────── */}
         <TabsContent value="by-security" className="space-y-2">
           {allSecurities.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No securities yet"
-              description="Add one on the Securities tab."
-            />
+            >
+              Add one on the Securities tab.
+            </Notice>
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {allSecurities.map((s) => {
                 const open = expandedSecurities.has(s.id);
                 return (
                   <div key={s.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleSecurity(s.id)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="font-mono text-sm font-medium">{symbolLabel(s)}</span>
-                        {descriptionOf(s) && (
-                          <span className="truncate text-xs text-muted-foreground">{descriptionOf(s)}</span>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {s.accounts.length} {s.accounts.length === 1 ? "account" : "accounts"}
-                      </Badge>
-                    </button>
+                    <ListRow
+                      leading={open ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
+                      title={<span className="font-mono">{symbolLabel(s)}</span>}
+                      subtitle={descriptionOf(s) || undefined}
+                      value={<Badge variant="outline" className="text-xs">{s.accounts.length} {s.accounts.length === 1 ? "account" : "accounts"}</Badge>}
+                      chevron={false}
+                      onPress={() => toggleSecurity(s.id)}
+                    />
                     {open && (
-                      <div className="px-3 pb-3 pl-9 space-y-1.5">
+                      <div className="pb-3 pl-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                         {s.accounts.length === 0 ? (
-                          <p className="text-xs text-muted-foreground" data-keep="empty">Not in any account.</p>
+                          <p className="px-4 py-2 text-xs text-muted-foreground" data-keep="empty">Not in any account.</p>
                         ) : (
                           s.accounts.map((a) => (
-                            <div
+                            <ListRow
                               key={a.positionId}
-                              className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5"
-                            >
-                              <span className="text-sm">
-                                {a.accountName ?? "(account)"}
-                                {a.isCash && (
-                                  <span className="ml-1.5 text-xs text-muted-foreground">cash sleeve</span>
-                                )}
-                              </span>
-                              <Button aria-label="Unlink (transaction-free positions only)"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => unlinkPosition(a.positionId)}
-                                title="Unlink (transaction-free positions only)"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
+                              size="dense"
+                              title={a.accountName ?? "(account)"}
+                              subtitle={a.isCash ? "cash sleeve" : undefined}
+                              trailing={
+                                <Button aria-label="Unlink (transaction-free positions only)"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => unlinkPosition(a.positionId)}
+                                  title="Unlink (transaction-free positions only)"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              }
+                            />
                           ))
                         )}
-                        <Button variant="outline" size="sm" onClick={() => openLinkAccount(s.id)}>
-                          <Plus className="h-3.5 w-3.5 mr-1" /> Account
-                        </Button>
+                        <div className="px-4 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => openLinkAccount(s.id)}>
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Account
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -605,68 +594,53 @@ function InvestmentsSettingsPage() {
         {/* ── Tab 3: By account → securities ────────────────────────────── */}
         <TabsContent value="by-account" className="space-y-2">
           {byAccount.length === 0 ? (
-            <EmptyState
+            <Notice
+              variant="empty"
               icon={Briefcase}
               title="No investment accounts"
-              description="Create an investment account first."
-            />
+            >
+              Create an investment account first.
+            </Notice>
           ) : (
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {byAccount.map(({ account, items }) => {
                 const open = expandedAccounts.has(account.id);
                 return (
                   <div key={account.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleAccount(account.id)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="text-sm font-medium truncate">{account.name}</span>
-                        <Badge variant="outline" className="font-mono text-xs shrink-0">
-                          {account.currency}
-                        </Badge>
-                      </div>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {items.length} {items.length === 1 ? "security" : "securities"}
-                      </Badge>
-                    </button>
+                    <ListRow
+                      leading={open ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
+                      title={account.name}
+                      subtitle={account.currency}
+                      value={<Badge variant="outline" className="text-xs">{items.length} {items.length === 1 ? "security" : "securities"}</Badge>}
+                      chevron={false}
+                      onPress={() => toggleAccount(account.id)}
+                    />
                     {open && (
-                      <div className="px-3 pb-3 pl-9 space-y-1.5">
+                      <div className="pb-3 pl-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                         {items.length === 0 ? (
-                          <p className="text-xs text-muted-foreground" data-keep="empty">No securities.</p>
+                          <p className="px-4 py-2 text-xs text-muted-foreground" data-keep="empty">No securities.</p>
                         ) : (
                           items.map(({ security, positionId, isCash }) => (
-                            <div
+                            <ListRow
                               key={positionId}
-                              className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5"
-                            >
-                              <span className="text-sm font-mono">
-                                {symbolLabel(security)}
-                                {isCash && (
-                                  <span className="ml-1.5 font-sans text-xs text-muted-foreground">
-                                    cash sleeve
-                                  </span>
-                                )}
-                              </span>
-                              <Button aria-label="Unlink (transaction-free positions only)"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => unlinkPosition(positionId)}
-                                title="Unlink (transaction-free positions only)"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
+                              size="dense"
+                              title={<span className="font-mono">{symbolLabel(security)}</span>}
+                              subtitle={isCash ? "cash sleeve" : undefined}
+                              trailing={
+                                <Button aria-label="Unlink (transaction-free positions only)"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => unlinkPosition(positionId)}
+                                  title="Unlink (transaction-free positions only)"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              }
+                            />
                           ))
                         )}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 px-4 pt-2">
                           <Button variant="outline" size="sm" onClick={() => openLinkSecurity(account.id)}>
                             <Plus className="h-3.5 w-3.5 mr-1" /> Security
                           </Button>
@@ -685,11 +659,12 @@ function InvestmentsSettingsPage() {
       </Tabs>
 
       {/* ── Delete confirm (unused securities only) ────────────────────── */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteTarget != null}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onClose={() => { setDeleteTarget(null); }}
         title="Delete security"
-        description={
+        message={
           deleteTarget
             ? `Remove ${symbolLabel(deleteTarget)} from your catalog? It isn't held in any account. This can't be undone.`
             : ""
@@ -701,11 +676,12 @@ function InvestmentsSettingsPage() {
       />
 
       {/* ── Ticker change confirm (re-cluster) ─────────────────────────── */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={tickerTarget != null}
-        onOpenChange={(o) => { if (!o) setTickerTarget(null); }}
+        onClose={() => { setTickerTarget(null); }}
         title="Change ticker"
-        description={
+        message={
           tickerTarget
             ? `Change ${symbolLabel(tickerTarget.security)} to ${tickerTarget.toSymbol}? This re-points the holding (and its full history) to the new ticker — prices will use ${tickerTarget.toSymbol} going forward. Positions, lots, and transactions are unchanged.`
             : ""
@@ -716,11 +692,12 @@ function InvestmentsSettingsPage() {
         onConfirm={confirmTickerChange}
       />
       {detailRow && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          onClose={() => setDetailId(null)}
           title={<span className="font-mono">{detailRow.symbol}</span>}
-          description={detailRow.description || undefined}
+          subtitle={detailRow.description || undefined}
           items={[
             { label: "Type", value: detailRow.type },
             { label: "Currency", value: detailRow.currency },
@@ -753,7 +730,7 @@ function InvestmentsSettingsPage() {
               <Trash2 className="h-4 w-4 mr-1.5" /> Delete
             </Button>
           )}
-        </DetailSheet>
+        </Overlay>
       )}
     </SectionPage>
   );

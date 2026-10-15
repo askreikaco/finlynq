@@ -33,8 +33,9 @@ describe("--list-divider token", () => {
 // List / group components: separators between items are the --list-divider shadow, never divide-y / border-b.
 const LIST_FILES = [
   "src/components/mobile/list-row.tsx",
-  "src/components/mobile/inset-group.tsx",
-  "src/components/mobile/detail-sheet.tsx",
+  "src/components/mobile/inset-row.tsx",
+  "src/components/mobile/detail-list.tsx",
+  "src/components/ui/overlay.tsx",
   "src/components/mobile/column-list.tsx",
   "src/components/mobile/section-card.tsx",
   "src/components/mobile/account-row.tsx",
@@ -44,14 +45,13 @@ const LIST_FILES = [
   "src/components/account-hub.tsx",
   "src/components/templates/hub-page.tsx",
   "src/components/transactions/mobile-tx-list.tsx",
-  "src/components/forms/form-group.tsx",
+  "src/components/ui/field/field.tsx",
   "src/components/transactions/entry/grouped-picker.tsx",
   "src/app/(app)/accounts/page.tsx",
   "src/app/(app)/accounts/_components/manage-groups-panel.tsx",
-  "src/app/(app)/categories/[id]/page.tsx",
+  "src/app/(app)/categories/_components/category-detail.tsx",
   "src/app/(app)/categories/_page-content.tsx",
   "src/app/(app)/categories/_components/category-row.tsx",
-  "src/components/mobile/progress-row.tsx",
   "src/app/(app)/goals/page.tsx",
   "src/app/(app)/loans/page.tsx",
   "src/app/(app)/subscriptions/page.tsx",
@@ -68,8 +68,7 @@ const LIST_FILES = [
 
 // Intentional non-list uses of a border, per file (regex on the line) with the reason.
 const ALLOW: Array<[string, RegExp, string]> = [
-  ["src/app/(app)/admin/inbox/page.tsx", /border-b px-3 pt-3|SheetHeader|border-b px-4 py-3|border-t px-4 py-3/, "tab strip / sheet header+footer frames, not list rows"],
-  ["src/components/transactions/entry/grouped-picker.tsx", /SheetHeader/, "sheet header frame, not a list row"],
+  ["src/app/(app)/admin/inbox/page.tsx", /border-b px-3 pt-3|border-b px-4 py-3|border-t px-4 py-3/, "tab strip / thread action+reply frames, not list rows"],
 ];
 
 describe("list components use the divider shadow, not divide-y / border-b", () => {
@@ -99,7 +98,7 @@ describe("list components use the divider shadow, not divide-y / border-b", () =
   });
 
   it("rows carry the shared utility", () => {
-    for (const f of ["src/components/mobile/inset-group.tsx", "src/components/mobile/detail-sheet.tsx", "src/components/mobile/section-card.tsx"]) {
+    for (const f of ["src/components/mobile/inset-row.tsx", "src/components/mobile/detail-list.tsx", "src/components/ui/overlay.tsx", "src/components/mobile/section-card.tsx"]) {
       expect(read(f)).toContain("shadow-[var(--list-divider)]");
     }
   });

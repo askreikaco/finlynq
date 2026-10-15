@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, Settings, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { MetricCard } from "@/components/metric-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
@@ -17,10 +17,9 @@ import { HealthScoreCard } from "./_components/health-score-card";
 import { KeyMetrics } from "./_components/key-metrics";
 import { ActionCenter } from "./_components/action-center";
 import { WeeklyRecap } from "./_components/weekly-recap";
-import { OnboardingTips } from "@/components/onboarding-tips";
 import { DueCard } from "@/components/subscriptions/due-card";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
-import { ErrorState } from "@/components/error-state";
+import { Notice } from "@/components/notice";
 import { QuickImport } from "./_components/quick-import";
 import { IncomeExpenseChart } from "./_components/income-expense-chart";
 import { SpendingCategoryChart } from "./_components/spending-category-chart";
@@ -31,9 +30,8 @@ import { LazyView } from "@/components/ui/lazy-view";
 import { CountedGrid } from "./_components/counted-grid";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
+import { PageHeader, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS, CardLayoutEditor } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS, EMPTY_CELL_CLASS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
@@ -183,7 +181,7 @@ export default function DashboardPage() {
     e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
   }, []);
 
-  if (loadError && !data) return <ErrorState onRetry={() => { dashboardRes.reload(); healthRes.reload(); setReloadKey((k) => k + 1); }} />;
+  if (loadError && !data) return <Notice variant="error" retry={() => { dashboardRes.reload(); healthRes.reload(); setReloadKey((k) => k + 1); }} />;
 
   if (!data || !layoutReady) return <DashboardSkeleton />;
 
@@ -352,9 +350,8 @@ export default function DashboardPage() {
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
       value: shownIncome,
       // Signed difference vs the previous period (like Net Worth); the covered month moves to the note.
-      sub: incomeCard.delta ?? undefined,
+      delta: { pct: incomeCard.badgePct, text: incomeCard.delta ?? undefined },
       note: periodLabel,
-      badgePct: incomeCard.badgePct,
       icon: TrendingUp,
       tone: "bg-pos/10 text-pos",
       sparkColor: "#10b981",
@@ -365,10 +362,8 @@ export default function DashboardPage() {
     {
       label: "Monthly Expenses",
       value: shownExpenses,
-      sub: expenseCard.delta ?? undefined,
       note: [periodLabel, shownIncome > 0 ? `${Math.round((shownExpenses / shownIncome) * 100)}% of income` : ""].filter(Boolean).join(" · "),
-      badgePct: expenseCard.badgePct,
-      invertTone: true,
+      delta: { pct: expenseCard.badgePct, text: expenseCard.delta ?? undefined, invert: true },
       icon: CreditCard,
       tone: "bg-destructive/10 text-destructive",
       sparkColor: "#f43f5e",
@@ -381,12 +376,14 @@ export default function DashboardPage() {
       // Percent of the budget spent; the amounts and the covered month go in the note.
       value: <span>{budgetPct != null ? `${Math.round(budgetPct)}%` : "—"}</span>,
       valueClassName: budgetPct == null ? "text-muted-foreground" : budgetPct > 100 ? "text-destructive" : budgetPct > 85 ? "text-warning" : "text-pos",
-      sub: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : NO_HISTORY_CAPTION),
       note: budgetNow
         ? `${formatCurrency(budgetNow.spent, apiDisplayCurrency)} of ${formatCurrency(budgetNow.budget, apiDisplayCurrency)} · ${budgetsPeriodLabel}`
         : undefined,
-      badgePct: pctChange(budgetPct, budgetPrevPct),
-      invertTone: true,
+      delta: {
+        pct: pctChange(budgetPct, budgetPrevPct),
+        text: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : NO_HISTORY_CAPTION),
+        invert: true,
+      },
       icon: Target,
       tone: "bg-warning/10 text-warning",
       sparkColor: "#f59e0b",
@@ -444,7 +441,7 @@ export default function DashboardPage() {
       // Onboarding tips for first-time users
       render: () => (
         <motion.div key="onboarding-tips" variants={itemVariants}>
-          <OnboardingTips page="dashboard" />
+          <Notice source="tips:dashboard" />
         </motion.div>
       ),
     },
@@ -601,20 +598,10 @@ export default function DashboardPage() {
           ============================================ */}
       <motion.div variants={itemVariants} className="contents">
         <PageHeader
-          className="flex flex-wrap items-center justify-between gap-3"
           title="Dashboard"
           info="Your financial overview"
-          overflow={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
-          actions={
-            <Button
-              render={<Link href="/transactions/new" />}
-              aria-label="Add transaction"
-              title="Add transaction"
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add
-            </Button>
-          }
+          more={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
+          primary={{ kind: "add", label: "Add transaction", href: "/transactions/new" }}
         />
       </motion.div>
 
@@ -625,18 +612,20 @@ export default function DashboardPage() {
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}
       <motion.div variants={itemVariants}>
-        <CurrencyAuditBanner />
+        <Notice source="currency-audit" />
       </motion.div>
 
       {/* Cards, in the user's saved order (default = the original dashboard order). */}
       {rows}
     </motion.div>
 
-      <CustomizeDashboardSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+        title="Customize home"
+        info="Show, hide and reorder the cards on your dashboard."
+        cards={DASHBOARD_CARDS.filter((c) => availableIds.includes(c.id))}
         layout={layout}
-        availableIds={availableIds}
         onSave={saveLayout}
         onReset={resetLayout}
       />

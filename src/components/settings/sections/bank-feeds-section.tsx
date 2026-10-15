@@ -21,12 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
-import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
+import { Field } from "@/components/ui/field";
 import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Landmark, Link2, Loader2, Plus, RefreshCw } from "lucide-react";
+import { ListRow } from "@/components/mobile/list-row";
 
 /** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
@@ -430,27 +431,18 @@ export function BankFeedsSection() {
                                 <Link2 className="h-3.5 w-3.5 mr-1" /> Link existing
                               </Button>
                               {choices[a.externalId]?.mode === "existing" && (
-                                <select
+                                <Field
+                                  control="select"
                                   value={
-                                    (choices[a.externalId] as { accountId: number }).accountId
+                                    String((choices[a.externalId] as { accountId: number }).accountId)
                                   }
-                                  onChange={(e) =>
-                                    setChoice(a.externalId, {
-                                      mode: "existing",
-                                      accountId: Number(e.target.value),
-                                    })
-                                  }
-                                  className={cn(
-                                    "h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none",
-                                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
-                                  )}
-                                >
-                                  {preview.existingAccounts.map((ea) => (
-                                    <option key={ea.id} value={ea.id}>
-                                      {ea.name} ({ea.currency})
-                                    </option>
-                                  ))}
-                                </select>
+                                  onValueChange={(v) => setChoice(a.externalId, {
+                                    mode: "existing",
+                                    accountId: Number(v),
+                                  })}
+                                  compact
+                                  options={preview.existingAccounts.map((ea) => ({ value: String(ea.id), label: `${ea.name}(${ea.currency})` }))}
+                                />
                               )}
                             </>
                           )}
@@ -511,21 +503,16 @@ export function BankFeedsSection() {
           ) : (
             /* ── Not connected: paste setup token ── */
             <div className="space-y-3">
-              <label htmlFor="simplefin-token" className="block text-sm font-medium">
-                Setup token
-              </label>
-              <textarea
+              <Field
+                label="Setup token"
+                control="textarea"
                 id="simplefin-token"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 rows={3}
                 placeholder="Paste setup token"
-                className={cn(
-                  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
-                  "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                  "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
-                )}
                 disabled={connecting}
+                controlClassName="font-mono"
               />
               {connectError && <p className="text-sm text-destructive">{connectError}</p>}
               <div className="flex items-center justify-between gap-3">
@@ -577,24 +564,14 @@ export function BankFeedsSection() {
             ) : pending.length === 0 ? (
               <p className="text-sm text-muted-foreground" data-keep="empty">No pending charges.</p>
             ) : (
-              <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <div className="overflow-hidden rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {pending.map((p) => (
-                  <div
+                  <ListRow
                     key={`${p.accountId ?? "x"}-${p.fitId}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {safeName(p.payee, "charge", 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate" data-keep="status">
-                        {p.date} · {p.accountName}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium tabular-nums shrink-0">
-                      {formatCurrency(p.amount, p.currency)}
-                    </span>
-                  </div>
+                    title={safeName(p.payee, "charge", 0)}
+                    subtitle={`${p.date} · ${p.accountName}`}
+                    value={formatCurrency(p.amount, p.currency)}
+                  />
                 ))}
               </div>
             )}
@@ -602,11 +579,12 @@ export function BankFeedsSection() {
         </Card>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmDisconnect}
-        onOpenChange={setConfirmDisconnect}
+        onClose={() => setConfirmDisconnect(false)}
         title="Disconnect SimpleFIN"
-        description={
+        message={
           <>
             Removes stored access and stops syncing. Imported transactions are kept; reconnect later with a new token.
           </>

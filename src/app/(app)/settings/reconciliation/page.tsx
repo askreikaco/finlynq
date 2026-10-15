@@ -13,7 +13,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -25,12 +24,12 @@ import { SlidersHorizontal, Zap } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
-import { AmountInput } from "@/components/amount-input";
 import { RulesSection } from "@/components/settings/sections/rules-section";
 import {
   ImportSettingsCard,
   ImportTemplatesItem,
 } from "@/components/settings/sections/import-section";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
 
 interface Thresholds {
@@ -279,11 +278,11 @@ function NumberKnob({
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="flex items-center gap-1">
-          <label className="text-sm font-medium">{label}</label>
-          <InfoTip label={`About ${label.toLowerCase()}`} text={description} />
-        </span>
-        <AmountInput
+        <Field
+          label={label}
+          info={description}
+          infoLabel={`About ${label.toLowerCase()}`}
+          control="amount"
           inputMode="decimal"
           value={Number.isFinite(value) ? value : ""}
           onValueChange={(nv) => {
@@ -294,7 +293,8 @@ function NumberKnob({
           max={max}
           step={step}
           disabled={disabled}
-          className="w-28 text-right font-mono text-xs"
+          className="w-28"
+          controlClassName="text-right font-mono"
         />
       </div>
     </div>

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import type { HealthData } from "./types";
@@ -133,17 +127,15 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>How is the Financial Health score calculated?</DialogTitle>
-          <DialogDescription>
-            Six components, each scored 0-100 and weighted to produce your overall score.
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="How is the Financial Health score calculated?"
+      info={<>Six components, each scored 0-100 and weighted to produce your overall score.
             Components without enough data are excluded — the remaining weights renormalize so
-            you&apos;re never penalized for a gap.
-          </DialogDescription>
-        </DialogHeader>
-
+            you&apos;re never penalized for a gap.</>}
+    >
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
             <div className="flex items-baseline justify-between">
@@ -292,7 +284,6 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
             </div>
           ) : null}
         </div>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

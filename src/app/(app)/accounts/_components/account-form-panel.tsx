@@ -8,10 +8,11 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useReturnTo } from "@/lib/forms/use-return-to";
 import type { LoadState } from "@/lib/forms/load-state";
 import { Inbox, FileCog, Coins, Plus, Trash2, Wallet, ExternalLink } from "lucide-react";
-import { PageHeader, OverflowMenu, ListRow, type OverflowAction } from "@/components/mobile";
+import { PageHeader, MoreActionsMenu, ListRow, type MoreItem } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModePicker } from "@/components/inbox/mode-picker";
 import { ImportPrefsPicker } from "@/components/inbox/import-prefs-picker";
@@ -212,7 +213,7 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
   }
 
   const archived = account?.archived === true;
-  const overflow: OverflowAction[] = account
+  const more: MoreItem[] = account
     ? [
         ...(archived ? [{ label: "Unarchive", icon: Wallet, onSelect: () => void handleUnarchive() }] : []),
         {
@@ -235,16 +236,10 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
           Open account page <ExternalLink className="size-3" aria-hidden />
         </Link>
       </div>
-      {overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
+      {more.length > 0 ? <MoreActionsMenu items={more} /> : null}
     </div>
   ) : (
-    <PageHeader
-      title="Edit account"
-      backHref={destination}
-      backLabel="Back"
-      overflow={overflow.length > 0 ? overflow : undefined}
-      className="flex items-center justify-between"
-    />
+    <PageHeader title="Edit account" back={{ href: destination }} more={more.length > 0 ? more : undefined} />
   );
   const rootProps = { "data-testid": "account-edit-root", "data-form": "account", "data-embedded": embedded ? "true" : undefined } as const;
   const bodyClass = embedded ? "" : `mt-3 ${TW.form} ${TW.formPad}`;
@@ -262,7 +257,7 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
     return (
       <div {...rootProps} className={ROOT_CLASS}>
         {header}
-        <p className="mt-3 text-sm text-muted-foreground">Account not found.</p>
+        <p data-keep="empty" className="mt-3 text-sm text-muted-foreground">Account not found.</p>
       </div>
     );
   }
@@ -295,12 +290,17 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
             <div className="flex items-center gap-2">
               <Inbox className="h-4 w-4 text-info" />
               <h2 className="text-sm font-medium">Reconciliation mode</h2>
+              <InfoTip
+                label="About reconciliation mode"
+                text={
+                  <>
+                    How uploads to this account flow through the pipeline. The{" "}
+                    <code className="px-1 mx-0.5 rounded bg-muted text-xs">/inbox</code> chip is a per-render lens; this
+                    picker is the persisted policy.
+                  </>
+                }
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              How uploads to this account flow through the pipeline. The{" "}
-              <code className="px-1 mx-0.5 rounded bg-muted text-xs">/inbox</code>{" "}
-              chip is a per-render lens; this picker is the persisted policy.
-            </p>
             <ModePicker
               accountId={account.id}
               initialMode={isMode(account.mode) ? account.mode : "manual"}
@@ -314,11 +314,11 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
             <div className="flex items-center gap-2">
               <FileCog className="h-4 w-4 text-chart-5" />
               <h2 className="text-sm font-medium">Import preferences</h2>
+              <InfoTip
+                label="About import preferences"
+                text="Whether CSV / OFX / QFX uploads to this account show a field-mapping preview before staging, and which OFX field becomes the payee."
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Whether CSV / OFX / QFX uploads to this account show a field-mapping preview before staging,
-              and which OFX field becomes the payee.
-            </p>
             <ImportPrefsPicker
               accountId={account.id}
               initialCsvMappingMode={account.csvMappingMode === "auto" ? "auto" : "confirm"}
@@ -336,16 +336,14 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
           </TabsContent>
 
           <TabsContent value="sleeves" className="pt-4 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Coins className="h-4 w-4 text-pos" />
-                  <h2 className="text-sm font-medium">Cash sleeves</h2>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Per-currency cash positions inside this account. Required before recording buys, sells, or FX
-                  conversions in a new currency.
-                </p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Coins className="h-4 w-4 shrink-0 text-pos" />
+                <h2 className="text-sm font-medium">Cash sleeves</h2>
+                <InfoTip
+                  label="About cash sleeves"
+                  text="Per-currency cash positions inside this account. Required before recording buys, sells, or FX conversions in a new currency."
+                />
               </div>
               {/* Creating a sleeve is still the account page's dialog; it opens there. */}
               <Button
@@ -359,11 +357,11 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
             {sleevesLoading && sleeves.length === 0 ? (
               <div className="h-12 animate-shimmer rounded-md" />
             ) : sleeves.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No cash sleeves yet. Add one to start recording trades.
+              <p data-keep="empty" className="text-sm text-muted-foreground py-4 text-center">
+                No cash sleeves yet.
               </p>
             ) : (
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
                 {sleeves.map((s) => (
                   <ListRow
                     key={s.id}
@@ -408,13 +406,12 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
         )}
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={removeOpen}
-        onOpenChange={(o) => {
-          if (!o) setRemoveOpen(false);
-        }}
+        onClose={() => setRemoveOpen(false)}
         title="Remove account"
-        description={
+        message={
           <>
             Remove <b>{account.name}</b>? If it still has any transactions or linked records it will be
             <b> archived</b> (hidden from lists and pickers, but its history is kept). If it is completely empty
@@ -426,16 +423,15 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
         onConfirm={() => void handleArchiveOrDelete()}
       />
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteSleeveId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteSleeveId(null);
-            setDeleteSleeveError("");
-          }
+        onClose={() => {
+          setDeleteSleeveId(null);
+          setDeleteSleeveError("");
         }}
         title="Delete cash sleeve"
-        description={
+        message={
           <>
             Delete the {sleeveToDelete?.currency} cash sleeve? This is only allowed when no transactions
             reference it.
@@ -470,7 +466,7 @@ function aliasClash(list: AccountRow[], alias: string, excludeId: number | null)
     return otherAlias === a || otherName === a;
   });
   return clash
-    ? `Another account ("${clash.name}") already uses this name or alias — matches may be ambiguous.`
+    ? `"${clash.name}" already uses this name or alias.`
     : "";
 }
 
@@ -527,7 +523,7 @@ function CreateAccount(props: AccountFormPanelProps) {
       fallbackReturn="/accounts"
       form="external"
       useLoad={useAccountsLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <AccountForm

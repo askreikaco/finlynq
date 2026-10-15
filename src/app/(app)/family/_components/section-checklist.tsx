@@ -1,12 +1,11 @@
 "use client";
 
 import { useId } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { getSectionDescription, getSectionLabel } from "./section-labels";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface Props {
   legend: string;
@@ -37,41 +36,33 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
   return (
     <fieldset className="space-y-3 min-w-0">
       <legend className="text-base font-semibold mb-2">{legend}</legend>
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={`${uid}-all`}
-          checked={allSelected}
-          disabled={disabled}
-          onCheckedChange={(checked) =>
-            onChange(
-              checked
-                ? new Set([...selected, ...FAMILY_OVERVIEW_SECTIONS])
-                : new Set([...selected].filter((s) => !FAMILY_OVERVIEW_SECTIONS.includes(s) || isLocked(s))),
-            )
-          }
-        />
-        <Label htmlFor={`${uid}-all`} className="font-medium cursor-pointer">
-          {FAMILY_STRINGS.invite_dialog_all_sections}
-        </Label>
-      </div>
+      <Field
+        label={FAMILY_STRINGS.invite_dialog_all_sections}
+        control="checkbox"
+        id={`${uid}-all`}
+        checked={allSelected}
+        disabled={disabled}
+        onCheckedChange={(checked) =>
+          onChange(
+            checked
+              ? new Set([...selected, ...FAMILY_OVERVIEW_SECTIONS])
+              : new Set([...selected].filter((s) => !FAMILY_OVERVIEW_SECTIONS.includes(s) || isLocked(s))),
+          )
+        }
+      />
       <div className="space-y-2 pl-4 regular:pl-6 border-l-2 border-muted">
         {FAMILY_OVERVIEW_SECTIONS.map((s) => (
-          <div key={s} className="flex items-center justify-between gap-3 min-h-row">
-            <Label htmlFor={`${uid}-${s}`} className="font-normal cursor-pointer flex-1 min-w-0 flex-col items-start gap-0">
-              <span className="font-medium">{getSectionLabel(s)}</span>
-              <span className="text-xs text-muted-foreground">
-                {getSectionDescription(s)}
-                {isLocked(s) ? ` — ${FAMILY_STRINGS.update_sections_locked}` : ""}
-              </span>
-            </Label>
-            <Switch
-              id={`${uid}-${s}`}
-              checked={selected.has(s) || isLocked(s)}
-              disabled={disabled || isLocked(s)}
-              onCheckedChange={(v) => toggle(s, v)}
-              className="shrink-0"
-            />
-          </div>
+          <Field
+            key={s}
+            label={<><span className="font-medium">{getSectionLabel(s)}</span> {isLocked(s) ? (<span className="ml-2 text-xs text-muted-foreground">Required</span>) : null}</>}
+            info={`${getSectionDescription(s)}${isLocked(s) ? ` — ${FAMILY_STRINGS.update_sections_locked}` : ""}`}
+            infoLabel={`About ${getSectionLabel(s)}`}
+            control="switch"
+            id={`${uid}-${s}`}
+            checked={selected.has(s) || isLocked(s)}
+            disabled={disabled || isLocked(s)}
+            onCheckedChange={(v) => toggle(s, v)}
+          />
         ))}
       </div>
     </fieldset>

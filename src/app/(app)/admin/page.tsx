@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, KeyRound, Layers, Mail, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { Activity, KeyRound, Layers, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -17,7 +16,8 @@ import {
 import { formatDateTimeLocal } from "@/lib/currency";
 import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { Pagination } from "@/components/ui/pagination";
-import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { MetricRangeSelect } from "@/components/metric-range-select";
@@ -25,7 +25,9 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
 import { formatDelta } from "@/lib/metrics/delta";
 import { pctChange } from "@/lib/metrics/period";
+import { Field } from "@/components/ui/field";
 import { localDateISO } from "@/lib/utils/date";
+import { InfoTip } from "@/components/ui/info-tip";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -429,7 +431,7 @@ export default function AdminPage() {
               metrics={[
                 { icon: Users,
                   label: "Total Users",
-                  value: stats.totalUsers,
+                  value: <span>{stats.totalUsers}</span>,
                   // Running total of signups by month (users that still exist), this month vs last month by default.
                   ...(() => {
                     const rows = Object.entries(stats.registrationsByMonth ?? {}).map(([month, cumulative]) => ({ month, cumulative }));
@@ -440,12 +442,14 @@ export default function AdminPage() {
                 { icon: Receipt, label: "Transactions", value: stats.totalTransactions.toLocaleString() },
                 { icon: UserPlus,
                   label: "New (7d)",
-                  value: stats.registrationsLast7Days,
+                  value: <span>{stats.registrationsLast7Days}</span>,
                   // Fixed 7-day window: the 7 days before it.
-                  badgePct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
-                  sub: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                  delta: {
+                    pct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
+                    text: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                  },
                 },
-                { icon: ShieldCheck, label: "MFA Enabled", value: stats.mfaEnabledUsers },
+                { icon: ShieldCheck, label: "MFA Enabled", value: <span>{stats.mfaEnabledUsers}</span> },
               ]}
             />
           </div>
@@ -472,26 +476,35 @@ export default function AdminPage() {
               <h2 className="text-sm font-semibold text-muted-foreground">
                 Live activity
               </h2>
+              <InfoTip
+                label="About live activity"
+                text="Counts users with any authenticated request (web, MCP, or API key) in the window. Best glance before a deploy: the restart rotates JWTs and forces a re-login."
+              />
             </div>
             <MetricGrid
               metrics={[
-                { icon: Activity, label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
-                { icon: Activity, label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
-                { icon: Activity, label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
+                { icon: Activity, label: "Active now (15 min)", value: <span>{stats.activeUsersLast15Min ?? 0}</span> },
+                { icon: Activity, label: "Active (last hour)", value: <span>{stats.activeUsersLast60Min ?? 0}</span> },
+                { icon: Activity, label: "Active (last 24h)", value: <span>{stats.activeUsersLast24Hours ?? 0}</span> },
               ]}
             />
-            <p className="text-xs text-muted-foreground mt-2">
-              Counts users with any authenticated request (web, MCP, or API key)
-              in the window. Best glance before a deploy: the restart rotates JWTs
-              and forces a re-login.
-            </p>
           </motion.div>
         )}
 
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard
+              label={
+                <>
+                  Decision prompts
+                  <InfoTip
+                    label="About decision prompts"
+                    text="Rows appear once a user has interacted with a prompt; users never shown a prompt have no ack row. Answered is terminal for that version; bump the prompt's version to re-ask everyone."
+                  />
+                </>
+              }
+              icon={MessageSquare} tone="violet" list>
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -507,11 +520,6 @@ export default function AdminPage() {
                 />
               ))}
             </SectionCard>
-            <p className="text-xs text-muted-foreground mt-2">
-              Rows appear once a user has interacted with a prompt; users never
-              shown a prompt have no ack row. Answered is terminal for that
-              version; bump the prompt&apos;s version to re-ask everyone.
-            </p>
           </motion.div>
         )}
 
@@ -564,7 +572,7 @@ export default function AdminPage() {
                 })}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Input
+                <Field
                   aria-label="Search users"
                   placeholder="Search name, username or email"
                   value={textFilter?.type === "text" ? textFilter.value : ""}
@@ -572,49 +580,58 @@ export default function AdminPage() {
                     const value = e.target.value;
                     handleColumnFilterChange("user", value.trim() ? { type: "text", columnId: "user", value } : null);
                   }}
-                  className="col-span-2 h-8 text-xs"
+                  compact
+                  className="col-span-2"
                 />
-                <select
+                <Field
+                  control="select"
                   aria-label="Filter by role"
                   value={roleFilter}
-                  onChange={(e) => setEnumFilter("role", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">All roles</option>
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("role", v)}
+                  compact
+                  options={[
+                    { value: "", label: "All roles" },
+                    { value: "user", label: "User" },
+                    { value: "admin", label: "Admin" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by plan"
                   value={planFilter}
-                  onChange={(e) => setEnumFilter("plan", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">All plans</option>
-                  <option value="free">Free</option>
-                  <option value="pro">Pro</option>
-                  <option value="premium">Premium</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("plan", v)}
+                  compact
+                  options={[
+                    { value: "", label: "All plans" },
+                    { value: "free", label: "Free" },
+                    { value: "pro", label: "Pro" },
+                    { value: "premium", label: "Premium" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by verified"
                   value={verifiedFilter}
-                  onChange={(e) => setEnumFilter("verified", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">Any verification</option>
-                  <option value="1">Verified</option>
-                  <option value="0">Not verified</option>
-                </select>
-                <select
+                  onValueChange={(v) => setEnumFilter("verified", v)}
+                  compact
+                  options={[
+                    { value: "", label: "Any verification" },
+                    { value: "1", label: "Verified" },
+                    { value: "0", label: "Not verified" },
+                  ]}
+                />
+                <Field
+                  control="select"
                   aria-label="Filter by MFA"
                   value={mfaFilter}
-                  onChange={(e) => setEnumFilter("mfa", e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="">Any MFA</option>
-                  <option value="1">Enabled</option>
-                  <option value="0">Disabled</option>
-                </select>
+                  onValueChange={(v) => setEnumFilter("mfa", v)}
+                  compact
+                  options={[
+                    { value: "", label: "Any MFA" },
+                    { value: "1", label: "Enabled" },
+                    { value: "0", label: "Disabled" },
+                  ]}
+                />
               </div>
               {colFilters.length > 0 && (
                 <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -635,7 +652,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard list>
                 {users.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
                 ) : (
@@ -681,62 +698,14 @@ export default function AdminPage() {
               <Card>
                 <CardContent className="p-6">
                   {stats && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Registrations (last 30 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.registrationsLast30Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Email-verified users
-                        </span>
-                        <span className="font-bold flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          {stats.verifiedUsers} / {stats.totalUsers}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Total logins
-                        </span>
-                        <span className="font-bold">
-                          {stats.totalLogins.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Active users (last 7 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.activeUsersLast7Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Active users (last 30 days)
-                        </span>
-                        <span className="font-bold">
-                          {stats.activeUsersLast30Days}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
-                        <span className="text-muted-foreground">
-                          Total accounts created
-                        </span>
-                        <span className="font-bold">{stats.totalAccounts}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-3">
-                        <span className="text-muted-foreground">
-                          Total transactions
-                        </span>
-                        <span className="font-bold">
-                          {stats.totalTransactions.toLocaleString()}
-                        </span>
-                      </div>
+                    <div className="-mx-6 -my-3 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                      <ListRow title="Registrations (last 30 days)" value={stats.registrationsLast30Days} />
+                      <ListRow title="Email-verified users" value={`${stats.verifiedUsers} / ${stats.totalUsers}`} />
+                      <ListRow title="Total logins" value={stats.totalLogins.toLocaleString()} />
+                      <ListRow title="Active users (last 7 days)" value={stats.activeUsersLast7Days} />
+                      <ListRow title="Active users (last 30 days)" value={stats.activeUsersLast30Days} />
+                      <ListRow title="Total accounts created" value={stats.totalAccounts} />
+                      <ListRow title="Total transactions" value={stats.totalTransactions.toLocaleString()} />
                     </div>
                   )}
                 </CardContent>
@@ -745,12 +714,12 @@ export default function AdminPage() {
               <Card>
                 <CardContent className="p-4 space-y-2">
                   <div className="px-1">
-                    <h2 className="font-semibold">Recent logins</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Last 15 users who signed in, most recent first.
-                    </p>
+                    <h2 className="flex items-center gap-0.5 font-semibold">
+                      Recent logins
+                      <InfoTip label="About recent logins" text="Last 15 users who signed in, most recent first." />
+                    </h2>
                   </div>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(stats?.recentLogins ?? []).map((row) => (
                       <ListRow
                         key={row.id}
@@ -774,13 +743,13 @@ export default function AdminPage() {
                     <h2 className="font-semibold flex items-center gap-2">
                       <KeyRound className="h-4 w-4" />
                       OAuth grants ({grants.length})
+                      <InfoTip
+                        label="About OAuth grants"
+                        text={`Live OAuth / MCP grants across all users. A grant is dormant when it has not been used in over ${DORMANT_DAYS} days.`}
+                      />
                     </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Live OAuth / MCP grants across all users. A grant is dormant
-                      when it has not been used in over {DORMANT_DAYS} days.
-                    </p>
                   </div>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {grants.map((grant) => {
                       // FINLYNQ-166's pure dormancy predicate — reused here for
                       // last_used_at (null OR >DORMANT_DAYS ago = dormant).
@@ -812,11 +781,12 @@ export default function AdminPage() {
       </motion.div>
 
       {detailUser && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailUserId(null); }}
+          onClose={() => setDetailUserId(null)}
           title={detailUser.displayName || detailUser.username || detailUser.email || "User"}
-          description={detailUser.username ?? detailUser.email ?? undefined}
+          subtitle={detailUser.username ?? detailUser.email ?? undefined}
           items={[
             { label: "Role", value: detailUser.role === "admin" ? "Admin" : "User" },
             { label: "Plan", value: (detailUser.plan ?? "free").charAt(0).toUpperCase() + (detailUser.plan ?? "free").slice(1) },
@@ -834,29 +804,30 @@ export default function AdminPage() {
           <Button variant="outline" disabled={updatingUser === detailUser.id} onClick={() => handleRoleToggle(detailUser.id, detailUser.role)}>
             {detailUser.role === "admin" ? "Revoke Admin" : "Make Admin"}
           </Button>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">Plan</span>
-            <select
-              aria-label="Plan"
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-              value={detailUser.plan ?? "free"}
-              disabled={updatingUser === detailUser.id}
-              onChange={(e) => handlePlanChange(detailUser.id, e.target.value)}
-            >
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
-          </label>
-        </DetailSheet>
+          <Field
+            label="Plan"
+            control="select"
+            aria-label="Plan"
+            value={detailUser.plan ?? "free"}
+            disabled={updatingUser === detailUser.id}
+            onValueChange={(v) => handlePlanChange(detailUser.id, v)}
+            compact
+            options={[
+              { value: "free", label: "Free" },
+              { value: "pro", label: "Pro" },
+              { value: "premium", label: "Premium" },
+            ]}
+          />
+        </Overlay>
       )}
 
       {detailGrant && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailGrantId(null); }}
+          onClose={() => setDetailGrantId(null)}
           title={detailGrant.clientName}
-          description={<span className="font-mono text-xs">{detailGrant.clientId}</span>}
+          subtitle={<span className="font-mono text-xs">{detailGrant.clientId}</span>}
           items={[
             { label: "User", value: detailGrant.userLabel },
             { label: "Scope", value: <span className="font-mono text-xs">{detailGrant.scope}</span> },
@@ -877,7 +848,7 @@ export default function AdminPage() {
           >
             {revokingGrant === detailGrant.id ? "Revoking…" : "Revoke grant"}
           </Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
       {editingUser && editModalOpen && (

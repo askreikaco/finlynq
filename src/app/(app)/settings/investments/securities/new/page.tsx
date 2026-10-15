@@ -16,7 +16,7 @@ export default function NewSecurityRoute() {
       form="external"
       width="form"
       padBottom="none"
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <AddSecurityForm

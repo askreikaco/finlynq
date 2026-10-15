@@ -1,6 +1,7 @@
 "use client";
 
 import { SectionCard } from "@/components/mobile/section-card";
+import { ListRow } from "@/components/mobile/list-row";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { AlertTriangle, RefreshCw, Store, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
@@ -66,23 +67,16 @@ export function InsightsSection({ currency }: { currency?: string }) {
         >
           <div className="space-y-1.5">
             {insights.anomalies.slice(0, 5).map((a, i) => (
-              <div
+              <ListRow
                 key={i}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-warning/10 border border-warning/30"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{a.category}</p>
-                  <p className="text-xs text-muted-foreground">{a.percentAbove}% above avg</p>
-                </div>
-                <div className="text-right shrink-0 ml-2">
-                  <p className="text-sm font-mono font-semibold text-warning tabular-nums">
-                    {formatCurrency(a.currentMonth, resolvedCurrency)}
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    avg {formatCurrency(a.average, resolvedCurrency)}
-                  </p>
-                </div>
-              </div>
+                shape="rounded"
+                size="dense"
+                className="border border-warning/30 bg-warning/10"
+                title={a.category}
+                subtitle={`${a.percentAbove}% above avg`}
+                value={<span className="font-mono text-warning">{formatCurrency(a.currentMonth, resolvedCurrency)}</span>}
+                secondary={`avg ${formatCurrency(a.average, resolvedCurrency)}`}
+              />
             ))}
           </div>
         </InsightCard>
@@ -96,17 +90,14 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title={`Recurring (${recurring.count})`}
           subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || resolvedCurrency)}/month`}
         >
-          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+          <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {recurring.recurring.slice(0, 8).map((r, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{r.payee}</p>
-                  <p className="text-xs text-muted-foreground">{r.frequency} &middot; next: {r.nextDate}</p>
-                </div>
-                <p className={`text-sm font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-destructive" : "text-pos"}`}>
-                  {formatCurrency(r.avgAmount, r.currency || resolvedCurrency)}
-                </p>
-              </div>
+              <ListRow
+                key={i}
+                title={r.payee}
+                subtitle={`${r.frequency} · next: ${r.nextDate}`}
+                value={<span className={`font-mono ${r.avgAmount < 0 ? "text-destructive" : "text-pos"}`}>{formatCurrency(r.avgAmount, r.currency || resolvedCurrency)}</span>}
+              />
             ))}
           </div>
         </InsightCard>
@@ -120,17 +111,14 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title="Top Merchants"
           subtitle="Last 6 months spending"
         >
-          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+          <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {insights.topMerchants.slice(0, 8).map((m, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{m.payee}</p>
-                  <p className="text-xs text-muted-foreground">{m.count} transactions</p>
-                </div>
-                <p className="text-sm font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
-                  {formatCurrency(m.totalSpent, resolvedCurrency)}
-                </p>
-              </div>
+              <ListRow
+                key={i}
+                title={m.payee}
+                subtitle={`${m.count} transactions`}
+                value={<span className="font-mono text-destructive">{formatCurrency(m.totalSpent, resolvedCurrency)}</span>}
+              />
             ))}
           </div>
         </InsightCard>
@@ -144,21 +132,24 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title="Category Trends"
           subtitle="Spending direction by category"
         >
-          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+          <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {insights.trends.slice(0, 8).map((t, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                <p className="text-sm">{t.category}</p>
-                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  t.trend === "rising"
-                    ? "bg-destructive/10 text-destructive"
-                    : t.trend === "declining"
-                      ? "bg-pos/10 text-pos"
-                      : "bg-muted text-muted-foreground"
-                }`}>
-                  {t.trend === "rising" ? <ArrowUpRight className="h-3 w-3" /> : t.trend === "declining" ? <ArrowDownRight className="h-3 w-3" /> : null}
-                  {t.trend === "rising" ? "+" : ""}{t.changePercent}%
-                </span>
-              </div>
+              <ListRow
+                key={i}
+                title={t.category}
+                value={
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    t.trend === "rising"
+                      ? "bg-destructive/10 text-destructive"
+                      : t.trend === "declining"
+                        ? "bg-pos/10 text-pos"
+                        : "bg-muted text-muted-foreground"
+                  }`}>
+                    {t.trend === "rising" ? <ArrowUpRight className="h-3 w-3" /> : t.trend === "declining" ? <ArrowDownRight className="h-3 w-3" /> : null}
+                    {t.trend === "rising" ? "+" : ""}{t.changePercent}%
+                  </span>
+                }
+              />
             ))}
           </div>
         </InsightCard>

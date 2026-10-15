@@ -26,6 +26,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 import { Mail, Sparkles, AlertCircle } from "lucide-react";
 
 export interface PickerAccount {
@@ -162,26 +163,21 @@ export function UnboundImportPicker({
               Apply a saved template (uses its default account)
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <select
-                className="border rounded-md px-2 py-1.5 text-sm bg-background flex-1 min-w-[200px]"
-                value={selectedTemplateId ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
+              <Field
+                control="select"
+                value={String(selectedTemplateId ?? "")}
+                onValueChange={(v) => {
                   setSelectedTemplateId(v ? Number(v) : null);
                   setSelectedAccountId(null);
                   setError(null);
                 }}
                 disabled={submitting}
-              >
-                <option value="">— Pick a template —</option>
-                {sortedTemplates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                    {t.matchesHeaders ? "  ★ matches headers" : ""}
-                    {t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}
-                  </option>
-                ))}
-              </select>
+                className="flex-1 min-w-[200px]"
+                options={[
+                  { value: "", label: "— Pick a template —" },
+                  ...sortedTemplates.map((t) => ({ value: String(t.id), label: `${t.name}${t.matchesHeaders ? "  ★ matches headers" : ""}${t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}` })),
+                ]}
+              />
               <Button
                 size="sm"
                 disabled={selectedTemplateId == null || submitting}
@@ -202,25 +198,21 @@ export function UnboundImportPicker({
             …or just bind to an account (skip template, no column remapping)
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              className="border rounded-md px-2 py-1.5 text-sm bg-background flex-1 min-w-[200px]"
-              value={selectedAccountId ?? ""}
-              onChange={(e) => {
-                const v = e.target.value;
+            <Field
+              control="select"
+              value={String(selectedAccountId ?? "")}
+              onValueChange={(v) => {
                 setSelectedAccountId(v ? Number(v) : null);
                 setSelectedTemplateId(null);
                 setError(null);
               }}
               disabled={submitting}
-            >
-              <option value="">— Pick an account —</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({a.currency})
-                  {a.isInvestment ? " · investment" : ""}
-                </option>
-              ))}
-            </select>
+              className="flex-1 min-w-[200px]"
+              options={[
+                { value: "", label: "— Pick an account —" },
+                ...accounts.map((a) => ({ value: String(a.id), label: `${a.name}(${a.currency}) ${a.isInvestment ? " · investment" : ""}` })),
+              ]}
+            />
             <Button
               size="sm"
               variant="outline"

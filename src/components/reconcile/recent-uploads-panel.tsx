@@ -27,6 +27,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/mobile/list-row";
 import { Trash2, RefreshCcw, ChevronDown, ChevronRight } from "lucide-react";
 
 interface BatchRow {
@@ -196,59 +197,37 @@ export function RecentUploadsPanel({
               {batches.map((b) => {
                 const dt = new Date(b.uploadedAt);
                 const dateLabel = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")} ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
-                const meta = (
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {dateLabel}
-                      </span>
-                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-xs uppercase">
-                        {b.mode}
-                      </span>
-                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-xs uppercase">
-                        {b.source}
-                      </span>
-                      {b.hasLinkedTransactions && (
-                        <span className="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0 text-xs text-warning">
-                          has linked tx
-                        </span>
-                      )}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs">
-                      {b.filename ?? "(no filename)"}{" "}
-                      <span className="text-muted-foreground">
-                        · {b.currentRowCount}/{b.rowCount} rows
-                        {b.anchorCount > 0 && ` · ${b.anchorCount} anchor${b.anchorCount === 1 ? "" : "s"}`}
-                      </span>
-                    </span>
-                  </span>
-                );
                 return (
-                  <li key={b.id} className="text-sm">
-                    <div className="flex items-center justify-between gap-4 px-4 py-3">
-                      {onOpenBatch ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenBatch(b.stagedImportId)}
-                          className="min-w-0 flex-1 text-left hover:opacity-80"
-                          title="Open the staging review for this import"
+                  <li key={b.id}>
+                    <ListRow
+                      title={b.filename ?? "(no filename)"}
+                      subtitle={
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="font-mono">{dateLabel}</span>
+                          <span className="uppercase">{b.mode}</span>
+                          <span className="uppercase">{b.source}</span>
+                          <span>
+                            {b.currentRowCount}/{b.rowCount} rows
+                            {b.anchorCount > 0 && ` · ${b.anchorCount} anchor${b.anchorCount === 1 ? "" : "s"}`}
+                          </span>
+                          {b.hasLinkedTransactions && <span className="text-warning">has linked tx</span>}
+                        </span>
+                      }
+                      chevron={false}
+                      {...(onOpenBatch ? { onPress: () => onOpenBatch(b.stagedImportId), "aria-label": `Open the staging review for ${b.filename ?? "this import"}` } : {})}
+                      actions={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => void deleteBatch(b.id, false)}
+                          disabled={deletingId === b.id}
                         >
-                          {meta}
-                        </button>
-                      ) : (
-                        <div className="min-w-0 flex-1">{meta}</div>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => void deleteBatch(b.id, false)}
-                        disabled={deletingId === b.id}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1.5" />
-                        {deletingId === b.id ? "Deleting…" : "Delete batch"}
-                      </Button>
-                    </div>
+                          <Trash2 className="h-4 w-4 mr-1.5" />
+                          {deletingId === b.id ? "Deleting…" : "Delete batch"}
+                        </Button>
+                      }
+                    />
                   </li>
                 );
               })}

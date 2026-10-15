@@ -38,8 +38,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/dev-mode-guard", () => ({ DevModeGuard: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
-vi.mock("@/components/sankey-chart", () => ({ SankeyChart: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
+vi.mock("@/components/chart/sankey", () => ({ SankeyView: () => null }));
 vi.mock("@/components/reports/income-expense-trend-card", () => ({ IncomeExpenseTrendCard: () => null }));
 vi.mock("@/app/(app)/reports/_components/account-filter", () => ({ AccountFilter: () => null }));
 vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: () => <div data-testid="perf-chart" /> }));
@@ -59,7 +59,7 @@ vi.mock("recharts", () => {
   const Leaf = () => null;
   const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
   return {
-    ResponsiveContainer: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, PieChart: Wrap,
+    ResponsiveContainer: Wrap, ComposedChart: Wrap, LineChart: Wrap, AreaChart: Wrap, BarChart: Wrap, PieChart: Wrap,
     Line: Leaf, Area: Leaf, Bar: Leaf, Pie: Leaf, Cell: Leaf, XAxis: Leaf, YAxis: Leaf, Tooltip: Leaf, Legend: Leaf,
     CartesianGrid: Leaf, ReferenceLine: Leaf,
   };
@@ -140,8 +140,9 @@ describe("Transactions: one layout at every size", () => {
       const { container } = render(<TransactionsWorkspace />);
       expect(container.querySelector("table")).toBeNull();
       expect(container.querySelector('[data-slot="page-header"] h1')?.textContent?.trim()).toBe("Transactions");
-      // The header action; at wide the split pane's empty prompt repeats it as a second New button.
-      expect(screen.getAllByRole("button", { name: "Add Transaction" }).length).toBe(size === "wide" ? 2 : 1);
+      // The bar's primary (a typed link, rightmost); at wide the split pane's empty prompt repeats it as a New button.
+      expect(container.querySelector('[data-slot="topbar-primary"]')?.getAttribute("aria-label")).toBe("Add Transaction");
+      expect(screen.queryAllByRole("button", { name: "Add Transaction" }).length).toBe(size === "wide" ? 1 : 0);
       expect(rows(container).length).toBe(3);
       expect(screen.getByRole("button", { name: "Edit list" })).toBeTruthy();
     });

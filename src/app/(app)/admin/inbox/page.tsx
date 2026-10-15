@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Field } from "@/components/ui/field";
+import { Overlay } from "@/components/ui/overlay";
 
 interface InboxRow {
   id: string;
@@ -252,12 +253,7 @@ export default function AdminInboxPage() {
       width="report"
       center
       header={{
-        actions: (
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        ),
+        more: [{ label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading }],
       }}
     >
       {error && (
@@ -282,7 +278,7 @@ export default function AdminInboxPage() {
             <p className="p-8 text-sm text-muted-foreground text-center">No {category} messages.</p>
           )}
           {rows && rows.length > 0 && (
-            <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {rows.map((r) => (
                 <li key={r.id}>
                   <ListRow
@@ -313,12 +309,14 @@ export default function AdminInboxPage() {
       </SectionCard>
 
       {/* ─── Conversation (tap a row) ─── */}
-      <Sheet open={selectedId !== null} onOpenChange={(open) => { if (!open) closeThread(); }}>
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-0 pb-[var(--sab)]">
-          <SheetHeader className="border-b px-4 py-3 pr-12">
-            <SheetTitle className="truncate text-base">{thread ? thread.subject || "(no subject)" : "Email"}</SheetTitle>
-            <SheetDescription className="truncate font-mono text-xs">{thread?.counterparty ?? ""}</SheetDescription>
-          </SheetHeader>
+      <Overlay
+        open={selectedId !== null}
+        onClose={closeThread}
+        size="xl"
+        title={thread ? thread.subject || "(no subject)" : "Email"}
+        subtitle={thread?.counterparty ? <span className="font-mono">{thread.counterparty}</span> : undefined}
+        bodyClassName="gap-0 p-0"
+      >
 
           {selectedId && threadLoading && !thread && (
             <p className="p-6 text-sm text-muted-foreground">Loading conversation…</p>
@@ -378,17 +376,15 @@ export default function AdminInboxPage() {
               {/* Reply box */}
               {thread.category === "mailbox" && (
                 <div className="border-t px-4 py-3 space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Reply to <span className="font-mono">{thread.counterparty}</span>
-                  </label>
-                  <textarea
+                  <Field
+                    label={<>Reply to <span className="font-mono">{thread.counterparty}</span></>}
+                    control="textarea"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     rows={4}
                     maxLength={50000}
                     placeholder="Write your reply…"
                     disabled={sending}
-                    className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
                   />
                   {replyError && <p className="text-xs text-destructive">{replyError}</p>}
                   <div className="flex justify-end">
@@ -401,8 +397,7 @@ export default function AdminInboxPage() {
               )}
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+      </Overlay>
     </SectionPage>
   );
 }

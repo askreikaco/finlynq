@@ -5,9 +5,8 @@ import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "l
 import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
-import { SectionCard, TxRow, type TxRowTile } from "@/components/mobile";
+import { SectionCard, TxRow, type TileTone } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
-import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "./pending-sync-badge";
 
 /** Bulk selection for the list: rows show a checkbox and a tap toggles the row. Pending rows are never selectable. */
@@ -86,7 +85,7 @@ export function MobileTxList({
           labelPlacement="outside"
           /* The date label sits ABOVE the card group and sticks under the page header while its group scrolls. */
           labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
-          padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
+          list
         >
           {txns.map((t) => (
             <TransactionRow
@@ -162,7 +161,7 @@ function groupTransactionsByDate(
   return groups;
 }
 
-function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; tile: TxRowTile } {
+function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; tile: TileTone } {
   // Transfer: check for linkId (indicates a transfer pair)
   if (transaction.linkId) {
     return {
@@ -217,28 +216,8 @@ function TransactionRow({
     </span>
   );
 
-  if (selection && t.id > 0 && !t.pendingSync) {
-    const checked = selection.selected.has(t.id);
-    return (
-      <div
-        className={cn("flex items-center gap-2 rounded-lg", checked && "bg-primary/5")}
-        onClick={(e) => {
-          if (!(e.target instanceof HTMLInputElement)) selection.onToggle(t.id);
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => selection.onToggle(t.id)}
-          aria-label={`Select ${payee}`}
-          className="ml-1 h-4 w-4 shrink-0 cursor-pointer rounded border-input"
-        />
-        <div className="min-w-0 flex-1">
-          <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} />
-        </div>
-      </div>
-    );
-  }
-
-  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} selected={selected} onPress={() => onOpen(t)} />;
+  const select = selection && t.id > 0 && !t.pendingSync
+    ? { checked: selection.selected.has(t.id), onToggle: () => selection.onToggle(t.id), label: `Select ${payee}` }
+    : undefined;
+  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} select={select} selected={select ? undefined : selected} onPress={select ? undefined : () => onOpen(t)} />;
 }

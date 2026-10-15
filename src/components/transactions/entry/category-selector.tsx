@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   GroupedPickerPanel,
-  PICKER_SHEET_CLASS,
   type PickerEntry,
 } from "./grouped-picker";
 
@@ -53,24 +51,22 @@ export function CategorySelector({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className={PICKER_SHEET_CLASS}>
-        <GroupedPickerPanel
-          title="Select Category"
-          placeholder="Search category..."
-          emptyText="No categories found"
-          entries={entries}
-          selectedId={selectedCategoryId}
-          recentIds={recentIds}
-          layout="expand"
-          settingsHref="/categories"
-          settingsLabel="Manage categories"
-          onPick={(id) => {
-            onSelect(id);
-            onOpenChange(false);
-          }}
-        />
-      </SheetContent>
-    </Sheet>
+    <GroupedPickerPanel
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Select Category"
+      placeholder="Search category..."
+      emptyText="No categories found"
+      entries={entries}
+      selectedId={selectedCategoryId}
+      recentIds={recentIds}
+      layout="expand"
+      settingsHref="/categories"
+      settingsLabel="Manage categories"
+      onPick={(id) => {
+        onSelect(id);
+        onOpenChange(false);
+      }}
+    />
   );
 }

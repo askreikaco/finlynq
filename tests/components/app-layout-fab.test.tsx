@@ -23,9 +23,6 @@ vi.mock("@/components/unlock-gate", () => ({
   UnlockGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/announcement-banner", () => ({
-  AnnouncementBanner: () => null,
-}));
 
 vi.mock("@/components/prompt-gate", () => ({
   PromptGate: () => null,
@@ -51,8 +48,8 @@ vi.mock("@/components/animation-provider", () => ({
   AnimationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/reporting-recompute-indicator", () => ({
-  ReportingRecomputeIndicator: vi.fn(() => null),
+vi.mock("@/components/notice/feeds", () => ({
+  NoticeFeed: vi.fn(() => null),
 }));
 
 
@@ -71,7 +68,7 @@ vi.mock("next/navigation", () => ({
 
 // Import after mocking
 import AppLayout from "@/app/(app)/layout";
-import * as indicatorModule from "@/components/reporting-recompute-indicator";
+import * as feedsModule from "@/components/notice/feeds";
 import * as pageFabModule from "@/components/mobile/page-fab";
 
 describe("AppLayout has no floating action button", () => {
@@ -103,11 +100,14 @@ describe("AppLayout has no floating action button", () => {
     expect(screen.queryByTestId("page-fab")).toBeNull();
   });
 
-  it("no longer passes avoidFab to ReportingRecomputeIndicator", () => {
+  it("mounts the announcement and recompute notices without avoidFab", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0] as unknown as [Record<string, unknown>];
-    expect(callArgs[0]).not.toHaveProperty("avoidFab");
+    const calls = vi.mocked(feedsModule.NoticeFeed).mock.calls as unknown as [Record<string, unknown>][];
+    const sources = calls.map((c) => c[0].source);
+    expect(sources).toContain("reporting-recompute");
+    expect(sources).toContain("announcement");
+    for (const [props] of calls) expect(props).not.toHaveProperty("avoidFab");
   });
 
   it("does not render the legacy quick-add button", () => {

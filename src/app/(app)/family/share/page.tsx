@@ -13,13 +13,11 @@ export default function FamilySharePage() {
       id="family-share"
       title={FAMILY_STRINGS.share_page_title}
       info={FAMILY_STRINGS.share_page_description}
-      backFallback="/family"
-      backLabel={FAMILY_STRINGS.share_back}
+      back={{ href: "/family", label: FAMILY_STRINGS.share_back }}
       width="none"
       padBottom="none"
       minW0={false}
       suspense={false}
-      header={{ className: "flex items-start gap-3" }}
     >
       <SharingTab reloadKey={reloadKey} onSharesChanged={() => setReloadKey((k) => k + 1)} />
     </SectionPage>

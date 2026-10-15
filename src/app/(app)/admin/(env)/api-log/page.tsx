@@ -10,16 +10,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { RefreshCw, Trash2 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { AlertTriangle, Database, RefreshCw, Trash2 } from "lucide-react";
+import { MetricGrid } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 
 interface OutboundCall {
   id: number;
@@ -194,8 +192,8 @@ export default function AdminApiLogPage() {
       width="report"
       center
       header={{
-        className: "flex flex-wrap items-center justify-between gap-3",
-        overflow: [
+        more: [
+          { label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading },
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {
             label: "Clear",
@@ -205,26 +203,6 @@ export default function AdminApiLogPage() {
             disabled: calls.length === 0 || clearing,
           },
         ],
-        actions: (<>
-            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-              Auto-refresh
-              <Switch checked={auto} onCheckedChange={setAuto} />
-            </label>
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`${HEADER_DESKTOP_ONLY} border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive`}
-              onClick={() => setClearOpen(true)}
-              disabled={calls.length === 0 || clearing}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Clear
-            </Button>
-          </>),
       }}
     >
       <p className={`mt-0.5 text-sm text-muted-foreground ${TW.prose}`}>
@@ -242,20 +220,18 @@ export default function AdminApiLogPage() {
 
       {/* Summary */}
       {data && (
-        <Card>
-          <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 text-sm">
-            <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Buffered</span>
-              <span className="font-semibold tabular-nums">
-                {data.meta.count.toLocaleString()} / {data.meta.cap.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Errors</span>
-              <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-destructive" : ""}`}>
-                {summary.errors.toLocaleString()}
-              </span>
-            </div>
+        <>
+          <MetricGrid
+            columns={2}
+            metrics={[
+              { id: "buffered", label: "Buffered", icon: Database, value: `${data.meta.count.toLocaleString()} / ${data.meta.cap.toLocaleString()}` },
+              {
+                id: "errors", label: "Errors", icon: AlertTriangle, value: summary.errors.toLocaleString(),
+                tone: summary.errors > 0 ? "rose" : "muted", valueClassName: summary.errors > 0 ? "text-destructive" : undefined,
+              },
+            ]}
+          />
+          {summary.byProvider.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               {summary.byProvider.map(([prov, n]) => (
                 <Badge key={prov} variant="outline" className="text-xs">
@@ -263,8 +239,8 @@ export default function AdminApiLogPage() {
                 </Badge>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </>
       )}
 
       {/* Calls */}
@@ -284,11 +260,12 @@ export default function AdminApiLogPage() {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={clearOpen}
-        onOpenChange={(o) => { if (!o) setClearOpen(false); }}
+        onClose={() => { setClearOpen(false); }}
         title="Clear API log"
-        description="Clear the in-memory outbound-API log? This just resets the diagnostic buffer — it doesn't affect any cache or data."
+        message="Clear the in-memory outbound-API log? This just resets the diagnostic buffer — it doesn't affect any cache or data."
         confirmLabel="Clear log"
         busyLabel="Clearing…"
         busy={clearing}

@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ColumnFilterPopover } from "@/components/ui/column-filter";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import type {
   FilterOption,
   TableColFilter,
@@ -273,10 +273,13 @@ export function DataTable<T>({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium">Columns:</span>
           {hideableColumns.map((col) => (
-            <label key={col.key} className="inline-flex items-center gap-2 cursor-pointer">
-              {typeof col.header === "string" ? col.header : col.key}
-              <Switch checked={!hidden.has(col.key)} onCheckedChange={() => toggleHidden(col.key)} />
-            </label>
+            <Field
+              key={col.key}
+              label={typeof col.header === "string" ? col.header : col.key}
+              control="switch"
+              checked={!hidden.has(col.key)}
+              onCheckedChange={() => toggleHidden(col.key)}
+            />
           ))}
         </div>
       )}
@@ -355,26 +358,25 @@ export function DataTable<T>({
               {visibleColumns.map((col) => (
                 <TableHead key={col.key} className={cn("pt-0 pb-2", col.className)}>
                   {col.filter === "text" ? (
-                    <input
-                      type="text"
+                    <Field
                       value={filters[col.key] ?? ""}
                       onChange={(e) => setFilter(col.key, e.target.value)}
                       placeholder="Filter…"
-                      className="h-7 w-full rounded-md border bg-background px-2 text-xs font-normal normal-case tracking-normal text-foreground placeholder:text-muted-foreground"
+                      compact
+                      controlClassName="font-normal tracking-normal text-foreground"
                     />
                   ) : col.filter === "select" ? (
-                    <select
+                    <Field
+                      control="select"
                       value={filters[col.key] ?? ""}
-                      onChange={(e) => setFilter(col.key, e.target.value)}
-                      className="h-7 w-full rounded-md border bg-background px-1 text-xs font-normal normal-case tracking-normal text-foreground"
-                    >
-                      <option value="">All</option>
-                      {(selectOptions[col.key] ?? []).map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => setFilter(col.key, v)}
+                      compact
+                      controlClassName="font-normal tracking-normal text-foreground"
+                      options={[
+                        { value: "", label: "All" },
+                        ...(selectOptions[col.key] ?? []).map((opt) => ({ value: opt, label: opt })),
+                      ]}
+                    />
                   ) : null}
                 </TableHead>
               ))}

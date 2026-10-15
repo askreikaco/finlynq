@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { AmountInput } from "@/components/amount-input";
 import { formatCurrency } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import type { Budget, SpendingRow } from "./budget-types";
 
 /** Envelope mode: move funds from one category's budget to another. Rendered by /budgets/move-money. */
@@ -115,52 +113,47 @@ export function MoveMoneyForm({
         void handleMoveMoney();
       }}
     >
-      <div>
-        <Label>From</Label>
-        <Combobox
-          value={moveFrom}
-          onValueChange={(v) => setMoveFrom(v)}
-          items={sortCategory(
-            budgets.map((b): ComboboxItemShape => ({
-              value: String(b.categoryId),
-              label: `${b.categoryName} (${formatCurrency(b.amount - (spendingMap.get(b.categoryId) ?? 0), displayCurrency)} available)`,
-            })),
-            (b) => Number(b.value),
-            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-          )}
-          placeholder="Select category"
-          searchPlaceholder="Search categories…"
-          emptyMessage="No matches"
-          className="w-full"
-        />
-      </div>
-      <div>
-        <Label>To</Label>
-        <Combobox
-          value={moveTo}
-          onValueChange={(v) => setMoveTo(v)}
-          items={sortCategory(
-            budgets
-              .filter((b) => String(b.categoryId) !== moveFrom)
-              .map((b): ComboboxItemShape => ({ value: String(b.categoryId), label: b.categoryName })),
-            (b) => Number(b.value),
-            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-          )}
-          placeholder="Select category"
-          searchPlaceholder="Search categories…"
-          emptyMessage="No matches"
-          className="w-full"
-        />
-      </div>
-      <div>
-        <Label>Amount</Label>
-        <AmountInput
-          step="0.01"
-          value={moveAmount}
-          onValueChange={(nv) => setMoveAmount(nv)}
-          placeholder="50.00"
-        />
-      </div>
+      <Field
+        label="From"
+        control="combobox"
+        value={moveFrom}
+        onValueChange={(v) => setMoveFrom(v)}
+        options={sortCategory(
+          budgets.map((b): FieldComboboxOption => ({
+            value: String(b.categoryId),
+            label: `${b.categoryName} (${formatCurrency(b.amount - (spendingMap.get(b.categoryId) ?? 0), displayCurrency)} available)`,
+          })),
+          (b) => Number(b.value),
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+        )}
+        placeholder="Select category"
+        searchPlaceholder="Search categories…"
+        emptyMessage="No matches"
+      />
+      <Field
+        label="To"
+        control="combobox"
+        value={moveTo}
+        onValueChange={(v) => setMoveTo(v)}
+        options={sortCategory(
+          budgets
+            .filter((b) => String(b.categoryId) !== moveFrom)
+            .map((b): FieldComboboxOption => ({ value: String(b.categoryId), label: b.categoryName })),
+          (b) => Number(b.value),
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+        )}
+        placeholder="Select category"
+        searchPlaceholder="Search categories…"
+        emptyMessage="No matches"
+      />
+      <Field
+        label="Amount"
+        control="amount"
+        step="0.01"
+        value={moveAmount}
+        onValueChange={(nv) => setMoveAmount(nv)}
+        placeholder="50.00"
+      />
       {moveError && <p className="text-sm text-destructive">{moveError}</p>}
       <Button
         type="submit"

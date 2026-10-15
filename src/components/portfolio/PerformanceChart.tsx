@@ -15,31 +15,16 @@
 import { TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/currency";
-import { formatCompactNumber } from "@/lib/utils/number";
+import { Chart, type ChartSeries } from "@/components/chart";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import {
   buildStackedSeries,
   type StackPoint,
 } from "@/lib/chart-stack";
-import { StackedChartLegend } from "@/components/chart-stack-legend";
-import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
 import { formatPercent } from "@/lib/locale";
-import { useAnimations } from "@/hooks/use-animations";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
 type Period = "1m" | "3m" | "6m" | "ytd" | "1y" | "all";
@@ -81,6 +66,12 @@ interface ApiResponse {
   };
 }
 
+/** Market value + cost basis lines of the Performance card (also the Family overview's). */
+export const PERFORMANCE_SERIES: ChartSeries[] = [
+  { key: "marketValue", name: "Market value", color: "#06b6d4" },
+  { key: "costBasis", name: "Cost basis", color: "#94a3b8", strokeWidth: 1, dashed: true },
+];
+
 const PERIODS: Period[] = ["1m", "3m", "6m", "ytd", "1y", "all"];
 
 /** Chip size: 44px tall below md (iOS target), the default sm height at md+; never wraps inside the row. */
@@ -102,7 +93,6 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   // "By account" is meaningless when the chart is already scoped to one account
   // (it'd be a single band) — only offer it for the whole-portfolio aggregate (tc-4).
   const canGroupByAccount = accountId == null;
-  const animationsEnabled = useAnimations();
 
   // Cache-first: a remounted page paints the last chart at once and revalidates in the background.
   const perfParams = new URLSearchParams();
@@ -223,43 +213,11 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                 ? `Market value by ${axisGroupLabel} (${stackCurrency})`
                 : `Market value (${data.currency})`}
             </p>
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                {showStacked ? (
-                  <AreaChart data={stackedRows}>
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => formatCompactNumber(Number(v))}
-                    />
-                    <Tooltip
-                      content={
-                        // Shared stacked-area tooltip (FINLYNQ-192) — colored dot
-                        // per band, full names, rows mirror the visual stack.
-                        <StackedAreaTooltip currency={stackCurrency} legend={legend} wide />
-                      }
-                    />
-                    {legend.map((b) => (
-                      <Area
-                        key={b.key}
-                        type="monotone"
-                        dataKey={b.key}
-                        name={b.name}
-                        stackId="perf"
-                        stroke={b.color}
-                        strokeWidth={1}
-                        fill={b.color}
-                        fillOpacity={0.55}
-                        dot={false}
-                        isAnimationActive={animationsEnabled}
-                      />
-                    ))}
-                  </AreaChart>
-                ) : (
-                  <PerformanceLineChart chartData={chartData} domain={domain} spansZero={spansZero} currency={data.currency} />
-                )}
-              </ResponsiveContainer>
-            </div>
+            {showStacked ? (
+              <Chart kind="stacked-area" data={stackedRows} series={legend} height={288} currency={stackCurrency} tooltipWide legend />
+            ) : (
+              <Chart kind="line" data={chartData} height={288} currency={data.currency} series={PERFORMANCE_SERIES} yDomain={domain} zeroLine={spansZero} />
+            )}
             {stacked && holdingsLoading && (
               <p className="text-xs text-muted-foreground mt-2">Loading per-holding values…</p>
             )}
@@ -268,7 +226,6 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                 No per-holding values to stack for this range.
               </p>
             )}
-            {showStacked && <StackedChartLegend legend={legend} />}
           </>
         )}
       </CardContent>
@@ -308,57 +265,5 @@ export function PerformanceBadges({
         </Badge>
       )}
     </div>
-  );
-}
-
-/**
- * Market value + cost basis lines of the Performance card. Render inside a sized
- * ResponsiveContainer; `chartData`/`domain`/`spansZero` come from prepareTimeSeries.
- */
-export function PerformanceLineChart({
-  chartData,
-  domain,
-  spansZero,
-  currency,
-}: {
-  chartData: Array<{ date: string; marketValue: number; costBasis: number }>;
-  domain: [number, number] | ["auto", "auto"] | undefined;
-  spansZero: boolean;
-  currency: string;
-}) {
-  const animationsEnabled = useAnimations();
-
-  return (
-    <LineChart data={chartData}>
-      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-      <YAxis
-        tick={{ fontSize: 11 }}
-        tickFormatter={(v) => formatCompactNumber(Number(v))}
-        domain={domain}
-      />
-      <Tooltip
-        formatter={(v) => formatCurrency(Number(v), currency)}
-      />
-      {spansZero && <ReferenceLine y={0} stroke="#888" />}
-      <Line
-        type="monotone"
-        dataKey="marketValue"
-        stroke="#06b6d4"
-        strokeWidth={2}
-        dot={false}
-        name="Market value"
-        isAnimationActive={animationsEnabled}
-      />
-      <Line
-        type="monotone"
-        dataKey="costBasis"
-        stroke="#94a3b8"
-        strokeWidth={1}
-        strokeDasharray="3 3"
-        dot={false}
-        name="Cost basis"
-        isAnimationActive={animationsEnabled}
-      />
-    </LineChart>
   );
 }

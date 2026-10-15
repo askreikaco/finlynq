@@ -19,12 +19,11 @@ vi.mock("next/navigation", () => ({
 const dev = vi.hoisted(() => ({ on: true }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => dev.on }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));
-vi.mock("@/components/currency-audit-banner", () => ({ CurrencyAuditBanner: () => null }));
 vi.mock("@/components/onboarding-wizard", () => ({ OnboardingWizard: () => null }));
 vi.mock("@/components/sparkline", () => ({ Sparkline: () => null }));
 
 const marker = vi.hoisted(() => (id: string) => function MockCard() { return <div data-testid={`card-${id}`} />; });
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: marker("onboarding-tips") }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: ({ source }: { source: string }) => (source === "tips:dashboard" ? marker("onboarding-tips")() : null) }));
 vi.mock("@/components/subscriptions/due-card", () => ({ DueCard: marker("due-subscriptions") }));
 vi.mock("@/app/(app)/dashboard/_components/health-score-card", () => ({ HealthScoreCard: marker("health-score") }));
 vi.mock("@/app/(app)/dashboard/_components/key-metrics", () => ({ KeyMetrics: marker("key-metrics") }));
@@ -36,9 +35,6 @@ vi.mock("@/app/(app)/dashboard/_components/income-expense-chart", () => ({ Incom
 vi.mock("@/app/(app)/dashboard/_components/spending-category-chart", () => ({ SpendingCategoryChart: marker("spending-category-chart") }));
 vi.mock("@/app/(app)/dashboard/_components/available-to-spend", () => ({ AvailableToSpend: marker("available-to-spend") }));
 vi.mock("@/app/(app)/dashboard/_components/insights-section", () => ({ InsightsSection: marker("insights") }));
-vi.mock("@/app/(app)/dashboard/_components/animated-number", () => ({
-  AnimatedNumber: ({ value }: { value: number }) => <span>{value}</span>,
-}));
 vi.mock("@/components/metric-card", async (orig) => {
   const m = await orig<typeof import("@/components/metric-card")>();
   // The three monthly summary cards become markers; every other card (net worth hero, tiles) stays real.
@@ -46,7 +42,7 @@ vi.mock("@/components/metric-card", async (orig) => {
     ...m,
     MetricCard: (p: React.ComponentProps<typeof m.MetricCard>) =>
       ["Monthly Income", "Monthly Expenses", "Budgets"].includes(String(p.label)) ? (
-        <div data-testid={`stat-${String(p.label)}`} data-badge={p.badgePct ?? ""} data-invert={p.invertTone ? "1" : ""}>{p.label}</div>
+        <div data-testid={`stat-${String(p.label)}`} data-badge={p.delta?.pct ?? ""} data-invert={p.delta?.invert ? "1" : ""}>{p.label}</div>
       ) : (
         <m.MetricCard {...p} />
       ),
@@ -79,7 +75,7 @@ afterEach(() => {
 
 const TARGET_FILES = [
   "src/app/(app)/dashboard/page.tsx",
-  "src/components/onboarding-tips.tsx",
+  "src/components/notice/feeds.tsx",
   "src/components/metric-card.tsx",
 ];
 // Viewport tokens: md:/lg:/max-md:/max-lg:/sm:/xl:/2xl:. Container prefixes (@sm:) are not matched by this.

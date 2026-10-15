@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { FormPage } from "@/components/templates";
@@ -49,11 +49,11 @@ function NewTemplatePage() {
       fallbackReturn={`/categories?month=${month}`}
       form="external"
       useLoad={useTemplateBudgets}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => {
         const { budgets, loading } = ctx.extra ?? { budgets: [], loading: true };
-        if (loading) return <PageSkeleton variant="list" rows={3} />;
+        if (loading) return <Notice variant="skeleton" skeleton="list" rows={3} />;
         if (budgets.length === 0) {
           return (
             <p className="text-sm text-muted-foreground">

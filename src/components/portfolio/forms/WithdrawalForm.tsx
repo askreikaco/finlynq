@@ -11,21 +11,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
-
-import { OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { OpNote, OpPage, safeReturnHref } from "./op-page";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { NEW_OP_HREF } from "./op-catalog";
 
 export default function WithdrawalForm() {
@@ -220,25 +211,25 @@ export default function WithdrawalForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit Withdrawal" : "Brokerage withdrawal"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit Withdrawal" : "Brokerage withdrawal"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0 || nonInvestmentAccounts.length === 0) {
     return (
       <OpPage title="Brokerage withdrawal">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>
             Withdrawals move cash from a brokerage cash sleeve to a non-investment account. You
             need at least one of each.
@@ -246,7 +237,7 @@ export default function WithdrawalForm() {
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -259,67 +250,38 @@ export default function WithdrawalForm() {
       saveDisabled={submitting || currencyMismatch}
       onSubmit={handleSubmit}
     >
-      <OpGroup label="Accounts">
-        <OpRow label="From" error={errors.sourceAccountId}>
-          <Select
-            items={sourceAccountLabelById}
-            value={sourceAccountId}
-            onValueChange={(v) => setSourceAccountId(v ?? "")}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-        <OpRow label="To" error={errors.destAccountId}>
-          <Select
-            items={destAccountLabelById}
-            value={destAccountId}
-            onValueChange={(v) => setDestAccountId(v ?? "")}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a destination account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {nonInvestmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
+      <FieldGroup label="Accounts">
+        <Field
+          label="From"
+          error={errors.sourceAccountId}
+          control="select"
+          value={sourceAccountId}
+          onValueChange={(v) => setSourceAccountId(v ?? "")}
+          placeholder="Pick an investment account"
+          options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
+        <Field
+          label="To"
+          error={errors.destAccountId}
+          control="select"
+          value={destAccountId}
+          onValueChange={(v) => setDestAccountId(v ?? "")}
+          placeholder="Pick a destination account"
+          options={nonInvestmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
         {eligibleSleeves.length > 1 && (
-          <OpRow label="Cash sleeve">
-            <Select
-              items={sleeveLabelById}
-              value={sourceCashSleeveHoldingId}
-              onValueChange={(v) => setSourceCashSleeveHoldingId(v ?? "")}
-            >
-              <SelectTrigger className={OP_SELECT}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {eligibleSleeves.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.name ?? `Cash ${s.currency}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </OpRow>
+          <Field
+            label="Cash sleeve"
+            control="select"
+            value={sourceCashSleeveHoldingId}
+            onValueChange={(v) => setSourceCashSleeveHoldingId(v ?? "")}
+            options={eligibleSleeves.map((s) => ({ value: String(s.id), label: s.name ?? `Cash ${s.currency}` }))}
+          />
         )}
-      </OpGroup>
+      </FieldGroup>
 
       {sourceAcct && destAcct && currencyMismatch && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="warning">
             No {destAcct.currency} cash sleeve in this brokerage. Either create a{" "}
             {destAcct.currency} sleeve, or{" "}
@@ -328,61 +290,44 @@ export default function WithdrawalForm() {
             </Link>{" "}
             inside the brokerage first.
           </OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
 
-      <OpGroup label="Amount">
-        <OpRow label={destAcct ? `Amount (${destAcct.currency})` : "Amount"} error={errors.amount}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={amount}
-            onValueChange={(nv) => setAmount(nv)}
-            placeholder="100.00"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Amount">
+        <Field
+          label={destAcct ? `Amount (${destAcct.currency})` : "Amount"}
+          error={errors.amount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={amount}
+          onValueChange={(nv) => setAmount(nv)}
+          placeholder="100.00"
+        />
+        <Field
+          label="Date"
+          error={errors.date}
+          control="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </FieldGroup>
 
-      <OpGroup label="Details">
-        <OpRow label="Payee">
-          <Input
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Note">
-          <Input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Tags">
-          <Input
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="tag1, tag2 (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Details">
+        <Field label="Payee" value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Optional" />
+        <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+        <Field
+          label="Tags"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          placeholder="tag1, tag2 (optional)"
+        />
+      </FieldGroup>
 
       {submitError && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{submitError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
     </OpPage>
   );

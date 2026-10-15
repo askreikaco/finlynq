@@ -97,11 +97,19 @@ const SNAPSHOT = {
     "/categories": {
       "kind": "route",
       "label": "Add category",
-      "href": "/categories?edit=new",
+      "href": "/categories/new",
       "icon": "LucideTag"
     },
     "/categories/[id]": {
       "kind": "fallback"
+    },
+    "/categories/[id]/edit": {
+      "kind": "hidden",
+      "reason": "is the edit flow"
+    },
+    "/categories/new": {
+      "kind": "hidden",
+      "reason": "is the create flow"
     },
     "/chat": {
       "kind": "hidden",
@@ -154,6 +162,10 @@ const SNAPSHOT = {
       "href": "/goals/new",
       "icon": "LucidePlus"
     },
+    "/goals/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
+    },
     "/goals/[id]/edit": {
       "kind": "hidden",
       "reason": "is the edit flow"
@@ -183,6 +195,10 @@ const SNAPSHOT = {
     "/loans/new": {
       "kind": "hidden",
       "reason": "is the create flow"
+    },
+    "/loans/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
     },
     "/loans/[id]/edit": {
       "kind": "hidden",
@@ -328,6 +344,10 @@ const SNAPSHOT = {
       "kind": "hidden",
       "reason": "is the create flow"
     },
+    "/subscriptions/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
+    },
     "/subscriptions/[id]/edit": {
       "kind": "hidden",
       "reason": "is the edit flow"
@@ -395,6 +415,8 @@ const SNAPSHOT = {
     "/budgets/templates/new": true,
     "/categories": false,
     "/categories/7": false,
+    "/categories/7/edit": true,
+    "/categories/new": true,
     "/chat": false,
     "/connect": false,
     "/dashboard": false,
@@ -499,6 +521,8 @@ const SNAPSHOT = {
     "/budgets/templates/new": "/budgets/templates/new",
     "/categories": "/categories",
     "/categories/7": "/categories/[id]",
+    "/categories/7/edit": "/categories/[id]/edit",
+    "/categories/new": "/categories/new",
     "/chat": "/chat",
     "/connect": "/connect",
     "/dashboard": "/dashboard",

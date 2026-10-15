@@ -5,12 +5,11 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { AlertCircle, AtSign, Check, Mail, Phone, Trash2, User } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { TW } from "@/lib/design/tokens";
 
 type Profile = {
@@ -271,34 +270,38 @@ export default function InfoPage() {
   }
 
   if (loading) {
-    return <PageSkeleton variant="list" rows={4} />;
+    return <Notice variant="skeleton" skeleton="list" rows={4} />;
   }
 
   if (error) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load your profile"
-        message="Please try again."
-        onRetry={() => {
+        retry={() => {
           setError("");
           setLoading(true);
           setReloadKey((k) => k + 1);
         }}
-      />
+      >
+        Please try again.
+      </Notice>
     );
   }
 
   if (!profile) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load your profile"
-        message="Please try again."
-        onRetry={() => {
+        retry={() => {
           setError("");
           setLoading(true);
           setReloadKey((k) => k + 1);
         }}
-      />
+      >
+        Please try again.
+      </Notice>
     );
   }
 
@@ -312,8 +315,7 @@ export default function InfoPage() {
               <User className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={User} tone="indigo">Avatar</CardTitle>
-              <CardDescription>Upload your profile picture (JPEG or PNG, max 140KB)</CardDescription>
+              <CardTitle icon={User} tone="indigo" infoLabel="About avatar" info={<>Upload your profile picture (JPEG or PNG, max 140KB)</>}>Avatar</CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -365,16 +367,10 @@ export default function InfoPage() {
       {/* Username (read-only) */}
       <Card>
         <CardHeader>
-          <CardTitle icon={AtSign} tone="cyan">Username</CardTitle>
+          <CardTitle icon={AtSign} tone="cyan" infoLabel="About username" info="Your username cannot be changed.">Username</CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            type="text"
-            value={profile.username || ""}
-            disabled
-            className="max-w-sm"
-          />
-          <p className="text-xs text-muted-foreground mt-2">Your username cannot be changed.</p>
+          <Field value={profile.username || ""} disabled className="max-w-sm" />
         </CardContent>
       </Card>
 
@@ -385,8 +381,7 @@ export default function InfoPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveDisplayName} className="space-y-3 max-w-sm">
-            <Input
-              type="text"
+            <Field
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your full name"
@@ -409,21 +404,19 @@ export default function InfoPage() {
               <Phone className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={Phone} tone="emerald">Phone</CardTitle>
-              <CardDescription>Optional phone number for your profile</CardDescription>
+              <CardTitle icon={Phone} tone="emerald" infoLabel="About phone" info="Optional phone number for your profile. Accepts +, digits, spaces, parentheses, and hyphens.">Phone</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSavePhone} className="space-y-3 max-w-sm">
-            <Input
+            <Field
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 (555) 123-4567"
               maxLength={32}
             />
-            <p className="text-xs text-muted-foreground">Accepts +, digits, spaces, parentheses, and hyphens.</p>
             {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
             {phoneStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
             <Button type="submit" disabled={phoneSaving}>
@@ -441,24 +434,30 @@ export default function InfoPage() {
               <Mail className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={Mail} tone="amber">Email</CardTitle>
-              <CardDescription>Recovery email used to reset a forgotten password</CardDescription>
+              <CardTitle icon={Mail} tone="amber" infoLabel="About email" info={<>Recovery email used to reset a forgotten password</>}>Email</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
+          <p data-keep="data" className="text-xs text-muted-foreground">
             Current: <span className="font-medium text-foreground">{profile?.email || "none set"}</span>
           </p>
           <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">New email</label>
-              <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Current password</label>
-              <Input type="password" autoComplete="current-password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} />
-            </div>
+            <Field
+              label="New email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+            <Field
+              label="Current password"
+              type="password"
+              autoComplete="current-password"
+              value={emailPw}
+              onChange={(e) => setEmailPw(e.target.value)}
+            />
             {emailError && <p className="text-sm text-destructive">{emailError}</p>}
             {emailStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {emailStatus}</p>}
             <Button type="submit" disabled={emailSaving || !email || !emailPw}>

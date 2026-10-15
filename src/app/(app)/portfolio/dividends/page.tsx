@@ -18,24 +18,14 @@
  * ListRows (tap = DetailSheet); md+ keeps the table with a sticky header.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
 import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  HEADER_DESKTOP_ONLY,
-  Amount,
-  DetailSheet,
-  ListRow,
-  MetricGrid,
-  SectionCard,
-  type DetailItem,
-  type MetricItem,
-} from "@/components/mobile";
+import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { EmptyState } from "@/components/empty-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Notice } from "@/components/notice";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -146,16 +136,16 @@ export default function DividendsPage() {
   const firstHeader = groupBy === "holding" ? "Holding" : "Period";
   const hasFilters = Boolean(from || to);
 
-  const summaryMetrics = useMemo<MetricItem[]>(() => {
+  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
     if (!data) return [];
-    const items: MetricItem[] = [];
+    const items: MetricCardProps[] = [];
     const through = localDateISO().slice(0, 7);
     const card = (ccy: string) => makeCardResolver(rangeArg, ccy);
     // Period figure (this month by default) with the page's total in the note: the big value, badge and delta share one basis.
-    const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricItem => {
+    const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricCardProps => {
       const c = card(ccy)(points, "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
+        label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -170,7 +160,7 @@ export default function DividendsPage() {
     }
     const rowsCard = makeCardResolver(rangeArg)(divRows && divRows.length > 0 ? countByMonth(divRows, (r) => r.date, through) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard), sub: rowsCard.delta ?? NO_HISTORY_CAPTION,
+      icon: Receipt, label: "Dividend rows", value: <span>{rowsCard.value ?? data.totals.rowCount}</span>, ...cardProps(rowsCard), sub: rowsCard.delta ?? NO_HISTORY_CAPTION,
       ...(rowsCard.value != null ? { note: `Total in view: ${data.totals.rowCount}` } : {}),
     });
     return items;
@@ -200,25 +190,14 @@ export default function DividendsPage() {
       id="dividends"
       title="Dividend income"
       info={periodLabel}
-      backFallback="/portfolio"
-      backLabel="Back to portfolio"
+      back={{ href: "/portfolio", label: "Back to portfolio" }}
       width="none"
       minW0={false}
       padBottom="none"
       stack="4"
       className="regular:space-y-6"
       header={{
-        actions: (
-          <>
-            <a
-              href={csvHref}
-              className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
-            >
-              <Download className="mr-2 h-4 w-4" /> CSV
-            </a>
-          </>
-        ),
-        overflow: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
+        more: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >
@@ -243,19 +222,21 @@ export default function DividendsPage() {
 
       <section aria-label="Dividend groups" className="space-y-2">
         {loading ? (
-          <PageSkeleton variant="list" rows={3} />
+          <Notice variant="skeleton" skeleton="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={reloadGrouped} />
+          <Notice variant="error" title="Couldn't load dividends" retry={reloadGrouped}>{"We couldn't load your dividend income. Please try again."}</Notice>
         ) : !data || !data.groups || data.groups.length === 0 ? (
-          <EmptyState
+          <Notice
+            variant="empty"
             icon={Coins}
             title="No dividend income yet"
-            description='Tag dividend payouts with a category named "Dividends" for them to show up here.'
             action={{ label: "Record a dividend", href: "/portfolio/new?op=income-expense" }}
-          />
+          >
+            {'Tag dividend payouts with a category named "Dividends" for them to show up here.'}
+          </Notice>
         ) : (
           <>
-              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard label={firstHeader} icon={Coins} tone="emerald" list>
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}
@@ -272,11 +253,12 @@ export default function DividendsPage() {
       </section>
 
       {openGroup && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => !o && setOpenGroup(null)}
+          onClose={() => setOpenGroup(null)}
           title={openGroup.label}
-          description={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
+          subtitle={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
           items={groupDetailItems(openGroup, reporting, reportingCcy, currencyColumns)}
         />
       )}

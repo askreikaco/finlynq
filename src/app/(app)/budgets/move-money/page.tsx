@@ -20,7 +20,7 @@ function MoveMoneyPage() {
       info={getMonthLabel(month)}
       fallbackReturn={`/categories?month=${month}`}
       form="external"
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <MoveMoneyForm

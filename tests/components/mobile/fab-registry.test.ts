@@ -103,10 +103,10 @@ describe("FAB_ROUTES table", () => {
     expect(ALL_ROUTES.length).toBeLessThanOrEqual(93);
   });
 
-  it("kind counts are 37 fallback, 15 route, 6 handler, 30 hidden, 0 redirect", () => {
+  it("kind counts are 37 fallback, 15 route, 6 handler, 35 hidden, 0 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 37, route: 15, handler: 6, hidden: 30 });
+    expect(counts).toEqual({ fallback: 37, route: 15, handler: 6, hidden: 35 });
     expect(counts.redirect).toBeUndefined();
   });
 
@@ -117,7 +117,7 @@ describe("FAB_ROUTES table", () => {
       .sort();
     expect(rows).toEqual([
       ["/accounts", "Add account", "/accounts/new"],
-      ["/categories", "Add category", "/categories?edit=new"],
+      ["/categories", "Add category", "/categories/new"],
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
       ["/goals", "Add goal", "/goals/new"],

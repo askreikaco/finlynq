@@ -23,22 +23,14 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import {
   Plus, Trash2, AlertTriangle, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { computePureActionPatch } from "@/lib/rules/execute";
 import type { Condition, Action, ConditionGroup } from "@/lib/rules/schema";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { defaultConditionForField, defaultActionForKind } from "@/lib/rules/schema";
-import { AmountInput } from "@/components/amount-input";
-
 export type Category = { id: number; name: string; type: string; group: string };
 export type Account = { id: number; name: string };
 export type Holding = { id: number; name: string };
@@ -269,25 +261,32 @@ export function RuleEditorForm({
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Grocery stores" />
-          </div>
-          <div>
-            <Label>Priority</Label>
-            <Input type="number" value={priority} onChange={(e) => setPriority(parseInt(e.target.value) || 0)} />
-          </div>
+          <Field
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Grocery stores"
+          />
+          <Field
+            label="Priority"
+            control="number"
+            value={priority}
+            onChange={(e) => setPriority(parseInt(e.target.value) || 0)}
+          />
         </div>
-        <div className="flex min-h-row items-center justify-between gap-3">
-          <Label htmlFor="rule-active" className="flex-1 cursor-pointer">Active</Label>
-          <Switch id="rule-active" checked={isActive} onCheckedChange={(v) => setIsActive(v)} className="shrink-0" />
-        </div>
+        <Field
+          label="Active"
+          control="switch"
+          id="rule-active"
+          checked={isActive}
+          onCheckedChange={(v) => setIsActive(v)}
+        />
 
         {/* Conditions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Label>Conditions</Label>
+              <span className="text-sm font-medium">Conditions</span>
               <InfoTip label="About conditions" text="All conditions must match (AND)." />
             </span>
             <Button size="sm" variant="outline" aria-label="Add condition" onClick={() => setConditions([...conditions, blankCondition()])}>
@@ -309,7 +308,7 @@ export function RuleEditorForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Label>Actions</Label>
+              <span className="text-sm font-medium">Actions</span>
               <InfoTip label="About actions" text="Applied in order." />
             </span>
             <Button size="sm" variant="outline" aria-label="Add action" onClick={() => setActions([...actions, blankAction()])}>
@@ -334,12 +333,21 @@ export function RuleEditorForm({
         {/* Live preview */}
         <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
           <span className="flex items-center gap-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Preview</Label>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Preview</span>
             <InfoTip label="About preview" text="Pure actions only. Side-effect actions (set account, transfer, investment transaction) run only on staging-approve or reconcile, so they are not in the patch." />
           </span>
           <div className="grid grid-cols-2 gap-2">
-            <Input value={samplePayee} onChange={(e) => setSamplePayee(e.target.value)} placeholder="Sample payee" />
-            <AmountInput  value={sampleAmount} onValueChange={(nv) => setSampleAmount(parseFloat(nv) || 0)} placeholder="Sample amount" />
+            <Field
+              value={samplePayee}
+              onChange={(e) => setSamplePayee(e.target.value)}
+              placeholder="Sample payee"
+            />
+            <Field
+              control="amount"
+              value={sampleAmount}
+              onValueChange={(nv) => setSampleAmount(parseFloat(nv) || 0)}
+              placeholder="Sample amount"
+            />
           </div>
           <div className="text-xs space-y-0.5 text-muted-foreground">
             <p data-keep="data">Sample: <span className="font-mono">{samplePayee || "(empty)"}</span> @ ${sampleAmount}</p>
@@ -374,102 +382,158 @@ function ConditionRow({
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={cond.field} onValueChange={(v) => setField((v ?? "payee") as Condition["field"])}>
-        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {CONDITION_FIELDS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      <Field
+        control="select"
+        value={cond.field}
+        onValueChange={(v) => setField((v ?? "payee") as Condition["field"])}
+        className="w-32"
+        options={CONDITION_FIELDS.map((f) => ({ value: f.value, label: f.label }))}
+      />
 
       {/* Operator + value vary per field. */}
       {(cond.field === "payee" || cond.field === "note" || cond.field === "tags" ||
         cond.field === "ticker" || cond.field === "security_name") && (
         <>
-          <Select value={cond.op} onValueChange={(v) => onChange({ op: (v ?? "contains") as "contains" | "exact" | "regex" } as Partial<Condition>)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="contains">contains</SelectItem>
-              <SelectItem value="exact">exact</SelectItem>
-              <SelectItem value="regex">regex</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input value={(cond as { value: string }).value ?? ""} onChange={(e) => onChange({ value: e.target.value } as Partial<Condition>)} className="flex-1" placeholder={cond.field === "ticker" ? "VTI" : ""} />
+          <Field
+            control="select"
+            value={cond.op}
+            onValueChange={(v) => onChange({ op: (v ?? "contains") as "contains" | "exact" | "regex" } as Partial<Condition>)}
+            className="w-28"
+            options={[
+              { value: "contains", label: "contains" },
+              { value: "exact", label: "exact" },
+              { value: "regex", label: "regex" },
+            ]}
+          />
+          <Field
+            value={(cond as { value: string }).value ?? ""}
+            onChange={(e) => onChange({ value: e.target.value } as Partial<Condition>)}
+            placeholder={cond.field === "ticker" ? "VTI" : ""}
+            className="flex-1"
+          />
         </>
       )}
 
       {cond.field === "quantity" && cond.op !== "between" && (
         <>
-          <Select value={cond.op} onValueChange={(v) => onChange({ op: (v ?? "gt") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gt">&gt;</SelectItem>
-              <SelectItem value="lt">&lt;</SelectItem>
-              <SelectItem value="eq">=</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <AmountInput  value={(cond as { value: number }).value} onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)} className="flex-1" />
+          <Field
+            control="select"
+            value={cond.op}
+            onValueChange={(v) => onChange({ op: (v ?? "gt") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}
+            className="w-28"
+            options={[
+              { value: "gt", label: ">" },
+              { value: "lt", label: "<" },
+              { value: "eq", label: "=" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="amount"
+            value={(cond as { value: number }).value}
+            onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)}
+            className="flex-1"
+          />
         </>
       )}
       {cond.field === "quantity" && cond.op === "between" && (
         <>
-          <Select value="between" onValueChange={(v) => onChange({ op: (v ?? "between") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gt">&gt;</SelectItem>
-              <SelectItem value="lt">&lt;</SelectItem>
-              <SelectItem value="eq">=</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <AmountInput  value={(cond as { min: number }).min ?? 0} onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
-          <AmountInput  value={(cond as { max: number }).max ?? 0} onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
+          <Field
+            control="select"
+            value="between"
+            onValueChange={(v) => onChange({ op: (v ?? "between") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}
+            className="w-28"
+            options={[
+              { value: "gt", label: ">" },
+              { value: "lt", label: "<" },
+              { value: "eq", label: "=" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="amount"
+            value={(cond as { min: number }).min ?? 0}
+            onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)}
+            placeholder="min"
+            className="w-24"
+          />
+          <Field
+            control="amount"
+            value={(cond as { max: number }).max ?? 0}
+            onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)}
+            placeholder="max"
+            className="w-24"
+          />
         </>
       )}
 
       {cond.field === "amount" && cond.op !== "between" && (
         <>
-          <Select value={cond.op} onValueChange={(v) => onChange({ op: (v ?? "gt") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gt">&gt;</SelectItem>
-              <SelectItem value="lt">&lt;</SelectItem>
-              <SelectItem value="eq">=</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <AmountInput  value={(cond as { value: number }).value} onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)} className="flex-1" />
+          <Field
+            control="select"
+            value={cond.op}
+            onValueChange={(v) => onChange({ op: (v ?? "gt") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}
+            className="w-28"
+            options={[
+              { value: "gt", label: ">" },
+              { value: "lt", label: "<" },
+              { value: "eq", label: "=" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="amount"
+            value={(cond as { value: number }).value}
+            onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)}
+            className="flex-1"
+          />
         </>
       )}
       {cond.field === "amount" && cond.op === "between" && (
         <>
-          <Select value="between" onValueChange={(v) => onChange({ op: (v ?? "between") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gt">&gt;</SelectItem>
-              <SelectItem value="lt">&lt;</SelectItem>
-              <SelectItem value="eq">=</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <AmountInput  value={(cond as { min: number }).min ?? 0} onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
-          <AmountInput  value={(cond as { max: number }).max ?? 0} onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
+          <Field
+            control="select"
+            value="between"
+            onValueChange={(v) => onChange({ op: (v ?? "between") as "gt" | "lt" | "eq" | "between" } as Partial<Condition>)}
+            className="w-28"
+            options={[
+              { value: "gt", label: ">" },
+              { value: "lt", label: "<" },
+              { value: "eq", label: "=" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="amount"
+            value={(cond as { min: number }).min ?? 0}
+            onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)}
+            placeholder="min"
+            className="w-24"
+          />
+          <Field
+            control="amount"
+            value={(cond as { max: number }).max ?? 0}
+            onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)}
+            placeholder="max"
+            className="w-24"
+          />
         </>
       )}
 
       {cond.field === "account" && (
         <>
-          <Select value={cond.op} onValueChange={(v) => onChange({ op: (v ?? "is") as "is" | "is_not" } as Partial<Condition>)}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="is">is</SelectItem>
-              <SelectItem value="is_not">is not</SelectItem>
-            </SelectContent>
-          </Select>
-          <Combobox
+          <Field
+            control="select"
+            value={cond.op}
+            onValueChange={(v) => onChange({ op: (v ?? "is") as "is" | "is_not" } as Partial<Condition>)}
+            className="w-24"
+            options={[{ value: "is", label: "is" }, { value: "is_not", label: "is not" }]}
+          />
+          <Field
+            control="combobox"
             value={String((cond as { accountId: number }).accountId)}
             onValueChange={(v) => onChange({ accountId: parseInt(v ?? "0") } as Partial<Condition>)}
-            items={accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name }))}
+            options={accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name }))}
             placeholder="Select account"
             searchPlaceholder="Search accounts…"
             emptyMessage="No matches"
@@ -480,56 +544,94 @@ function ConditionRow({
 
       {cond.field === "currency" && (
         <>
-          <Select value={cond.op} onValueChange={(v) => onChange({ op: (v ?? "is") as "is" | "is_not" } as Partial<Condition>)}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="is">is</SelectItem>
-              <SelectItem value="is_not">is not</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input value={(cond as { value: string }).value ?? ""} onChange={(e) => onChange({ value: e.target.value.toUpperCase() } as Partial<Condition>)} placeholder="USD" className="w-24" />
+          <Field
+            control="select"
+            value={cond.op}
+            onValueChange={(v) => onChange({ op: (v ?? "is") as "is" | "is_not" } as Partial<Condition>)}
+            className="w-24"
+            options={[{ value: "is", label: "is" }, { value: "is_not", label: "is not" }]}
+          />
+          <Field
+            value={(cond as { value: string }).value ?? ""}
+            onChange={(e) => onChange({ value: e.target.value.toUpperCase() } as Partial<Condition>)}
+            placeholder="USD"
+            className="w-24"
+          />
         </>
       )}
 
       {cond.field === "date" && cond.op === "weekday" && (
         <>
-          <Select value="weekday" onValueChange={(v) => onChange({ op: (v ?? "weekday") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekday">weekday is</SelectItem>
-              <SelectItem value="day_of_month">day of month</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input type="number" min={0} max={6} value={(cond as { weekday: number }).weekday} onChange={(e) => onChange({ weekday: parseInt(e.target.value) || 0 } as Partial<Condition>)} className="w-20" />
+          <Field
+            control="select"
+            value="weekday"
+            onValueChange={(v) => onChange({ op: (v ?? "weekday") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}
+            className="w-32"
+            options={[
+              { value: "weekday", label: "weekday is" },
+              { value: "day_of_month", label: "day of month" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="number"
+            min={0}
+            max={6}
+            value={(cond as { weekday: number }).weekday}
+            onChange={(e) => onChange({ weekday: parseInt(e.target.value) || 0 } as Partial<Condition>)}
+            className="w-20"
+          />
           <span className="text-xs text-muted-foreground">0=Sun…6=Sat (UTC)</span>
         </>
       )}
       {cond.field === "date" && cond.op === "day_of_month" && (
         <>
-          <Select value="day_of_month" onValueChange={(v) => onChange({ op: (v ?? "day_of_month") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekday">weekday is</SelectItem>
-              <SelectItem value="day_of_month">day of month</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input type="number" min={1} max={31} value={(cond as { day: number }).day} onChange={(e) => onChange({ day: parseInt(e.target.value) || 1 } as Partial<Condition>)} className="w-20" />
+          <Field
+            control="select"
+            value="day_of_month"
+            onValueChange={(v) => onChange({ op: (v ?? "day_of_month") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}
+            className="w-32"
+            options={[
+              { value: "weekday", label: "weekday is" },
+              { value: "day_of_month", label: "day of month" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="number"
+            min={1}
+            max={31}
+            value={(cond as { day: number }).day}
+            onChange={(e) => onChange({ day: parseInt(e.target.value) || 1 } as Partial<Condition>)}
+            className="w-20"
+          />
         </>
       )}
       {cond.field === "date" && cond.op === "between" && (
         <>
-          <Select value="between" onValueChange={(v) => onChange({ op: (v ?? "between") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekday">weekday is</SelectItem>
-              <SelectItem value="day_of_month">day of month</SelectItem>
-              <SelectItem value="between">between</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input type="date" value={(cond as { from: string }).from} onChange={(e) => onChange({ from: e.target.value } as Partial<Condition>)} className="w-36" />
-          <Input type="date" value={(cond as { to: string }).to} onChange={(e) => onChange({ to: e.target.value } as Partial<Condition>)} className="w-36" />
+          <Field
+            control="select"
+            value="between"
+            onValueChange={(v) => onChange({ op: (v ?? "between") as "weekday" | "day_of_month" | "between" } as Partial<Condition>)}
+            className="w-32"
+            options={[
+              { value: "weekday", label: "weekday is" },
+              { value: "day_of_month", label: "day of month" },
+              { value: "between", label: "between" },
+            ]}
+          />
+          <Field
+            control="date"
+            value={(cond as { from: string }).from}
+            onChange={(e) => onChange({ from: e.target.value } as Partial<Condition>)}
+            className="w-36"
+          />
+          <Field
+            control="date"
+            value={(cond as { to: string }).to}
+            onChange={(e) => onChange({ to: e.target.value } as Partial<Condition>)}
+            className="w-36"
+          />
         </>
       )}
 
@@ -585,19 +687,21 @@ function ActionRow({
       }`}
     >
       <div className={isInvestmentOp ? "flex items-center gap-2" : "contents"}>
-      <Select value={action.kind} onValueChange={(v) => setKind((v ?? "set_category") as Action["kind"])}>
-        <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {ACTION_KINDS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+        <Field
+          control="select"
+          value={action.kind}
+          onValueChange={(v) => setKind((v ?? "set_category") as Action["kind"])}
+          className="w-56"
+          options={ACTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+        />
 
       {action.kind === "set_category" && (
-        <Combobox
+        <Field
+          control="combobox"
           value={String(action.categoryId)}
           onValueChange={(v) => onChange({ categoryId: parseInt(v ?? "0") } as Partial<Action>)}
-          items={sortCategory(
-            categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
+          options={sortCategory(
+            categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
             (c) => Number(c.value),
             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
           )}
@@ -608,16 +712,27 @@ function ActionRow({
         />
       )}
       {action.kind === "set_tags" && (
-        <Input value={action.tags} onChange={(e) => onChange({ tags: e.target.value } as Partial<Action>)} placeholder="tag1, tag2" className="flex-1" />
+        <Field
+          value={action.tags}
+          onChange={(e) => onChange({ tags: e.target.value } as Partial<Action>)}
+          placeholder="tag1, tag2"
+          className="flex-1"
+        />
       )}
       {action.kind === "rename_payee" && (
-        <Input value={action.to} onChange={(e) => onChange({ to: e.target.value } as Partial<Action>)} placeholder="Clean payee" className="flex-1" />
+        <Field
+          value={action.to}
+          onChange={(e) => onChange({ to: e.target.value } as Partial<Action>)}
+          placeholder="Clean payee"
+          className="flex-1"
+        />
       )}
       {action.kind === "set_account" && (
-        <Combobox
+        <Field
+          control="combobox"
           value={String(action.accountId)}
           onValueChange={(v) => onChange({ accountId: parseInt(v ?? "0") } as Partial<Action>)}
-          items={accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name }))}
+          options={accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name }))}
           placeholder="Select account"
           searchPlaceholder="Search accounts…"
           emptyMessage="No matches"
@@ -625,13 +740,19 @@ function ActionRow({
         />
       )}
       {action.kind === "set_entered_currency" && (
-        <Input value={action.currency} onChange={(e) => onChange({ currency: e.target.value.toUpperCase() } as Partial<Action>)} placeholder="USD" className="w-24" />
+        <Field
+          value={action.currency}
+          onChange={(e) => onChange({ currency: e.target.value.toUpperCase() } as Partial<Action>)}
+          placeholder="USD"
+          className="w-24"
+        />
       )}
       {action.kind === "set_portfolio_holding" && (
-        <Combobox
+        <Field
+          control="combobox"
           value={String(action.holdingId)}
           onValueChange={(v) => onChange({ holdingId: parseInt(v ?? "0") } as Partial<Action>)}
-          items={holdings.map((h): ComboboxItemShape => ({ value: String(h.id), label: h.name }))}
+          options={holdings.map((h): FieldComboboxOption => ({ value: String(h.id), label: h.name }))}
           placeholder="Select holding"
           searchPlaceholder="Search holdings…"
           emptyMessage="No matches"
@@ -639,10 +760,11 @@ function ActionRow({
         />
       )}
       {action.kind === "create_transfer" && (
-        <Combobox
+        <Field
+          control="combobox"
           value={String(action.destAccountId)}
           onValueChange={(v) => onChange({ destAccountId: parseInt(v ?? "0") } as Partial<Action>)}
-          items={accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name }))}
+          options={accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name }))}
           placeholder="Select destination account"
           searchPlaceholder="Search accounts…"
           emptyMessage="No matches"
@@ -715,127 +837,110 @@ function InvestmentOpFields({
   // Shares-settled income needs qty + value bindings, exactly like a trade.
   const usesTradeBindings = isTrade || isShares;
 
-  const acctItems = accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name }));
+  const acctItems = accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name }));
 
   return (
     <div className="ml-2 grid gap-2 rounded-md border bg-muted/20 p-2 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        <Label className="w-28 text-xs text-muted-foreground">Transaction</Label>
-        <Select
-          value={op}
-          onValueChange={(v) =>
-            // Switching op resets op-specific fields so a hidden picker's stale
-            // value can't leak into the payload: settle mode (shares only
-            // applies to dividend/interest), the deposit/withdrawal counterparty,
-            // and the income category all clear here. The user re-fills whatever
-            // the new op surfaces below.
-            onChange({
-              op: (v ?? "buy"),
-              settleAs: undefined,
-              counterpartyAccountId: undefined,
-              categoryId: undefined,
-            } as Partial<Action>)
-          }
-        >
-          <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {INVESTMENT_OPS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <Field
+        label="Transaction"
+        control="select"
+        value={op}
+        onValueChange={(v) =>
+          // Switching op resets op-specific fields so a hidden picker's stale
+          // value can't leak into the payload: settle mode (shares only
+          // applies to dividend/interest), the deposit/withdrawal counterparty,
+          // and the income category all clear here. The user re-fills whatever
+          // the new op surfaces below.
+          onChange({
+            op: (v ?? "buy"),
+            settleAs: undefined,
+            counterpartyAccountId: undefined,
+            categoryId: undefined,
+          } as Partial<Action>)
+        }
+        options={INVESTMENT_OPS.map((o) => ({ value: o.value, label: o.label }))}
+        className="w-56"
+      />
 
       {isIncomeOp && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="w-28 text-xs text-muted-foreground">Settle as</Label>
-          <Select
-            value={action.settleAs ?? "cash"}
-            onValueChange={(v) =>
-              onChange(
-                (v === "shares"
-                  ? {
-                      settleAs: "shares",
-                      // Shares need qty + value; seed row bindings if blank.
-                      qty: action.qty ?? { from: "row_quantity" },
-                      total: action.total ?? { from: "row_amount" },
-                    }
-                  : { settleAs: "cash" }) as Partial<Action>,
-              )
-            }
-          >
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">Cash sleeve</SelectItem>
-              <SelectItem value="shares">Shares (reinvested / DRIP)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Field
+          label="Settle as"
+          control="select"
+          value={action.settleAs ?? "cash"}
+          onValueChange={(v) =>
+            onChange(
+              (v === "shares"
+                ? {
+                  settleAs: "shares",
+                  // Shares need qty + value; seed row bindings if blank.
+                  qty: action.qty ?? { from: "row_quantity" },
+                  total: action.total ?? { from: "row_amount" },
+                }
+                : { settleAs: "cash" }) as Partial<Action>,
+            )
+          }
+          options={[
+            { value: "cash", label: "Cash sleeve" },
+            { value: "shares", label: "Shares (reinvested / DRIP)" },
+          ]}
+          className="w-56"
+        />
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Label className="w-28 text-xs text-muted-foreground">Investment account</Label>
-        <Combobox
-          value={String(action.investmentAccountId || "")}
-          onValueChange={(v) => onChange({ investmentAccountId: parseInt(v ?? "0") } as Partial<Action>)}
-          items={acctItems}
-          placeholder="Select investment account"
+      <Field
+        label="Investment account"
+        control="combobox"
+        value={String(action.investmentAccountId || "")}
+        onValueChange={(v) => onChange({ investmentAccountId: parseInt(v ?? "0") } as Partial<Action>)}
+        options={acctItems}
+        placeholder="Select investment account"
+        searchPlaceholder="Search accounts…"
+        emptyMessage="No matches"
+        className="flex-1 min-w-48"
+      />
+
+      {isCashOnAccount && (
+        <Field
+          label="Bank account"
+          control="combobox"
+          value={String(action.counterpartyAccountId ?? "")}
+          onValueChange={(v) => onChange({ counterpartyAccountId: parseInt(v ?? "0") } as Partial<Action>)}
+          options={acctItems}
+          placeholder="Select bank (non-investment) account"
           searchPlaceholder="Search accounts…"
           emptyMessage="No matches"
           className="flex-1 min-w-48"
         />
-      </div>
-
-      {isCashOnAccount && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="w-28 text-xs text-muted-foreground">Bank account</Label>
-          <Combobox
-            value={String(action.counterpartyAccountId ?? "")}
-            onValueChange={(v) => onChange({ counterpartyAccountId: parseInt(v ?? "0") } as Partial<Action>)}
-            items={acctItems}
-            placeholder="Select bank (non-investment) account"
-            searchPlaceholder="Search accounts…"
-            emptyMessage="No matches"
-            className="flex-1 min-w-48"
-          />
-        </div>
       )}
 
       {usesPosition && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="w-28 text-xs text-muted-foreground">Holding</Label>
-          <label className="flex items-center gap-2 text-xs">
-            <Switch
-              checked={action.useRowTicker ?? false}
-              onCheckedChange={(v) =>
-                onChange({
-                  useRowTicker: v,
-                  ...(v ? { holdingId: undefined } : {}),
-                } as Partial<Action>)
-              }
-            />
-            Resolve from row ticker
-          </label>
+        <>
+          <Field
+            label="Resolve holding from row ticker"
+            control="switch"
+            info={!isTrade && !isShares ? "Optional." : isShares ? "Required." : undefined}
+            checked={action.useRowTicker ?? false}
+            onCheckedChange={(v) =>
+              onChange({
+                useRowTicker: v,
+                ...(v ? { holdingId: undefined } : {}),
+              } as Partial<Action>)
+            }
+          />
           {!action.useRowTicker && (
-            <Combobox
+            <Field
+              label="Holding"
+              control="combobox"
               value={String(action.holdingId ?? "")}
               onValueChange={(v) => onChange({ holdingId: parseInt(v ?? "0") } as Partial<Action>)}
-              items={holdings.map((h): ComboboxItemShape => ({ value: String(h.id), label: h.name }))}
+              options={holdings.map((h): FieldComboboxOption => ({ value: String(h.id), label: h.name }))}
               placeholder="Select holding"
               searchPlaceholder="Search holdings…"
               emptyMessage="No matches"
               className="flex-1 min-w-48"
             />
           )}
-          {!isTrade && !isShares && action.useRowTicker && (
-            <span className="text-xs text-muted-foreground italic">
-              optional
-            </span>
-          )}
-          {isShares && (
-            <span className="text-xs text-muted-foreground italic">
-              required
-            </span>
-          )}
-        </div>
+        </>
       )}
 
       {usesTradeBindings ? (
@@ -855,29 +960,28 @@ function InvestmentOpFields({
       )}
 
       {usesCategory && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="w-28 text-xs text-muted-foreground">Category</Label>
-          <Combobox
-            value={String(action.categoryId ?? 0)}
-            onValueChange={(v) => {
-              const n = parseInt(v ?? "0");
-              onChange({ categoryId: n > 0 ? n : undefined } as Partial<Action>);
-            }}
-            items={[
-              { value: "0", label: `Auto — ${autoCategoryName}` },
-              ...categories
-                .map((c): ComboboxItemShape => ({
-                  value: String(c.id),
-                  label: `${c.group} — ${c.name}`,
-                }))
-                .sort((a, z) => (a.label ?? "").localeCompare(z.label ?? "")),
-            ]}
-            placeholder="Select category"
-            searchPlaceholder="Search categories…"
-            emptyMessage="No matches"
-            className="flex-1 min-w-48"
-          />
-        </div>
+        <Field
+          label="Category"
+          control="combobox"
+          value={String(action.categoryId ?? 0)}
+          onValueChange={(v) => {
+            const n = parseInt(v ?? "0");
+            onChange({ categoryId: n > 0 ? n : undefined } as Partial<Action>);
+          }}
+          options={[
+            { value: "0", label: `Auto — ${autoCategoryName}` },
+            ...categories
+              .map((c): FieldComboboxOption => ({
+                value: String(c.id),
+                label: `${c.group} — ${c.name}`,
+              }))
+              .sort((a, z) => (a.label ?? "").localeCompare(z.label ?? "")),
+          ]}
+          placeholder="Select category"
+          searchPlaceholder="Search categories…"
+          emptyMessage="No matches"
+          className="flex-1 min-w-48"
+        />
       )}
     </div>
   );
@@ -899,8 +1003,9 @@ function VarBindingRow({
   const from = value?.from ?? "";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Label className="w-28 text-xs text-muted-foreground">{label}{optional ? " (optional)" : ""}</Label>
-      <Select
+      <Field
+        label={<>{label}{optional ? " (optional)" : ""}</>}
+        control="select"
         value={from || "__unset"}
         onValueChange={(v) => {
           const next = v ?? "__unset";
@@ -908,19 +1013,19 @@ function VarBindingRow({
           if (next === "fixed") return onChange({ from: "fixed", value: value?.value ?? 0 });
           return onChange({ from: next });
         }}
-      >
-        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {optional && <SelectItem value="__unset">— none —</SelectItem>}
-          {VAR_SOURCES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+        className="w-40"
+        options={[
+          ...(optional ? [{ value: "__unset", label: "— none —" }] : []),
+          ...VAR_SOURCES.map((s) => ({ value: s.value, label: s.label })),
+        ]}
+      />
       {from === "fixed" && (
-        <AmountInput
+        <Field
+          control="amount"
           value={value?.value ?? 0}
           onValueChange={(nv) => onChange({ from: "fixed", value: parseFloat(nv) || 0 })}
-          className="w-28"
           placeholder="value"
+          className="w-28"
         />
       )}
     </div>

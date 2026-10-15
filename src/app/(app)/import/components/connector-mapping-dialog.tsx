@@ -1,25 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field } from "@/components/ui/field";
+import { Overlay } from "@/components/ui/overlay";
 
 export interface MappingDialogState {
   accountAutoCreateByDefault: boolean;
@@ -67,119 +51,78 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
     () => probe.finlynq.categories.map((c) => ({ id: c.id, label: `${c.name} (${c.type})` })),
     [probe.finlynq.categories],
   );
-  const accountLabelById = useMemo(() => new Map(finlynqAccountOptions.map((o) => [o.id, o.label])), [finlynqAccountOptions]);
-  const categoryLabelById = useMemo(() => new Map(finlynqCategoryOptions.map((o) => [o.id, o.label])), [finlynqCategoryOptions]);
-
-  const renderAccountValue = (raw: unknown): React.ReactNode => {
-    const v = typeof raw === "string" ? raw : "";
-    if (v === "__auto") return "Auto-create";
-    if (v === "__skip") return "Skip";
-    const n = Number(v);
-    return accountLabelById.get(n) ?? v;
-  };
-  const renderCategoryValue = (raw: unknown): React.ReactNode => {
-    const v = typeof raw === "string" ? raw : "";
-    if (v === "__auto") return "Auto-create";
-    if (v === "__none") return "Leave uncategorized";
-    const n = Number(v);
-    return categoryLabelById.get(n) ?? v;
-  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-3xl max-h-[85dvh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Map WealthPosition to Finlynq</DialogTitle>
-          <DialogDescription>
-            Every WealthPosition account and category needs a Finlynq counterpart. By default,
-            missing ones will be auto-created for you — you can override any mapping below.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="2xl"
+      title="Map WealthPosition to Finlynq"
+      info={<>Every WealthPosition account and category needs a Finlynq counterpart. By default,
+            missing ones will be auto-created for you — you can override any mapping below.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false) },
+        { label: "Preview sync", kind: "primary", onClick: () => onConfirm(s) },
+      ]}
+    >
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Defaults */}
           <div className="space-y-3 rounded-md border p-3 bg-muted/30">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="accts-auto" className="text-sm">
-                Auto-create missing accounts ({probe.external.accounts.length} total)
-              </Label>
-              <Switch
-                id="accts-auto"
-                checked={s.accountAutoCreateByDefault}
-                onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
-                className="shrink-0"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="cats-auto" className="text-sm">
-                Auto-create missing categories ({probe.external.categories.length} total)
-              </Label>
-              <Switch
-                id="cats-auto"
-                checked={s.categoryAutoCreateByDefault}
-                onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
-                className="shrink-0"
-              />
-            </div>
+            <Field
+              label={<>Auto-create missing accounts ({probe.external.accounts.length} total)</>}
+              control="switch"
+              id="accts-auto"
+              checked={s.accountAutoCreateByDefault}
+              onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
+            />
+            <Field
+              label={<>Auto-create missing categories ({probe.external.categories.length} total)</>}
+              control="switch"
+              id="cats-auto"
+              checked={s.categoryAutoCreateByDefault}
+              onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
+            />
           </div>
 
           {/* System categories */}
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Transfer category (for 2-account transfers)</Label>
-              <Select
-                value={s.transferCategoryId === null ? "__auto" : String(s.transferCategoryId)}
-                onValueChange={(v) => {
-                  if (!v || v === "__auto") setS({ ...s, transferCategoryId: null });
-                  else setS({ ...s, transferCategoryId: Number(v) });
-                }}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue>{(v: unknown) => (v === "__auto" ? "Auto-create \u201cTransfers\u201d" : renderCategoryValue(v))}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__auto">Auto-create &ldquo;Transfers&rdquo;</SelectItem>
-                  {finlynqCategoryOptions.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Opening-balance category (for reconciliation adjustments)</Label>
-              <Select
-                value={s.openingBalanceCategoryId === null ? "__auto" : String(s.openingBalanceCategoryId)}
-                onValueChange={(v) => {
-                  if (!v || v === "__auto") setS({ ...s, openingBalanceCategoryId: null });
-                  else setS({ ...s, openingBalanceCategoryId: Number(v) });
-                }}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue>{(v: unknown) => (v === "__auto" ? "Auto-create \u201cOpening Balance\u201d" : renderCategoryValue(v))}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__auto">Auto-create &ldquo;Opening Balance&rdquo;</SelectItem>
-                  {finlynqCategoryOptions.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">Start date (optional — leave blank to pull everything)</Label>
-            <Input
-              type="date"
-              value={s.startDate}
-              onChange={(e) => setS({ ...s, startDate: e.target.value })}
-              className="h-9 text-sm"
+            <Field
+              label="Transfer category"
+              info="Used for 2-account transfers."
+              control="select"
+              value={s.transferCategoryId === null ? "__auto" : String(s.transferCategoryId)}
+              onValueChange={(v) => {
+                if (!v || v === "__auto") setS({ ...s, transferCategoryId: null });
+                else setS({ ...s, transferCategoryId: Number(v) });
+              }}
+              options={[
+                { value: "__auto", label: "Auto-create \u201cTransfers\u201d" },
+                ...finlynqCategoryOptions.map((c) => ({ value: String(c.id), label: c.label })),
+              ]}
+            />
+            <Field
+              label="Opening-balance category"
+              info="Used for reconciliation adjustments."
+              control="select"
+              value={s.openingBalanceCategoryId === null ? "__auto" : String(s.openingBalanceCategoryId)}
+              onValueChange={(v) => {
+                if (!v || v === "__auto") setS({ ...s, openingBalanceCategoryId: null });
+                else setS({ ...s, openingBalanceCategoryId: Number(v) });
+              }}
+              options={[
+                { value: "__auto", label: "Auto-create \u201cOpening Balance\u201d" },
+                ...finlynqCategoryOptions.map((c) => ({ value: String(c.id), label: c.label })),
+              ]}
             />
           </div>
+
+          <Field
+            label="Start date (optional — leave blank to pull everything)"
+            control="date"
+            value={s.startDate}
+            onChange={(e) => setS({ ...s, startDate: e.target.value })}
+            compact
+          />
 
           {/* Advanced per-row mapping */}
           <div>
@@ -205,7 +148,11 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
                           ({a.type}/{a.currency})
                         </span>
                       </div>
-                      <Select
+                      <Field
+                        control="select"
+                        compact
+                        aria-label={`Account mapping for ${a.name}`}
+                        className="flex-1"
                         value={
                           s.accountOverrides[a.id] !== undefined
                             ? String(s.accountOverrides[a.id])
@@ -222,19 +169,12 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
                           }
                           setS({ ...s, accountOverrides: overrides });
                         }}
-                      >
-                        <SelectTrigger className="h-7 text-xs flex-1">
-                          <SelectValue>{renderAccountValue}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__auto">Auto-create</SelectItem>
-                          {finlynqAccountOptions.map((o) => (
-                            <SelectItem key={o.id} value={String(o.id)}>
-                              {o.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={[
+                          { value: "__auto", label: "Auto-create" },
+                          { value: "__skip", label: "Skip", disabled: true },
+                          ...finlynqAccountOptions.map((o) => ({ value: String(o.id), label: o.label })),
+                        ]}
+                      />
                     </div>
                   ))}
                 </div>
@@ -248,7 +188,11 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
                         {c.name}{" "}
                         <span className="text-muted-foreground">({c.type})</span>
                       </div>
-                      <Select
+                      <Field
+                        control="select"
+                        compact
+                        aria-label={`Category mapping for ${c.name}`}
+                        className="flex-1"
                         value={
                           s.categoryOverrides[c.id] === null
                             ? "__none"
@@ -265,20 +209,12 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
                           else overrides[c.id] = Number(v);
                           setS({ ...s, categoryOverrides: overrides });
                         }}
-                      >
-                        <SelectTrigger className="h-7 text-xs flex-1">
-                          <SelectValue>{renderCategoryValue}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__auto">Auto-create</SelectItem>
-                          <SelectItem value="__none">Leave uncategorized</SelectItem>
-                          {finlynqCategoryOptions.map((o) => (
-                            <SelectItem key={o.id} value={String(o.id)}>
-                              {o.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={[
+                          { value: "__auto", label: "Auto-create" },
+                          { value: "__none", label: "Leave uncategorized" },
+                          ...finlynqCategoryOptions.map((o) => ({ value: String(o.id), label: o.label })),
+                        ]}
+                      />
                     </div>
                   ))}
                 </div>
@@ -286,14 +222,6 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => onConfirm(s)}>Preview sync</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

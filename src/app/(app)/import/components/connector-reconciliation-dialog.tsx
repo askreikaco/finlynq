@@ -1,19 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
 
 interface ReconciliationRow {
@@ -101,21 +93,26 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-3xl max-h-[85dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Balance reconciliation</DialogTitle>
-          <DialogDescription>
-            Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
-            to missing opening balances before WP&rsquo;s oldest imported transaction.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="2xl"
+      title="Balance reconciliation"
+      info={<>Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
+            to missing opening balances before WP&rsquo;s oldest imported transaction.</>}
+      actions={[
+        { label: "Close", onClick: () => onOpenChange(false) },
+      ]}
+    >
         <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-1.5">
-            <Label className="text-xs">Reconcile as of</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />
-          </div>
+          <Field
+            label="Reconcile as of"
+            control="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            compact
+            className="flex-1"
+          />
           <Button onClick={fetchReconciliation} disabled={loading}>
             {loading && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
             Check
@@ -131,7 +128,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
 
         {result && (
           <div className="space-y-3">
-            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard list>
               {result.rows.map((row) => (
                 <div key={row.finlynqAccountId} className="py-1">
                   <ListRow
@@ -155,7 +152,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
                     }
                   />
                   {!row.matches && (
-                    <div className="flex justify-end px-1 pb-2">
+                    <div className="flex justify-end px-4 pb-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -181,13 +178,6 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
             )}
           </div>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

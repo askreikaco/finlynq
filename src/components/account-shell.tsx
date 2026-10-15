@@ -45,8 +45,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
       <PageHeader
         title="Account"
         info="Profile, login, API key, privacy, and backup / restore"
-        backHref={showBackButton ? "/account" : undefined}
-        backLabel={showBackButton ? "Back to Account" : undefined}
+        back={showBackButton ? { href: "/account", label: "Back to Account" } : undefined}
       />
 
       {/* Tab Navigation */}

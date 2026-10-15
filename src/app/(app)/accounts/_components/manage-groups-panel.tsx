@@ -17,15 +17,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
 import {
   OTHER_GROUP,
   orderGroups,
@@ -33,6 +32,7 @@ import {
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
+import { Field } from "@/components/ui/field";
 import { ArrowDown, ArrowUp, Check, Layers, Merge, MoreHorizontal, Pencil, X } from "lucide-react";
 
 const TYPE_LABELS: Record<AccountGroupType, string> = {
@@ -173,11 +173,10 @@ export function ManageGroupsPanel({
     if (isEditing) {
       return (
         <li key={g} className="flex min-h-row items-center gap-2 px-4 py-1.5">
-          <Input
+          <Field
             value={editValue}
             aria-label={`New name for ${g}`}
             onChange={(e) => setEditValue(e.target.value)}
-            className="h-9 flex-1"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -187,6 +186,8 @@ export function ManageGroupsPanel({
                 setEditing(null);
               }
             }}
+            compact
+            className="flex-1"
           />
           <Button
             type="button"
@@ -216,55 +217,59 @@ export function ManageGroupsPanel({
     }
 
     return (
-      <li key={g} className="flex min-h-row items-center gap-2 pl-4 pr-1">
-        <span className="min-w-0 flex-1 truncate py-2.5 text-base regular:text-sm">{g}</span>
-        {!isOther && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 text-muted-foreground regular:pointer-fine:size-8"
+      <li key={g}>
+        <ListRow
+          title={g}
+          actions={
+            !isOther ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 text-muted-foreground regular:pointer-fine:size-8"
+                    disabled={busy}
+                    aria-label={`Actions for ${g}`}
+                    title="Group actions"
+                  />
+                }
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-48">
+                <DropdownMenuItem
+                  disabled={busy || movableIndex <= 0}
+                  onClick={() => move(type, g, -1)}
+                >
+                  <ArrowUp className="size-4" aria-hidden />
+                  Move up
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={busy || movableIndex < 0 || movableIndex >= movable.length - 1}
+                  onClick={() => move(type, g, 1)}
+                >
+                  <ArrowDown className="size-4" aria-hidden />
+                  Move down
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={busy} onClick={() => startRename(type, g)}>
+                  <Pencil className="size-4" aria-hidden />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
                   disabled={busy}
-                  aria-label={`Actions for ${g}`}
-                  title="Group actions"
-                />
-              }
-            >
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-auto min-w-48">
-              <DropdownMenuItem
-                disabled={busy || movableIndex <= 0}
-                onClick={() => move(type, g, -1)}
-              >
-                <ArrowUp className="size-4" aria-hidden />
-                Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={busy || movableIndex < 0 || movableIndex >= movable.length - 1}
-                onClick={() => move(type, g, 1)}
-              >
-                <ArrowDown className="size-4" aria-hidden />
-                Move down
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={busy} onClick={() => startRename(type, g)}>
-                <Pencil className="size-4" aria-hidden />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={busy}
-                onClick={() => setMergeTarget({ type, name: g })}
-              >
-                <Merge className="size-4" aria-hidden />
-                Merge into Other
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+                  onClick={() => setMergeTarget({ type, name: g })}
+                >
+                  <Merge className="size-4" aria-hidden />
+                  Merge into Other
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            ) : undefined
+          }
+        />
       </li>
     );
   }
@@ -299,13 +304,12 @@ export function ManageGroupsPanel({
         </p>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={mergeTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setMergeTarget(null);
-        }}
+        onClose={() => setMergeTarget(null)}
         title="Merge into Other"
-        description={
+        message={
           mergeTarget
             ? `Move every account in "${mergeTarget.name}" into "Other"? This can't be undone automatically, but you can rename the accounts back later.`
             : ""

@@ -1,25 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field } from "@/components/ui/field";
 import { ArrowRight, FileText } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 
 const FIELD_OPTIONS = [
   { value: "", label: "Skip" },
@@ -100,60 +86,54 @@ export function CsvMapperDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Map CSV Columns
-          </DialogTitle>
-          <DialogDescription>
-            Map the columns in <span className="font-medium">{file.name}</span> to transaction fields.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="Map CSV Columns"
+      info={<>Map the columns in <span className="font-medium">{file.name}</span> to transaction fields.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },
+        { label: isMapping ? "Processing…" : "Preview Import", kind: "primary", onClick: handleSubmit, disabled: !isValid || isMapping },
+      ]}
+    >
         <div className="overflow-auto flex-1 space-y-3 pr-1">
-          <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
+          <p data-keep="label" className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {headers.map((header) => (
             <div key={header} className="flex items-center gap-2">
               <Badge variant="outline" className="min-w-[140px] justify-center font-mono text-xs shrink-0 truncate">
                 {header}
               </Badge>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Select value={mapping[header] ?? ""} onValueChange={(v) => updateMapping(header, v === "_skip" ? "" : (v ?? ""))}>
-                <SelectTrigger className="w-52" size="sm">
-                  <SelectValue placeholder="Skip" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FIELD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value || "_skip"} value={opt.value || "_skip"}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Field
+                control="select"
+                value={mapping[header] ?? ""}
+                onValueChange={(v) => updateMapping(header, v === "_skip" ? "" : (v ?? ""))}
+                placeholder="Skip"
+                compact
+                className="w-52"
+                options={FIELD_OPTIONS.map((opt) => ({ value: opt.value || "_skip", label: opt.label }))}
+              />
             </div>
           ))}
 
           {!hasAccount && (
             <div className="mt-4 space-y-1.5">
-              <p className="text-xs font-medium">Default Account</p>
-              <p className="text-xs text-muted-foreground">
-                Required when your CSV has no Account column.
+              <p className="flex items-center gap-0.5 text-xs font-medium">
+                Default Account
+                <InfoTip label="About default account" text="Required when your CSV has no Account column." />
               </p>
               {accounts.length > 0 ? (
-                <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
-                  <SelectTrigger className="w-60">
-                    <SelectValue placeholder="Select account…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a} value={a}>{a}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field
+                  control="select"
+                  value={defaultAccount}
+                  onValueChange={(v) => setDefaultAccount(v ?? "")}
+                  placeholder="Select account…"
+                  className="w-60"
+                  options={accounts.map((a) => ({ value: a, label: a }))}
+                />
               ) : (
-                <Input
+                <Field
                   placeholder="Account name"
                   value={defaultAccount}
                   onChange={(e) => setDefaultAccount(e.target.value)}
@@ -175,16 +155,6 @@ export function CsvMapperDialog({
             Select a default account or map an Account column.
           </p>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isMapping}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isMapping}>
-            {isMapping ? "Processing…" : "Preview Import"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

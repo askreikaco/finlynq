@@ -4,16 +4,11 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { ErrorState } from "@/components/error-state";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { OnboardingTips } from "@/components/onboarding-tips";
+import { Overlay } from "@/components/ui/overlay";
+import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine, Plus, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
@@ -37,14 +32,14 @@ import type { RangeSelection } from "@/lib/metrics/period";
 import type { SortPref } from "../_types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
-import { PageHeader, HEADER_DESKTOP_ONLY, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { PageHeader, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { TransactionFormScreen } from "./transaction-form-screen";
 import { withSel } from "@/lib/list-detail/selection";
-import { EmptyState } from "@/components/empty-state";
 import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
 import { canQueueOfflineDelete, isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineDelete, usePendingTransactions } from "@/lib/data/local-write-queue";
 
 /**
@@ -309,7 +304,7 @@ export function TransactionsWorkspace({
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  // Split view (list 2/3 | the entry form 1/3) from regular up, selection in ?sel. Off in the account-scoped embed.
+  // Split view (list 3/4 | the entry form 1/4) from regular up, selection in ?sel. Off in the account-scoped embed.
   const listDetail = useListDetail();
   const splitView = listDetail.split && !locked;
   // Other leg of each transfer row, so rows can show "From … To …".
@@ -644,7 +639,7 @@ export function TransactionsWorkspace({
     !!(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag) ||
     colFilters.length > 0 ||
     tb.list.activeCount > 0;
-  if (loadError) return <ErrorState title="Couldn't load transactions" message="We couldn't load your transactions. Please try again." onRetry={() => { void loadTxns(); }} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load transactions" retry={() => { void loadTxns(); }}>{"We couldn't load your transactions. Please try again."}</Notice>;
 
   return (
     /* FINLYNQ-52 (was issue #59 workaround): the (app)-shell width clamp
@@ -654,102 +649,27 @@ export function TransactionsWorkspace({
        horizontally rather than truncate. */
     <div className="space-y-6">
       {showHeader && (
-        <>
-          <PageHeader
-            className="flex flex-wrap items-center justify-between gap-3"
-            title="Transactions"
-            info="Manage and track all your financial transactions"
-            filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
-            bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
-            overflow={[
-          { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
-          { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
-          { label: "Sell", icon: Banknote, onSelect: () => router.push("/portfolio/new/sell") },
-          { label: "Swap", icon: Repeat, onSelect: () => router.push("/portfolio/new/swap") },
-          { label: "In-kind transfer", icon: Send, onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
-          { label: "Income / expense", icon: HandCoins, onSelect: () => router.push("/portfolio/new/income-expense") },
-          { label: "FX conversion", icon: CircleDollarSign, onSelect: () => router.push("/portfolio/new/fx-conversion") },
-          { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
-          { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
-          { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
-          { label: exporting ? "Exporting…" : "Export CSV", icon: Download, onSelect: handleExport, disabled: exporting || total === 0 },
-            ]}
-            actions={
-            <>
-              {/* Split button: main click → /transactions/new page. Chevron →
-                  dropdown with every kind (Transfer + the 6 portfolio operations).
-                  Phase 2 portfolio-ops UX (2026-05-25). */}
-              <Button
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-                onClick={() => (splitView ? listDetail.selectNew() : router.push("/transactions/new"))}
-                aria-label="Add Transaction"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add<span className="max-regular:sr-only"> Transaction</span>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className={HEADER_DESKTOP_ONLY}
-                      aria-label="More transaction types"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="min-w-56">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Quick add</DropdownMenuLabel>
-                    <DropdownMenuItem icon={<Receipt />} onClick={() => router.push("/transactions/new")}>
-                      Transaction
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowRightLeft />} onClick={() => router.push("/transactions/new?kind=transfer")}>
-                      Transfer
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Investment operations</DropdownMenuLabel>
-                    <DropdownMenuItem icon={<ShoppingCart />} onClick={() => router.push("/portfolio/new/buy")}>
-                      Buy
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Banknote />} onClick={() => router.push("/portfolio/new/sell")}>
-                      Sell
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Repeat />} onClick={() => router.push("/portfolio/new/swap")}>
-                      Swap
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Send />} onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
-                      In-kind transfer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<HandCoins />} onClick={() => router.push("/portfolio/new/income-expense")}>
-                      Income / expense
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<CircleDollarSign />} onClick={() => router.push("/portfolio/new/fx-conversion")}>
-                      FX conversion
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowDownToLine />} onClick={() => router.push("/portfolio/new/deposit")}>
-                      Brokerage deposit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowUpFromLine />} onClick={() => router.push("/portfolio/new/withdrawal")}>
-                      Brokerage withdrawal
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="outline"
-                className={HEADER_DESKTOP_ONLY}
-                onClick={() => router.push("/portfolio/new")}
-              >
-                <TrendingUp className="h-4 w-4 mr-2" /> Investment Transactions
-              </Button>
-            </>
-            }
-          />
-        </>
+        <PageHeader
+          title="Transactions"
+          info="Manage and track all your financial transactions"
+          filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
+          bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
+          more={[
+            { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
+            { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
+            { label: "Sell", icon: Banknote, onSelect: () => router.push("/portfolio/new/sell") },
+            { label: "Swap", icon: Repeat, onSelect: () => router.push("/portfolio/new/swap") },
+            { label: "In-kind transfer", icon: Send, onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
+            { label: "Income / expense", icon: HandCoins, onSelect: () => router.push("/portfolio/new/income-expense") },
+            { label: "FX conversion", icon: CircleDollarSign, onSelect: () => router.push("/portfolio/new/fx-conversion") },
+            { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
+            { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
+            { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
+            { label: exporting ? "Exporting…" : "Export CSV", icon: Download, onSelect: handleExport, disabled: exporting || total === 0 },
+          ]}
+          // Add: the full page on a phone, the new-record pane in the split view.
+          primary={{ kind: "add", label: "Add Transaction", href: "/transactions/new", onSelect: splitView ? () => listDetail.selectNew() : undefined }}
+        />
       )}
       <ListDetailLayout
         entity="transaction"
@@ -770,7 +690,7 @@ export function TransactionsWorkspace({
           />
         )}
       >
-      {showHeader && <OnboardingTips page="transactions" />}
+      {showHeader && <Notice source="tips:transactions" />}
       {/* One toolbar at every size: range, month, search, filter (PageToolbar). Split view sits at the far right. */}
       <div className="flex flex-wrap items-center gap-2">
         {!toolbarProp && (
@@ -926,66 +846,94 @@ export function TransactionsWorkspace({
                   <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
                     <span className="font-medium text-primary">{selected.size} selected</span>
                     <div className="flex items-center gap-2 flex-1 flex-wrap">
-                      <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
-                        <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="update_category">Change category</SelectItem>
-                          <SelectItem value="update_account">Change account</SelectItem>
-                          <SelectItem value="update_date">Change date</SelectItem>
-                          <SelectItem value="update_payee">Change payee</SelectItem>
-                          <SelectItem value="update_note">Change note</SelectItem>
-                          <SelectItem value="update_tags">Change tags</SelectItem>
-                          <SelectItem value="delete">Delete selected</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Field
+                        control="select"
+                        value={bulkAction}
+                        onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}
+                        placeholder="Choose action…"
+                        compact
+                        className="w-44"
+                        options={[
+                          { value: "update_category", label: "Change category" },
+                          { value: "update_account", label: "Change account" },
+                          { value: "update_date", label: "Change date" },
+                          { value: "update_payee", label: "Change payee" },
+                          { value: "update_note", label: "Change note" },
+                          { value: "update_tags", label: "Change tags" },
+                          { value: "delete", label: "Delete selected" },
+                        ]}
+                      />
                       {bulkAction === "update_category" && (
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={bulkCategoryId}
                           onValueChange={(v) => setBulkCategoryId(v)}
-                          items={sortCategory(
-                            categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
+                          options={sortCategory(
+                            categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
                             (c) => Number(c.value),
                             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                           )}
                           placeholder="Select category"
                           searchPlaceholder="Search categories…"
                           emptyMessage="No matches"
-                          size="sm"
-                          className="h-7 w-44 text-xs"
+                          compact
+                          className="w-44"
                         />
                       )}
                       {bulkAction === "update_account" && (
-                        <Combobox
+                        <Field
+                          control="combobox"
                           value={bulkAccountId}
                           onValueChange={(v) => setBulkAccountId(v)}
-                          // Bulk "move to account" DESTINATION — archived accounts are
-                          // excluded: this writes new rows into whatever you pick, and an
-                          // archived account is one you've said you're done using.
-                          items={sortAccount(
+                          options={sortAccount(
                             accounts
                               .filter((a) => a.archived !== true)
-                              .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
+                              .map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
                             (a) => Number(a.value),
                             (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                           )}
                           placeholder="Select account"
                           searchPlaceholder="Search accounts…"
                           emptyMessage="No matches"
-                          size="sm"
-                          className="h-7 w-44 text-xs"
+                          compact
+                          className="w-44"
                         />
                       )}
                       {bulkAction === "update_date" && (
-                        <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+                        <Field
+                          control="date"
+                          value={bulkDate}
+                          onChange={(e) => setBulkDate(e.target.value)}
+                          compact
+                          className="w-36"
+                        />
                       )}
                       {bulkAction === "update_payee" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
+                        <Field
+                          placeholder="New payee"
+                          value={bulkPayee}
+                          onChange={(e) => setBulkPayee(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       {bulkAction === "update_note" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+                        <Field
+                          placeholder="New note"
+                          value={bulkNote}
+                          onChange={(e) => setBulkNote(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       {bulkAction === "update_tags" && (
-                        <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
+                        <Field
+                          placeholder="New tags"
+                          value={bulkTags}
+                          onChange={(e) => setBulkTags(e.target.value)}
+                          compact
+                          className="w-44"
+                        />
                       )}
                       <Button
                         size="sm"
@@ -1003,16 +951,13 @@ export function TransactionsWorkspace({
                   </div>
                 )}
           {selectMode && txns.length > 0 && (
-            <label className="flex h-11 items-center gap-2 px-1 text-sm">
-              <input
-                type="checkbox"
-                title="Select all"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="h-4 w-4 rounded border-input cursor-pointer"
-              />
-              <span>Select all</span>
-            </label>
+            <Field
+              label="Select all"
+              control="checkbox"
+              title="Select all"
+              checked={allSelected}
+              onChange={toggleAll}
+            />
           )}
           <MobileTxList
             transactions={txns}
@@ -1023,12 +968,14 @@ export function TransactionsWorkspace({
             selectedId={splitView ? listDetail.selectedId === null ? null : Number(listDetail.selectedId) : null}
             transferPeers={transferPeers}
             emptyState={
-              <EmptyState
+              <Notice
+                variant="empty"
                 icon={Receipt}
                 title="No transactions yet"
-                description="Add your first transaction or import bank statements to get started."
                 action={{ label: "Import data", href: "/import" }}
-              />
+              >
+                Add or import your first transactions.
+              </Notice>
             }
             selection={selectMode ? { selected, onToggle: toggleOne } : undefined}
           />
@@ -1077,113 +1024,88 @@ export function TransactionsWorkspace({
       </ListDetailLayout>
 
       {/* Single delete confirmation dialog */}
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => {
-        if (!open && !deleting) {
+      <Overlay
+        variant="confirm"
+        open={deleteConfirmId !== null}
+        onClose={() => {
           setDeleteConfirmId(null);
           setDeleteBlockedError(null);
           setReallocPreview(null);
+        }}
+        title="Delete Transaction"
+        message={
+          deleteBlockedError ? undefined : (
+            <>Are you sure you want to delete <strong>{deleteConfirmPayee}</strong>? This cannot be undone.</>
+          )
         }
-      }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete Transaction
-            </DialogTitle>
-          </DialogHeader>
-          {deleteError && (
-            <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
-          )}
-          {deleteBlockedError ? (
-            <div className="space-y-3">
-              <p className="text-sm text-warning">
-                This transaction opened a lot that has since been sold or
-                transferred out. You can still delete it — the dependent
-                transactions below will be re-matched to your other lots.
-              </p>
-              {/* FINLYNQ-176 — reallocation preview (affected years + shorts). */}
-              <LotReallocationNotice preview={reallocPreview} loading={reallocLoading} />
-              {deleteBlockedError.blockingIds.length > 0 && (
-                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
-                  <p className="font-medium mb-1.5">Dependent rows:</p>
-                  <ul className="space-y-1">
-                    {deleteBlockedError.blockingIds.map((id) => (
-                      <li key={id}>
-                        <Link
-                          href={buildTxDrillUrl({ id: String(id) })}
-                          className="text-primary underline hover:no-underline"
-                          onClick={() => {
-                            setDeleteConfirmId(null);
-                            setDeleteBlockedError(null);
-                            setReallocPreview(null);
-                          }}
-                        >
-                          Transaction #{id}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={deleting}
-                  onClick={() => {
-                    setDeleteConfirmId(null);
-                    setDeleteBlockedError(null);
-                    setReallocPreview(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  disabled={deleting || reallocLoading}
-                  onClick={handleReallocateDelete}
-                >
-                  {deleting ? "Deleting…" : "Reallocate & delete"}
-                </Button>
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={handleDelete}
+        actions={
+          deleteBlockedError
+            ? [
+                { label: "Cancel", disabled: deleting },
+                {
+                  label: "Reallocate & delete",
+                  kind: "destructive",
+                  busy: deleting,
+                  busyLabel: "Deleting…",
+                  disabled: reallocLoading,
+                  onClick: handleReallocateDelete,
+                },
+              ]
+            : undefined
+        }
+      >
+        {deleteError && (
+          <Notice tone="danger">{deleteError}</Notice>
+        )}
+        {deleteBlockedError && (
+          <div className="space-y-3">
+            <p className="text-sm text-warning">
+              This transaction opened a lot that has since been sold or
+              transferred out. You can still delete it — the dependent
+              transactions below will be re-matched to your other lots.
+            </p>
+            {/* FINLYNQ-176 — reallocation preview (affected years + shorts). */}
+            <LotReallocationNotice preview={reallocPreview} loading={reallocLoading} />
+            {deleteBlockedError.blockingIds.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
+                <p className="font-medium mb-1.5">Dependent rows:</p>
+                <ul className="space-y-1">
+                  {deleteBlockedError.blockingIds.map((id) => (
+                    <li key={id}>
+                      <Link
+                        href={buildTxDrillUrl({ id: String(id) })}
+                        className="text-primary underline hover:no-underline"
+                        onClick={() => {
+                          setDeleteConfirmId(null);
+                          setDeleteBlockedError(null);
+                          setReallocPreview(null);
+                        }}
+                      >
+                        Transaction #{id}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete <strong>{deleteConfirmPayee}</strong>? This cannot be undone.
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-                <Button variant="destructive" className="flex-1" disabled={deleting} onClick={handleDelete}>
-                  {deleting ? "Deleting…" : "Delete"}
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </div>
+        )}
+      </Overlay>
 
       {/* Bulk delete confirmation dialog */}
-      <Dialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open) setBulkDeleteConfirm(false); }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete {selected.size} Transactions
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.
-          </p>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setBulkDeleteConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1" disabled={bulkProcessing} onClick={confirmBulkDelete}>
-              {bulkProcessing ? "Deleting…" : `Delete ${selected.size}`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        open={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        title={`Delete ${selected.size} Transactions`}
+        message={<>This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.</>}
+        confirmLabel={`Delete ${selected.size}`}
+        busy={bulkProcessing}
+        onConfirm={confirmBulkDelete}
+      />
 
     </div>
   );

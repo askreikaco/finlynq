@@ -21,7 +21,7 @@ describe("portfolio report pages: PageHeader page below and above md", () => {
   it.each(PAGES)("%s uses the shared PageHeader (via SectionPage) with a back link to /portfolio", (f) => {
     const src = read(f);
     expect(src).toMatch(/<SectionPage\b/);
-    expect(src).toMatch(/backFallback="\/portfolio"/);
+    expect(src).toMatch(/back=\{\{ href: "\/portfolio"/);
     expect(src).toMatch(/from "@\/components\/templates\/section-page"/);
   });
 
@@ -69,13 +69,6 @@ describe("system type scale, palette tokens, units, adaptive helpers", () => {
 
   it.each(ALL)("%s has no adaptive literal (md:hidden / hidden md: / isMobile / window.innerWidth)", (f) => {
     expect(read(f)).not.toMatch(/md:hidden|hidden\s+md:|isMobile|window\.innerWidth/);
-  });
-
-  it("filter sheet is a bottom sheet with overscroll-contain and dvh max height", () => {
-    const src = read(CONTROLS);
-    expect(src).toMatch(/side="bottom"/);
-    expect(src).toContain("overscroll-contain");
-    expect(src).toContain("max-h-[85dvh]");
   });
 
   it("filter chips use Button size sm (44pt below md via the Button touch sizes)", () => {

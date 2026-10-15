@@ -58,9 +58,9 @@ describe("desktop: extra width becomes columns", () => {
     expect(src).toMatch(/grid-cols-1[^"]*wide:grid-cols-2/);
   });
 
-  it("/goals and /loans: single-column list of shared ProgressRows (same as /categories), no card grid", () => {
+  it("/goals and /loans: single-column list of shared ListRows (same as /categories), no card grid", () => {
     for (const f of ["src/app/(app)/goals/page.tsx", "src/app/(app)/loans/page.tsx"]) {
-      expect(code(f)).toContain("<ProgressRow");
+      expect(code(f)).toContain("<ListRow");
       expect(code(f)).not.toContain("CARD_ROW_GRID");
     }
   });

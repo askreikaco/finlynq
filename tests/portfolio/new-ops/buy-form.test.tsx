@@ -59,7 +59,7 @@ const saveButton = () => screen.getByRole("button", { name: "Record" });
 describe("Buy operation page (/portfolio/new/buy)", () => {
   it("renders the grouped fields with label-left rows and no card chrome", () => {
     const { container } = render(<BuyForm />);
-    const rowLabels = [...container.querySelectorAll("span.w-28")].map((n) => n.textContent ?? "");
+    const rowLabels = [...container.querySelectorAll('[data-slot="field-label-row"]')].map((n) => n.textContent ?? "");
     expect(rowLabels.length).toBeGreaterThanOrEqual(7);
     for (const label of ["Account", "Holding", "Quantity", "Total cost", "Date", "Payee", "Note", "Tags"]) {
       expect(rowLabels.some((t) => t.startsWith(label)), label).toBe(true);

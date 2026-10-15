@@ -17,7 +17,7 @@ vi.mock("@/lib/data/local-write-queue", () => ({
   retryPendingSync: vi.fn(),
 }));
 
-import { PasskeyLockBanner } from "@/components/passkey-lock-banner";
+import { Notice } from "@/components/notice";
 import { PendingSyncCard } from "@/components/settings/sections/pending-sync-card";
 
 beforeEach(() => {
@@ -28,38 +28,38 @@ afterEach(() => {
   cleanup();
 });
 
-describe("PasskeyLockBanner", () => {
+describe("Notice source=passkey-lock", () => {
   it("is shown only when a passkey is enrolled AND this page is locked", () => {
     h.state = { ...h.state, enabled: false, locked: false };
-    const { container, rerender } = render(<PasskeyLockBanner />);
+    const { container, rerender } = render(<Notice source="passkey-lock" />);
     expect(container.innerHTML).toBe("");
 
     h.state = { ...h.state, enabled: true, locked: false }; // enrolled and unlocked
-    rerender(<PasskeyLockBanner />);
+    rerender(<Notice source="passkey-lock" />);
     expect(screen.queryByTestId("passkey-lock-banner")).toBeNull();
 
     h.state = { ...h.state, enabled: false, locked: true }; // locked without a record cannot happen, but must not show
-    rerender(<PasskeyLockBanner />);
+    rerender(<Notice source="passkey-lock" />);
     expect(screen.queryByTestId("passkey-lock-banner")).toBeNull();
 
     h.state = { ...h.state, enabled: true, locked: true };
-    rerender(<PasskeyLockBanner />);
+    rerender(<Notice source="passkey-lock" />);
     expect(screen.getByTestId("passkey-lock-banner").textContent).toContain("Offline data locked: use your passkey");
   });
 
   it("the unlock button runs the passkey ceremony from the click and hides once unlocked", async () => {
     h.state = { ...h.state, enabled: true, locked: true };
-    const { rerender } = render(<PasskeyLockBanner />);
+    const { rerender } = render(<Notice source="passkey-lock" />);
     fireEvent.click(screen.getByTestId("passkey-lock-unlock"));
     await waitFor(() => expect(h.state.unlock).toHaveBeenCalledTimes(1));
     h.state = { ...h.state, locked: false };
-    rerender(<PasskeyLockBanner />);
+    rerender(<Notice source="passkey-lock" />);
     expect(screen.queryByTestId("passkey-lock-banner")).toBeNull();
   });
 
   it("a cancelled ceremony keeps the banner and says so", async () => {
     h.state = { ...h.state, enabled: true, locked: true, unlock: vi.fn(async () => ({ ok: false, code: "cancelled" })) };
-    render(<PasskeyLockBanner />);
+    render(<Notice source="passkey-lock" />);
     fireEvent.click(screen.getByTestId("passkey-lock-unlock"));
     expect(await screen.findByText("Cancelled.")).toBeTruthy();
     expect(screen.getByTestId("passkey-lock-banner")).toBeTruthy();

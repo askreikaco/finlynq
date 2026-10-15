@@ -42,7 +42,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => H.IDENT }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 const ACTIVE = ["USD"];
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ACTIVE }));
 vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", () => {
@@ -245,7 +245,7 @@ describe("Transactions: static guards for the one-layout rule", () => {
   it("the old table file is gone; the list and the sheet are the only row components", () => {
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
     expect(read(LIST)).toContain("<SectionCard");
-    expect(read(SHEET)).toContain("<DetailSheet");
+    expect(read(SHEET)).toContain('variant="detail"');
   });
 
   it("the list, the sheet and the workspace carry no breakpoint tokens", () => {

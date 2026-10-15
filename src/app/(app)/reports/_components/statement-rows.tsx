@@ -12,7 +12,8 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { Amount, DetailSheet, ListRow, type DetailItem } from "@/components/mobile";
+import { Amount, ListRow } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 
 export type StatementTimeseriesPoint = { period: string; label: string };
@@ -85,11 +86,12 @@ function ItemSheet({
     { label: "Transactions", value: String(item.count) },
   ];
   return (
-    <DetailSheet
+    <Overlay
+      variant="detail"
       open
-      onOpenChange={(o) => { if (!o) onClose(); }}
+      onClose={() => onClose()}
       title={item.name}
-      description={item.group ? `${item.group}` : undefined}
+      subtitle={item.group ? `${item.group}` : undefined}
       items={items}
     >
       {item.categoryId != null && (
@@ -102,7 +104,7 @@ function ItemSheet({
           </Link>
         </>
       )}
-    </DetailSheet>
+    </Overlay>
   );
 }
 
@@ -135,11 +137,12 @@ function TotalRow({
         className="border-t border-border/60 pt-3"
       />
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(false); }}
+          onClose={() => setOpen(false)}
           title={label}
-          description="All categories in this range"
+          info="All categories in this range"
           items={[
             ...periodItems(items, visibleTs, currency, (pt) => items.reduce((s, i) => s + (i.periods[pt.period] ?? 0), 0)),
             { label: "Total", value: formatCurrency(total, currency) },
@@ -332,11 +335,12 @@ export function UnrealizedStatementRows({ rows, displayCurrency }: { rows: Unrea
         />
       ))}
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          onClose={() => setOpen(null)}
           title={open.accountName}
-          description={`${open.accountCurrency} account`}
+          subtitle={`${open.accountCurrency} account`}
           items={[
             { label: "Cost basis", value: formatCurrency(open.costBasis, displayCurrency) },
             { label: "Market value", value: formatCurrency(open.marketValue, displayCurrency) },

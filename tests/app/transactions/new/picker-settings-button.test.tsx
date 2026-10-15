@@ -6,7 +6,6 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { CategorySelector, type Category } from "@/components/transactions/entry/category-selector";
 import { AccountSelector, type Account } from "@/components/transactions/entry/account-selector";
 import { GroupedPickerPanel } from "@/components/transactions/entry/grouped-picker";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/transactions/new",
@@ -40,18 +39,16 @@ describe("picker settings button", () => {
 
   it("absent when the panel sets no settingsHref, and the default label is Settings", () => {
     render(
-      <Sheet open>
-        <SheetContent side="bottom">
-          <GroupedPickerPanel
-            title="Plain"
-            placeholder="Search..."
-            emptyText="None"
-            entries={[]}
-            layout="sections"
-            onPick={() => {}}
-          />
-        </SheetContent>
-      </Sheet>,
+      <GroupedPickerPanel
+        open
+        onClose={() => {}}
+        title="Plain"
+        placeholder="Search..."
+        emptyText="None"
+        entries={[]}
+        layout="sections"
+        onPick={() => {}}
+      />,
     );
     expect(document.querySelector('[data-slot="picker-settings"]')).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
@@ -60,19 +57,17 @@ describe("picker settings button", () => {
 
   it("default label is Settings when only settingsHref is given", () => {
     render(
-      <Sheet open>
-        <SheetContent side="bottom">
-          <GroupedPickerPanel
-            title="Plain"
-            placeholder="Search..."
-            emptyText="None"
-            entries={[]}
-            layout="sections"
-            onPick={() => {}}
-            settingsHref="/x"
-          />
-        </SheetContent>
-      </Sheet>,
+      <GroupedPickerPanel
+        open
+        onClose={() => {}}
+        title="Plain"
+        placeholder="Search..."
+        emptyText="None"
+        entries={[]}
+        layout="sections"
+        onPick={() => {}}
+        settingsHref="/x"
+      />,
     );
     expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe(
       `/x?returnTo=${RETURN_TO}`,

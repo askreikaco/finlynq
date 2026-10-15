@@ -19,7 +19,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { MODES, type Mode } from "./modes";
 import { ReconcileUploadCard } from "@/components/reconcile/upload-card";
 import type { AccountOption } from "@/components/reconcile/preview-table";
@@ -307,17 +308,6 @@ export function UploadDrawer({
       setUploadLoading(false);
     }
   }, [open, accountId]);
-
-  // ESC closes the drawer — matches the standard sheet/dialog interaction.
-  // Skip while the mapping dialog is open so ESC dismisses the dialog first.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !mappingDialogOpen) onOpenChange(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onOpenChange, mappingDialogOpen]);
 
   const submitUpload = useCallback(
     async (params: UploadParams) => {
@@ -693,172 +683,139 @@ export function UploadDrawer({
   const newCount = (c?.new ?? c?.appended ?? 0) as number;
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md pt-safe pr-[var(--sar)] pb-[var(--sab)] border-l bg-background shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold">Upload to {accountLabel}</h2>
-            <p className="text-xs text-muted-foreground">
-              Policy: {cfg.label} · {cfg.gates} gate
-              {cfg.gates !== 1 ? "s" : ""}
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      presentation="sheet-right"
+      title={`Upload to ${accountLabel}`}
+      info={`Policy: ${cfg.label} · ${cfg.gates} gate${cfg.gates !== 1 ? "s" : ""}`}
+      bodyClassName="gap-5 py-5"
+      actions={
+        result
+          ? [
+              { label: "Upload another", kind: "ghost", onClick: () => setResult(null) },
+              { label: "View rows", kind: "primary", onClick: () => onOpenChange(false) },
+            ]
+          : [{ label: "Cancel", kind: "ghost" }]
+      }
+    >
+      {result ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-pos/30 bg-pos/10 px-4 py-4 text-center">
+            <CheckCircle2 className="mx-auto h-7 w-7 text-pos" />
+            <p className="mt-2 text-sm font-medium">Upload complete</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {newCount} row{newCount === 1 ? "" : "s"} from your{" "}
+              {result.format.toUpperCase()} added to {accountLabel}
+              {c?.skippedDuplicate
+                ? ` · ${c.skippedDuplicate} duplicate${c.skippedDuplicate === 1 ? "" : "s"} skipped`
+                : ""}
+              {c?.errors ? ` · ${c.errors} error${c.errors === 1 ? "" : "s"}` : ""}
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close upload drawer"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="p-5 space-y-5 flex-1 overflow-y-auto">
-          {result ? (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-pos/30 bg-pos/10 px-4 py-4 text-center">
-                <CheckCircle2 className="mx-auto h-7 w-7 text-pos" />
-                <p className="mt-2 text-sm font-medium">Upload complete</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {newCount} row{newCount === 1 ? "" : "s"} from your{" "}
-                  {result.format.toUpperCase()} added to {accountLabel}
-                  {c?.skippedDuplicate
-                    ? ` · ${c.skippedDuplicate} duplicate${c.skippedDuplicate === 1 ? "" : "s"} skipped`
-                    : ""}
-                  {c?.errors ? ` · ${c.errors} error${c.errors === 1 ? "" : "s"}` : ""}
-                </p>
-              </div>
-              {result.statement && (
-                <div className="rounded-md border px-3 py-2.5 text-xs space-y-1">
-                  <p className="font-medium">Statement snapshot</p>
-                  <dl className="space-y-0.5 text-muted-foreground">
-                    {result.statement.balance != null && (
-                      <div className="flex justify-between gap-3">
-                        <dt>Statement balance</dt>
-                        <dd className="font-medium text-foreground text-right">
-                          {formatCurrency(
-                            result.statement.balance,
-                            result.statement.currency ?? accountCurrency,
-                          )}
-                          {result.statement.balanceDate
-                            ? ` · ${result.statement.balanceDate}`
-                            : ""}
-                        </dd>
-                      </div>
-                    )}
-                    {result.statement.dateRange && (
-                      <div className="flex justify-between gap-3">
-                        <dt>Date range</dt>
-                        <dd className="text-right">
-                          {result.statement.dateRange.start} →{" "}
-                          {result.statement.dateRange.end}
-                        </dd>
-                      </div>
-                    )}
-                    <div className="flex justify-between gap-3">
-                      <dt>Rows parsed</dt>
-                      <dd className="text-right">{result.statement.rowCount}</dd>
-                    </div>
-                    {result.statement.anchorCount > 0 && (
-                      <div className="flex justify-between gap-3">
-                        <dt>Balance anchors</dt>
-                        <dd className="text-right">
-                          {result.statement.anchorCount}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
+          {result.statement && (
+            <div className="rounded-md border px-3 py-2.5 text-xs space-y-1">
+              <p className="font-medium">Statement snapshot</p>
+              <dl className="space-y-0.5 text-muted-foreground">
+                {result.statement.balance != null && (
+                  <div className="flex justify-between gap-3">
+                    <dt>Statement balance</dt>
+                    <dd className="font-medium text-foreground text-right">
+                      {formatCurrency(
+                        result.statement.balance,
+                        result.statement.currency ?? accountCurrency,
+                      )}
+                      {result.statement.balanceDate
+                        ? ` · ${result.statement.balanceDate}`
+                        : ""}
+                    </dd>
+                  </div>
+                )}
+                {result.statement.dateRange && (
+                  <div className="flex justify-between gap-3">
+                    <dt>Date range</dt>
+                    <dd className="text-right">
+                      {result.statement.dateRange.start} →{" "}
+                      {result.statement.dateRange.end}
+                    </dd>
+                  </div>
+                )}
+                <div className="flex justify-between gap-3">
+                  <dt>Rows parsed</dt>
+                  <dd className="text-right">{result.statement.rowCount}</dd>
                 </div>
-              )}
-              <div className={`rounded-md border px-3 py-2.5 text-xs ${cfg.tone}`}>
-                <p className="font-medium">Where they landed — {cfg.label}:</p>
-                <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
-                  {bullets.map((b, i) => (
-                    <li key={i}>{b.body}</li>
-                  ))}
-                </ul>
-              </div>
+                {result.statement.anchorCount > 0 && (
+                  <div className="flex justify-between gap-3">
+                    <dt>Balance anchors</dt>
+                    <dd className="text-right">
+                      {result.statement.anchorCount}
+                    </dd>
+                  </div>
+                )}
+              </dl>
             </div>
-          ) : (
-            <>
-              {acctCsvMode === "auto" && (
-                <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs">
-                  <p className="font-medium text-warning">
-                    This account imports automatically
-                  </p>
-                  <p className="mt-0.5 text-muted-foreground">
-                    No field-mapping preview is shown — rows are staged silently
-                    using the detected mapping.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-2 h-7"
-                    onClick={() => {
-                      setAcctCsvMode("confirm");
-                      void patchImportPrefs({ csvMappingMode: "confirm" });
-                    }}
-                  >
-                    Switch to confirm-first
-                  </Button>
-                </div>
-              )}
-              <ReconcileUploadCard
-                accounts={[lockedAccount]}
-                templates={templateOptions}
-                loading={uploadLoading}
-                lockedAccount={lockedAccount}
-                ofxPayeeSource={savedOfxPayeeSource}
-                onOfxPayeeSourceChange={(value) => {
-                  setSavedOfxPayeeSource(value);
-                  void patchImportPrefs({ ofxPayeeSource: value });
-                }}
-                onUpload={(params) => void submitUpload(params)}
-              />
-              {error && (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div className="flex-1">{error}</div>
-                </div>
-              )}
-              <div className={`rounded-md border px-3 py-2.5 text-xs ${cfg.tone}`}>
-                <p className="font-medium">After upload — {cfg.label}:</p>
-                <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
-                  {bullets.map((b, i) => (
-                    <li key={i}>{b.body}</li>
-                  ))}
-                </ul>
-              </div>
-            </>
           )}
+          <div className={`rounded-md border px-3 py-2.5 text-xs ${cfg.tone}`}>
+            <p className="font-medium">Where they landed — {cfg.label}:</p>
+            <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
+              {bullets.map((b, i) => (
+                <li key={i}>{b.body}</li>
+              ))}
+            </ul>
+          </div>
         </div>
-
-        <div className="border-t bg-background px-5 py-3 flex justify-end gap-2">
-          {result ? (
-            <>
+      ) : (
+        <>
+          {acctCsvMode === "auto" && (
+            <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs">
+              <p className="font-medium text-warning">
+                This account imports automatically
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                No field-mapping preview is shown — rows are staged silently
+                using the detected mapping.
+              </p>
               <Button
-                variant="ghost"
                 size="sm"
-                onClick={() => setResult(null)}
+                variant="outline"
+                className="mt-2 h-7"
+                onClick={() => {
+                  setAcctCsvMode("confirm");
+                  void patchImportPrefs({ csvMappingMode: "confirm" });
+                }}
               >
-                Upload another
+                Switch to confirm-first
               </Button>
-              <Button size="sm" onClick={() => onOpenChange(false)}>
-                View rows
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+            </div>
           )}
-        </div>
-      </div>
+          <ReconcileUploadCard
+            accounts={[lockedAccount]}
+            templates={templateOptions}
+            loading={uploadLoading}
+            lockedAccount={lockedAccount}
+            ofxPayeeSource={savedOfxPayeeSource}
+            onOfxPayeeSourceChange={(value) => {
+              setSavedOfxPayeeSource(value);
+              void patchImportPrefs({ ofxPayeeSource: value });
+            }}
+            onUpload={(params) => void submitUpload(params)}
+          />
+          {error && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="flex-1">{error}</div>
+            </div>
+          )}
+          <div className={`rounded-md border px-3 py-2.5 text-xs ${cfg.tone}`}>
+            <p className="font-medium">After upload — {cfg.label}:</p>
+            <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
+              {bullets.map((b, i) => (
+                <li key={i}>{b.body}</li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
 
       <ColumnMappingDialog
         open={mappingDialogOpen}
@@ -912,6 +869,6 @@ export function UploadDrawer({
           onConfirm={(p) => void handleOfxConfirm(p)}
         />
       )}
-    </>
+    </Overlay>
   );
 }

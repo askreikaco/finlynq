@@ -8,11 +8,11 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Languages } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { detectBrowserLanguage } from "@/lib/locale";
 import { useLanguage } from "@/components/language-provider";
+import { Field } from "@/components/ui/field";
 import {
   LANGUAGES,
   LANGUAGE_EXAMPLE_NUMBER,
@@ -69,23 +69,18 @@ export function LanguageCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Select
+        <Field
+          control="select"
           value={pref}
           onValueChange={async (v) => {
             if (!isLanguagePref(v)) return;
             setError(null);
             if (!(await setPref(v))) setError("Could not save. Try again.");
           }}
-        >
-          <SelectTrigger className="w-64" aria-label="Language">
-            <SelectValue>{OPTIONS.find((o) => o.value === pref)?.label}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          aria-label="Language"
+          className="w-64"
+          options={OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
         <p className="text-sm text-muted-foreground" data-keep="preview" data-testid="language-example">
           Example: <span className="font-mono text-foreground">{example.number}</span>
           {" · "}

@@ -117,7 +117,7 @@ function SplitInner() {
   if (state.status === "loading") {
     return (
       <div className={"w-full"}>
-        <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
+        <PageHeader title="Split transaction" back={{ href: returnTo }} />
         <div data-testid="tx-split-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
       </div>
     );
@@ -125,7 +125,7 @@ function SplitInner() {
   if (state.status === "missing" || state.status === "blocked") {
     return (
       <div className={"w-full space-y-3"}>
-        <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
+        <PageHeader title="Split transaction" back={{ href: returnTo }} />
         <p data-testid={state.status === "blocked" ? "tx-split-blocked" : undefined} className="text-sm text-foreground">
           {state.message}
         </p>

@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { Field } from "@/components/ui/field";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
 export type ReconcileStatus = "new" | "existing" | "probable_duplicate";
@@ -181,17 +181,14 @@ export function ReconcilePreviewTable({
                   <div className="flex flex-col gap-1">
                     <StatusBadge status={row.status} match={row.match} />
                     {isProbable && (
-                      <label className="flex items-center gap-1 text-xs text-warning">
-                        <input
-                          type="checkbox"
-                          className="h-3 w-3 rounded border-warning/30"
-                          checked={!!row.forceCommit}
-                          onChange={(e) =>
-                            onChange(row.rowIndex, { forceCommit: e.target.checked })
-                          }
-                        />
-                        Commit anyway
-                      </label>
+                      <Field
+                        label="Commit anyway"
+                        control="checkbox"
+                        checked={!!row.forceCommit}
+                        onChange={(e) =>
+                          onChange(row.rowIndex, { forceCommit: e.target.checked })
+                        }
+                      />
                     )}
                     {row.match && (
                       <span className="text-xs text-muted-foreground">
@@ -215,8 +212,8 @@ export function ReconcilePreviewTable({
                   {formatCurrency(row.amount, row.currency ?? accountCurrency ?? displayCurrency)}
                 </TableCell>
                 <TableCell className="align-top">
-                  <Combobox
-                    size="sm"
+                  <Field
+                    control="combobox"
                     value={row.accountId === null ? "" : String(row.accountId)}
                     onValueChange={(v) =>
                       onChange(row.rowIndex, {
@@ -226,30 +223,30 @@ export function ReconcilePreviewTable({
                         portfolioHoldingId: null,
                       })
                     }
-                    items={accountItems}
+                    options={accountItems}
                     placeholder="Pick account…"
                     searchPlaceholder="Search…"
                     emptyMessage="No accounts"
-                    className="h-7 text-xs w-full"
+                    compact
                   />
                 </TableCell>
                 <TableCell className="align-top">
-                  <Combobox
-                    size="sm"
+                  <Field
+                    control="combobox"
                     value={row.categoryId == null ? "" : String(row.categoryId)}
                     onValueChange={(v) =>
                       onChange(row.rowIndex, { categoryId: v ? Number(v) : null })
                     }
-                    items={categoryItems}
+                    options={categoryItems}
                     placeholder="Uncategorized"
                     searchPlaceholder="Search…"
                     emptyMessage="No categories"
-                    className="h-7 text-xs w-full"
+                    compact
                   />
                 </TableCell>
                 <TableCell className="align-top">
-                  <Combobox
-                    size="sm"
+                  <Field
+                    control="combobox"
                     value={
                       row.portfolioHoldingId == null
                         ? ""
@@ -260,12 +257,13 @@ export function ReconcilePreviewTable({
                         portfolioHoldingId: v ? Number(v) : null,
                       })
                     }
-                    items={holdingItems}
+                    options={holdingItems}
                     placeholder={needsHolding ? "Required" : "—"}
                     searchPlaceholder="Search…"
                     emptyMessage="No holdings on this account"
-                    className={`h-7 text-xs w-full ${needsHolding && row.portfolioHoldingId == null ? "border-warning/30" : ""}`}
                     disabled={row.accountId === null}
+                    compact
+                    invalid={needsHolding && row.portfolioHoldingId == null}
                   />
                 </TableCell>
               </TableRow>

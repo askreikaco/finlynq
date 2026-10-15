@@ -9,12 +9,11 @@
  */
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseSaveError } from "@/lib/save-error";
 import { ASSET_TYPE_LABELS, advisoryFor, type Security } from "./shared";
-import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { FormFooter } from "@/components/forms";
 
 type PriceSource = "auto" | "manual";
 
@@ -112,83 +111,66 @@ export function EditSecurityForm({
         void submit();
       }}
     >
-      <FormCard>
+      <FieldGroup>
         {/* Ticker. Hidden for cash sleeves — their symbol IS a currency code and is
             structural, not a lookup key. Changing it re-points every position (and
             its full history) at the new ticker; the server reuses an existing
             security for that symbol if there is one. */}
         {!isCash && (
-          <FormRow
+          <Field
             label="Ticker"
-            htmlFor="edit-symbol"
             error={errors.symbol}
-            hint="Changing this re-points the holding and its history to the new ticker."
-            notice={
+            info="Changing this re-points the holding and its history to the new ticker."
+            hint={
               !errors.symbol && advisoryFor(security) ? (
                 <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
               ) : undefined
             }
-          >
-            <Input
-              id="edit-symbol"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              placeholder="e.g. AMZN"
-              className="font-mono"
-            />
-          </FormRow>
-        )}
-        <FormRow label="Display name" htmlFor="edit-name" error={errors.name}>
-          <Input
-            id="edit-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Apple Inc."
+            id="edit-symbol"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            placeholder="e.g. AMZN"
+            controlClassName="font-mono"
           />
-        </FormRow>
+        )}
+        <Field
+          label="Display name"
+          error={errors.name}
+          id="edit-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Apple Inc."
+        />
         {/* Asset type override is meaningful only for tradable securities (the eq:
             stock/etf bucket). Changing it is purely a display override (never
             re-clusters). */}
         {!isCash && !isCrypto && (
-          <FormRow
+          <Field
             label="Asset type"
-            hint="Overrides the automatic (Yahoo) classification for the badge."
-          >
-            <Select
-              items={ASSET_TYPE_LABELS}
-              value={assetType}
-              onValueChange={(v) => setAssetType(v ?? "stock")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Asset type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="stock">Stock</SelectItem>
-                <SelectItem value="etf">ETF</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormRow>
+            info="Overrides the automatic (Yahoo) classification for the badge."
+            control="select"
+            value={assetType}
+            onValueChange={(v) => setAssetType(v ?? "stock")}
+            placeholder="Asset type"
+            options={[{ value: "stock", label: "Stock" }, { value: "etf", label: "ETF" }]}
+          />
         )}
         {/* Pricing mode — manual securities are excluded from the market price API
             and valued off the prices you enter. Hidden for cash sleeves (always 1). */}
         {!isCash && (
-          <FormRow
+          <Field
             label="Pricing"
-            hint={
-              priceSource === "manual"
-                ? "Not fetched from the market. Set prices under Prices."
-                : "Prices are fetched automatically from Yahoo/CoinGecko."
-            }
-          >
-            <SegmentedToggle<PriceSource>
-              options={["auto", "manual"]}
-              value={priceSource}
-              onChange={setPriceSource}
-              labels={{ auto: "Auto-fetch", manual: "Manual" }}
-            />
-          </FormRow>
+            control="segmented"
+            info="Auto-fetch: prices come automatically from Yahoo/CoinGecko. Manual: not fetched from the market; set prices under Prices."
+            value={priceSource}
+            onValueChange={(v) => setPriceSource(v as PriceSource)}
+            options={[
+              { value: "auto", label: "Auto-fetch" },
+              { value: "manual", label: "Manual" },
+            ]}
+          />
         )}
-      </FormCard>
+      </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Cancel

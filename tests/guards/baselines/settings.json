@@ -3,9 +3,5 @@
   "unmigrated": [
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx"
   ],
-  "chrome": {
-    "src/app/(app)/settings/general/page.tsx": {
-      "min-h": 1
-    }
-  }
+  "chrome": {}
 }

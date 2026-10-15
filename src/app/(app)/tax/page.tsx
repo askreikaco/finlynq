@@ -4,17 +4,17 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import { Chart } from "@/components/chart";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
-import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/notice";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -60,9 +60,9 @@ function TaxPageContent() {
     setComparison(await res.json());
   }
 
-  if (loadError) return <ErrorState title="Couldn't load tax data" message="We couldn't load your tax data. Please try again." onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load tax data" retry={() => { setLoadError(false); setReloadKey((k) => k + 1); }}>{"We couldn't load your tax data. Please try again."}</Notice>;
 
-  if (!data) return <PageSkeleton variant="cards" rows={3} />;
+  if (!data) return <Notice variant="skeleton" skeleton="cards" rows={3} />;
 
   const tfsaPct = data.tfsa.totalRoom > 0 ? (data.tfsa.used / data.tfsa.totalRoom) * 100 : 0;
   const advice = openAdvice !== null ? data.assetLocationAdvice[openAdvice] ?? null : null;
@@ -77,17 +77,17 @@ function TaxPageContent() {
     >
       <MetricGrid
         metrics={[
-          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, tone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
+          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, valueTone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
           { icon: Coins, label: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
           { icon: Percent, label: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
         ]}
       />
 
       <div data-slot="tax-cards" className={TW.grid3}>
-      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false} className="px-3">
+      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false}>
         <div className="space-y-3 pt-3">
-          <div className="px-1">
-            <Progress value={tfsaPct} className="h-2.5" />
+          <div className="px-4">
+            <Chart kind="progress" value={tfsaPct} ariaLabel="TFSA room used" />
           </div>
           <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             <ListRow title="Used" value={formatCurrency(data.tfsa.used, displayCurrency)} secondary={`${Math.round(tfsaPct)}% of room`} />
@@ -99,18 +99,32 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* RRSP vs TFSA Calculator */}
-      <SectionCard label="RRSP vs TFSA Calculator" icon={Calculator} tone="indigo">
+      <SectionCard
+        label={
+          <>
+            RRSP vs TFSA Calculator
+            <InfoTip label="About RRSP vs TFSA" text="Compare the tax benefit of contributing to RRSP vs TFSA" />
+          </>
+        }
+        icon={Calculator}
+        tone="indigo"
+      >
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Compare the tax benefit of contributing to RRSP vs TFSA</p>
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Annual Income</Label>
-              <AmountInput value={income} onValueChange={(nv) => setIncome(nv)} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Contribution Amount</Label>
-              <AmountInput value={contribution} onValueChange={(nv) => setContribution(nv)} className="mt-1" />
-            </div>
+            <Field
+              label="Annual Income"
+              control="amount"
+              value={income}
+              onValueChange={(nv) => setIncome(nv)}
+              className="mt-1"
+            />
+            <Field
+              label="Contribution Amount"
+              control="amount"
+              value={contribution}
+              onValueChange={(nv) => setContribution(nv)}
+              className="mt-1"
+            />
           </div>
           <Button onClick={compareRrspTfsa} className="w-full">Compare</Button>
           {comparison && (
@@ -133,7 +147,7 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* Marginal Tax Rates */}
-      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" list>
         {Object.entries(data.marginalRates).map(([key, rates]) => (
           <ListRow
             key={key}
@@ -146,7 +160,7 @@ function TaxPageContent() {
 
       {/* Asset Location Advice: tap a holding for the reason */}
       {data.assetLocationAdvice.length > 0 && (
-        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" list>
           {data.assetLocationAdvice.map((a, i) => (
             <ListRow
               key={`${a.symbol}-${i}`}
@@ -160,11 +174,12 @@ function TaxPageContent() {
       </div>
 
       {advice && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpenAdvice(null); }}
+          onClose={() => setOpenAdvice(null)}
           title={advice.holding}
-          description={`${advice.symbol} · asset location`}
+          subtitle={`${advice.symbol} · asset location`}
           items={[
             { label: "Currently in", value: advice.currentAccount },
             { label: "Recommended account", value: advice.recommendedAccountType },

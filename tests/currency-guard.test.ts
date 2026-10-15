@@ -26,38 +26,13 @@ const SCAN_ROOTS = [
 // Format: { file: "path/to/file.tsx", line: "exact trimmed line", count: 1, reason: "..." }
 const ALLOW_LIST = [
   // Dev gallery: labelled specimens with fixed sample currencies (dev-mode page, not user data).
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", iconTone: "indigo" as const, sub: "+$1,200 vs last month", badgePct: 1.9, sparkData: SPARK, sparkColor: "#6366f1" },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", iconTone: "emerald" as const, tone: "pos" as const },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", iconTone: "rose" as const, badgePct: 4.2, invertTone: true },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `<Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />`, count: 2, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, sparkData: SPARK, sparkColor: "#6366f1" },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
   // OUT OF SCOPE: Mobile, portfolio, chat, and other advanced features
   {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlinePieChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/app/(app)/chat/page.tsx",
-    line: `function InlineLineChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
-    file: "src/components/sankey-chart.tsx",
-    line: `export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: SankeyChartProps) {`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
-  },
-  {
     file: "src/components/fx-overrides-section.tsx",
-    line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
+    line: `value={form.rateMode === "to-usd" ? form.currency : "USD"}`,
     count: 2, // matches property-key and ternary patterns
     reason: "FX rate-base selector in a form; USD is the FX anchor, not a display fallback",
   },
@@ -155,7 +130,7 @@ const ALLOW_LIST = [
 
   {
     file: "src/components/staging/staged-row-editor.tsx",
-    line: `Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}`,
+    line: `...(peerCandidates.length === 0 ? [{ value: "__nope__", label: "No additive-inverse siblings", disabled: true }] : [...peerCandidates.map((s) => ({ value: s.id, label: <>Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "} {s.accountName || "(unknown account)"}</> }))]),`,
     count: 2, // matches logical-or and format-call patterns
     reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },

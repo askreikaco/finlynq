@@ -28,7 +28,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/dev-mode-guard", () => ({ DevModeGuard: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import { ColumnList } from "@/components/mobile/column-list";
 import { TwoPaneLayout } from "@/components/import/reconcile/two-pane-layout";
@@ -136,7 +136,7 @@ describe("ColumnList (DataTable rows as native ListRows)", () => {
 
   it("a sort pill orders the rows and a second tap reverses them", () => {
     const { container } = render(<ColumnList columns={COLUMNS} rows={ROWS} rowKey={(r) => r.id} />);
-    const names = () => Array.from(container.querySelectorAll('[data-slot="list-row"] .font-semibold')).map((n) => n.textContent);
+    const names = () => Array.from(container.querySelectorAll('[data-slot="list-row"] [data-slot="list-label"]')).map((n) => n.textContent);
     fireEvent.click(screen.getByRole("button", { name: "Count" }));
     expect(names()).toEqual(["Alpha", "Gamma", "Beta"]);
     fireEvent.click(screen.getByRole("button", { name: /Count/ }));

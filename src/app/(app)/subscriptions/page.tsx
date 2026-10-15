@@ -17,6 +17,7 @@
  * a row opens a DetailSheet with the fields and the actions.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,18 +28,17 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { DetailSheet, ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail, type DetailItem, type MetricItem } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
+import { DueActions, STATUS_BADGE, SubscriptionDetail, SubscriptionStatusActions, dueLabel, isDue, relativeDue, subDetailItems } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { EmptyState } from "@/components/empty-state";
+import { Notice } from "@/components/notice";
 import { Card, CardContent } from "@/components/ui/card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
@@ -75,57 +75,9 @@ type SeriesRow = { month: string; monthly: number; annual: number; active: numbe
 const SUGGESTIONS_PREVIEW = 3;
 const DUE_SOON_DAYS = 30;
 
-const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  paused: {
-    label: "Paused",
-    className: "bg-warning/10 text-warning border-warning/30",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
-  },
-  ended: {
-    label: "Ended",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-};
-
-/** An active subscription with an occurrence on/before today (server-computed). */
-function isDue(sub: Subscription): boolean {
-  return dueSubscriptions([sub]).length > 0;
-}
-
-function dueLabel(sub: Subscription): string {
-  const n = sub.dueCount ?? 0;
-  return n > 1 ? `${n} due` : "Due";
-}
-
-/** Post now / Skip for a due subscription (Repeat + Installment phase 2a). */
-function DueActions({ sub, busy, onPost, onSkip }: { sub: Subscription; busy: boolean; onPost: () => void; onSkip: () => void }) {
-  return (
-    <>
-      <Button size="sm" data-testid={`sub-post-${sub.id}`} disabled={busy} onClick={onPost}>
-        Post now
-      </Button>
-      <Button size="sm" variant="ghost" data-testid={`sub-skip-${sub.id}`} disabled={busy} onClick={onSkip}>
-        Skip
-      </Button>
-    </>
-  );
-}
-
-/** "today" / "tomorrow" / "in 5 days" for near dates, else null. */
-function relativeDue(date: string, today: string): string | null {
-  const d = daysBetween(today, date);
-  if (d === 0) return "today";
-  if (d === 1) return "tomorrow";
-  if (d > 1 && d <= 14) return `in ${d} days`;
-  return null;
-}
-
 export default function SubscriptionsPage() {
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={5} />}>
+    <Suspense fallback={<Notice variant="skeleton" skeleton="list" rows={5} />}>
       <SubscriptionsPageContent />
     </Suspense>
   );
@@ -187,7 +139,7 @@ function SubscriptionsPageContent() {
     const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
     return Array.isArray(rows) ? rows : null;
   }, [seriesRes.data]);
-  const summaryMetrics = useMemo<MetricItem[]>(() => {
+  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
     const caption = compareCaption(selection);
     const pts = (pick: (r: SeriesRow) => number): MonthPoint[] | null => (seriesRows ? seriesRows.map((r) => ({ month: r.month, value: pick(r) })) : null);
     const card = (pick: (r: SeriesRow) => number, pageValue: number, kind: "money" | "count") =>
@@ -196,18 +148,18 @@ function SubscriptionsPageContent() {
     const annual = card((r) => r.annual, totals.annual, "money");
     const due = card((r) => r.dueSoon, totals.dueSoonAmount, "money");
     const active = card((r) => r.active, totals.activeCount, "count");
-    const shared = (c: ReturnType<typeof card>) => ({
-      sub: c.delta ?? NO_HISTORY_CAPTION, badgePct: c.badgePct,
+    const shared = (c: ReturnType<typeof card>, invert = false) => ({
+      delta: { pct: c.badgePct, text: c.delta ?? NO_HISTORY_CAPTION, ...(invert ? { invert } : {}) },
       sparkData: c.sparkData, sparkLabels: c.sparkLabels,
     });
     return [
-      { id: "monthly", icon: CalendarClock, iconTone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, invertTone: true, ...shared(monthly),
+      { id: "monthly", icon: CalendarClock, tone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
         note: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
-      { id: "yearly", icon: CalendarRange, iconTone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, invertTone: true, sparkColor: "#8b5cf6", ...shared(annual),
+      { id: "yearly", icon: CalendarRange, tone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, sparkColor: "#8b5cf6", ...shared(annual, true),
         note: "Annualised" },
-      { id: "due-soon", icon: CalendarClock, iconTone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, invertTone: true, sparkColor: "#f59e0b", ...shared(due),
+      { id: "due-soon", icon: CalendarClock, tone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, sparkColor: "#f59e0b", ...shared(due, true),
         note: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}` },
-      { id: "active", icon: CheckCircle2, iconTone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
+      { id: "active", icon: CheckCircle2, tone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
         note: `of ${subs.length} tracked` },
     ];
   }, [seriesRows, period, explicit, selection, totals, displayCurrency, subs.length]);
@@ -349,54 +301,22 @@ function SubscriptionsPageContent() {
 
   const deletingSub = subs.find((s) => s.id === deleteId) ?? null;
 
-  if (loading) return <PageSkeleton variant="list" rows={5} />;
+  if (loading) return <Notice variant="skeleton" skeleton="list" rows={5} />;
   if (loadError) {
     return (
-      <ErrorState
+      <Notice
+        variant="error"
         title="Couldn't load subscriptions"
-        message="We couldn't load your subscriptions. Please try again."
-        onRetry={() => { loadSubs(); loadRecurring(); }}
-      />
+        retry={() => { loadSubs(); loadRecurring(); }}
+      >
+        {"We couldn't load your subscriptions. Please try again."}
+      </Notice>
     );
   }
 
   const visibleSuggestions = showAllSuggestions ? suggestions : suggestions.slice(0, SUGGESTIONS_PREVIEW);
   const openSub = subs.find((s) => s.id === openSubId) ?? null;
   const closeSheet = () => setOpenSubId(null);
-
-  /** Reminder / pause / cancel / resume buttons for one subscription (the phone sheet and the split pane share them). */
-  function statusActions(sub: Subscription, before: () => void) {
-    const openSub = sub;
-    const closeSheet = before;
-    return (
-      <>
-        {openSub.status === "active" && (
-            <>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); toggleReminder(openSub); }}>
-              {openSub.cancelReminderDate ? <><BellOff className="h-4 w-4" /> Remove cancel reminder</> : <><Bell className="h-4 w-4" /> Remind me to cancel</>}
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "paused"); }}>
-                <Pause className="h-4 w-4" /> Pause
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "cancelled"); }}>
-                <XCircle className="h-4 w-4" /> Mark cancelled
-              </Button>
-            </>
-          )}
-        {openSub.status === "paused" && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <Play className="h-4 w-4" /> Resume
-            </Button>
-          )}
-          {(openSub.status === "cancelled" || openSub.status === "ended") && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <RotateCcw className="h-4 w-4" /> Reactivate
-            </Button>
-          )}
-      </>
-    );
-  }
-
 
   return (
     <SectionPage
@@ -407,36 +327,25 @@ function SubscriptionsPageContent() {
       center
       header={{
         filter: view === "list" ? { href: tb.filterHref, activeCount: tb.activeCount } : undefined,
-        actions: (
-          <Button onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Add subscription
-          </Button>
-        ),
+        primary: { kind: "add", label: "Add subscription", href: "/subscriptions/new", onSelect: detail.split ? detail.selectNew : undefined },
       }}
     >
       <ListDetailLayout
         entity="subscription"
         newLabel="Add subscription"
-        pane={(api) => {
-          const open = subs.find((x) => String(x.id) === api.selectedId) ?? null;
-          return (
-            <div className="space-y-3">
-              {open && (
-                <div className="flex flex-wrap gap-2" data-slot="subscription-status-actions">
-                  {statusActions(open, () => undefined)}
-                </div>
-              )}
-              <SubscriptionFormPanel
-                embedded
-                mode={api.isNew ? "create" : "edit"}
-                id={api.selectedId ?? undefined}
-                onSaved={() => { loadSubs(); api.afterSaved(); }}
-                onCancel={api.clear}
-                onDeleted={() => { loadSubs(); api.afterDeleted(); }}
-              />
-            </div>
-          );
-        }}
+        detailTitle="Subscription"
+        detailHref={(id) => `/subscriptions/${id}`}
+        renderDetail={(id) => <SubscriptionDetail id={id} onChanged={loadSubs} />}
+        renderForm={(api) => (
+          <SubscriptionFormPanel
+            embedded
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            onSaved={() => { loadSubs(); api.afterSaved(); }}
+            onCancel={api.cancel}
+            onDeleted={() => { loadSubs(); api.afterDeleted(); }}
+          />
+        )}
       >
       <MetricGrid metrics={summaryMetrics} />
 
@@ -475,8 +384,8 @@ function SubscriptionsPageContent() {
                 <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
                   {/* Detected from transactions */}
                   {suggestions.length > 0 && (
-                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full px-3">
-                      <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
+                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
+                      <p className="px-4 pt-3 pb-1 text-sm text-muted-foreground">
                         {suggestions.length === 1
                           ? "1 payment repeats on a schedule but isn't tracked yet."
                           : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
@@ -493,7 +402,7 @@ function SubscriptionsPageContent() {
                                 subtitle={`${formatCurrency(Math.abs(r.avgAmount), r.currency)} / ${FREQUENCY_SUFFIX[freq]} · seen ${r.count}× · last ${formatDate(r.lastDate)}`}
                                 chevron={false}
                               />
-                              <div className="flex items-center gap-1.5 pb-3 pl-12">
+                              <div className="flex items-center gap-1.5 pb-3 pl-16">
                                 <Button variant="ghost" size="sm" onClick={() => reviewDetected(r)}>Review</Button>
                                 <Button size="sm" onClick={() => trackDetected(r)} disabled={busyKey !== null}>
                                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -505,7 +414,7 @@ function SubscriptionsPageContent() {
                         })}
                       </div>
                       {suggestions.length > SUGGESTIONS_PREVIEW && (
-                        <Button variant="link" size="sm" className="px-1 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
+                        <Button variant="link" size="sm" className="px-4 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
                           {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
                         </Button>
                       )}
@@ -513,18 +422,20 @@ function SubscriptionsPageContent() {
                   )}
 
                   {subs.length === 0 && (
-                    <Card className="col-span-full"><CardContent className="p-0"><EmptyState
+                    <Card className="col-span-full"><CardContent className="p-0"><Notice
+                      variant="empty"
                       icon={CreditCard}
                       title="No subscriptions tracked yet"
-                      description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
                       action={{ label: "Add subscription", onClick: openAdd }}
-                    /></CardContent></Card>
+                    >
+                      Add streaming, insurance, memberships and other repeating bills.
+                    </Notice></CardContent></Card>
                   )}
 
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}
@@ -547,56 +458,36 @@ function SubscriptionsPageContent() {
       </ListDetailLayout>
 
       {openSub && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) closeSheet(); }}
+          onClose={() => closeSheet()}
           title={openSub.name ?? "Subscription"}
-          description={STATUS_BADGE[openSub.status]?.label ?? "Active"}
+          subtitle={STATUS_BADGE[openSub.status]?.label ?? "Active"}
           items={subDetailItems(openSub, today, displayCurrency)}
         >
           <Button variant="outline" onClick={() => { closeSheet(); openEditById(openSub.id); }}>
             <Pencil className="h-4 w-4" /> Edit
           </Button>
-          {statusActions(openSub, closeSheet)}
+          <SubscriptionStatusActions sub={openSub} today={today} before={closeSheet} onChanged={loadSubs} />
           <Button variant="outline" className="text-destructive" onClick={() => { closeSheet(); setDeleteId(openSub.id); }}>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId !== null}
-        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null); }}
+        onClose={() => { if (!deleting) setDeleteId(null); }}
         title="Delete subscription"
-        description={<>Delete <strong>{deletingSub?.name ?? "this subscription"}</strong>? Your transactions are not affected. This cannot be undone.</>}
+        message={<>Delete <strong>{deletingSub?.name ?? "this subscription"}</strong>? Your transactions are not affected. This cannot be undone.</>}
         confirmLabel="Delete subscription"
         busy={deleting}
         onConfirm={handleDelete}
       />
     </SectionPage>
   );
-}
-
-/** Fields a list row leaves out. Money is in the subscription's own currency; the monthly figure in the display one. */
-function subDetailItems(sub: Subscription, today: string, displayCurrency: string): DetailItem[] {
-  const freq = frequencyOrMonthly(sub.frequency);
-  const next = effectiveNextDate(sub, today);
-  const rel = next && sub.status === "active" ? relativeDue(next, today) : null;
-  const monthly = monthlyEquivalent(Math.abs(subDisplayAmount(sub)), freq, sub.intervalDays);
-  const showMonthly = freq !== "monthly" || sub.currency !== displayCurrency;
-  const items: DetailItem[] = [
-    { label: "Amount", value: `${formatCurrency(sub.amount, sub.currency)} / ${frequencySuffix(sub.frequency, sub.intervalDays)}` },
-    { label: "Frequency", value: frequencyLabel(sub.frequency, sub.intervalDays) },
-  ];
-  if (showMonthly) items.push({ label: "Monthly equivalent", value: `≈ ${formatCurrency(monthly, displayCurrency)}` });
-  items.push({
-    label: "Next payment",
-    value: sub.status === "active" && next ? `${formatDate(next)}${rel ? ` (${rel})` : ""}` : "—",
-  });
-  if (sub.cancelReminderDate) items.push({ label: "Cancel reminder", value: formatDate(sub.cancelReminderDate) });
-  items.push({ label: "Account", value: sub.accountName ?? "—" });
-  items.push({ label: "Category", value: sub.categoryName ?? "—" });
-  return items;
 }
 
 /** One subscription in a status group: tap opens the detail sheet; due payments get their actions under the row. */
@@ -658,12 +549,12 @@ function SubscriptionRow({
         onPress={onOpen}
       />
       {due && (
-        <div className="flex items-center gap-1.5 pb-3 pl-12">
+        <div className="flex items-center gap-1.5 pb-3 pl-16">
           <DueActions sub={sub} busy={busy} onPost={onPost} onSkip={onSkip} />
         </div>
       )}
       {sub.cancelReminderDate && (
-        <p className="flex items-center gap-1 pb-2 pl-12 text-xs text-warning">
+        <p className="flex items-center gap-1 pb-2 pl-16 text-xs text-warning">
           <Bell className="h-3 w-3" /> Cancel reminder {formatDate(sub.cancelReminderDate)}
         </p>
       )}

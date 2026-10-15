@@ -20,7 +20,7 @@ function ApplyTemplatePage() {
       info={`Applies to ${getMonthLabel(month)}`}
       fallbackReturn={`/categories?month=${month}`}
       form="external"
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <ApplyTemplateForm

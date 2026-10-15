@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, AlertTriangle, Info, Landmark, Database } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { MetricCard } from "@/components/metric-card";
+import type { MetricTone } from "@/components/mobile/card-label";
 
 export interface BalanceSummary {
   accountId: number;
@@ -65,12 +66,12 @@ export function BalanceSummaryCard({
   const { status, bankSideLatest, systemSideLatest, delta, currency, latestAnchor } =
     summary;
 
-  const tone =
+  const tone: MetricTone =
     status === "balanced"
       ? "emerald"
       : status === "mismatch"
         ? "rose"
-        : "sky";
+        : "cyan";
 
   const Icon =
     status === "balanced"

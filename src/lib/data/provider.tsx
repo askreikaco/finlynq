@@ -11,7 +11,7 @@ import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
 import { dropLocalDisposableCaches, dropLocalUserCache, dropPasskeyUnlockFor } from "./local-read-cache-wipe";
 import { passkeyPersistBlocked, refreshPasskeyLock } from "@/lib/local-first/crypto/passkey-unlock";
-import { PasskeyLockBanner } from "@/components/passkey-lock-banner";
+import { Notice } from "@/components/notice";
 import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-queue";
 import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
@@ -135,7 +135,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig value={{ ...dataDefaults, provider: () => cache as unknown as Cache }}>
       <WriteQueueBridge />
-      <PasskeyLockBanner />
+      <Notice source="passkey-lock" />
       {children}
     </SWRConfig>
   );

@@ -13,9 +13,8 @@
 import { useEffect, useState } from "react";
 import { hardReload } from "@/lib/client/hard-reload";
 import { passkeyRecovery } from "@/lib/client/passkey-prf";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import {
-  AUTH_INPUT_CLASS,
   NewPasswordFields,
   isNewPasswordValid,
 } from "@/components/auth/new-password-fields";
@@ -143,10 +142,12 @@ function BackButton({ onBack }: { onBack: () => void }) {
 
 function SharedComputer({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
-      <span>This is a shared computer</span>
-      <Switch checked={checked} onCheckedChange={(v) => onChange(v)} />
-    </label>
+    <Field
+      label="This is a shared computer"
+      control="switch"
+      checked={checked}
+      onCheckedChange={(v) => onChange(v)}
+    />
   );
 }
 
@@ -274,24 +275,20 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
       </p>
 
       {accounts.length > 1 ? (
-        <fieldset className="space-y-2">
-          <legend className="mb-1 text-sm font-medium text-foreground">Which account?</legend>
-          {accounts.map((a) => (
-            <label key={a.deviceId} className={`flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm ${a.available ? "" : "opacity-50"}`}>
-              <input
-                type="radio"
-                name="device-account"
-                value={a.deviceId}
-                checked={deviceId === a.deviceId}
-                disabled={!a.available}
-                onChange={() => pick(a)}
-                className="accent-primary"
-              />
-              <span className="font-mono">{a.account}</span>
-              {!a.available && <span className="text-xs text-muted-foreground">(not set up for recovery)</span>}
-            </label>
-          ))}
-        </fieldset>
+        <Field
+          label="Which account?"
+          control="select"
+          value={deviceId}
+          onValueChange={(id) => {
+            const a = accounts.find((x) => x.deviceId === id);
+            if (a) pick(a);
+          }}
+          options={accounts.map((a) => ({
+            value: a.deviceId,
+            label: a.available ? a.account : `${a.account} (not set up for recovery)`,
+            disabled: !a.available,
+          }))}
+        />
       ) : (
         <p className="text-sm text-foreground">
           Account: <span className="font-mono">{firstUsable.account}</span>
@@ -299,21 +296,19 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
       )}
 
       <div>
-        <label htmlFor="device-proof" className="mb-1.5 block text-sm font-medium text-foreground">
-          {proofType === "totp" ? "Authenticator code (6 digits)" : "Recovery code"}
-        </label>
         {proofType === "totp" ? (
-          <input
+          <Field
+            label="Authenticator code (6 digits)"
             id="device-proof"
             inputMode="numeric"
             maxLength={6}
             autoComplete="one-time-code"
             value={proof}
             onChange={(e) => setProof(e.target.value.replace(/\D/g, ""))}
-            className={AUTH_INPUT_CLASS}
           />
         ) : (
-          <input
+          <Field
+            label="Recovery code"
             id="device-proof"
             autoComplete="off"
             autoCapitalize="characters"
@@ -321,7 +316,7 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
             placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
             value={proof}
             onChange={(e) => setProof(formatRecoveryInput(e.target.value))}
-            className={`${AUTH_INPUT_CLASS} font-mono`}
+            controlClassName="font-mono"
           />
         )}
         {selected?.needs === "totp" && (
@@ -392,23 +387,18 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
       <h2 className="text-base font-semibold text-foreground">Reset with a recovery code</h2>
       <p className="text-sm text-muted-foreground">Each code works once. Your data stays intact.</p>
       <div>
-        <label htmlFor="rc-identifier" className="mb-1.5 block text-sm font-medium text-foreground">
-          Email or username
-        </label>
-        <input
+        <Field
+          label="Email or username"
           id="rc-identifier"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           autoComplete="username"
           required
-          className={AUTH_INPUT_CLASS}
         />
       </div>
       <div>
-        <label htmlFor="rc-code" className="mb-1.5 block text-sm font-medium text-foreground">
-          Recovery code
-        </label>
-        <input
+        <Field
+          label="Recovery code"
           id="rc-code"
           value={code}
           onChange={(e) => setCode(formatRecoveryInput(e.target.value))}
@@ -417,7 +407,7 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
           spellCheck={false}
           placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
           required
-          className={`${AUTH_INPUT_CLASS} font-mono`}
+          controlClassName="font-mono"
         />
       </div>
       <NewPasswordFields idPrefix="rc" password={password} confirm={confirm} onPasswordChange={setPassword} onConfirmChange={setConfirm} />
@@ -476,10 +466,8 @@ function EmailReset({ onBack }: { onBack: () => void }) {
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-              Email
-            </label>
-            <input
+            <Field
+              label="Email"
               id="email"
               type="email"
               value={email}
@@ -487,7 +475,6 @@ function EmailReset({ onBack }: { onBack: () => void }) {
               placeholder="you@example.com"
               required
               autoComplete="email"
-              className={AUTH_INPUT_CLASS}
             />
           </div>
           <ErrorLine error={error} />

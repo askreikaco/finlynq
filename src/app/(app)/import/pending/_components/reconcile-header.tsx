@@ -10,21 +10,12 @@
  * import/pending/page.tsx; all state + callbacks owned by the page.
  */
 
-import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  ArrowLeft, ArrowRight, Check, X, Sparkles,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Check, Sparkles, ArrowRight, X } from "lucide-react";
+import Link from "next/link";
+import { Overlay } from "@/components/ui/overlay";
 import type { StagedDetail } from "../_types";
-import { PageHeader, HEADER_DESKTOP_ONLY, OverflowMenu, type OverflowAction } from "@/components/mobile";
+import { PageHeader, MoreActionsMenu, type MoreItem } from "@/components/mobile";
 import { InfoTip } from "@/components/ui/info-tip";
 
 export function ReconcileHeader({
@@ -60,46 +51,13 @@ export function ReconcileHeader({
       ? detail.staged.originalFilename || "Uploaded file"
       : detail.staged.subject || "(no subject)"
     : "Loading…";
-  // Desktop-only actions move to the overflow menu below regular (route mode and the embedded toolbar alike).
-  const overflow: OverflowAction[] = [
+  // Secondary actions live in More (route mode and the embedded toolbar alike).
+  const more: MoreItem[] = [
     { label: "Open reconciliation", href: accountId != null ? `/reconcile?account=${accountId}` : "/reconcile" },
     { label: "Re-apply rules", onSelect: () => setReapplyModalOpen(true), disabled: acting || reapplying },
     { label: "Discard all", onSelect: reject, disabled: acting, destructive: true },
   ];
-  const actions = (
-    <>
-      <Link
-        href={accountId != null ? `/reconcile?account=${accountId}` : "/reconcile"}
-        className={`${buttonVariants({ variant: "outline" })} ${HEADER_DESKTOP_ONLY}`}
-      >
-        Open reconciliation
-        <ArrowRight className="h-4 w-4 ml-1.5" />
-      </Link>
-      <Button
-        variant="outline"
-        className={HEADER_DESKTOP_ONLY}
-        onClick={() => setReapplyModalOpen(true)}
-        disabled={acting || reapplying}
-        title="Re-apply all active rules over every row in this batch"
-      >
-        <Sparkles className="h-4 w-4 mr-1.5" />
-        Re-apply rules
-      </Button>
-      <Button
-        variant="ghost"
-        onClick={reject}
-        disabled={acting}
-        className={`text-destructive hover:text-destructive hover:bg-destructive/10 ${HEADER_DESKTOP_ONLY}`}
-      >
-        <X className="h-4 w-4 mr-1.5" />
-        Discard all
-      </Button>
-      <Button onClick={approve} disabled={acting || selectedCount === 0}>
-        <Check className="h-4 w-4 mr-1.5" />
-        Send to bank ledger {selectedCount > 0 && `(${selectedCount})`}
-      </Button>
-    </>
-  );
+  const approveLabel = `Send to bank ledger${selectedCount > 0 ? ` (${selectedCount})` : ""}`;
   const subtitleText = detail ? (
     <>
       {detail.staged.source === "upload" && detail.staged.fileFormat
@@ -118,12 +76,12 @@ export function ReconcileHeader({
 
   // FINLYNQ-88 — Re-apply rules confirmation modal.
   const reapplyDialog = (
-          <Dialog open={reapplyModalOpen} onOpenChange={setReapplyModalOpen}>
-            <DialogContent className="regular:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Re-apply rules?</DialogTitle>
-                <DialogDescription className="space-y-3 pt-2">
-                  <span className="block">
+          <Overlay
+            open={reapplyModalOpen}
+            onClose={() => setReapplyModalOpen(false)}
+            size="md"
+            title="Re-apply rules?"
+            info={<><span className="block">
                     This re-applies all active rules to every row in this batch. It
                     may overwrite manual edits to payee, category, tags, type, or
                     account on matched rows.
@@ -131,24 +89,13 @@ export function ReconcileHeader({
                   <span className="block">
                     Rows you&apos;ve already linked to existing transactions and
                     rows marked as duplicates are skipped.
-                  </span>
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => setReapplyModalOpen(false)}
-                  disabled={reapplying}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={reapplyRules} disabled={reapplying}>
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                  {reapplying ? "Re-applying…" : "Re-apply"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  </span></>}
+            actions={[
+              { label: "Cancel", kind: "ghost", onClick: () => setReapplyModalOpen(false), disabled: reapplying },
+              { label: <><Sparkles className="h-4 w-4 mr-1.5" />
+                  {reapplying ? "Re-applying…" : "Re-apply"}</>, kind: "primary", onClick: reapplyRules, disabled: reapplying },
+            ]}
+          />
   );
 
   if (embedded) {
@@ -163,8 +110,11 @@ export function ReconcileHeader({
             {subtitleText ? <InfoTip text={subtitleText} label="About this batch" side="bottom" /> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <OverflowMenu items={overflow} />
-            {actions}
+            <MoreActionsMenu items={more} />
+            <Button onClick={approve} disabled={acting || selectedCount === 0}>
+              <Check className="h-4 w-4 mr-1.5" />
+              {approveLabel}
+            </Button>
           </div>
         </div>
         {reapplyDialog}
@@ -175,13 +125,11 @@ export function ReconcileHeader({
   return (
     <>
       <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
         title={title}
         info={subtitleText}
-        onBack={closeDetail}
-        backLabel="Back to Pending Imports"
-        actions={actions}
-        overflow={overflow}
+        back={{ onBack: closeDetail, label: "Back to Pending Imports" }}
+        more={more}
+        primary={{ kind: "save", label: approveLabel, onSelect: approve, busy: acting, disabled: acting || selectedCount === 0 }}
       />
       {reapplyDialog}
     </>

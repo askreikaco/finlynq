@@ -14,15 +14,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { InfoTip } from "@/components/ui/info-tip";
-import { DatePicker } from "@/components/date-picker";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import { todayISO } from "@/lib/utils/date";
+import { Field } from "@/components/ui/field";
 import { Loader2, Trash2 } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
+import { ListRow } from "@/components/mobile/list-row";
 
 type Mark = { id: number; date: string; price: number; currency: string };
 
@@ -119,38 +118,41 @@ export function ManagePricesPanel({
           <div className="px-4 py-4 text-sm text-muted-foreground">No prices.</div>
         ) : (
           marks.map((m) => (
-            <div key={m.id} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 text-sm">
-              <span className="font-mono tabular-nums text-muted-foreground">{m.date}</span>
-              <span className="ml-auto font-medium tabular-nums">{formatCurrency(m.price, m.currency)}</span>
-              <Button
-                aria-label="Delete this price"
-                variant="ghost"
-                size="sm"
-                className="h-11 w-11 px-0"
-                onClick={() => setDeleteId(m.id)}
-                title="Delete this price"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            </div>
+            <ListRow
+              key={m.id}
+              size="dense"
+              title={<span className="font-mono tabular-nums">{m.date}</span>}
+              value={formatCurrency(m.price, m.currency)}
+              actions={
+                <Button
+                  aria-label="Delete this price"
+                  variant="ghost"
+                  size="sm"
+                  className="h-11 w-11 px-0"
+                  onClick={() => setDeleteId(m.id)}
+                  title="Delete this price"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              }
+            />
           ))
         )}
       </div>
 
       {/* Add a mark */}
       <div className="grid grid-cols-1 items-end gap-3 regular:grid-cols-2">
-        <DatePicker value={date} onChange={setDate} max={todayISO()} label="Effective date" />
-        <div className="space-y-1">
-          <Label>Price ({currency})</Label>
-          <AmountInput
-            inputMode="decimal"
-            step="any"
-            min="0"
-            value={price}
-            onValueChange={(nv) => setPrice(nv)}
-            placeholder="0.00"
-          />
-        </div>
+        <Field control="date" label="Effective date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+        <Field
+          label={<>Price ({currency})</>}
+          control="amount"
+          inputMode="decimal"
+          step="any"
+          min="0"
+          value={price}
+          onValueChange={(nv) => setPrice(nv)}
+          placeholder="0.00"
+        />
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
 
@@ -163,13 +165,12 @@ export function ManagePricesPanel({
         </Button>
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId != null}
-        onOpenChange={(o) => {
-          if (!o) setDeleteId(null);
-        }}
+        onClose={() => setDeleteId(null)}
         title="Delete price"
-        description="Remove this price mark? The holding will fall back to the next most recent price (or 0)."
+        message="Remove this price mark? The holding will fall back to the next most recent price (or 0)."
         confirmLabel="Delete"
         busyLabel="Deleting…"
         busy={deleting}

@@ -1,4 +1,4 @@
-// Every MetricItem carries a real lucide icon: no placeholder '#' (Hash) tile and no optional icon.
+// Every MetricCard carries a real lucide icon: no placeholder '#' (Hash) tile and no optional icon.
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
 
@@ -6,14 +6,15 @@ const read = (p: string) => fs.readFileSync(p, "utf8");
 
 describe("metric icons", () => {
   const grid = read("src/components/mobile/metric-grid.tsx");
+  const card = read("src/components/metric-card.tsx");
 
   it("metric-grid.tsx has no Hash placeholder", () => {
     expect(grid).not.toMatch(/\bHash\b/);
   });
 
-  it("MetricItem.icon is required", () => {
-    expect(grid).toMatch(/^\s*icon: LucideIcon;/m);
-    expect(grid).not.toMatch(/icon\?: LucideIcon/);
+  it("MetricCard.icon is required (MetricGrid takes MetricCard's props)", () => {
+    expect(card).toMatch(/^\s*icon: LucideIcon;/m);
+    expect(card).not.toMatch(/icon\?: LucideIcon/);
     expect(grid).not.toMatch(/\?\?\s*Hash/);
   });
 

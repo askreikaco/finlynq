@@ -133,17 +133,16 @@ describe("FormPage variants: default is unchanged", () => {
   });
 });
 
-describe("FormPage variants: title and subtitle ReactNode", () => {
-  it("title accepts a ReactNode", () => {
+describe("FormPage variants: title and info", () => {
+  it("title is plain text (one h1, no icon slot)", () => {
     loaded();
-    renderPage({ title: <span data-testid="icon-title">Goal <em>icon</em></span> });
-    const t = screen.getByTestId("icon-title");
-    expect(t.querySelector("em")?.textContent).toBe("icon");
+    renderPage({ title: "Goal title" });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Goal title");
   });
 
-  it("subtitle accepts a ReactNode (shown in the InfoTip)", async () => {
+  it("info accepts a ReactNode (shown in the InfoTip)", async () => {
     loaded();
-    renderPage({ subtitle: <span data-testid="sub-node">Line <b>two</b></span> });
+    renderPage({ info: <span data-testid="sub-node">Line <b>two</b></span> });
     expect(screen.queryByTestId("sub-node")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^About / }));
     expect((await screen.findByTestId("sub-node")).querySelector("b")?.textContent).toBe("two");
@@ -169,13 +168,13 @@ describe("FormPage variants: form=external", () => {
     expect(body?.className).toContain("pb-[var(--form-bottom-pad)]");
   });
 
-  it("the page's own Save is rendered through header.actions and submits nothing itself", () => {
+  it("the page's own Save is the typed header.primary and submits nothing itself", () => {
     loaded();
     const onSubmit = vi.fn();
     renderPage({
       form: "external",
       onSubmit,
-      header: { actions: <button type="submit" form="my-form">Save splits</button> },
+      header: { primary: { kind: "save", label: "Save splits", form: "my-form" } },
     });
     expect(screen.getByRole("button", { name: "Save splits" })).toBeTruthy();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -440,45 +439,49 @@ describe("FormPage variants: states", () => {
 });
 
 describe("FormPage variants: header", () => {
-  it("header.className is added to the bar; the bar grid is the only layout", () => {
+  it("the bar is the one shared top bar: grid, sticky, glass", () => {
     loaded();
-    renderPage({ header: { className: "my-form-header" } });
-    const bar = screen.getByRole("heading", { level: 1 }).closest(".my-form-header");
-    expect(bar).toBeTruthy();
+    renderPage();
+    const bar = document.querySelector('[data-slot="page-header"]');
     expect(bar?.className).toContain("grid");
+    expect(bar?.className).toContain("sticky");
     expect(document.querySelector(".flex.items-center.justify-between")).toBeNull();
   });
 
-  it("header.actions (node) replaces the default desktop Delete and bar Save", () => {
+  it("the default primary is the typed Save: a submit for the form, in the bar", () => {
+    loaded();
+    renderPage({ ...withLoad });
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save.getAttribute("data-slot")).toBe("topbar-primary");
+    expect(save.getAttribute("type")).toBe("submit");
+    expect(save.getAttribute("form")).toBe("goal-edit-form");
+  });
+
+  it("header.primary replaces the default Save", () => {
     loaded();
     renderPage({
       ...withLoad,
       delete: deleteCfg(),
-      header: { actions: <button type="button">Custom action</button> },
+      header: { primary: { kind: "edit", label: "Custom action", onSelect: vi.fn() } },
     });
     expect(screen.getByRole("button", { name: "Custom action" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+  });
+
+  it("header.primary null leaves the bar without a primary; Delete stays in More", () => {
+    loaded();
+    renderPage({ ...withLoad, delete: deleteCfg(), header: { primary: null } });
+    expect(document.querySelector('[data-slot="topbar-primary"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Delete goal" })).toBeNull();
+    openDeleteFromOverflow();
+    expect(screen.getByRole("menuitem", { name: "Delete goal" })).toBeTruthy();
   });
 
-  it("header.actions (function) receives the record", () => {
+  it("header.back renames and retargets the Back link", () => {
     loaded();
-    const fn = vi.fn((rec?: Goal) => <span>Actions for {rec?.name}</span>);
-    renderPage({ ...withLoad, header: { actions: fn } });
-    expect(screen.getByText("Actions for Emergency fund")).toBeTruthy();
-    expect(fn).toHaveBeenCalledWith({ id: 1, name: "Emergency fund" });
-  });
-
-  it("header.belowTitle renders under the title", () => {
-    loaded();
-    renderPage({ header: { belowTitle: <span data-testid="below-node">B</span> } });
-    expect(screen.getByTestId("below-node")).toBeTruthy();
-  });
-
-  it("header.backLabel renames the Back link", () => {
-    loaded();
-    renderPage({ header: { backLabel: "Back to goals" } });
-    expect(screen.getByRole("link", { name: "Back to goals" })).toBeTruthy();
+    renderPage({ header: { back: { href: "/dashboard", label: "Back to goals" } } });
+    const back = screen.getByRole("link", { name: "Back to goals" });
+    expect(back.getAttribute("href")).toBe("/dashboard");
   });
 
   it("header.backHref changes only the Back target; ctx.returnTo is unchanged", () => {
@@ -491,7 +494,7 @@ describe("FormPage variants: header", () => {
         title="BH"
         fallbackReturn="/goals"
         {...withLoad}
-        header={{ backHref: "/dashboard" }}
+        header={{ back: { href: "/dashboard" } }}
       >
         {(ctx) => {
           seen.push(ctx.returnTo);
@@ -568,40 +571,19 @@ describe("FormPage variants: saveDisabled", () => {
 });
 
 describe("FormPage variants: delete extras", () => {
-  it("headerLabel sets the desktop button text, overflow keeps label", () => {
+  it("the bar has no Delete button at any width: Delete is only a More item", () => {
     loaded();
     renderPage({ ...withLoad, delete: deleteCfg({ headerLabel: "Delete" }) });
-    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
     openDeleteFromOverflow();
     expect(screen.getByRole("menuitem", { name: "Delete goal" })).toBeTruthy();
   });
 
-  it("button=none removes the desktop button but keeps the overflow item", () => {
-    loaded();
-    renderPage({ ...withLoad, delete: deleteCfg({ button: "none" }) });
-    expect(screen.queryByRole("button", { name: "Delete goal" })).toBeNull();
-    openDeleteFromOverflow();
-    expect(screen.getByRole("menuitem", { name: "Delete goal" })).toBeTruthy();
-  });
-
-  it("whenMissing=hide (default) renders no desktop Delete when the record is missing", () => {
+  it("with the record missing there is no Delete item and no More button", () => {
     loaded([]);
     renderPage({ ...withLoad, delete: deleteCfg(), states: { notFound: { chrome: true } } });
     expect(screen.queryByRole("button", { name: "Delete goal" })).toBeNull();
-  });
-
-  it("whenMissing=disabled renders a disabled desktop Delete and no overflow item", () => {
-    loaded([]);
-    renderPage({ ...withLoad, delete: deleteCfg({ whenMissing: "disabled" }) });
-    const btn = screen.getByRole("button", { name: "Delete goal" }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
     expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
-  });
-
-  it("whenMissing=disabled with a record renders an enabled Delete", () => {
-    loaded();
-    renderPage({ ...withLoad, delete: deleteCfg({ whenMissing: "disabled" }) });
-    expect((screen.getByRole("button", { name: "Delete goal" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("errorStyle=inline renders a plain alert paragraph, not FormNote", async () => {

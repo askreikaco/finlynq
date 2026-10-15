@@ -9,12 +9,12 @@ const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
 
 const switchSrc = read("src/components/ui/switch.tsx");
 const tabsSrc = read("src/components/ui/tabs.tsx");
-const checkboxSrc = read("src/components/ui/checkbox.tsx");
-const comboSrc = read("src/components/ui/combobox.tsx");
+const checkboxSrc = read("src/components/ui/field/controls.tsx");
+const comboSrc = read("src/components/ui/field/combobox-base.tsx");
 const workspace = read("src/app/(app)/transactions/_components/transactions-workspace.tsx");
-const accountPage = read("src/app/(app)/accounts/[id]/page.tsx");
+const accountPage = read("src/app/(app)/accounts/_components/account-detail.tsx");
 const moreMenu = read("src/components/more-menu.tsx");
-const insetGroup = read("src/components/mobile/inset-group.tsx");
+const insetRow = read("src/components/mobile/inset-row.tsx");
 const portfolio = read("src/app/(app)/portfolio/page.tsx");
 const family = read("src/app/(app)/family/_components/overview-tab.tsx");
 const shell = read("src/components/account-shell.tsx");
@@ -58,15 +58,13 @@ describe("checkbox pressed state", () => {
   });
 });
 
-describe("combobox trigger reaches 44px on coarse pointers (matches select.tsx)", () => {
-  it("default and sm sizes are h-11 on coarse pointers", () => {
-    expect(comboSrc).toContain("pointer-coarse:data-[size=default]:h-11");
-    expect(comboSrc).toContain("pointer-coarse:data-[size=sm]:h-11");
+describe("combobox trigger reaches 44px on coarse pointers (the shared control surface)", () => {
+  const surface = read("src/components/ui/control-surface.ts");
+  it("trigger uses CONTROL_BOX (h-11) or CONTROL_BOX_COMPACT (h-8, h-11 on coarse pointers)", () => {
+    expect(comboSrc).toContain("compact ? CONTROL_BOX_COMPACT : CONTROL_BOX");
+    expect(surface).toMatch(/CONTROL_BOX = "h-11 /);
+    expect(surface).toMatch(/CONTROL_BOX_COMPACT = "h-8 pointer-coarse:h-11 /);
     expect(comboSrc).not.toMatch(/max-md:/);
-  });
-  it("desktop heights unchanged", () => {
-    expect(comboSrc).toContain("data-[size=default]:h-8");
-    expect(comboSrc).toContain("data-[size=sm]:h-7");
   });
 });
 
@@ -75,9 +73,9 @@ describe("page-level targets", () => {
     expect(workspace).toContain("<PageToolbar");
   });
   it("accounts/[id] not-found path uses the global PageHeader back (one back control, 44px via BackButton)", () => {
-    // The not-found and loading branches carry PageHeader with backHref=/accounts; the main render uses the automatic back.
-    expect(accountPage.split('backLabel="Back to Accounts"').length - 1).toBe(1);
-    expect(accountPage).toContain('backHref="/accounts"');
+    // The not-found and loading branches carry PageHeader with back=/accounts; the main render uses the automatic back.
+    expect(accountPage.split('label: "Back to Accounts"').length - 1).toBe(2);
+    expect(accountPage).toContain('back={{ href: "/accounts"');
     expect(accountPage).not.toContain('pointer-coarse:min-h-11 items-center gap-1.5');
     expect(accountPage).not.toContain("max-md:min-h-11");
   });
@@ -85,11 +83,11 @@ describe("page-level targets", () => {
     expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="pointer-coarse:w-11 pointer-coarse:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
     expect(accountPage).not.toContain("max-md:w-11");
   });
-  it("more theme picker (ThemePicker in mobile/inset-group): each thumbnail is a 44px touch target with a pressed state", () => {
+  it("more theme picker (ThemePicker in mobile/inset-row): each thumbnail is a 44px touch target with a pressed state", () => {
     expect(moreMenu).toContain("<ThemePicker");
-    expect(insetGroup).toContain("role=\"radiogroup\"");
-    expect(insetGroup).toContain("min-h-11");
-    expect(insetGroup).toContain("active:opacity-80");
+    expect(insetRow).toContain("role=\"radiogroup\"");
+    expect(insetRow).toContain("min-h-11");
+    expect(insetRow).toContain("active:opacity-80");
   });
   it("portfolio 'Add Account' link has min-h-11", () => {
     expect(portfolio).toContain("inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2");

@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push: vi.fn() }), usePathname: () => "/accounts" }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => <T,>(items: T[]) => items }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => React.createElement("div", { "data-testid": "tips" }) }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: ({ source }: { source: string }) => (source.startsWith("tips:") ? React.createElement("div", { "data-testid": "tips" }) : null) }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
 

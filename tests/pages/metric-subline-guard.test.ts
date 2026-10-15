@@ -14,7 +14,7 @@ describe("every value-only metric tile has a sub-line (delta or muted caption)",
     const src = code("src/app/(app)/portfolio/_components/mobile-portfolio.tsx");
     expect(src).toMatch(/label: "Holdings"[^\n]*sub: `Across/);
     expect(src).toMatch(/label: "Accounts"[^\n]*sub: `/);
-    expect(src).toMatch(/m\.sub \? m : \{ \.\.\.m, sub: NO_HISTORY_CAPTION \}/);
+    expect(src).toMatch(/m\.sub \|\| m\.delta\?\.text \? m : \{ \.\.\.m, sub: NO_HISTORY_CAPTION \}/);
   });
   it("dividends + realized gains tiles fall back to NO_HISTORY_CAPTION when there is no delta", () => {
     for (const f of ["src/app/(app)/portfolio/dividends/page.tsx", "src/app/(app)/portfolio/realized-gains/page.tsx"]) {

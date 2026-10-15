@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Lock, UserCog, Check } from "lucide-react";
-import { AccountCard, InsetRow } from "@/components/mobile/inset-group";
+import { ListRow } from "@/components/mobile/list-row";
 import { cn } from "@/lib/utils";
 import { ACCOUNT_PAGE_HREF, MANAGE_ACCOUNTS_HREF } from "@/lib/client/account-page";
 import {
@@ -125,53 +125,50 @@ export const AccountSwitcher = memo(function AccountSwitcher({ variant = "dropdo
   if (variant === "list") {
     return (
       <>
-        {a.visible.map((acc) =>
-          acc.active ? (
-            <AccountCard
-              key={acc.userId}
-              data-testid="account-row"
-              initials={initialsOf(acc)}
-              title={acc.email}
-              subtitle="Current"
-              subtitleIcon={Check}
-              current
-              chevron
-              onClick={() => onAccount(acc)}
-              disabled={a.busy !== null}
-            />
-          ) : (
-            <AccountCard
-              key={acc.userId}
-              data-testid="account-row"
-              initials={initialsOf(acc)}
-              title={acc.displayName || "Account"}
-              subtitle={acc.email}
-              onClick={() => onAccount(acc)}
-              disabled={a.busy !== null}
-              trailing={
-                a.busy === `switch:${acc.userId}` ? (
-                  <span className="shrink-0 text-sm text-muted-foreground">Switching...</span>
-                ) : acc.status === "locked" ? (
-                  <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
-                    <Lock className="size-3" aria-hidden="true" />
-                    Sign in again
-                  </span>
-                ) : null
-              }
-            />
-          ),
-        )}
-        <InsetRow
-          accent
+        {a.visible.map((acc) => (
+          <ListRow
+            key={acc.userId}
+            data-testid="account-row"
+            initials={initialsOf(acc)}
+            tile={acc.active ? "primary" : "muted"}
+            title={acc.active ? acc.email : acc.displayName || "Account"}
+            subtitle={
+              acc.active ? (
+                <span className="flex items-center gap-1">
+                  <Check aria-hidden="true" className="size-3.5 shrink-0" />
+                  Current
+                </span>
+              ) : (
+                acc.email
+              )
+            }
+            selected={acc.active}
+            chevron={acc.active ? true : false}
+            onPress={() => onAccount(acc)}
+            disabled={a.busy !== null}
+            trailing={
+              acc.active ? undefined : a.busy === `switch:${acc.userId}` ? (
+                <span className="shrink-0 text-sm text-muted-foreground">Switching...</span>
+              ) : acc.status === "locked" ? (
+                <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
+                  <Lock className="size-3" aria-hidden="true" />
+                  Sign in again
+                </span>
+              ) : undefined
+            }
+          />
+        ))}
+        <ListRow
+          tone="accent"
           icon={Plus}
-          label="Add another account"
-          onClick={a.handleAdd}
+          title="Add another account"
+          onPress={a.handleAdd}
           disabled={addDisabled}
-          title={a.atCap ? CAP_MESSAGE : undefined}
+          hint={a.atCap ? CAP_MESSAGE : undefined}
           trailing={addExtra}
           chevron={false}
         />
-        <InsetRow icon={UserCog} label="Manage accounts" href={MANAGE_ACCOUNTS_HREF} />
+        <ListRow icon={UserCog} title="Manage accounts" href={MANAGE_ACCOUNTS_HREF} />
         {alert}
       </>
     );

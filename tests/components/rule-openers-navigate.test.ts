@@ -47,9 +47,9 @@ describe("category openers use navigation", () => {
     expect(src).not.toMatch(/aria-label="Save category name"/);
   });
 
-  it("the categories page opens the one shared form via ?edit= (no separate add / rename pages)", () => {
+  it("the categories page opens the one shared form (the pane at wide, /categories/new and /categories/[id]/edit below)", () => {
     const src = read("src/app/(app)/categories/_page-content.tsx");
-    expect(src).toContain("/categories?edit=new");
-    expect(src).toContain("setEdit(c.id)");
+    expect(src).toContain("/categories/new");
+    expect(src).toContain("openEdit(id)");
   });
 });

@@ -8,14 +8,15 @@ import { resolve } from "node:path";
 const read = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 const ACCOUNTS = "src/app/(app)/accounts/page.tsx";
 const PORTFOLIO = "src/app/(app)/portfolio/page.tsx";
-const DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
+const DETAIL = "src/app/(app)/accounts/_components/account-detail.tsx";
 
 describe("account create entry points", () => {
   it("accounts list no longer opens AccountDialog or registers the accounts.create FAB handler", () => {
     const src = read(ACCOUNTS);
     expect(src).not.toContain("AccountDialog");
     expect(src).not.toContain('usePageFab("accounts.create"');
-    expect(src).toContain('href="/accounts/new"');
+    // The create entry point is the top bar's typed primary (a link to the page; the pane at wide).
+    expect(src).toContain('href: "/accounts/new"');
   });
 
   it("portfolio Add Account links to /accounts/new with returnTo=/portfolio", () => {

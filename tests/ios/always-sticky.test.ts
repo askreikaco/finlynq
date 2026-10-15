@@ -49,11 +49,8 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
     expect(tokens).not.toContain("max-regular:top-0");
   });
 
-  it("keeps the glass material and the sticky core shared with the new-transaction header", () => {
-    const core = constant("PHONE_BAR_STICKY").split(/\s+/);
-    expect(core).toContain("sticky");
-    expect(core).toContain("glass-bar");
-    for (const t of core) expect(tokens).toContain(t);
+  it("keeps the glass material", () => {
+    expect(tokens).toContain("glass-bar");
   });
 });
 
@@ -257,7 +254,7 @@ describe("non-admin pages", () => {
     "src/app/(app)/whats-new/page.tsx",
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",
-    "src/app/(app)/categories/[id]/page.tsx",
+    "src/app/(app)/categories/_components/category-detail.tsx",
     "src/app/(app)/portfolio/new/page.tsx",
     "src/app/(app)/portfolio/realized-gains/page.tsx",
     "src/app/(app)/portfolio/dividends/page.tsx",
@@ -314,7 +311,8 @@ describe("non-admin pages", () => {
 
   it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {
     const files = walk(join(ROOT, "src/app/(app)"))
-      .filter((f) => f.endsWith(".tsx") && !f.includes("/admin/"));
+      // The dev gallery shows the bar specimens inside bordered demo frames (BarFrame), by design.
+      .filter((f) => f.endsWith(".tsx") && !f.includes("/admin/") && !f.includes("/dev/gallery/"));
     const bad: string[] = [];
     for (const f of files) {
       const src = readFileSync(f, "utf8");

@@ -16,12 +16,7 @@
  */
 
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { PROMPT_FORMS, type PromptView } from "@/components/prompts/prompt-forms";
 
@@ -101,19 +96,15 @@ export function PromptGate() {
   if (!current || !Form) return null;
 
   return (
-    <Dialog
+    <Overlay
       open
-      onOpenChange={(next) => {
-        if (next) return;
+      onClose={() => {
         // Dismiss (X / Esc / backdrop) counts as "Not now" for deferrable
         // prompts; non-deferrable prompts can't be dismissed this way.
         if (current.deferrable) handleDefer();
       }}
+      title={current.title}
     >
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{current.title}</DialogTitle>
-        </DialogHeader>
         <p className="text-sm text-muted-foreground">{current.body}</p>
         <Form
           prompt={current}
@@ -133,7 +124,6 @@ export function PromptGate() {
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

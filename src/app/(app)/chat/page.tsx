@@ -5,29 +5,15 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
-import { PageHeader, HEADER_CELL, ListRow } from "@/components/mobile";
+import { PageHeader, ListRow } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { Field } from "@/components/ui/field";
+import { Chart, type ChartSeries } from "@/components/chart";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -82,144 +68,23 @@ function saveHistory(messages: ChatMessage[], userId: string | null) {
 
 // ─── Inline chart components ────────────────────────────────────────
 
-function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {
-  // Detect if data has budgeted/spent keys (budget comparison)
-  const isBudgetChart = data.length > 0 && "budgeted" in data[0] && "spent" in data[0];
-  // Detect if data has income/expenses keys (summary)
-  const isSummaryChart = data.length > 0 && "income" in data[0] && "expenses" in data[0];
-  // Detect goals chart
-  const isGoalChart = data.length > 0 && "current" in data[0] && "target" in data[0];
-
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 11 }}
-          stroke="var(--muted-foreground)"
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 11 }}
-          stroke="var(--muted-foreground)"
-          tickLine={false}
-          tickFormatter={(v) => formatCurrency(Number(v), currency).replace("CA", "")}
-        />
-        <Tooltip
-          formatter={(v) => formatCurrency(Number(v), currency)}
-          contentStyle={{
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "var(--popover)",
-            color: "var(--popover-foreground)",
-          }}
-        />
-        {isBudgetChart ? (
-          <>
-            <Bar dataKey="budgeted" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} name="Budget" />
-            <Bar dataKey="spent" fill={CHART_COLORS.negative} radius={[4, 4, 0, 0]} name="Spent" />
-            <Legend />
-          </>
-        ) : isSummaryChart ? (
-          <>
-            <Bar dataKey="income" fill={CHART_COLORS.positive} radius={[4, 4, 0, 0]} name="Income" />
-            <Bar dataKey="expenses" fill={CHART_COLORS.negative} radius={[4, 4, 0, 0]} name="Expenses" />
-            <Legend />
-          </>
-        ) : isGoalChart ? (
-          <>
-            <Bar dataKey="current" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} name="Current" />
-            <Bar dataKey="target" fill={CHART_COLORS.categories[4]} radius={[4, 4, 0, 0]} name="Target" />
-            <Legend />
-          </>
-        ) : (
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-            {data.map((_, i) => (
-              <Cell key={i} fill={CHART_COLORS.categories[i % CHART_COLORS.categories.length]} />
-            ))}
-          </Bar>
-        )}
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function InlinePieChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          outerRadius={80}
-          innerRadius={40}
-          paddingAngle={2}
-          label={({ name, percent }) => `${name} ${Math.round((percent ?? 0) * 100)}%`}
-          labelLine={false}
-          className="text-xs"
-        >
-          {data.map((_, i) => (
-            <Cell key={i} fill={CHART_COLORS.categories[i % CHART_COLORS.categories.length]} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(v) => formatCurrency(Number(v), currency)}
-          contentStyle={{
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "var(--popover)",
-            color: "var(--popover-foreground)",
-          }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
-  );
-}
-
-function InlineLineChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {
-  const hasIncome = data.length > 0 && "income" in data[0];
-
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 11 }}
-          stroke="var(--muted-foreground)"
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 11 }}
-          stroke="var(--muted-foreground)"
-          tickLine={false}
-          tickFormatter={(v) => formatCurrency(Number(v), currency).replace("CA", "")}
-        />
-        <Tooltip
-          formatter={(v) => formatCurrency(Number(v), currency)}
-          contentStyle={{
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "var(--popover)",
-            color: "var(--popover-foreground)",
-          }}
-        />
-        {hasIncome ? (
-          <>
-            <Line type="monotone" dataKey="income" stroke={CHART_COLORS.positive} strokeWidth={2} dot={{ r: 3 }} name="Income" />
-            <Line type="monotone" dataKey="expenses" stroke={CHART_COLORS.negative} strokeWidth={2} dot={{ r: 3 }} name="Expenses" />
-            <Legend />
-          </>
-        ) : (
-          <Line type="monotone" dataKey="value" stroke={CHART_COLORS.neutral} strokeWidth={2} dot={{ r: 3 }} />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
-  );
+/** The assistant's inline chart: the series follow the keys of the first row (budget, summary, goals or plain value). */
+function InlineChart({ type, data, currency }: { type: "bar" | "pie" | "line"; data: Record<string, unknown>[]; currency: string }) {
+  const has = (...keys: string[]) => data.length > 0 && keys.every((k) => k in data[0]);
+  if (type === "pie") {
+    return <Chart kind="donut" data={data} currency={currency} size="md" breakdownList breakdownValue="both" />;
+  }
+  let series: ChartSeries[];
+  if (type === "bar" && has("budgeted", "spent")) {
+    series = [{ key: "budgeted", name: "Budget", color: CHART_COLORS.neutral }, { key: "spent", name: "Spent", color: CHART_COLORS.negative }];
+  } else if (has("income", "expenses")) {
+    series = [{ key: "income", name: "Income", color: CHART_COLORS.positive, dots: true }, { key: "expenses", name: "Expenses", color: CHART_COLORS.negative, dots: true }];
+  } else if (type === "bar" && has("current", "target")) {
+    series = [{ key: "current", name: "Current", color: CHART_COLORS.neutral }, { key: "target", name: "Target", color: CHART_COLORS.categories[4] }];
+  } else {
+    series = [{ key: "value", name: "Value", color: CHART_COLORS.neutral, colorByRow: type === "bar", dots: true }];
+  }
+  return <Chart kind={type} data={data} xKey="name" height={220} currency={currency} series={series} legend={series.length > 1} grid />;
 }
 
 function InlineTable({ data }: { data: Record<string, unknown>[] }) {
@@ -228,7 +93,7 @@ function InlineTable({ data }: { data: Record<string, unknown>[] }) {
 
   // One list row per result row (no table): the first column is the title, the rest read as a subtitle.
   return (
-    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card px-3">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
       {data.map((row, i) => (
         <ListRow
           key={i}
@@ -369,23 +234,9 @@ function ChatPageContent() {
   return (
     <div data-chat-shell className="flex flex-col max-regular:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-regular:-mb-20 regular:h-[calc(100dvh-4rem)]">
       <PageHeader
-        className="shrink-0"
         title="AI Chat"
         info="Ask about your finances"
-        actions={
-          messages.length > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearHistory}
-              aria-label="Clear chat"
-              className={`${HEADER_CELL} text-muted-foreground hover:text-destructive text-xs gap-1.5`}
-            >
-              <Trash2 className="h-4 w-4 regular:h-3.5 regular:w-3.5" aria-hidden="true" />
-              <span className="max-regular:sr-only">Clear</span>
-            </Button>
-          ) : undefined
-        }
+        more={messages.length > 0 ? [{ label: "Clear chat", icon: Trash2, destructive: true, onSelect: clearHistory }] : undefined}
       />
 
       {/* Messages area */}
@@ -427,9 +278,9 @@ function ChatPageContent() {
                   {msg.chartData && msg.chartData.length > 0 && (
                     <Card className="overflow-hidden border-border/60">
                       <CardContent className="p-3">
-                        {msg.chartType === "bar" && <InlineBarChart data={msg.chartData} currency={displayCurrency} />}
-                        {msg.chartType === "pie" && <InlinePieChart data={msg.chartData} currency={displayCurrency} />}
-                        {msg.chartType === "line" && <InlineLineChart data={msg.chartData} currency={displayCurrency} />}
+                        {msg.chartType === "bar" && <InlineChart type="bar" data={msg.chartData} currency={displayCurrency} />}
+                        {msg.chartType === "pie" && <InlineChart type="pie" data={msg.chartData} currency={displayCurrency} />}
+                        {msg.chartType === "line" && <InlineChart type="line" data={msg.chartData} currency={displayCurrency} />}
                         {msg.chartType === "table" && <InlineTable data={msg.chartData} />}
                       </CardContent>
                     </Card>
@@ -486,7 +337,7 @@ function ChatPageContent() {
           </div>
         )}
         <div className="flex gap-2">
-          <Input
+          <Field
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}

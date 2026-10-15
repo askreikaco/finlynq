@@ -13,7 +13,8 @@ import Link from "next/link";
 import { formatCurrencyAdaptive, formatCurrency } from "@/lib/currency";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DetailSheet, HoldingRow, SectionCard, type DetailItem } from "@/components/mobile";
+import { HoldingRow, SectionCard } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { LotInspectorDialog } from "@/components/portfolio/lot-inspector-dialog";
 import { Button } from "@/components/ui/button";
 import type { EnrichedHolding } from "../_types";
@@ -62,7 +63,7 @@ export function HoldingAccountGroups({
       data-slot="holdings-by-account"
     >
       {groups.map((g) => (
-        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" list>
           {g.holdings.map((h) => (
             <HoldingRow
               key={h.id}
@@ -77,11 +78,12 @@ export function HoldingAccountGroups({
       ))}
 
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          onClose={() => setOpen(null)}
           title={accountHoldingTitle(open)}
-          description={open.accountName}
+          subtitle={open.accountName}
           items={holdingDetailItems(open, showNative, displayCurrency)}
         >
           <Button variant="outline" className="h-11" onClick={() => { const h = open; setOpen(null); onEdit(h); }}>Edit</Button>
@@ -94,7 +96,7 @@ export function HoldingAccountGroups({
               View transactions
             </Link>
           )}
-        </DetailSheet>
+        </Overlay>
       )}
 
       <LotInspectorDialog

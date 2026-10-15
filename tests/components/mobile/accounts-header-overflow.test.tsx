@@ -13,7 +13,7 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/components/dropdown-order-provider", () => ({
   useDropdownOrder: () => <T,>(items: T[]) => items,
 }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
 
@@ -33,27 +33,26 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const cls = (el: Element) => el.className.toString().split(/\s+/);
 
 describe("Accounts header on mobile", () => {
-  it("secondary actions are hidden from the bar at every width (HEADER_SECONDARY); the primary stays; overflow lists them", async () => {
+  it("the bar's secondary group is More only here (Manage groups lives in it); the primary stays; no inline duplicate", async () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
 
-    const manageInline = screen.getByTitle("Rename, reorder, or merge account groups");
+    // Manage groups is a More item only: no hidden inline duplicate in the bar.
+    expect(screen.queryByTitle("Rename, reorder, or merge account groups")).toBeNull();
     // Archived accounts are a filter now (funnel icon -> filter page), not a header action.
     expect(screen.queryByTitle("Show archived accounts")).toBeNull();
-    expect(cls(manageInline)).toContain("header-secondary");
 
     const primary = screen.getByRole("link", { name: /Create Account|Add/ });
-    expect(cls(primary)).not.toContain("header-secondary");
+    expect(primary.getAttribute("data-slot")).toBe("topbar-primary");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu", undefined, { timeout: 5000 });
     expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Customize cards"]);
   });
 
-  it("Manage groups (inline and overflow) links to /accounts/groups", async () => {
+  it("Manage groups links to /accounts/groups", async () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
-    expect(screen.getByTitle("Rename, reorder, or merge account groups").closest("a")?.getAttribute("href")).toBe("/accounts/groups");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));

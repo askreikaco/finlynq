@@ -8,7 +8,7 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 const MIGRATED = [
   "src/app/(app)/transactions/_components/transactions-workspace.tsx",
   "src/app/(app)/accounts/page.tsx",
-  "src/app/(app)/accounts/[id]/page.tsx",
+  "src/app/(app)/accounts/_components/account-detail.tsx",
   "src/app/(app)/goals/page.tsx",
   "src/app/(app)/loans/page.tsx",
   "src/app/(app)/subscriptions/page.tsx",
@@ -17,7 +17,7 @@ const MIGRATED = [
   "src/app/(app)/portfolio/realized-gains/page.tsx",
   "src/app/(app)/reports/page.tsx",
   "src/app/(app)/dashboard/page.tsx",
-  "src/app/(app)/categories/[id]/page.tsx",
+  "src/app/(app)/categories/_components/category-detail.tsx",
 ];
 
 /** Pages that still render the bare MetricRangeSelect on purpose (see the toolbar rollout notes). */

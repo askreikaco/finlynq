@@ -97,8 +97,7 @@ describe("/transactions/[id]/edit page", () => {
     H.search = "";
     stubFetch();
     await mountReady();
-    const label = screen.getAllByText("Note").find((el) => el.tagName === "LABEL" || el.tagName === "DIV" || el.tagName === "SPAN")!;
-    const area = label.parentElement!.querySelector("textarea") as HTMLTextAreaElement;
+    const area = screen.getByRole("textbox", { name: /^Note/ }) as HTMLTextAreaElement;
     expect(area).toBeTruthy();
     expect(area.getAttribute("rows")).toBe("2");
     expect(area.className).toContain("resize-none");

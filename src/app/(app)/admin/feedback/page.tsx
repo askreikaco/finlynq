@@ -11,19 +11,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import { Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
 import { SectionPage } from "@/components/templates/section-page";
+import { Field } from "@/components/ui/field";
 import { TW } from "@/lib/design/tokens";
 
 function fmtBytes(n: number): string {
@@ -225,17 +220,12 @@ function AdminThreadDialog({
   const who = thread ? thread.username || thread.email || "user" : "";
 
   return (
-    <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="capitalize">
-            {thread ? `${thread.type} feedback` : "Feedback"}
-          </DialogTitle>
-          <DialogDescription>
-            {thread ? `From ${who}. ` : ""}Your reply is visible to the user.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={feedbackId != null}
+      onClose={onClose}
+      title={<span className="capitalize">{thread ? `${thread.type} feedback` : "Feedback"}</span>}
+      info={<>{thread ? `From ${who}. ` : ""}Your reply is visible to the user.</>}
+    >
         {error && !thread && <p className="text-sm text-destructive">{error}</p>}
 
         {thread && (
@@ -269,7 +259,8 @@ function AdminThreadDialog({
               <div ref={bottomRef} />
             </div>
             <div className="space-y-2">
-              <textarea
+              <Field
+                control="textarea"
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 onPaste={(e) => {
@@ -301,7 +292,6 @@ function AdminThreadDialog({
                 rows={3}
                 maxLength={4000}
                 placeholder="Reply to the user…"
-                className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
               <input
                 ref={fileRef}
@@ -342,8 +332,7 @@ function AdminThreadDialog({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
 
@@ -449,17 +438,13 @@ export default function AdminFeedbackPage() {
             <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border/50 pt-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Status</span>
-                <select
+                <Field
+                  control="select"
                   value={r.status}
-                  onChange={(e) => patch(r.id, { status: e.target.value })}
-                  className="rounded-md border border-border bg-background px-2 py-1 text-sm capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(v) => patch(r.id, { status: v })}
+                  controlClassName="capitalize"
+                  options={STATUSES.map((s) => ({ value: s, label: s }))}
+                />
               </div>
               <Button variant="outline" size="sm" onClick={() => setOpenId(r.id)}>
                 {r.replyCount > 0
@@ -469,17 +454,13 @@ export default function AdminFeedbackPage() {
             </div>
 
             <div className="mt-3 flex items-end gap-2">
-              <div className="flex-1">
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  Admin note (private — not shown to the user)
-                </label>
-                <input
-                  value={notes[r.id] ?? ""}
-                  onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                  placeholder="Admin note…"
-                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                />
-              </div>
+              <Field
+                label="Admin note (private — not shown to the user)"
+                value={notes[r.id] ?? ""}
+                onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                placeholder="Admin note…"
+                className="flex-1"
+              />
               <Button
                 variant="outline"
                 size="sm"

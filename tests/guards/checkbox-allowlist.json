@@ -34,15 +34,15 @@
     "reason": "Per-row force-commit include for probable matches in the reconcile preview.",
     "optional": true
   },
-  "src/components/transactions/mobile-tx-list.tsx": {
-    "reason": "Row select checkbox in the transactions list (Select mode bulk selection, select-all in the workspace).",
+  "src/components/mobile/list-row.tsx": {
+    "reason": "Row select checkbox of ListRow (the transactions list Select mode bulk selection).",
     "optional": true
   },
   "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
     "reason": "Select-all checkbox in the transactions list Select mode (bulk selection).",
     "optional": true
   },
-  "src/app/(app)/dev/gallery/page.tsx": {
-    "reason": "Dev gallery shows every global primitive, including Checkbox, for review."
+  "src/app/(app)/dev/gallery/fields.tsx": {
+    "reason": "Gallery of the Field control types; shows the checkbox control."
   }
 }

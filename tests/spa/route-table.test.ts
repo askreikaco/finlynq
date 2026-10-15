@@ -28,7 +28,7 @@ describe("SPA route table", () => {
 
   it("matches exactly the listed paths (optional trailing slash and query)", () => {
     for (const p of ["/dashboard", "/dashboard/", "/dashboard?range=this_year", "/transactions", "/transactions?sel=12", "/transactions/new", "/transactions/search?q=a",
-      "/transactions/9/edit", "/accounts", "/accounts/new", "/accounts/12", "/categories?edit=new", "/filter/accounts?returnTo=/accounts", "/more", "/settings", "/settings/about"]) {
+      "/transactions/9/edit", "/accounts", "/accounts/new", "/accounts/12", "/categories?sel=new", "/filter/accounts?returnTo=/accounts", "/more", "/settings", "/settings/about"]) {
       expect(isSpa(p), p).toBe(true);
     }
     for (const p of ["/", "/dashboardx", "/dashboard/x", "/more/x", "/settings/general", "/transactions/9", "/transactions/9/split", "/transactions/9/edit/x",

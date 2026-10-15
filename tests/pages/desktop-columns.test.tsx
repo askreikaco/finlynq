@@ -60,12 +60,12 @@ describe("desktop columns: transactions", () => {
     expect(src).not.toMatch(/regular:grid-cols-2/);
   });
 
-  it("the split view is list 2fr | pane 1fr (ListDetailLayout) and the workspace no longer carries the old 3fr/2fr opt-in", () => {
+  it("the split view is list 3fr | pane 1fr (ListDetailLayout) and the workspace no longer carries the old 3fr/2fr opt-in", () => {
     const ws = code(`${APP}/transactions/_components/transactions-workspace.tsx`);
     expect(ws).toContain("<ListDetailLayout");
     expect(ws).not.toContain("singleColumn={splitView}");
     expect(ws).not.toContain("minmax(0,3fr)");
-    expect(code("src/lib/list-detail/selection.ts")).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(code("src/lib/list-detail/selection.ts")).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(code("src/components/transactions/mobile-tx-list.tsx")).not.toMatch(/wide:grid-cols-2/);
   });
 });
@@ -79,12 +79,12 @@ describe("desktop columns: card grids", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
     expect(src).toMatch(/label="Categories"[\s\S]*shadow-\[var\(--list-divider\)\]/);
     expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
-    expect(code("src/components/mobile/progress-row.tsx")).toContain("@container");
+    expect(code("src/components/mobile/list-row.tsx")).toContain("@container");
   });
 
   it("categories/[id]: summary and recent span the row, chart spans 2", () => {
-    const src = code(`${APP}/categories/[id]/page.tsx`);
-    expect(src).toMatch(/data-slot="category-detail-cards" className=\{TW\.grid3\}/);
+    const src = code(`${APP}/categories/_components/category-detail.tsx`);
+    expect(src).toMatch(/data-slot="category-detail-cards" className=\{embedded \? "grid grid-cols-1 gap-4" : TW\.grid3\}/);
     expect(src).toContain('"col-span-full"');
     expect(src).toContain('"regular:col-span-2"');
   });
@@ -94,7 +94,7 @@ describe("desktop columns: card grids", () => {
     expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
     expect(src).toMatch(/Found in your transactions" icon=\{Search\} tone="cyan" padded=\{false\} className="col-span-full/);
     expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
-    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
+    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><Notice/);
   });
 
   it("dashboard: the 3-card row is a counted grid (columns follow rendered cards: 1 / 2 / 3)", () => {

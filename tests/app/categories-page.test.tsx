@@ -66,7 +66,7 @@ describe("CategoriesPage (real component)", () => {
       await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Categories" })).toBeTruthy(), { timeout: 15000 });
       expect(screen.queryByRole("tab", { name: "Overview" })).toBeNull();
       expect(screen.queryByRole("tab", { name: "Manage" })).toBeNull();
-      expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
+      expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toMatch(/^\/categories\/new(\?|$)/);
       // Spending and Income load at once (cache-first, one request per type) so the two-column desktop layout and the
       // phone tab need no extra fetch on switching.
       expect(fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/reports/categories")).length).toBe(2);

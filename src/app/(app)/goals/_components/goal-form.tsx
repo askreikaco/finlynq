@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { X } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { isLocalWriteQueueActive, queueOfflineEntityCreate, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
-import { AmountInput } from "@/components/amount-input";
+import { Field, type FieldComboboxOption } from "@/components/ui/field";
 
 export type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -235,101 +231,99 @@ export function GoalForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div>
-        <Label>Goal Name</Label>
-        <Input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} placeholder="e.g. Emergency Fund" />
-        {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
-      </div>
+      <Field
+        label="Goal Name"
+        error={errors.name}
+        value={form.name}
+        onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
+        placeholder="e.g. Emergency Fund"
+      />
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Type</Label>
-          <Select items={GOAL_TYPE_LABELS} value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? "savings" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="savings">Savings</SelectItem>
-              <SelectItem value="debt_payoff">Debt Payoff</SelectItem>
-              <SelectItem value="investment">Investment</SelectItem>
-              <SelectItem value="emergency_fund">Emergency Fund</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Currency</Label>
-          <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {currencyOptions.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label>Target Amount</Label>
-        <AmountInput  step="0.01" value={form.targetAmount} onValueChange={(nv) => { setForm({ ...form, targetAmount: nv }); setErrors({ ...errors, targetAmount: "" }); }} />
-        {errors.targetAmount && <p className="text-xs text-destructive mt-1">{errors.targetAmount}</p>}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Deadline</Label>
-          <Input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-        </div>
-        <div>
-          <Label>Priority</Label>
-          <Select items={GOAL_PRIORITY_LABELS} value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v ?? "1" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">High</SelectItem>
-              <SelectItem value="2">Medium</SelectItem>
-              <SelectItem value="3">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label>Linked Accounts</Label>
-        {form.accountIds.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {form.accountIds.map((id) => {
-              const a = accounts.find((x) => x.id === id);
-              return (
-                <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs font-medium border border-border/60">
-                  {a?.name ?? `#${id}`}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${a?.name ?? `#${id}`}`}
-                    onClick={() => removeAccount(id)}
-                    className="hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-        )}
-        <Combobox
-          value=""
-          onValueChange={(v) => addAccount(v ?? "")}
-          items={sortAccount(
-            availableAccounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-            (a) => Number(a.value),
-            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-          )}
-          placeholder={form.accountIds.length === 0 ? "Add an account…" : "Add another…"}
-          searchPlaceholder="Search accounts…"
-          emptyMessage="No matches"
-          className="w-full"
+        <Field
+          label="Type"
+          control="select"
+          value={form.type}
+          onValueChange={(v) => setForm({ ...form, type: v ?? "savings" })}
+          options={[
+            { value: "savings", label: "Savings" },
+            { value: "debt_payoff", label: "Debt Payoff" },
+            { value: "investment", label: "Investment" },
+            { value: "emergency_fund", label: "Emergency Fund" },
+          ]}
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          Goal progress sums transactions across every linked account. Leave empty for manual tracking.
-        </p>
+        <Field
+          label="Currency"
+          control="select"
+          value={form.currency}
+          onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}
+          options={currencyOptions.map((c) => ({ value: c, label: c }))}
+        />
       </div>
-      <div>
-        <Label>Note</Label>
-        <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+      <Field
+        label="Target Amount"
+        error={errors.targetAmount}
+        control="amount"
+        step="0.01"
+        value={form.targetAmount}
+        onValueChange={(nv) => { setForm({ ...form, targetAmount: nv }); setErrors({ ...errors, targetAmount: "" }); }}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          label="Deadline"
+          control="date"
+          value={form.deadline}
+          onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+        />
+        <Field
+          label="Priority"
+          control="select"
+          value={form.priority}
+          onValueChange={(v) => setForm({ ...form, priority: v ?? "1" })}
+          options={[
+            { value: "1", label: "High" },
+            { value: "2", label: "Medium" },
+            { value: "3", label: "Low" },
+          ]}
+        />
       </div>
+      <Field
+        label="Linked Accounts"
+        control="combobox"
+        info="Goal progress sums transactions across every linked account. Leave empty for manual tracking."
+        value=""
+        onValueChange={(v) => addAccount(v ?? "")}
+        options={sortAccount(
+          availableAccounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+          (a) => Number(a.value),
+          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+        )}
+        placeholder={form.accountIds.length === 0 ? "Add an account…" : "Add another…"}
+        searchPlaceholder="Search accounts…"
+        emptyMessage="No matches"
+        hint={
+          form.accountIds.length > 0 ? (
+            <span className="flex flex-wrap gap-1.5 pt-1">
+              {form.accountIds.map((id) => {
+                const a = accounts.find((x) => x.id === id);
+                return (
+                  <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs font-medium border border-border/60 text-foreground">
+                    {a?.name ?? `#${id}`}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${a?.name ?? `#${id}`}`}
+                      onClick={() => removeAccount(id)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </span>
+          ) : undefined
+        }
+      />
+      <Field label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
       {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="flex-1 pointer-coarse:min-h-row" onClick={onCancel} disabled={submitting}>

@@ -33,7 +33,7 @@ describe("W7 contrast tokens in globals.css", () => {
 
 describe("W7 contrast class strings", () => {
   it("onboarding tips label uses text-primary-text", () => {
-    expect(read("src/components/onboarding-tips.tsx")).toContain(
+    expect(read("src/components/notice/body.tsx")).toContain(
       '<span className="text-sm font-medium text-primary-text">',
     );
   });
@@ -42,14 +42,13 @@ describe("W7 contrast class strings", () => {
     const shell = read("src/components/settings-shell.tsx");
     expect(shell).not.toContain("border-primary/40 bg-primary/10 text-primary-text");
     // The title is the page's PageHeader h1 (plain foreground, shared title classes); the shell draws none.
-    expect(shell).not.toContain("PHONE_BAR_TITLE");
-    expect(read("src/components/mobile/page-header.tsx")).toContain("className={PHONE_BAR_TITLE}");
+    expect(shell).not.toContain("PHONE_BAR");
+    expect(read("src/components/mobile/page-header.tsx")).toMatch(/<h1 data-slot="page-header-title" className="[^"]*text-base font-semibold/);
   });
 
   it("settings theme Light/Dark selected state uses text-primary-text", () => {
-    expect(read("src/app/(app)/settings/general/page.tsx")).toContain(
-      '"bg-primary/10 text-primary-text"',
-    );
+    // Theme is a segmented Field; its default selected state is the shared primary-text one.
+    expect(read("src/components/ui/field/controls.tsx")).toContain('"bg-primary/10 text-primary-text"');
   });
 
   it("portfolio type chip uses text-primary-foreground when selected (toolbar chips, portfolio-ui)", () => {

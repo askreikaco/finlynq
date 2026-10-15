@@ -41,7 +41,7 @@ function CreateLoan(props: LoanFormPanelProps) {
       fallbackReturn={LOANS_FALLBACK}
       form="external"
       useLoad={useLoanNewLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <LoanForm

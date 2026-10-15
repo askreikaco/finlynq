@@ -39,7 +39,7 @@ function Missing({ message, returnTo, title, embedded }: { message: string; retu
   }
   return (
     <div className={"w-full space-y-3"}>
-      <PageHeader title={title} backHref={returnTo} backLabel="Back" />
+      <PageHeader title={title} back={{ href: returnTo }} />
       <p className="text-sm text-foreground">{message}</p>
       <Link href={returnTo} className="text-sm text-primary underline">
         Back to transactions
@@ -84,7 +84,7 @@ function EditPanel({ mode, id, returnTo, embedded }: TransactionFormScreenProps 
       <div data-testid="tx-edit-loading" className="text-sm text-muted-foreground">Loading…</div>
     ) : (
       <div className={"w-full"}>
-        <PageHeader title={title} backHref={returnTo} backLabel="Back" />
+        <PageHeader title={title} back={{ href: returnTo }} />
         <div data-testid="tx-edit-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
       </div>
     );

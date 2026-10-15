@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { AmountInput } from "@/components/amount-input";
 import { parseSaveError } from "@/lib/save-error";
 import { TW } from "@/lib/design/tokens";
 import { FREQUENCY_LABELS, MAX_INTERVAL_DAYS, MIN_INTERVAL_DAYS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
+import { Field, type FieldComboboxOption, FieldGroup } from "@/components/ui/field";
 import type { Subscription } from "./types";
 
 export type SubscriptionDraft = {
@@ -70,19 +66,6 @@ export interface SubscriptionFormProps {
   onCancel: () => void;
   /** Called after a successful save; the page navigates away. */
   onSaved: () => void;
-}
-
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-
-function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
 }
 
 /**
@@ -156,123 +139,109 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl border border-border bg-card">
-        <Row label="Name" htmlFor="sub-name">
-          <Input
-            id="sub-name"
-            className={ROW_CONTROL}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. Netflix, car insurance, domain renewal"
-            required
-          />
-        </Row>
-        <Row label="Amount per payment" htmlFor="sub-amount">
-          <AmountInput
-            id="sub-amount"
-            className={ROW_CONTROL}
-            step="0.01"
-            value={form.amount}
-            onValueChange={(v) => setForm({ ...form, amount: v })}
-            required
-          />
-        </Row>
-        <Row label="How often">
-          <Select value={form.frequency} onValueChange={(v) => setForm({ ...form, frequency: v ?? "monthly" })}>
-            <SelectTrigger className={ROW_CONTROL}>
-              <SelectValue>{(v: unknown) => FREQUENCY_LABELS[frequencyOrMonthly(String(v ?? ""))]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {SUBSCRIPTION_FREQUENCIES.map((f) => (
-                <SelectItem key={f} value={f}>{FREQUENCY_LABELS[f]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Row>
+      <FieldGroup>
+        <Field
+          label="Name"
+          id="sub-name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="e.g. Netflix, car insurance, domain renewal"
+          required
+        />
+        <Field
+          label="Amount per payment"
+          control="amount"
+          id="sub-amount"
+          step="0.01"
+          value={form.amount}
+          onValueChange={(v) => setForm({ ...form, amount: v })}
+          required
+        />
+        <Field
+          label="How often"
+          control="select"
+          value={form.frequency}
+          onValueChange={(v) => setForm({ ...form, frequency: v ?? "monthly" })}
+          options={SUBSCRIPTION_FREQUENCIES.map((f) => ({ value: f, label: FREQUENCY_LABELS[f] }))}
+        />
         {form.frequency === "every_n_days" && (
-          <Row label="Every (days)" htmlFor="sub-interval">
-            <Input
-              id="sub-interval"
-              className={ROW_CONTROL}
-              type="number"
-              inputMode="numeric"
-              min={MIN_INTERVAL_DAYS}
-              max={MAX_INTERVAL_DAYS}
-              step={1}
-              value={form.intervalDays}
-              onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
-              placeholder="e.g. 10"
-              required
-            />
-          </Row>
+          <Field
+            label="Every (days)"
+            control="number"
+            id="sub-interval"
+            inputMode="numeric"
+            min={MIN_INTERVAL_DAYS}
+            max={MAX_INTERVAL_DAYS}
+            step={1}
+            value={form.intervalDays}
+            onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
+            placeholder="e.g. 10"
+            required
+          />
         )}
-        <Row label="Currency">
-          <Combobox
-            value={formCurrency}
-            onValueChange={(v) => setForm({ ...form, currency: v || displayCurrency })}
-            items={sortCurrency(
-              currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
-              (c) => c.value,
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder={displayCurrency}
-            searchPlaceholder="Search…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Next payment" htmlFor="sub-next">
-          <Input
-            id="sub-next"
-            className={ROW_CONTROL}
-            type="date"
-            value={form.nextDate}
-            onChange={(e) => setForm({ ...form, nextDate: e.target.value })}
-          />
-        </Row>
-        <Row label="Category">
-          <Combobox
-            value={form.categoryId}
-            onValueChange={(v) => setForm({ ...form, categoryId: v })}
-            items={sortCategory(
-              categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name ?? "" })),
-              (c) => Number(c.value),
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder="None"
-            searchPlaceholder="Search categories…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Paid from">
-          <Combobox
-            value={form.accountId}
-            onValueChange={(v) => setForm({ ...form, accountId: v })}
-            items={sortAccount(
-              accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name ?? "" })),
-              (a) => Number(a.value),
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder="None"
-            searchPlaceholder="Search accounts…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Remind me to cancel on" htmlFor="sub-reminder">
-          <Input
-            id="sub-reminder"
-            className={ROW_CONTROL}
-            type="date"
-            value={form.cancelReminderDate}
-            onChange={(e) => setForm({ ...form, cancelReminderDate: e.target.value })}
-          />
-        </Row>
-        <Row label="Notes" htmlFor="sub-notes">
-          <Input id="sub-notes" className={ROW_CONTROL} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </Row>
-      </div>
+        <Field
+          label="Currency"
+          control="combobox"
+          value={formCurrency}
+          onValueChange={(v) => setForm({ ...form, currency: v || displayCurrency })}
+          options={sortCurrency(
+            currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
+            (c) => c.value,
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder={displayCurrency}
+          searchPlaceholder="Search…"
+          emptyMessage="No matches"
+        />
+        <Field
+          label="Next payment"
+          control="date"
+          id="sub-next"
+          value={form.nextDate}
+          onChange={(e) => setForm({ ...form, nextDate: e.target.value })}
+        />
+        <Field
+          label="Category"
+          control="combobox"
+          value={form.categoryId}
+          onValueChange={(v) => setForm({ ...form, categoryId: v })}
+          options={sortCategory(
+            categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: c.name ?? "" })),
+            (c) => Number(c.value),
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder="None"
+          searchPlaceholder="Search categories…"
+          emptyMessage="No matches"
+        />
+        <Field
+          label="Paid from"
+          control="combobox"
+          value={form.accountId}
+          onValueChange={(v) => setForm({ ...form, accountId: v })}
+          options={sortAccount(
+            accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name ?? "" })),
+            (a) => Number(a.value),
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder="None"
+          searchPlaceholder="Search accounts…"
+          emptyMessage="No matches"
+        />
+        <Field
+          label="Remind me to cancel on"
+          control="date"
+          id="sub-reminder"
+          value={form.cancelReminderDate}
+          onChange={(e) => setForm({ ...form, cancelReminderDate: e.target.value })}
+        />
+        <Field
+          label="Notes"
+          id="sub-notes"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+        />
+      </FieldGroup>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="flex-1" onClick={onCancel} disabled={saving}>Cancel</Button>

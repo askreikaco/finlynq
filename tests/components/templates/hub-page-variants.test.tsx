@@ -44,53 +44,49 @@ describe("HubPage variants: defaults", () => {
     );
   });
 
-  it("default look renders InsetGroup and no card group", () => {
+  it("default look renders a SectionCard list and no card group", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="inset-group"]')).not.toBeNull();
+    expect(main.querySelector('[data-slot="section-card-body"]')).not.toBeNull();
     expect(main.querySelector(".divide-y")).toBeNull();
     expect(main.getAttribute("data-slot")).toBe("hub-group");
     expect(screen.getByTestId("more-root").querySelector('[data-slot="hub-columns"]')).toHaveClass("grid", "grid-cols-1", "regular:grid-cols-2", "wide:grid-cols-3", "items-start");
   });
 
-  it("default section label is the inset header", () => {
+  it("section label is the shared card label", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="inset-section-header"]')).not.toBeNull();
-    expect(main.querySelector('[data-slot="hub-section-label"]')).toBeNull();
+    expect(main.querySelector('[data-slot="section-card-label"]')).not.toBeNull();
   });
 });
 
 describe("HubPage variants: look=card", () => {
-  it("renders a rounded card group with divider rows and no InsetGroup", () => {
+  it("renders a SectionCard list with divider rows", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const main = screen.getByTestId("settings-group-main");
-    const card = main.querySelector('[class*="list-divider"]');
-    expect(card).not.toBeNull();
-    expect(card).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]", "overflow-hidden", "rounded-group", "bg-card");
-    expect(card!.className).not.toMatch(/divide-/);
-    expect(main.querySelector('[data-slot="inset-group"]')).toBeNull();
+    const body = main.querySelector('[data-slot="section-card-body"]');
+    expect(body).not.toBeNull();
+    expect(body).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
+    expect(body!.className).not.toMatch(/divide-/);
+    expect(main.querySelector('[data-slot="section-card"]')).toHaveClass("surface-card", "overflow-hidden");
   });
 
-  it("link row carries the card row classes and href", () => {
+  it("link row is a ListRow link with href, icon tile and chevron", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const row = screen.getByTestId("settings-row-inbox");
     expect(row.tagName).toBe("A");
     expect(row).toHaveAttribute("href", "/inbox");
-    expect(row).toHaveClass("flex", "min-h-14", "items-center", "gap-3", "px-4", "py-3", "hover:bg-muted/50");
+    expect(row).toHaveAttribute("data-slot", "list-row");
+    expect(row).toHaveClass("flex", "items-center", "gap-3", "px-4", "hover:bg-muted/50");
     expect(row).toHaveClass("focus-visible:ring-3", "focus-visible:ring-ring/50");
-    expect(row).not.toHaveClass("active:bg-muted");
-    expect(row.querySelector("span.bg-primary\\/10")).not.toBeNull();
-    expect(row.querySelector("svg")).toHaveClass("size-4");
+    expect(row.querySelector('[data-slot="list-row-tile"]')).toHaveClass("bg-primary/10");
+    expect(row.querySelector('[data-slot="list-row-chevron"]')).not.toBeNull();
   });
 
   it("chevron shows for interactive rows and not for destructive rows", () => {
-    render(<HubPage id="settings" title="Settings" look="card" chevronSize="5" groups={groups} />);
-    const inbox = screen.getByTestId("settings-row-inbox");
-    expect(inbox.querySelector("svg.size-5")).not.toBeNull();
-    const logout = screen.getByTestId("settings-row-logout");
-    expect(logout.querySelector("svg.size-5")).toBeNull();
-    expect(logout.querySelector("svg.size-4")).toBeNull();
+    render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
+    expect(screen.getByTestId("settings-row-inbox").querySelector('[data-slot="list-row-chevron"]')).not.toBeNull();
+    expect(screen.getByTestId("settings-row-logout").querySelector('[data-slot="list-row-chevron"]')).toBeNull();
   });
 
   it("button row calls onClick and is disabled when disabled", () => {
@@ -118,34 +114,9 @@ describe("HubPage variants: look=card", () => {
     expect(screen.getByTestId("p-row-off")).toBeDisabled();
   });
 
-  it("iconSize 18px renders size-[18px] icons", () => {
-    render(<HubPage id="settings" title="Settings" look="card" iconSize="18px" groups={groups} />);
-    expect(screen.getByTestId("settings-row-settings").querySelector("svg")).toHaveClass("size-[18px]");
-  });
-
-  it("activeBg adds active:bg-muted to link rows", () => {
-    render(<HubPage id="settings" title="Settings" look="card" activeBg groups={groups} />);
-    expect(screen.getByTestId("settings-row-inbox")).toHaveClass("active:bg-muted");
-  });
-
-  it("slot props set data-slot on group, row, icon and chevron", () => {
-    render(
-      <HubPage
-        id="settings"
-        title="Settings"
-        look="card"
-        groupSlot="settings-hub-group"
-        rowSlot="settings-hub-row"
-        iconSlot="settings-hub-icon"
-        chevronSlot="settings-hub-chevron"
-        groups={groups}
-      />,
-    );
+  it("groupSlot sets data-slot on each group", () => {
+    render(<HubPage id="settings" title="Settings" look="card" groupSlot="settings-hub-group" groups={groups} />);
     expect(screen.getByTestId("settings-group-main").getAttribute("data-slot")).toBe("settings-hub-group");
-    const row = screen.getByTestId("settings-row-inbox");
-    expect(row.getAttribute("data-slot")).toBe("settings-hub-row");
-    expect(row.querySelector('[data-slot="settings-hub-icon"]')).not.toBeNull();
-    expect(row.querySelector('[data-slot="settings-hub-chevron"]')).not.toBeNull();
   });
 
   it("renders value and badge in the card row", () => {
@@ -172,8 +143,8 @@ describe("HubPage variants: description", () => {
     render(<HubPage id="p" title="P" look="card" groups={described} />);
     const row = screen.getByTestId("p-row-op");
     const label = within(row).getByText("Buy");
-    expect(label).toHaveClass("block", "truncate", "text-base");
-    expect(within(row).getByText("Record a purchase")).toHaveClass("block", "text-xs", "text-muted-foreground");
+    expect(label).toHaveClass("truncate", "text-sm");
+    expect(within(row).getByText("Record a purchase")).toHaveClass("truncate", "text-xs", "text-muted-foreground");
   });
 
   it("renders description under the label in the inset look too", () => {
@@ -184,8 +155,8 @@ describe("HubPage variants: description", () => {
 });
 
 describe("HubPage variants: section labels", () => {
-  it("sectionLabel caps renders an uppercase h2", () => {
-    render(<HubPage id="settings" title="Settings" look="card" sectionLabel="caps" groups={groups} />);
+  it("a titled group renders an uppercase h2 on the shared CardLabel row", () => {
+    render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const h = within(screen.getByTestId("settings-group-main")).getByRole("heading", { name: "Main" });
     expect(h.tagName).toBe("H2");
     expect(h).toHaveClass("text-xs", "font-medium", "uppercase", "tracking-wide", "text-muted-foreground");
@@ -193,15 +164,8 @@ describe("HubPage variants: section labels", () => {
     expect(h.closest('[data-slot="card-label"]')).toHaveClass("px-3", "@[11rem]:px-5");
   });
 
-  it("sectionLabel section-label renders SectionLabel", () => {
-    render(<HubPage id="p" title="P" look="card" sectionLabel="section-label" groups={groups} />);
-    const main = screen.getByTestId("p-group-main");
-    expect(main.querySelector('[data-slot="section-label"]')).toHaveTextContent("Main");
-    expect(main.querySelector('[data-slot="inset-section-header"]')).toBeNull();
-  });
-
-  it("no heading is rendered for an untitled group under any style", () => {
-    render(<HubPage id="p" title="P" sectionLabel="caps" groups={groups} />);
+  it("no heading is rendered for an untitled group", () => {
+    render(<HubPage id="p" title="P" groups={groups} />);
     expect(within(screen.getByTestId("p-group-tools")).queryByRole("heading")).toBeNull();
   });
 });

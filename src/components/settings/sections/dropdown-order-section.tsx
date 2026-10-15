@@ -25,7 +25,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowDown, ArrowUp, GripVertical, List, ListOrdered, Pin, RefreshCw, RotateCcw, Save, X } from "lucide-react";
 import {
   EMPTY_DROPDOWN_ORDER,
@@ -34,6 +33,7 @@ import {
   type DropdownOrder,
   type DropdownOrderEntry,
 } from "@/lib/dropdown-order";
+import { Field } from "@/components/ui/field";
 import { SUPPORTED_FIAT_CURRENCIES, currencyLabel } from "@/lib/fx/supported-currencies";
 
 type Item = { key: DropdownOrderEntry; label: string; subLabel?: string };
@@ -275,14 +275,13 @@ export function DropdownOrderSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={kind} onValueChange={(v) => setKind(((v ?? "category") as DropdownKind))}>
-            <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {KIND_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Field
+            control="select"
+            value={kind}
+            onValueChange={(v) => setKind(((v ?? "category") as DropdownKind))}
+            className="w-64"
+            options={KIND_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          />
         </CardContent>
       </Card>
 

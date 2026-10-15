@@ -9,13 +9,19 @@ import { DollarSign } from "lucide-react";
 
 // Mock recharts to avoid canvas/DOM issues in jsdom
 vi.mock("recharts", () => ({
-  AreaChart: ({ children, ...props }: any) => (
+  ComposedChart: ({ children, ...props }: any) => (
     <div data-testid="area-chart" {...props}>
       {children}
     </div>
   ),
   Area: (props: any) => <div data-testid="area" {...props} />,
   YAxis: (props: any) => <div data-testid="yaxis" {...props} />,
+  XAxis: () => null,
+  CartesianGrid: () => null,
+  ReferenceLine: () => null,
+  Bar: () => null,
+  Line: () => null,
+  Cell: () => null,
   Tooltip: (props: any) => <div data-testid="tooltip" {...props} />,
   ResponsiveContainer: ({ children, height }: any) => (
     <div data-testid="responsive-container" style={{ height }}>
@@ -149,7 +155,7 @@ describe("MetricCard layout and sizing", () => {
 
 describe("MetricCard badge tone", () => {
   const html = (invert: boolean, pct: number) => {
-    const { container } = render(<MetricCard label="x" icon={DollarSign} value={1} badgePct={pct} invertTone={invert} />);
+    const { container } = render(<MetricCard label="x" icon={DollarSign} value={1} delta={{ pct, invert }} />);
     const b = container.querySelector(".rounded-full.font-semibold")!;
     cleanup();
     return b.className;
@@ -171,5 +177,73 @@ describe("MetricCard label wraps instead of truncating", () => {
     const cls = getByText("Financial Health").className;
     expect(cls).toMatch(/\bbreak-words\b/);
     expect(cls).not.toMatch(/\btruncate\b/);
+  });
+});
+
+describe("MetricCard optional parts show only when their prop is given", () => {
+  afterEach(cleanup);
+
+  it("a bare card has no progress, info tip, delta badge or link", () => {
+    const { container } = render(<MetricCard label="Net worth" icon={DollarSign} value={5} />);
+    expect(container.querySelector('[data-slot="metric-progress"]')).toBeNull();
+    expect(container.querySelector('[data-slot="info-tip"]')).toBeNull();
+    expect(container.querySelector(".rounded-full.font-semibold")).toBeNull();
+    expect(container.querySelector("a")).toBeNull();
+  });
+
+  it("progress: a clamped bar plus a caption (default caption = the rounded percent)", () => {
+    const { container, getByRole, getByText } = render(
+      <MetricCard label="Budget" icon={DollarSign} value={1} progress={{ value: 140, tone: "destructive" }} />,
+    );
+    const bar = getByRole("progressbar");
+    expect(bar.getAttribute("aria-valuenow")).toBe("100");
+    expect(bar.getAttribute("aria-label")).toBe("Budget");
+    expect(bar.firstElementChild?.className).toContain("bg-destructive");
+    expect(container.querySelector('[data-slot="metric-progress"]')).not.toBeNull();
+    getByText("140%");
+  });
+
+  it("progress caption overrides the percent", () => {
+    const { getByText } = render(<MetricCard label="x" icon={DollarSign} value={1} progress={{ value: 40, caption: "40% of income spent" }} />);
+    getByText("40% of income spent");
+  });
+
+  it("delta: pct badge plus text; sub wins over delta.text", () => {
+    const a = render(<MetricCard label="x" icon={DollarSign} value={1} delta={{ pct: 2, text: "+$2 vs last month" }} />);
+    a.getByText("+$2 vs last month");
+    expect(a.container.querySelector(".rounded-full.font-semibold")).not.toBeNull();
+    cleanup();
+    const b = render(<MetricCard label="x" icon={DollarSign} value={1} sub="Caption" delta={{ pct: null, text: "hidden" }} />);
+    b.getByText("Caption");
+    expect(b.queryByText("hidden")).toBeNull();
+    expect(b.container.querySelector(".rounded-full.font-semibold")).toBeNull();
+  });
+
+  it("info: an InfoTip in the label row", () => {
+    const { container } = render(<MetricCard label="Net worth" icon={DollarSign} value={1} info="Assets minus debts." />);
+    const row = container.querySelector('[data-slot="card-label"]')!;
+    expect(row.querySelector('[data-slot="info-tip"]')).not.toBeNull();
+  });
+
+  it("action: rendered at the right of the label row", () => {
+    const { getByLabelText } = render(<MetricCard label="x" icon={DollarSign} value={1} action={<button aria-label="Edit">e</button>} />);
+    expect(getByLabelText("Edit").closest('[data-slot="card-label"]')).not.toBeNull();
+  });
+
+  it("number = money; a node renders as-is; valueTone / showSign colour and prefix", () => {
+    const money = render(<MetricCard label="x" icon={DollarSign} value={12} currency="USD" showSign valueTone="auto" />);
+    expect(money.container.textContent).toContain("+$12");
+    expect(money.container.querySelector(".hero-number")!.className).toContain("text-pos");
+    cleanup();
+    const count = render(<MetricCard label="x" icon={DollarSign} value={<span>{7}</span>} />);
+    expect(count.container.querySelector(".hero-number")!.textContent).toBe("7");
+  });
+
+  it("id: a labelled group with data-testid; cellClassName lands on the cell", () => {
+    const { getByTestId } = render(<MetricCard id="total" label="Total" icon={DollarSign} value={1} cellClassName="max-regular:hidden" />);
+    const cell = getByTestId("metric-total");
+    expect(cell.getAttribute("role")).toBe("group");
+    expect(cell.getAttribute("aria-label")).toBe("Total");
+    expect(cell.className).toContain("max-regular:hidden");
   });
 });

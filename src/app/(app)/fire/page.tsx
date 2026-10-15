@@ -4,20 +4,15 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend,
-} from "recharts";
+import { Chart } from "@/components/chart";
 import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type FireResult = {
   fireNumber: number;
@@ -207,38 +202,57 @@ function FirePageContent() {
       <SectionCard label="Your details" icon={SlidersHorizontal} tone="indigo">
         <div className="space-y-4">
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
-            <div>
-              <Label>Current Age</Label>
-              <Input type="number" value={form.currentAge} onChange={(e) => setForm({ ...form, currentAge: e.target.value })} />
-            </div>
-            <div>
-              <Label>Target Retirement Age</Label>
-              <Input type="number" value={form.targetRetirementAge} onChange={(e) => setForm({ ...form, targetRetirementAge: e.target.value })} />
-            </div>
-            <div>
-              <Label>Current Investments ($)</Label>
-              <AmountInput  value={form.currentInvestments} onValueChange={(nv) => setForm({ ...form, currentInvestments: nv })} />
-            </div>
-            <div>
-              <Label>Monthly Savings ($)</Label>
-              <AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} />
-            </div>
-            <div>
-              <Label>Annual Return (%)</Label>
-              <AmountInput  step="0.5" value={form.annualReturn} onValueChange={(nv) => setForm({ ...form, annualReturn: nv })} />
-            </div>
-            <div>
-              <Label>Inflation (%)</Label>
-              <AmountInput  step="0.5" value={form.inflation} onValueChange={(nv) => setForm({ ...form, inflation: nv })} />
-            </div>
-            <div>
-              <Label>Annual Expenses in Retirement ($)</Label>
-              <AmountInput  value={form.annualExpenses} onValueChange={(nv) => setForm({ ...form, annualExpenses: nv })} />
-            </div>
-            <div>
-              <Label>Safe Withdrawal Rate (%)</Label>
-              <AmountInput  step="0.25" value={form.withdrawalRate} onValueChange={(nv) => setForm({ ...form, withdrawalRate: nv })} />
-            </div>
+            <Field
+              label="Current Age"
+              control="number"
+              value={form.currentAge}
+              onChange={(e) => setForm({ ...form, currentAge: e.target.value })}
+            />
+            <Field
+              label="Target Retirement Age"
+              control="number"
+              value={form.targetRetirementAge}
+              onChange={(e) => setForm({ ...form, targetRetirementAge: e.target.value })}
+            />
+            <Field
+              label="Current Investments ($)"
+              control="amount"
+              value={form.currentInvestments}
+              onValueChange={(nv) => setForm({ ...form, currentInvestments: nv })}
+            />
+            <Field
+              label="Monthly Savings ($)"
+              control="amount"
+              value={form.monthlySavings}
+              onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })}
+            />
+            <Field
+              label="Annual Return (%)"
+              control="amount"
+              step="0.5"
+              value={form.annualReturn}
+              onValueChange={(nv) => setForm({ ...form, annualReturn: nv })}
+            />
+            <Field
+              label="Inflation (%)"
+              control="amount"
+              step="0.5"
+              value={form.inflation}
+              onValueChange={(nv) => setForm({ ...form, inflation: nv })}
+            />
+            <Field
+              label="Annual Expenses in Retirement ($)"
+              control="amount"
+              value={form.annualExpenses}
+              onValueChange={(nv) => setForm({ ...form, annualExpenses: nv })}
+            />
+            <Field
+              label="Safe Withdrawal Rate (%)"
+              control="amount"
+              step="0.25"
+              value={form.withdrawalRate}
+              onValueChange={(nv) => setForm({ ...form, withdrawalRate: nv })}
+            />
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Flame className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate FIRE"}
@@ -272,51 +286,41 @@ function FirePageContent() {
 
           {/* Net Worth Projection Chart */}
           <SectionCard label="Projected net worth vs FIRE number" icon={TrendingUp} tone="emerald">
-            <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={result.projections}>
-                <XAxis dataKey="age" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                  labelFormatter={(label) => `Age ${label}`}
-                />
-                <Legend />
-                <ReferenceLine
-                  y={result.fireNumber}
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  strokeDasharray="8 4"
-                  label={{ value: `FIRE: ${formatCurrency(result.fireNumber, displayCurrency)}`, position: "insideTopRight", fill: "#f97316", fontSize: 12 }}
-                />
-                {result.fireAge <= parseInt(form.targetRetirementAge) + 10 && (
-                  <ReferenceLine
-                    x={result.fireAge}
-                    stroke="#10b981"
-                    strokeWidth={1}
-                    strokeDasharray="4 4"
-                    label={{ value: `FIRE Age ${result.fireAge}`, position: "top", fill: "#10b981", fontSize: 11 }}
-                  />
-                )}
-                <Area
-                  type="monotone"
-                  dataKey="netWorth"
-                  stroke="#6366f1"
-                  fill="#6366f1"
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                  name="Projected Net Worth"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Chart
+              kind="area"
+              data={result.projections}
+              xKey="age"
+              height={350}
+              currency={displayCurrency}
+              series={[{ key: "netWorth", name: "Projected Net Worth", strokeWidth: 2, gradient: false, fillOpacity: 0.15 }]}
+              legend
+              formatX={(v) => v}
+              formatY={(v) => `$${(v / 1000).toFixed(0)}k`}
+              formatLabel={(l) => `Age ${l}`}
+              lines={[
+                { y: result.fireNumber, color: "#f97316", width: 2, label: `FIRE: ${formatCurrency(result.fireNumber, displayCurrency)}` },
+                ...(result.fireAge <= parseInt(form.targetRetirementAge) + 10
+                  ? [{ x: result.fireAge, color: "#10b981", width: 1, label: `FIRE Age ${result.fireAge}` }]
+                  : []),
+              ]}
+            />
           </SectionCard>
 
           {/* Monte Carlo Analysis */}
-          <SectionCard label="Monte Carlo analysis" icon={BarChart3} tone="violet">
+          <SectionCard
+            label={
+              <>
+                Monte Carlo analysis
+                <InfoTip label="About Monte Carlo analysis" text="1,000 simulations with random market returns to stress-test your plan" />
+              </>
+            }
+            icon={BarChart3}
+            tone="violet"
+          >
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Dice5 className="h-5 w-5 text-chart-5" aria-hidden />
-                  <p className="text-xs text-muted-foreground">1,000 simulations with random market returns to stress-test your plan</p>
                 </div>
                 {mcResult && (
                   <Badge
@@ -336,28 +340,24 @@ function FirePageContent() {
 
               {/* Monte Carlo parameters */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Volatility (%)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="5"
-                    max="40"
-                    value={mcVolatility}
-                    onChange={(e) => setMcVolatility(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Years to Simulate</Label>
-                  <Input
-                    type="number"
-                    step="5"
-                    min="10"
-                    max="60"
-                    value={mcYears}
-                    onChange={(e) => setMcYears(e.target.value)}
-                  />
-                </div>
+                <Field
+                  label="Volatility (%)"
+                  control="number"
+                  step="1"
+                  min="5"
+                  max="40"
+                  value={mcVolatility}
+                  onChange={(e) => setMcVolatility(e.target.value)}
+                />
+                <Field
+                  label="Years to Simulate"
+                  control="number"
+                  step="5"
+                  min="10"
+                  max="60"
+                  value={mcYears}
+                  onChange={(e) => setMcYears(e.target.value)}
+                />
               </div>
               <Button onClick={runMonteCarlo} disabled={mcLoading} variant="outline" className="w-full">
                 <Dice5 className="h-3.5 w-3.5 mr-1" />
@@ -367,82 +367,26 @@ function FirePageContent() {
               {mcResult && (
                 <>
                   {/* Fan chart with percentile bands */}
-                  <ResponsiveContainer width="100%" height={320}>
-                    <AreaChart data={mcChartData}>
-                      <XAxis
-                        dataKey="year"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => `Yr ${v}`}
-                      />
-                      <YAxis
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => {
-                          if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-                          return `$${(v / 1000).toFixed(0)}k`;
-                        }}
-                      />
-                      <Tooltip
-                        formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                        labelFormatter={(label) => `Year ${label}`}
-                      />
-                      <Legend />
-                      <ReferenceLine
-                        y={mcResult.fireNumber}
-                        stroke="#f97316"
-                        strokeWidth={2}
-                        strokeDasharray="8 4"
-                        label={{ value: "FIRE Target", position: "insideTopRight", fill: "#f97316", fontSize: 11 }}
-                      />
-                      {/* p10-p90 band (lightest) */}
-                      <Area
-                        type="monotone"
-                        dataKey="p90"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.08}
-                        name="90th Percentile"
-                        stackId="band"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="p10"
-                        stroke="none"
-                        fill="transparent"
-                        name="10th Percentile"
-                      />
-                      {/* p25-p75 band (medium) */}
-                      <Area
-                        type="monotone"
-                        dataKey="p75"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.15}
-                        name="75th Percentile"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="p25"
-                        stroke="none"
-                        fill="#6366f1"
-                        fillOpacity={0.08}
-                        name="25th Percentile"
-                      />
-                      {/* Median line */}
-                      <Area
-                        type="monotone"
-                        dataKey="p50"
-                        stroke="#6366f1"
-                        strokeWidth={2.5}
-                        fill="#6366f1"
-                        fillOpacity={0.05}
-                        name="Median (50th)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <Chart
+                    kind="area"
+                    data={mcChartData}
+                    xKey="year"
+                    height={320}
+                    currency={displayCurrency}
+                    legend
+                    formatX={(v) => `Yr ${v}`}
+                    formatY={(v) => (v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}k`)}
+                    formatLabel={(l) => `Year ${l}`}
+                    lines={[{ y: mcResult.fireNumber, color: "#f97316", width: 2, label: "FIRE Target" }]}
+                    series={[
+                      // p10-p90 band (lightest), p25-p75 band (medium), median line
+                      { key: "p90", name: "90th Percentile", color: "#6366f1", fillOpacity: 0.08, strokeWidth: 0, stackId: "band" },
+                      { key: "p10", name: "10th Percentile", color: "#6366f1", fillOpacity: 0, strokeWidth: 0 },
+                      { key: "p75", name: "75th Percentile", color: "#6366f1", fillOpacity: 0.15, strokeWidth: 0 },
+                      { key: "p25", name: "25th Percentile", color: "#6366f1", fillOpacity: 0.08, strokeWidth: 0 },
+                      { key: "p50", name: "Median (50th)", color: "#6366f1", fillOpacity: 0.05, strokeWidth: 2.5 },
+                    ]}
+                  />
 
                   {/* Final value percentiles */}
                   <MetricGrid
@@ -468,22 +412,28 @@ function FirePageContent() {
           </SectionCard>
 
           {/* Sensitivity: years to FIRE by return rate, for one monthly-savings amount */}
-          <SectionCard label="Sensitivity analysis: years to FIRE" icon={Activity} tone="amber" className="space-y-3">
+          <SectionCard
+            label={
+              <>
+                Sensitivity analysis: years to FIRE
+                <InfoTip label="About sensitivity analysis" text="How different return rates and savings amounts affect your timeline" />
+              </>
+            }
+            icon={Activity}
+            tone="amber"
+            className="space-y-3"
+          >
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">How different return rates and savings amounts affect your timeline</p>
               {savingsAdj.length > 0 && (
-                <Select value={String(selectedSavings)} onValueChange={(v) => setSensChoice(v)}>
-                  <SelectTrigger className="w-full" aria-label="Monthly savings">
-                    <SelectValue>{(v: unknown) => `${formatCurrency(Number(v), displayCurrency)}/mo`}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {savingsAdj.map((s) => (
-                      <SelectItem key={s} value={String(s)}>{formatCurrency(s, displayCurrency)}/mo</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field
+                  control="select"
+                  value={String(selectedSavings)}
+                  onValueChange={(v) => setSensChoice(v)}
+                  aria-label="Monthly savings"
+                  options={savingsAdj.map((s) => ({ value: String(s), label: <>{formatCurrency(s, displayCurrency)}/mo</> }))}
+                />
               )}
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {returnRates.map((rr) => {
                   const entry = result.sensitivityTable.find((e) => e.returnRate === rr && e.savings === selectedSavings);
                   const years = entry?.yearsToFire ?? -1;
@@ -512,8 +462,7 @@ function FirePageContent() {
         <SectionCard>
           <div className="py-12 text-center">
             <Flame className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" aria-hidden />
-            <p className="text-muted-foreground">Enter your details and click Calculate FIRE</p>
-            <p className="text-xs text-muted-foreground mt-1">to see your path to financial independence</p>
+            <p data-keep="empty" className="text-muted-foreground">Enter your details and click Calculate FIRE</p>
           </div>
         </SectionCard>
       )}

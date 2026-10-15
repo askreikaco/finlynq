@@ -2,8 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { PICKER_SHEET_CLASS, PickerCard, PickerRow } from "./grouped-picker";
+import { Field } from "@/components/ui/field";
+import { Overlay } from "@/components/ui/overlay";
+import { PickerCard, PickerRow } from "./grouped-picker";
 
 interface CurrencySelectorProps {
   open: boolean;
@@ -56,46 +57,40 @@ export function CurrencySelector({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className={PICKER_SHEET_CLASS}>
-        <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
-          <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
-          <div className="relative mt-3">
-            <Search
-              aria-hidden="true"
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+    <Overlay
+      variant="picker"
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title={title}
+      toolbar={
+        <Field
+          aria-label="Search currency..."
+          placeholder="Search currency..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          prefix={<Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
+        />
+      }
+      bodyClassName="py-4"
+    >
+      {rows.length === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">No currencies found</div>
+      ) : (
+        <PickerCard>
+          {rows.map((c) => (
+            <PickerRow
+              key={c.code}
+              label={c.code}
+              detail={c.name}
+              selected={c.code === selected}
+              onSelect={() => {
+                onSelect(c.code);
+                onOpenChange(false);
+              }}
             />
-            <input
-              type="text"
-              aria-label="Search currency..."
-              placeholder="Search currency..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-base text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
-            />
-          </div>
-        </SheetHeader>
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
-          {rows.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">No currencies found</div>
-          ) : (
-            <PickerCard>
-              {rows.map((c) => (
-                <PickerRow
-                  key={c.code}
-                  label={c.code}
-                  detail={c.name}
-                  selected={c.code === selected}
-                  onSelect={() => {
-                    onSelect(c.code);
-                    onOpenChange(false);
-                  }}
-                />
-              ))}
-            </PickerCard>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+          ))}
+        </PickerCard>
+      )}
+    </Overlay>
   );
 }

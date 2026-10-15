@@ -447,7 +447,7 @@ html {
   box-shadow: var(--glass-capsule-shadow);
 }
 /* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
-   the overflow trigger and HeaderStatus. The primary is the last icon cell (phone-icon-action), neutral like the rest. Buttons are bare; hover and press
+   and the overflow trigger. The primary is NOT in the capsule: it is its own yellow round button (data-slot=topbar-primary). Buttons are bare; hover and press
    state is a round tint inside the slot, not a box. */
 [data-slot="header-capsule"] > :is(button, a) {
   width: 2.75rem;
@@ -472,33 +472,16 @@ html {
   backdrop-filter: none;
 }
 [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
-[data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
-[data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
   background: oklch(0 0 0 / 7%);
 }
 .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
-.dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
-.dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
+.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
   background: oklch(1 0 0 / 12%);
 }
-/* Primary action INSIDE the capsule (only when a HEADER_SAVE is also present; else the primary is its own yellow round button, see .header-save rule): neutral like every
-   other cell (no accent fill). Icon-only: the text is hidden with font-size 0; its accessible name is the
-   aria-label PageHeader sets. Hover and press reuse the cell tint rules above. */
-[data-slot="header-capsule"] > :is(button, a).phone-icon-action {
-  background: transparent;
-  border-color: transparent;
-  color: var(--foreground);
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  font-size: 0;
-  gap: 0;
-}
-/* The page's Save (PageHeader HEADER_SAVE): its own round yellow check button beside the capsule, a 44px
-   circle in the primary colour with a 20px glyph and no label (the iOS Notes "Done"). */
-[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {
+/* The page's primary action (PageHeader `primary`: Add / Edit / Save): its own round yellow button beside the capsule, a
+   44px circle in the primary colour with a 20px glyph and no label (the iOS Notes "Done"). */
+[data-slot="page-header-actions"] > [data-slot="topbar-primary"] {
   width: 2.75rem;
   min-width: 2.75rem;
   height: 2.75rem;
@@ -512,20 +495,13 @@ html {
   font-size: 0;
   gap: 0;
 }
-[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) svg {
+[data-slot="page-header-actions"] > [data-slot="topbar-primary"] svg {
   width: 1.25rem;
   height: 1.25rem;
   margin: 0;
 }
-[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action):disabled {
+[data-slot="page-header-actions"] > [data-slot="topbar-primary"]:disabled {
   opacity: 0.5;
-}
-/* Every primary's icon is the same 20px, centred, whatever size or margin the page gave it (a page's own
-   h-4 / mr-1 / mr-2 must not make one page's plus bigger or off-centre than another's). */
-[data-slot="header-capsule"] > :is(button, a).phone-icon-action svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin: 0;
 }
 /* The top bar: translucent tint, blur, saturate, 1px bottom rim (no top line). */
 .glass-bar {
@@ -606,6 +582,12 @@ html {
   [data-slot="list-detail-main"] { container: split / inline-size; }
   [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-slot="list-detail-main"] [class~="wide:grid-cols-4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* The split-view pane (ListDetailLayout, ~25% wide) is one narrow column: embedded detail pages lay their grids out as a single
+   column and size by the pane (a size container named "pane"), never by the viewport. */
+@media (width >= 64rem) {
+  [data-slot="list-detail-pane"] { container: pane / inline-size; }
+  [data-slot="list-detail-pane"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"], [class~="wide:grid-cols-4"], [class~="regular:grid-cols-2"], [class~="regular:grid-cols-3"]) { grid-template-columns: minmax(0, 1fr); }
 }
 @container split (width < 40rem) {
   [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: minmax(0, 1fr); }

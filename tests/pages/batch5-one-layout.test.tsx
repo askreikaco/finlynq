@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/admin/inbox",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 
 import { MetricGrid } from "@/components/mobile/metric-grid";
 import { ListRow } from "@/components/mobile/list-row";
@@ -77,7 +77,7 @@ describe("Batch 5: one column at every width (no wide: / regular: column switche
     const src = read("src/app/(app)/admin/inbox/page.tsx");
     expect(src).not.toMatch(/340px/);
     expect(src).toMatch(/<ListRow\b/);
-    expect(src).toMatch(/<Sheet\b/);
+    expect(src).toMatch(/<Overlay\b/);
   });
 
   it("more-menu: groups one column on phone, 2 at regular, 1 at wide (column 1 of the cascading columns)", () => {

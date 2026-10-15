@@ -10,16 +10,13 @@
  */
 
 import { useState } from "react";
-import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-} from "recharts";
 import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
-import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
-import { ExposurePieTooltip } from "./portfolio-ui";
+import { Chart } from "@/components/chart";
 import { exportStocksToCSV } from "./csv";
 import { type EtfXrayTab, type OverviewData } from "../_types";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
@@ -41,7 +38,7 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
   const [open, setOpen] = useState<{ stock: EtfStock; index: number } | null>(null);
   return (
     <>
-      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard list>
         {rows.map((s, i) => (
           <ListRow
             key={s.ticker}
@@ -54,11 +51,12 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
         ))}
       </SectionCard>
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          onClose={() => setOpen(null)}
           title={open.stock.name}
-          description={`#${open.index + 1}${open.stock.ticker !== "OTHER" ? ` · ${open.stock.ticker}` : ""}`}
+          subtitle={`#${open.index + 1}${open.stock.ticker !== "OTHER" ? ` · ${open.stock.ticker}` : ""}`}
           items={[
             { label: "Sector", value: open.stock.sector },
             { label: "Country", value: open.stock.country || "—" },
@@ -104,10 +102,14 @@ export function EtfXrayCard({
       <CardHeader className="pb-2">
         <div className="flex flex-col regular:flex-row regular:items-center justify-between gap-3">
           <div>
-            <CardTitle icon={Layers} tone="violet">ETF X-Ray</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Effective exposure across {etfXray.etfCount} ETF{etfXray.etfCount !== 1 ? "s" : ""} in your portfolio
-            </p>
+            <CardTitle
+              icon={Layers}
+              tone="violet"
+              infoLabel="About ETF X-Ray"
+              info={`Effective exposure across ${etfXray.etfCount} ETF${etfXray.etfCount !== 1 ? "s" : ""} in your portfolio. Stocks: your effective stock exposure across all ETFs, weighted by each ETF's portfolio allocation. ETFs: your ETF holdings and their weight in the ETF portfolio.`}
+            >
+              ETF X-Ray
+            </CardTitle>
           </div>
           <div className="flex gap-1">
             {([
@@ -134,9 +136,6 @@ export function EtfXrayCard({
         {/* ── Stocks Tab: Aggregated look-through ── */}
         {etfXrayTab === "stocks" && (
           <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Your effective stock exposure across all ETFs, weighted by each ETF&apos;s portfolio allocation.
-            </p>
             <EtfStockRows
               rows={etfXray.aggregatedStocks.slice((stocksPage - 1) * STOCKS_PER_PAGE, stocksPage * STOCKS_PER_PAGE)}
               startIndex={(stocksPage - 1) * STOCKS_PER_PAGE}
@@ -147,7 +146,7 @@ export function EtfXrayCard({
               const totalWeight = etfXray.aggregatedStocks.reduce((s, x) => s + x.effectiveWeight, 0);
               return (
                 <div className="flex flex-col regular:flex-row items-start regular:items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p data-keep="data" className="text-xs text-muted-foreground">
                     {etfXray.aggregatedStocks.length} stocks · Total weight: {formatPercent(totalWeight, 1)}
                   </p>
                   <div className="flex items-center gap-2">
@@ -196,46 +195,9 @@ export function EtfXrayCard({
         {etfXrayTab === "regions" && (
           <div className="space-y-4">
             {regionData.length > 0 ? (
-              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
-                <div className="w-48 h-48 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={regionData}
-                        dataKey="pct"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={85}
-                        strokeWidth={2}
-                        stroke="var(--color-card)"
-                      >
-                        {regionData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ExposurePieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2 min-w-0">
-                  {regionData.map(d => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <ColorDot color={d.color} className="h-3 w-3" />
-                      <span className="text-sm text-muted-foreground flex-1">{d.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                          <CspSafeColorBar percent={d.pct} color={d.color} />
-                        </div>
-                        <span className="text-sm font-mono font-semibold w-12 text-right">{d.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Chart kind="donut" data={regionData} valueKey="pct" size="lg" formatValue={(v) => `${v}%`} breakdownList breakdownBars />
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No region data available.</p>
+              <p data-keep="empty" className="text-sm text-muted-foreground text-center py-8">No region data available.</p>
             )}
           </div>
         )}
@@ -244,46 +206,9 @@ export function EtfXrayCard({
         {etfXrayTab === "sectors" && (
           <div className="space-y-4">
             {sectorData.length > 0 ? (
-              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
-                <div className="w-48 h-48 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={sectorData}
-                        dataKey="pct"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={85}
-                        strokeWidth={2}
-                        stroke="var(--color-card)"
-                      >
-                        {sectorData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ExposurePieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2 min-w-0">
-                  {sectorData.map(d => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <ColorDot color={d.color} className="h-3 w-3" />
-                      <span className="text-sm text-muted-foreground flex-1">{d.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                          <CspSafeColorBar percent={d.pct} color={d.color} />
-                        </div>
-                        <span className="text-sm font-mono font-semibold w-12 text-right">{d.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Chart kind="donut" data={sectorData} valueKey="pct" size="lg" formatValue={(v) => `${v}%`} breakdownList breakdownBars />
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No sector data available.</p>
+              <p data-keep="empty" className="text-sm text-muted-foreground text-center py-8">No sector data available.</p>
             )}
           </div>
         )}
@@ -291,10 +216,7 @@ export function EtfXrayCard({
         {/* ── Per ETF Tab ── */}
         {etfXrayTab === "etfs" && (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Your ETF holdings and their weight in the ETF portfolio.
-            </p>
-            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard list>
               {etfXray.etfs.map((etf) => (
                 <ListRow
                   key={`${etf.symbol}-${etf.account}`}

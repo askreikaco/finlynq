@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 afterEach(cleanup);
@@ -58,21 +58,28 @@ describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device
     expect(screen.getByRole("button").getAttribute("data-size")).toBe("sm");
   });
 
-  it("Input: h-8 at every width, pointer-coarse:h-11 for touch; 16px text stays on touch", () => {
-    render(<Input aria-label="n" />);
-    const c = cls(screen.getByLabelText("n").className);
-    expect(c).toContain("h-8");
-    expect(c).toContain("pointer-coarse:h-11");
+  it("Field control: 44px at every width (h-11), 16px text on touch; compact is 32px with a 44px touch floor", () => {
+    render(
+      <>
+        <Field aria-label="n" value="" onChange={() => {}} />
+        <Field aria-label="c" compact value="" onChange={() => {}} />
+      </>,
+    );
+    const [std, cmp] = Array.from(document.querySelectorAll('[data-slot="field-surface"]')) as HTMLElement[];
+    const c = cls(std.className);
+    expect(c).toContain("h-11");
     expect(c).toContain("text-base");
     expect(c).toContain("regular:pointer-fine:text-sm");
     expect(c.filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
+    const k = cls(cmp.className);
+    expect(k).toContain("h-8");
+    expect(k).toContain("pointer-coarse:h-11");
   });
 
-  it("Select trigger: both sizes become 44px on coarse pointers only", () => {
-    const src = read("src/components/ui/select.tsx");
-    expect(src).toContain("data-[size=default]:h-8");
-    expect(src).toContain("pointer-coarse:data-[size=default]:h-11");
-    expect(src).toContain("pointer-coarse:data-[size=sm]:h-11");
+  it("Select trigger: 44px on every pointer, 44px option rows on touch, no width tokens", () => {
+    const src = read("src/components/ui/field/select-base.tsx");
+    expect(src).toContain("CONTROL_BOX");
+    expect(src).toContain("pointer-coarse:min-h-11");
     expect(src).not.toMatch(/max-md:/);
   });
 

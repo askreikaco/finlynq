@@ -73,7 +73,7 @@ describe("ListPage", () => {
     expect(container.querySelector("h1")?.textContent).toBe("Goals");
     const add = screen.getByRole("link", { name: "Add Goal" });
     expect(add.getAttribute("href")).toBe("/goals/new");
-    expect(add.className).toContain("phone-icon-action");
+    expect(add.getAttribute("data-slot")).toBe("topbar-primary");
   });
 
   it("omits the Add action when no add prop is given", () => {
@@ -113,14 +113,14 @@ describe("ListPage", () => {
     const { unmount } = render(
       <ListPage<Goal>
         {...baseProps()}
-        summary={(records) => [{ icon: Wallet, label: "Count", value: records.length }]}
+        summary={(records) => [{ icon: Wallet, label: "Count", value: <span>{records.length}</span> }]}
       />,
     );
     expect(screen.getByText("Count")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
     unmount();
 
-    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: 7 }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: <span>7</span> }]} />);
     expect(screen.getByText("Static")).toBeTruthy();
     expect(screen.getByText("7")).toBeTruthy();
   });

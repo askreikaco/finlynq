@@ -3,7 +3,8 @@
 import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/currency";
-import { Amount, DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { Amount, ListRow, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 
 const PAGE_SIZE = 50;
@@ -49,7 +50,7 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
         ) : rows.length === 0 ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">No investment transactions yet.</p>
         ) : (
-          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {rows.map((t) => (
               <ListRow
                 key={t.id}
@@ -68,11 +69,12 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
         )}
       </SectionCard>
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          onClose={() => setOpen(null)}
           title={open.portfolioHolding ?? open.kind ?? open.categoryName ?? "Transaction"}
-          description={formatDate(open.date)}
+          subtitle={formatDate(open.date)}
           items={[
             { label: "Account", value: open.accountAlias || open.accountName },
             { label: "Type", value: open.kind ?? open.categoryName ?? "—" },

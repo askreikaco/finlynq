@@ -15,22 +15,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { AmountInput } from "@/components/amount-input";
-
-import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { OpFooter, OpNote, OpPage, safeReturnHref } from "./op-page";
 
 export default function SwapForm() {
   return <SwapCreateForm />;
@@ -220,30 +211,30 @@ function SwapCreateForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit Swap" : "Swap"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit Swap" : "Swap"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
       <OpPage title="Swap">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>No investment accounts. Swaps require an investment account.</OpNote>
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -260,124 +251,94 @@ function SwapCreateForm() {
       saving={submitting}
       onSubmit={handleSubmit}
     >
-      <OpGroup label="Account">
-        <OpRow label="Account" error={errors.accountId}>
-          <Select
-            items={accountLabelById}
-            value={accountId}
-            onValueChange={(v) => {
-              setAccountId(v ?? "");
-              setSourceHoldingId("");
-              setDestHoldingId("");
-            }}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick an investment account" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name ?? `#${a.id}`} ({a.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Account">
+        <Field
+          label="Account"
+          error={errors.accountId}
+          control="select"
+          value={accountId}
+          onValueChange={(v) => {
+            setAccountId(v ?? "");
+            setSourceHoldingId("");
+            setDestHoldingId("");
+          }}
+          placeholder="Pick an investment account"
+          options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
+      </FieldGroup>
 
-      <OpGroup label="Swap">
-        <OpRow label="Sell" error={errors.sourceHoldingId}>
-          <Select
-            items={sourceHoldingLabelById}
-            value={sourceHoldingId}
-            onValueChange={(v) => {
-              setSourceHoldingId(v ?? "");
-              if (v === destHoldingId) setDestHoldingId("");
-            }}
-            disabled={!selectedAccount}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a holding" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {accountHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`} ({h.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-        <OpRow label="Sell qty" error={errors.sourceQty}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={sourceQty}
-            onValueChange={(nv) => setSourceQty(nv)}
-            placeholder="50"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Proceeds" error={errors.sourceProceeds}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={sourceProceeds}
-            onValueChange={(nv) => setSourceProceeds(nv)}
-            placeholder={sourceHolding ? `1500.00 ${sourceHolding.currency}` : "1500.00"}
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Buy" error={errors.destHoldingId}>
-          <Select
-            items={destHoldingLabelById}
-            value={destHoldingId}
-            onValueChange={(v) => setDestHoldingId(v ?? "")}
-            disabled={!selectedAccount || !sourceHoldingId}
-          >
-            <SelectTrigger className={OP_SELECT}>
-              <SelectValue placeholder="Pick a holding" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} side="bottom">
-              {destHoldings.map((h) => (
-                <SelectItem key={h.id} value={String(h.id)}>
-                  {h.symbol ? `${h.symbol} — ` : ""}
-                  {h.name ?? `#${h.id}`} ({h.currency})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </OpRow>
-        <OpRow label="Buy qty" error={errors.destQty}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={destQty}
-            onValueChange={(nv) => setDestQty(nv)}
-            placeholder="10"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Cost" error={errors.destCost}>
-          <AmountInput
-            step="any"
-            inputMode="decimal"
-            value={destCost}
-            onValueChange={(nv) => setDestCost(nv)}
-            placeholder={destHolding ? `1500.00 ${destHolding.currency}` : "1500.00"}
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Date" error={errors.date}>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Swap">
+        <Field
+          label="Sell"
+          error={errors.sourceHoldingId}
+          control="select"
+          value={sourceHoldingId}
+          onValueChange={(v) => {
+            setSourceHoldingId(v ?? "");
+            if (v === destHoldingId) setDestHoldingId("");
+          }}
+          disabled={!selectedAccount}
+          placeholder="Pick a holding"
+          options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+        />
+        <Field
+          label="Sell qty"
+          error={errors.sourceQty}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={sourceQty}
+          onValueChange={(nv) => setSourceQty(nv)}
+          placeholder="50"
+        />
+        <Field
+          label="Proceeds"
+          error={errors.sourceProceeds}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={sourceProceeds}
+          onValueChange={(nv) => setSourceProceeds(nv)}
+          placeholder={sourceHolding ? `1500.00 ${sourceHolding.currency}` : "1500.00"}
+        />
+        <Field
+          label="Buy"
+          error={errors.destHoldingId}
+          control="select"
+          value={destHoldingId}
+          onValueChange={(v) => setDestHoldingId(v ?? "")}
+          disabled={!selectedAccount || !sourceHoldingId}
+          placeholder="Pick a holding"
+          options={destHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+        />
+        <Field
+          label="Buy qty"
+          error={errors.destQty}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={destQty}
+          onValueChange={(nv) => setDestQty(nv)}
+          placeholder="10"
+        />
+        <Field
+          label="Cost"
+          error={errors.destCost}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={destCost}
+          onValueChange={(nv) => setDestCost(nv)}
+          placeholder={destHolding ? `1500.00 ${destHolding.currency}` : "1500.00"}
+        />
+        <Field
+          label="Date"
+          error={errors.date}
+          control="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </FieldGroup>
 
       {currencyMismatch && (
         <OpFooter>
@@ -386,29 +347,20 @@ function SwapCreateForm() {
         </OpFooter>
       )}
 
-      <OpGroup label="Details">
-        <OpRow label="Payee">
-          <Input
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="Broker name (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Note">
-          <Input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Details">
+        <Field
+          label="Payee"
+          value={payee}
+          onChange={(e) => setPayee(e.target.value)}
+          placeholder="Broker name (optional)"
+        />
+        <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+      </FieldGroup>
 
       {submitError && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{submitError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
     </OpPage>
   );

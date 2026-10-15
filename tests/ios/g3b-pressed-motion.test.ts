@@ -37,9 +37,10 @@ describe("list rows keep hover and add pressed state", () => {
   });
 
   it("transactions/mobile-tx-list.tsx rows have active:bg-muted/60 and hover:bg-muted/50", () => {
-    // The row is the shared TxRow (src/components/mobile/tx-row.tsx), which owns the press classes.
+    // The row is the shared TxRow, a thin wrapper of ListRow, which owns the press classes.
     expect(txList).toContain("TxRow");
-    expect(read("src/components/mobile/tx-row.tsx")).toContain("hover:bg-muted/50 active:bg-muted/60");
+    expect(read("src/components/mobile/tx-row.tsx")).toContain("<ListRow");
+    expect(listRow).toContain("hover:bg-muted/50 active:bg-muted/60");
   });
 });
 

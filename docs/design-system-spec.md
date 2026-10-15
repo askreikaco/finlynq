@@ -53,7 +53,6 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | File | Export (file:line) | Purpose (from export only) |
 |---|---|---|
 | `ui/accordion.tsx` | `:97` | Accordion, AccordionItem |
-| `ui/alert.tsx` | `:60` | Alert, AlertTitle, AlertDescription |
 | `ui/badge.tsx` | `:52` | Badge, badgeVariants |
 | `ui/button.tsx` | `:61` (cva `:8-43`, sizes `:24-36`) | Button; touch sizes via `max-md:h-11` / `max-md:size-11` |
 | `ui/card.tsx` | `:95` | Card family |
@@ -63,13 +62,12 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | `ui/confirm-dialog.tsx` | `:29`, `:49` | ConfirmDialog |
 | `ui/data-table.tsx` | `:57`, `:94`, `:153`, `:414` | DataTable, DataTableColumn, compareValues |
 | `ui/dialog.tsx` | `:146` | Dialog family |
-| `ui/dropdown-menu.tsx` | `:255` | DropdownMenu family (used by OverflowMenu, page-header.tsx:8-13) |
+| `ui/dropdown-menu.tsx` | `:255` | DropdownMenu family (used by MoreActionsMenu, page-header.tsx) |
 | `ui/group-combobox.tsx` | `:16` | GroupCombobox |
 | `ui/input.tsx` | `:20` | Input |
 | `ui/label.tsx` | `:20` | Label |
 | `ui/lazy-view.tsx` | `:37` | LazyView |
 | `ui/pagination.tsx` | `:33`, `:67` | Pagination, getPageNumbers |
-| `ui/progress.tsx` | `:77` | Progress |
 | `ui/select.tsx` | `:226` | Select family |
 | `ui/separator.tsx` | `:25` | Separator |
 | `ui/sheet.tsx` | `:126` | Sheet family |
@@ -84,18 +82,19 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 
 | File | Export (file:line) | Purpose |
 |---|---|---|
-| `mobile/page-header.tsx` | PageHeader, OverflowMenu, HEADER_SECONDARY (alias HEADER_DESKTOP_ONLY) | One header for all sizes (see 3d); secondary actions in "..." menu below regular |
+| `mobile/page-header.tsx` | PageHeader, MoreActionsMenu | The one top bar (see 3d); typed slots: title, info, back, primary, more, filter, bulkEdit |
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
-| `mobile/list-row.tsx` | `:41` ListRow, `:13` ListRowProps | Native list row, min-h 56px (`:37-39` doc) |
+| `mobile/list-row.tsx` | ListRow, ListRowProps | THE row of every list. Optional parts by prop: leading (icon tile, initials, status dot), title, subtitle, value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, href / onPress / select, selected, size (regular 56px / dense 44px), shape (square / rounded). Gallery: /dev/gallery#list-row |
 | `mobile/section-card.tsx` | `:6` SectionCard | Card with optional uppercase label (`:5` doc) |
 | `mobile/section-label.tsx` | `:5` SectionLabel | 12/700 uppercase muted label (`:4` doc) |
 | `mobile/stat-tile.tsx` | `:6` StatTile | Compact stat replacing tall icon cards below md (`:5` doc) |
 | `mobile/amount.tsx` | `:34` Amount, `:17` amountToneClass | Money amount, tabular, sign color (`:16`, `:25-26` doc) |
 | `mobile/metric-grid.tsx` | `:14` MetricGrid | Grid of metrics |
 | `mobile/net-worth-hero.tsx` | `:10` NetWorthHero | Hero total block |
-| `mobile/account-row.tsx` | `:18` AccountRow | Account list row |
-| `mobile/holding-row.tsx` | `:10` HoldingRow | Holding list row |
+| `mobile/account-row.tsx` | AccountRow | Thin wrapper: account data to ListRow props |
+| `mobile/holding-row.tsx` | HoldingRow | Thin wrapper: holding data to ListRow props |
+| `mobile/tx-row.tsx` | TxRow | Thin wrapper: transaction / subscription / loan payment to ListRow props |
 | `mobile/detail-sheet.tsx` | `:6` DetailItem, `:15` DetailSheet | Sheet listing every field a row omits |
 | `mobile/customize-dashboard-sheet.tsx` | `:11` DashboardCard, `:23` CustomizeDashboardSheet | Dashboard card picker sheet |
 
@@ -110,9 +109,8 @@ Excluded from the adaptive guard scan (see 3e).
 | `.mobile-glass-bar` css | `src/app/globals.css:280-289` | Opaque `--sidebar` fallback (no backdrop-filter / color-mix / reduced transparency) |
 | SettingsShell | `src/components/settings-shell.tsx:98` | Settings layout; mobile pill row `md:hidden` (`:105-109`) |
 | AccountShell | `src/components/account-shell.tsx:32` | Account layout; renders PageHeader "Account" (`:51`) |
-| ErrorState | `src/components/error-state.tsx:12` | role=alert block with optional "Try again" (`min-h-11`, `:32`) |
-| EmptyState | `src/components/empty-state.tsx:19` | Icon, title, description, optional action |
-| PageSkeleton | `src/components/page-skeleton.tsx:10` (`variant` type `:6-7`) | Shimmer skeleton, variants table / cards / list |
+| Notice | `src/components/notice/` (`index.tsx`, `body.tsx`, `feeds.tsx`) | The one message component: `variant` inline / banner / card / empty / error / skeleton, `tone`, icon, title, `info`, action, retry, dismissible (+ `dismissKey`), `source` for self-fetching notices. Replaces EmptyState, ErrorState, PageSkeleton, Alert and the banners. |
+| Chart | `src/components/chart/` (`index.tsx`, `cartesian.tsx`, `donut.tsx`, `sankey.tsx`, `progress.tsx`) | The one chart component: `kind` sparkline / line / area / bar / stacked-bar / stacked-area / donut / sankey / progress, optional legend, tooltip, axes, grid, breakdownList, lines, zeroLine, delta. Replaces Sparkline, Progress, CspSafeBar, SankeyChart and the inline recharts blocks. |
 | PageFab | `src/components/mobile/page-fab.tsx` | Per-page FAB (mobile only, `md:hidden`); mounted once in `(app)/layout.tsx`; action from `fab-registry.ts` `FAB_ROUTES` |
 | UnlockPanel (locked DEK) | `src/components/unlock-panel.tsx` | No banner. Auto passkey once per page load (`UnlockGate` ref), then a compact password card (`fixed`, bottom clears `--mobile-bar-clearance` / `--kb-inset`, `regular:` offset past rail). Escape hides; it returns on the next 423. "Use passkey" link only with a PRF passkey. Tests: `tests/components/unlock-auto.test.tsx` |
 
@@ -135,17 +133,8 @@ No native `type="checkbox"` outside that list. Guard: `tests/guards/no-checkbox.
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
 - Numbers render system mono on md+; UI font below md.
 
-### 3d. Titles, subtitles, actions (PageHeader, G2-07)
-- One component, phone design as base. Below regular (640px) = `max-regular:` classes; regular+ = base/`regular:` classes. `mobile/page-header.tsx` has no `md:` tokens.
-- Title: below regular `text-base font-semibold` (`PHONE_BAR_TITLE`); regular+ `text-3xl/9 font-extrabold` (`HEADER_TITLE_CLASS`). 28/800 has no system size, so text-3xl is used (owner D4).
-- Subtitle: visible at every size. Below regular a truncated `text-xs` line; regular+ `text-sm` (`HEADER_SUBTITLE_CLASS`).
-- `titleClassName` / `subtitleClassName`: `@deprecated` no-ops, still accepted and ignored. `desktopClasses()` removed.
-- Secondary actions: `HEADER_SECONDARY` = `max-regular:hidden`; below regular they go to the `overflow` menu. `HEADER_DESKTOP_ONLY` is an alias of the same value.
-- Primary action: icon-only 44px circle below regular (`phone-icon-action`, globals.css `width < 40rem`); label visible from regular.
-- Right group (phone): capsule + 10px gap + primary. Capsule (`data-slot=header-capsule`, `glass-capsule`) = icon cells + overflow trigger only, each a 44px cell, max 3 icon cells + overflow (11rem). Status (`HeaderStatus`, e.g. saving spinner) is a cell. Primary (`data-slot=header-primary`, `phone-icon-action`) is a separate 44px filled control; alone it has no capsule. Text buttons never share the capsule. Extra secondary actions go to the overflow menu (audit: tests/ios/header-actions.test.ts).
-- Bar: sticky at every size (D5). Glass only below regular; opaque `regular:bg-background/90` from regular. `className` / `actionsClassName` stay caller-owned at every size.
-- Back link: `backHref` renders BackButton at every size. `backLabel` defaults to "Back" (`back-button.tsx`).
-- Overflow trigger: `regular:hidden`.
+### 3d. The top bar (PageHeader)
+- Superseded G2-07 text. One component, one anatomy: `[BACK] [TITLE + (i)] ... [MORE + FILTER|BULK EDIT] [PRIMARY]`, typed slot props only (`title`, `info`, `back`, `primary`, `more`, `filter`, `bulkEdit`). See docs/design-system.md "Page header". No subtitle line, no `HEADER_SECONDARY` / `HeaderStatus` / `actions` node.
 
 ### 3e. Adaptive guard (ratchet)
 - Test: `tests/design-system-guard.test.ts`. Banned regex (`tests/helpers/adaptive-scan.ts` `BANNED_PATTERN`): `md:hidden|hidden md:|hidden max-md:|isMobile|window.innerWidth|matchMedia|useMediaQuery`.

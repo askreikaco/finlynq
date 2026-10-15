@@ -32,7 +32,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 vi.mock("@/lib/utils/date", async (orig) => ({
   ...(await orig<typeof import("@/lib/utils/date")>()),
   localDateISO: () => "2026-10-09",

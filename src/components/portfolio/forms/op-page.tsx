@@ -10,9 +10,8 @@
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader } from "@/components/mobile";
-import { CardLabel } from "@/components/mobile/card-label";
-import { Check, ClipboardList } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SectionCard } from "@/components/mobile/section-card";
+import { ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NEW_OP_HREF } from "./op-catalog";
 
@@ -28,10 +27,6 @@ export function safeReturnHref(raw: string | null | undefined): string {
 }
 
 /** Control and input classes: 44px rows, 16px text on phones, no box (the row is the field). */
-export const OP_INPUT =
-  "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent dark:disabled:bg-transparent";
-export const OP_SELECT =
-  "w-full border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent regular:pointer-fine:text-sm";
 
 export function OpPage({
   title,
@@ -49,27 +44,20 @@ export function OpPage({
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   children: React.ReactNode;
 }) {
+  const formId = React.useId();
   return (
     <form
+      id={formId}
       onSubmit={onSubmit ?? ((e) => e.preventDefault())}
       className="pb-[max(24px,var(--sab,0px))]"
     >
       <PageHeader
         title={title}
-        backHref={NEW_OP_HREF}
-        backLabel="All operations"
-        actions={
-          onSubmit ? (
-            <Button
-              type="submit"
-              variant="ghost"
-              className="h-11 px-3 text-sm font-semibold text-primary regular:pointer-fine:h-8"
-              disabled={saving || saveDisabled}
-            >
-              <Check className="hidden size-4 max-regular:block" aria-hidden />
-              {saving ? "Saving…" : saveLabel}
-            </Button>
-          ) : null
+        back={{ href: NEW_OP_HREF, label: "All operations" }}
+        primary={
+          onSubmit
+            ? { kind: "save", label: saveLabel, form: formId, busy: saving, disabled: saveDisabled }
+            : undefined
         }
       />
       <div className="mt-4 space-y-6">{children}</div>
@@ -80,10 +68,9 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <section className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-      {label ? <CardLabel as="h2" slot="section-label" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
+    <SectionCard list label={label} icon={ClipboardList} tone="indigo">
       {children}
-    </section>
+    </SectionCard>
   );
 }
 

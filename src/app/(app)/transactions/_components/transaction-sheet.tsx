@@ -6,7 +6,7 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { DetailSheet, type DetailItem } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatAccountLabel } from "@/lib/account-label";
 import { labelForSource } from "@/lib/tx-source";
@@ -74,11 +74,12 @@ export function TransactionSheet({
   onDelete: (t: Transaction) => void;
 }) {
   return (
-    <DetailSheet
+    <Overlay
+      variant="detail"
       open
-      onOpenChange={(o) => { if (!o) onClose(); }}
+      onClose={onClose}
       title={tx.payee || tx.categoryName || "Transaction"}
-      description={`${formatDate(tx.date)} · ${tx.categoryName || "Uncategorized"}`}
+      subtitle={`${formatDate(tx.date)} · ${tx.categoryName || "Uncategorized"}`}
       items={transactionDetailItems(tx, peer)}
     >
       <Button variant="outline" className="h-11" onClick={() => { onClose(); onEdit(tx); }}>Edit</Button>
@@ -89,6 +90,6 @@ export function TransactionSheet({
         <Button variant="outline" className="h-11" onClick={() => { onClose(); onSplit(tx); }}>Split</Button>
       )}
       <Button variant="outline" className="h-11 text-destructive" onClick={() => { onClose(); onDelete(tx); }}>Delete</Button>
-    </DetailSheet>
+    </Overlay>
   );
 }

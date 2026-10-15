@@ -28,8 +28,12 @@ describe("PageToolbar round controls", () => {
   });
 
   it("range trigger, month group, search and the Spending/Income toggle share CONTROL_SURFACE", () => {
-    expect(read("src/components/metric-range-select.tsx")).toContain("CONTROL_SURFACE");
-    expect(tb.match(/CONTROL_SURFACE/g)!.length).toBeGreaterThanOrEqual(3);
+    // Every Field control (the range trigger, the search box) is built on CONTROL_SURFACE; the toolbar asks for the round shape.
+    expect(read("src/components/ui/field/surface.tsx")).toContain("CONTROL_SURFACE");
+    expect(read("src/components/ui/field/select-base.tsx")).toContain("CONTROL_SURFACE");
+    expect(read("src/components/metric-range-select.tsx")).toContain("rounded-full");
+    expect(tb).toMatch(/<Field[\s\S]*?\bpill\b/);
+    expect(tb.match(/CONTROL_SURFACE/g)!.length).toBeGreaterThanOrEqual(2);
     expect(read("src/components/ui/tabs.tsx")).toContain("CONTROL_SURFACE");
     expect(read("src/app/(app)/categories/_page-content.tsx")).toContain('variant="segmented"');
   });

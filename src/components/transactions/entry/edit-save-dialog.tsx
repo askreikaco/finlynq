@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 
 export type SaveScope = "this" | "following";
 
@@ -27,11 +27,13 @@ export function EditSaveDialog({
   onConfirm: (scope: SaveScope) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-sm" data-testid="edit-save-dialog">
-        <DialogHeader>
-          <DialogTitle>Save changes to this installment?</DialogTitle>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="sm"
+      testId="edit-save-dialog"
+      title="Save changes to this installment?"
+    >
         <p className="text-sm text-muted-foreground">Choose which payments get these changes.</p>
         {dateChanged && (
           <p data-testid="edit-save-date-note" className="text-xs text-muted-foreground">
@@ -54,7 +56,6 @@ export function EditSaveDialog({
             Cancel
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

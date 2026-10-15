@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 
 export type DeleteScope = "this" | "following";
 
@@ -34,11 +34,12 @@ export function EditDeleteDialog({
       ? "Delete this installment?"
       : "Delete this transaction?";
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="sm"
+      title={title}
+    >
         <p className="text-sm text-muted-foreground">
           {isTransfer
             ? "Both legs of this transfer will be deleted. This cannot be undone."
@@ -87,7 +88,6 @@ export function EditDeleteDialog({
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

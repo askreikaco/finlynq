@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ListRow } from "@/components/mobile";
@@ -17,6 +10,7 @@ import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { SaveTemplateDialog } from "./save-template-dialog";
+import { Field } from "@/components/ui/field";
 import { formatPercent } from "@/lib/locale";
 
 interface PreviewRow extends RawTransaction {
@@ -159,15 +153,43 @@ export function ImportPreviewDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-5xl max-h-[90dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Import Preview</DialogTitle>
-          <DialogDescription>
-            Review the parsed transactions before importing.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="4xl"
+      title="Import Preview"
+      info={<>Review the parsed transactions before importing.</>}
+      footerClassName="regular:justify-between"
+      footer={<>
+          <div>
+            {onChangeTemplate && (
+              <Button
+                variant="ghost"
+                onClick={onChangeTemplate}
+                disabled={isImporting}
+                className="text-xs"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+                Change template
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isImporting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={isImporting || (importCount === 0)}
+            >
+              {isImporting
+                ? "Importing..."
+                : `Import ${importCount} transactions`}
+            </Button>
+          </div>
+        
+      </>}
+    >
         {/* Summary badges */}
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="default" className="bg-pos">
@@ -272,20 +294,18 @@ export function ImportPreviewDialog({
                 <div className="flex items-center gap-2 pl-3">
                   <div className="flex w-5 shrink-0 justify-center">
                     {isDuplicate && (
-                      <input
-                        type="checkbox"
+                      <Field
+                        control="checkbox"
                         checked={isForced}
                         onChange={() => toggleDuplicate(row.rowIndex)}
-                        className="h-4 w-4 rounded border-border"
                         title="Force import this duplicate"
                       />
                     )}
                     {isProbable && (
-                      <input
-                        type="checkbox"
+                      <Field
+                        control="checkbox"
                         checked={!isSkipped}
                         onChange={() => toggleSkipProbable(row.rowIndex)}
-                        className="h-4 w-4 rounded border-warning/30"
                         title="Uncheck to skip this probable duplicate"
                       />
                     )}
@@ -356,7 +376,7 @@ export function ImportPreviewDialog({
             );
           })}
           {allRows.length > 100 && (
-            <p className="py-4 text-center text-xs text-muted-foreground">
+            <p data-keep="status" className="py-4 text-center text-xs text-muted-foreground">
               Showing first 100 of {allRows.length} rows
             </p>
           )}
@@ -374,35 +394,8 @@ export function ImportPreviewDialog({
           </div>
         )}
 
-        <DialogFooter className="regular:justify-between">
-          <div>
-            {onChangeTemplate && (
-              <Button
-                variant="ghost"
-                onClick={onChangeTemplate}
-                disabled={isImporting}
-                className="text-xs"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                Change template
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isImporting}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={isImporting || (importCount === 0)}
-            >
-              {isImporting
-                ? "Importing..."
-                : `Import ${importCount} transactions`}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
+        
+      
 
       {csvHeaders.length > 0 && (
         <SaveTemplateDialog
@@ -416,6 +409,6 @@ export function ImportPreviewDialog({
           }}
         />
       )}
-    </Dialog>
+    </Overlay>
   );
 }

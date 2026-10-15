@@ -155,7 +155,7 @@ describe("Account Detail Page", () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
       expect(screen.getByText("Invisible")).toBeTruthy();
-      expect(screen.getByText("Hidden from net worth, totals, reports and metrics")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "About Invisible" })).toBeTruthy();
       const switchElement = document.querySelector('[role="switch"]');
       expect(switchElement).toBeTruthy();
       expect(switchElement?.getAttribute("aria-checked")).toBe("false");

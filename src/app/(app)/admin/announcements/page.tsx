@@ -10,11 +10,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
+import { Field } from "@/components/ui/field";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 interface AdminAnnouncement {
@@ -179,82 +177,69 @@ export default function AdminAnnouncementsPage() {
         </div>
 
         <div className="mt-4 space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="a-title">Title</Label>
-            <Input
-              id="a-title"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              maxLength={200}
-              placeholder="e.g. New: portfolio realized gains in your base currency"
-            />
-          </div>
+          <Field
+            label="Title"
+            id="a-title"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            maxLength={200}
+            placeholder="e.g. New: portfolio realized gains in your base currency"
+          />
 
-          <div className="space-y-1.5">
-            <Label htmlFor="a-body">Body</Label>
-            <textarea
-              id="a-body"
-              value={form.body}
-              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-              rows={5}
-              maxLength={10000}
-              placeholder="What changed and why it matters."
-              className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </div>
+          <Field
+            label="Body"
+            control="textarea"
+            id="a-body"
+            value={form.body}
+            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            rows={5}
+            maxLength={10000}
+            placeholder="What changed and why it matters."
+          />
 
           <div className="grid gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="a-category">Category</Label>
-              <select
-                id="a-category"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="a-severity">Severity</Label>
-              <select
-                id="a-severity"
-                value={form.severity}
-                onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              >
-                {SEVERITIES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="a-expires">Expires (optional)</Label>
-            <Input
-              id="a-expires"
-              type="datetime-local"
-              value={form.expiresAt}
-              onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
+            <Field
+              label="Category"
+              control="select"
+              id="a-category"
+              value={form.category}
+              onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
+              controlClassName="capitalize"
+              options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+            />
+            <Field
+              label="Severity"
+              control="select"
+              id="a-severity"
+              value={form.severity}
+              onValueChange={(v) => setForm((f) => ({ ...f, severity: v }))}
+              controlClassName="capitalize"
+              options={SEVERITIES.map((s) => ({ value: s, label: s }))}
             />
           </div>
 
+          <Field
+            label="Expires"
+            optional
+            id="a-expires"
+            type="datetime-local"
+            value={form.expiresAt}
+            onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
+          />
+
           <div className="flex flex-wrap gap-4">
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              Pinned (shows as banner)
-              <Switch checked={form.pinned} onCheckedChange={(v) => setForm((f) => ({ ...f, pinned: v }))} />
-            </label>
-            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
-              Published
-              <Switch checked={form.published} onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))} />
-            </label>
+            <Field
+              label="Pinned (shows as banner)"
+              control="switch"
+              checked={form.pinned}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, pinned: v }))}
+            />
+            <Field
+              label="Published"
+              control="switch"
+              checked={form.published}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

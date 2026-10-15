@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 
 const H = vi.hoisted(() => ({
   accounts: [] as Array<Record<string, unknown>>,
@@ -108,7 +108,7 @@ describe("new transaction page review fixes", () => {
     window.history.replaceState({}, "", "/transactions/new");
     render(<Page />);
     await waitFor(() => expect(screen.getByText("Checking")).toBeTruthy());
-    fireEvent.click(screen.getByTestId("txnew-row-account"));
+    fireEvent.click(within(screen.getByTestId("txnew-row-account")).getByRole("button"));
     expect(await screen.findByText("Savings")).toBeTruthy();
     expect(screen.queryByText("Brokerage")).toBeNull();
   });

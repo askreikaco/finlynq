@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 const setPref = vi.fn(async () => true);
 let state = { pref: "auto", locale: "en-CA", setPref };
@@ -16,23 +17,15 @@ vi.mock("@/components/ui/card", () => ({
   CardTitle: ({ children }: any) => <div>{children}</div>,
   CardDescription: ({ children }: any) => <div>{children}</div>,
 }));
-vi.mock("@/components/ui/select", () => ({
-  Select: ({ children, value }: any) => <div data-value={value}>{children}</div>,
-  SelectTrigger: ({ children }: any) => <div>{children}</div>,
-  SelectValue: ({ children }: any) => <span data-testid="sel">{children}</span>,
-  SelectContent: ({ children }: any) => <div>{children}</div>,
-  SelectItem: ({ children, value }: any) => <div data-testid="opt" data-v={value}>{children}</div>,
-}));
-vi.mock("lucide-react", () => ({ Languages: () => null, Info: () => null }));
-
 import { LanguageCard, languageExample } from "@/components/settings/language-card";
 
 afterEach(() => { cleanup(); state = { pref: "auto", locale: "en-CA", setPref }; cur = { displayCurrency: "USD", isLoading: false }; });
 
 describe("LanguageCard", () => {
-  it("lists auto + every language and shows an en example", () => {
+  it("lists auto + every language and shows an en example", async () => {
     render(<LanguageCard />);
-    expect(screen.getAllByTestId("opt").map((e) => e.textContent)).toEqual([
+    await userEvent.setup().click(screen.getByRole("combobox"));
+    expect((await screen.findAllByRole("option")).map((e) => e.textContent)).toEqual([
       "Auto", "English", "Tiếng Việt", "日本語",
     ]);
     expect(screen.getByTestId("language-example").textContent).toContain("1,234,567.89");

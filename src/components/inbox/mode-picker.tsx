@@ -16,8 +16,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
+import { Field } from "@/components/ui/field";
 import { MODES, MODE_ORDER, isMode, type Mode } from "./modes";
 
 export function ModePicker({
@@ -65,63 +65,16 @@ export function ModePicker({
 
   return (
     <div className="space-y-3">
-      <div role="radiogroup" aria-label="Reconciliation mode" className="space-y-2">
-        {MODE_ORDER.map((m) => {
-          const cfg = MODES[m];
-          const Icon = cfg.icon;
-          const isSelected = m === selected;
-          const isCurrent = m === savedMode;
-          return (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => setSelected(m)}
-              className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                isSelected
-                  ? "border-foreground/40 bg-muted/40"
-                  : "hover:bg-muted/30"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span
-                  className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                    isSelected ? "border-foreground" : "border-muted-foreground/40"
-                  }`}
-                >
-                  {isSelected && (
-                    <span className="h-2 w-2 rounded-full bg-foreground" />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Icon className={`h-4 w-4 ${cfg.tone.split(" ")[0]}`} />
-                    <span className="text-sm font-medium">{cfg.label}</span>
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-mono"
-                    >
-                      {cfg.gates} {cfg.gates === 1 ? "gate" : "gates"}
-                    </Badge>
-                    {isCurrent && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs font-mono uppercase tracking-wider ml-auto"
-                      >
-                        current
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 ml-6">
-                    {cfg.subLabel}
-                  </p>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <Field
+        label="Reconciliation mode"
+        control="segmented"
+        fill
+        info={MODE_ORDER.map((m) => `${MODES[m].label}: ${MODES[m].subLabel}`).join(" ")}
+        hint={dirty ? `Current: ${MODES[savedMode].label}` : undefined}
+        value={selected}
+        onValueChange={(v) => setSelected(v as Mode)}
+        options={MODE_ORDER.map((m) => ({ value: m, label: MODES[m].label, icon: MODES[m].icon }))}
+      />
 
       {error && (
         <p className="text-xs text-destructive">{error}</p>

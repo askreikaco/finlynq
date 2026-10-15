@@ -1,21 +1,21 @@
 "use client";
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2, Percent, Plus, TrendingDown } from "lucide-react";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
+import { MetricGrid, SectionCard, ListRow, ListDetailLayout, useListDetail, TxRow } from "@/components/mobile";
+import { Notice } from "@/components/notice";
+import { Chart } from "@/components/chart";
 import { LoanFormPanel } from "./_components/loan-form-panel";
+import { LoanDetail, LoanProgress, FREQUENCY_LABELS, loanDetailItems } from "./_components/loan-detail";
+import { LoanAmortization } from "./_components/loan-amortization";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { LOAN_FILTER_KEYS, LOAN_SORTS } from "@/lib/toolbar/list-configs";
@@ -31,30 +31,6 @@ import { isLoanCompleted } from "@/lib/loan-status";
 import { localDateISO } from "@/lib/utils/date";
 import type { Loan } from "./_components/loan-types";
 import { loanNextDue } from "./_components/loan-next-due";
-
-type AmortRow = { period: number; date: string; payment: number; principal: number; interest: number; balance: number };
-type AccrualRow = { month: string; interest: number };
-type AmortResult = { monthlyPayment: number; totalPayments: number; totalInterest: number; payoffDate: string; residualValue: number; schedule: AmortRow[]; monthlyAccrual: AccrualRow[] };
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  weekly: "Weekly",
-  biweekly: "Biweekly",
-  semi_monthly: "Semi-monthly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  annual: "Annual",
-};
-
-const PERIODS_PER_YEAR: Record<string, number> = { weekly: 52, biweekly: 26, semi_monthly: 24, monthly: 12, quarterly: 4, annual: 1 };
-
-// What-if is term-driven; for payment-driven loans (termMonths null) derive an
-// equivalent term in months from the solved periods remaining.
-function equivalentTermMonths(loan: Loan): number {
-  if (loan.termMonths != null) return loan.termMonths;
-  const perYear = PERIODS_PER_YEAR[loan.paymentFrequency] ?? 12;
-  return Math.max(1, Math.round((loan.periodsRemaining / perYear) * 12));
-}
-type WhatIf = { extraPayment: number; monthsSaved: number; interestSaved: number; newPayoffDate: string; totalInterest: number };
 
 function LoansSkeleton() {
   return (
@@ -90,40 +66,12 @@ function LoansSkeleton() {
   );
 }
 
-/** Label/value rows for the loan detail sheet. Every money figure is in the loan's own currency. */
-function loanDetailItems(loan: Loan, displayCurrency: string, nextDue: string | null, paidOff: boolean): DetailItem[] {
-  const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
-  const shownRemaining = loan.remainingBalanceDisplay;
-  const converted = loan.currency !== displayCurrency && shownRemaining != null;
-  const items: DetailItem[] = [
-    { label: "Type", value: loan.type.replace("_", " ") },
-    { label: "Principal", value: formatCurrency(loan.principal, loan.currency) },
-    {
-      label: "Remaining",
-      value: converted
-        ? `${formatCurrency(loan.remainingBalance, loan.currency)} (≈ ${formatCurrency(shownRemaining, displayCurrency)})`
-        : formatCurrency(loan.remainingBalance, loan.currency),
-    },
-    { label: "Rate", value: `${loan.annualRate}%` },
-    { label: FREQUENCY_LABELS[loan.paymentFrequency] ?? "Payment", value: formatCurrency(payment, loan.currency) },
-    { label: "Next due (est.)", value: nextDue ?? (paidOff ? "Paid off" : "—") },
-    { label: "Total interest", value: formatCurrency(loan.totalInterest, loan.currency) },
-    {
-      label: loan.type === "lease" ? "Term end" : "Payoff",
-      value: loan.type === "lease" && loan.residualValue != null && loan.residualValue > 0
-        ? `${loan.payoffDate} (residual ${formatCurrency(loan.residualValue, loan.currency)})`
-        : loan.payoffDate,
-    },
-  ];
-  return items;
-}
-
 /** Same rose as the Total debt card sparkline (a literal colour: SVG gradient stops cannot resolve var()). */
 const DEBT_CHART_COLOR = "#f43f5e";
 
 type LoanTrend = { values: number[]; labels: string[] };
 
-/** One loan row (the shared ProgressRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
+/** One loan row (the shared ListRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
 function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean; trend?: LoanTrend | null }) {
   const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
   const freq = FREQUENCY_LABELS[loan.paymentFrequency];
@@ -131,39 +79,24 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
   const converted = loan.currency !== displayCurrency && shown != null;
   const paidPct = loan.principal > 0 && loan.remainingBalance != null ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
   return (
-    <ProgressRowButton onPress={onOpen} selected={selected}>
-      <ProgressRow
-        slot="loan"
-        label={loan.name}
-        dot={STATUS_DOT[paidOff ? "completed" : "active"]}
-        chartColor={DEBT_CHART_COLOR}
-        meta={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
-        value={loan.remainingBalance != null ? formatCurrency(loan.remainingBalance, loan.currency) : "—"}
-        delta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : `of ${formatCurrency(loan.principal, loan.currency)}`}
-        deltaTitle="Remaining balance"
-        trend={trend?.values ?? null}
-        sparkLabels={trend?.labels}
-        cur={displayCurrency}
-        pct={paidPct}
-        barTone={paidOff ? "pos" : "primary"}
-        progressLabel={`${Math.round(Math.min(100, Math.max(0, paidPct)))}%`}
-        progressAria={`Loan ${loan.name} paid`}
-        strike={paidOff}
-      />
-    </ProgressRowButton>
-  );
-}
-
-function LoanProgress({ loan }: { loan: Loan }) {
-  const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span>
-        <span>{Math.round(paidPct)}%</span>
-      </div>
-      <CspSafeBar percent={paidPct} className="bg-destructive/10" fillClassName="bg-pos" ariaLabel={`Loan ${loan.name} paid`} />
-    </div>
+    <ListRow
+      slot="loan"
+      title={loan.name}
+      subtitle={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
+      dot={STATUS_DOT[paidOff ? "completed" : "active"]}
+      value={loan.remainingBalance != null ? formatCurrency(loan.remainingBalance, loan.currency) : "—"}
+      delta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : `of ${formatCurrency(loan.principal, loan.currency)}`}
+      deltaTitle="Remaining balance"
+      trend={trend?.values ?? null}
+      trendLabels={trend?.labels}
+      trendColor={DEBT_CHART_COLOR}
+      currency={displayCurrency}
+      progress={{ pct: paidPct, tone: paidOff ? "pos" : "primary", label: `${Math.round(Math.min(100, Math.max(0, paidPct)))}%`, aria: `Loan ${loan.name} paid` }}
+      strike={paidOff}
+      chevron={false}
+      selected={selected}
+      onPress={onOpen}
+    />
   );
 }
 
@@ -180,17 +113,10 @@ function LoansPageContent() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const openLoan = (id: number) => (detail.split ? detail.select(id) : setDetailId(id));
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  const [amort, setAmort] = useState<AmortResult | null>(null);
-  const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
-  async function viewAmortization(loan: Loan) {
+  // Phones: "View schedule" in the detail sheet opens the amortization panel below the list. Split view: the pane's detail has its own.
+  function viewAmortization(loan: Loan) {
     setDetailId(null);
     setSelectedLoan(loan);
-    const [amortRes, whatIfRes] = await Promise.all([
-      fetch("/api/loans", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "amortization", principal: loan.principal, annualRate: loan.annualRate, termMonths: loan.termMonths, startDate: loan.startDate, paymentAmount: loan.paymentAmount, extraPayment: loan.extraPayment, paymentFrequency: loan.paymentFrequency, residualValue: loan.residualValue }) }).then((r) => r.json()),
-      fetch("/api/loans", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "what-if", principal: loan.principal, annualRate: loan.annualRate, termMonths: equivalentTermMonths(loan), startDate: loan.startDate, extraAmounts: [100, 200, 500, 1000] }) }).then((r) => r.json()),
-    ]);
-    setAmort(amortRes);
-    setWhatIf(Array.isArray(whatIfRes) ? whatIfRes : []);
   }
 
   // Create and edit are full pages (iOS navigation), not dialogs.
@@ -265,26 +191,26 @@ function LoansPageContent() {
   const debtCard = resolveCard({ ...common, points: loanSeries?.balance, mode: "last", pageValue: totalDebt, kind: "money" });
   const payCard = resolveCard({ ...common, points: loanSeries?.payment, mode: "last", pageValue: totalMonthly, kind: "money" });
   const activeCard = resolveCard({ ...common, points: loanSeries?.active, mode: "last", pageValue: activeLoans.length, kind: "count" });
-  const metrics: MetricItem[] = [
+  const metrics: MetricCardProps[] = [
     {
-      id: "total-debt", label: "Total debt", icon: Landmark, iconTone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
-      sub: debtCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: debtCard.badgePct, invertTone: true,
+      id: "total-debt", label: "Total debt", icon: Landmark, tone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
+      delta: { pct: debtCard.badgePct, text: debtCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
       sparkData: debtCard.sparkData, sparkLabels: debtCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
-      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, iconTone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
-      sub: payCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: payCard.badgePct, invertTone: true,
+      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, tone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
+      delta: { pct: payCard.badgePct, text: payCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
       sparkData: payCard.sparkData, sparkLabels: payCard.sparkLabels, sparkColor: "#f59e0b",
     },
     {
-      id: "active-loans", label: "Active loans", icon: ListChecks, iconTone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
-      sub: activeCard.delta ?? NO_HISTORY_CAPTION, badgePct: activeCard.badgePct, invertTone: true,
+      id: "active-loans", label: "Active loans", icon: ListChecks, tone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
+      delta: { pct: activeCard.badgePct, text: activeCard.delta ?? NO_HISTORY_CAPTION, invert: true },
       sparkData: activeCard.sparkData, sparkLabels: activeCard.sparkLabels, sparkColor: "#6366f1",
     },
   ];
 
   if (loading) return <LoansSkeleton />;
-  if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={load} />;
+  if (loadError) return <Notice variant="error" title="Couldn't load loans" retry={load}>{"We couldn't load your loans. Please try again."}</Notice>;
 
   const detailPaidOff = detailLoan ? isLoanCompleted(detailLoan) : false;
   const detailNextDue = detailLoan ? loanNextDue(detailLoan, detailPaidOff, today) : null;
@@ -295,36 +221,27 @@ function LoansPageContent() {
       title="Loans & Debt"
       info="Track balances, amortization schedules, and payoff strategies"
       width="report"
-            header={{
+      header={{
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
-        actions: (
-          <ListDetailNewButton href="/loans/new" label="Add Loan" />
-        ),
+        primary: { kind: "add", label: "Add Loan", href: "/loans/new", onSelect: detail.split ? detail.selectNew : undefined },
       }}
     >
       <ListDetailLayout
           entity="loan"
           newLabel="Add Loan"
-          pane={(api) => {
-            const open = loans.find((l) => String(l.id) === api.selectedId) ?? null;
-            return (
-              <div className="space-y-3">
-                {open && (
-                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void viewAmortization(open)}>
-                    <Table2 className="mr-1 h-4 w-4" /> View schedule
-                  </Button>
-                )}
-                <LoanFormPanel
-                  embedded
-                  mode={api.isNew ? "create" : "edit"}
-                  id={api.selectedId ?? undefined}
-                  onSaved={() => { load(); api.afterSaved(); }}
-                  onCancel={api.clear}
-                  onDeleted={() => { load(); api.afterDeleted(); }}
-                />
-              </div>
-            );
-          }}
+          detailTitle="Loan"
+          detailHref={(id) => `/loans/${id}`}
+          renderDetail={(id) => <LoanDetail id={id} compact />}
+          renderForm={(api) => (
+            <LoanFormPanel
+              embedded
+              mode={api.isNew ? "create" : "edit"}
+              id={api.selectedId ?? undefined}
+              onSaved={() => { load(); api.afterSaved(); }}
+              onCancel={api.cancel}
+              onDeleted={() => { load(); api.afterDeleted(); }}
+            />
+          )}
       >
       <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
@@ -334,15 +251,17 @@ function LoansPageContent() {
 
             <div className="space-y-6">
               {loans.length === 0 && (
-                <EmptyState
+                <Notice
+                  variant="empty"
                   icon={Landmark}
                   title="No loans tracked yet"
-                  description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
                   action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
-                />
+                >
+                  Add a mortgage, car loan or other debt.
+                </Notice>
               )}
           {activeList.length > 0 && (
-            <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+            <SectionCard label="Active" icon={Landmark} tone="indigo" list className="[&>*]:min-w-0">
               {activeList.map((loan) => (
                 <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
               ))}
@@ -367,105 +286,37 @@ function LoansPageContent() {
             </Accordion>
           )}
 
-          {/* Amortization panel. Every figure comes from the schedule the server computed in the loan's OWN currency. */}
-          {selectedLoan && amort && (
+          {/* Amortization panel (phones; in the split view the pane's detail has the schedule). */}
+          {selectedLoan && !detail.split && (
             <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
-              <Tabs defaultValue="chart">
-                <TabsList className="h-auto flex-wrap">
-                  <TabsTrigger value="chart">Chart</TabsTrigger>
-                  <TabsTrigger value="table">Schedule</TabsTrigger>
-                  <TabsTrigger value="monthly">Monthly Interest</TabsTrigger>
-                  <TabsTrigger value="whatif">What-If</TabsTrigger>
-                </TabsList>
-                <TabsContent value="chart">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip /><Legend />
-                      <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <ResponsiveContainer width="100%" height={200} className="mt-4">
-                    <LineChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip />
-                      <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </TabsContent>
-                <TabsContent value="table">
-                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {amort.schedule.map((r) => (
-                      <TxRow
-                        key={r.period}
-                        icon={CalendarClock}
-                        title={`#${r.period} · ${r.date}`}
-                        subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
-                        amount={-r.payment}
-                        currency={selectedLoan.currency}
-                        meta={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-                <TabsContent value="monthly">
-                  <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
-                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {(amort.monthlyAccrual ?? []).map((m) => (
-                      <TxRow
-                        key={m.month}
-                        icon={Percent}
-                        tile="neg"
-                        title={m.month}
-                        amount={m.interest}
-                        currency={selectedLoan.currency}
-                        amountTone="neg"
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-                <TabsContent value="whatif">
-                  <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
-                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {whatIf.map((w) => (
-                      <TxRow
-                        key={w.extraPayment}
-                        icon={TrendingDown}
-                        tile="pos"
-                        title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
-                        subtitle={`New payoff ${w.newPayoffDate}`}
-                        value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
-                        meta={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
-                        metaTone="pos"
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <LoanAmortization loan={selectedLoan} />
             </SectionCard>
           )}
             </div>
       </ListDetailLayout>
 
       {detailLoan && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          onClose={() => setDetailId(null)}
           title={detailLoan.name}
-          description={`${detailLoan.currency} loan`}
+          subtitle={`${detailLoan.currency} loan`}
           items={loanDetailItems(detailLoan, displayCurrency, detailNextDue, detailPaidOff)}
         >
           <LoanProgress loan={detailLoan} />
           <Button variant="outline" onClick={() => viewAmortization(detailLoan)}>View schedule</Button>
           <Button variant="outline" onClick={() => { setDetailId(null); editLoan(detailLoan); }}>Edit</Button>
           <Button variant="outline" className="text-destructive" onClick={() => { setDetailId(null); setDeleteId(detailLoan.id); }}>Delete</Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        onClose={() => { setDeleteId(null); }}
         title="Delete loan"
-        description={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
+        message={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
         confirmLabel="Delete loan"
         busy={deleting}
         onConfirm={handleDelete}

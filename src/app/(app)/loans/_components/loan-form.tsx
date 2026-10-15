@@ -2,17 +2,12 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
-import { AmountInput } from "@/components/amount-input";
-import { FormGroup } from "@/components/forms";
 import { TW } from "@/lib/design/tokens";
+import { Field, type FieldComboboxOption, FieldGroup } from "@/components/ui/field";
 import { LOAN_TYPE_OPTIONS, type Loan, type LoanAccount } from "./loan-types";
 
 const FREQUENCY_OPTIONS = [
@@ -23,22 +18,6 @@ const FREQUENCY_OPTIONS = [
   { value: "quarterly", label: "Quarterly" },
   { value: "annual", label: "Annual" },
 ] as const;
-
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-
-function Row({ label, htmlFor, error, children }: { label: ReactNode; htmlFor?: string; error?: string; children: ReactNode }) {
-  return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1 space-y-1">
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-      </div>
-    </div>
-  );
-}
 
 type FormState = {
   name: string; type: string; principal: string; currency: string; annualRate: string;
@@ -186,80 +165,117 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormGroup>
-          <Row label="Name" htmlFor="loan-name" error={errors.name}>
-            <Input id="loan-name" className={ROW_CONTROL} value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} />
-          </Row>
-          <Row label="Type">
-            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LOAN_TYPE_OPTIONS.map((t) => (<SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </Row>
-          <Row label="Currency">
-            <Select value={form.currency} onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {currencyOptions.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </Row>
-          <Row label="Principal" htmlFor="loan-principal" error={errors.principal}>
-            <AmountInput id="loan-principal" className={ROW_CONTROL} step="0.01" value={form.principal} onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }} />
-          </Row>
-          <Row label="Annual Rate (%)" htmlFor="loan-rate" error={errors.annualRate}>
-            <AmountInput id="loan-rate" className={ROW_CONTROL} step="0.01" value={form.annualRate} onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }} />
-          </Row>
-          <Row label="Term (months)" htmlFor="loan-term" error={errors.termMonths}>
-            <Input id="loan-term" className={ROW_CONTROL} type="number" placeholder="From payment" value={form.termMonths} onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }} />
-          </Row>
-          <Row label="Payment" htmlFor="loan-payment" error={errors.paymentAmount}>
-            <AmountInput id="loan-payment" className={ROW_CONTROL} step="0.01" placeholder="From term" value={form.paymentAmount} onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
-          </Row>
-          <Row label="Frequency">
-            <Select value={form.paymentFrequency} onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}>
-              <SelectTrigger className={ROW_CONTROL}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FREQUENCY_OPTIONS.map((f) => (<SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </Row>
-          <Row label="Extra/Payment">
-            <AmountInput className={ROW_CONTROL} step="0.01" value={form.extraPayment} onValueChange={(nv) => setForm({ ...form, extraPayment: nv })} />
-          </Row>
-          <Row label="Start Date" htmlFor="loan-start" error={errors.startDate}>
-            <Input id="loan-start" className={ROW_CONTROL} type="date" value={form.startDate} onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }} />
-          </Row>
+        <FieldGroup>
+          <Field
+            label="Name"
+            error={errors.name}
+            id="loan-name"
+            value={form.name}
+            onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
+          />
+          <Field
+            label="Type"
+            control="select"
+            value={form.type}
+            onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}
+            options={LOAN_TYPE_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+          />
+          <Field
+            label="Currency"
+            control="select"
+            value={form.currency}
+            onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}
+            options={currencyOptions.map((c) => ({ value: c, label: c }))}
+          />
+          <Field
+            label="Principal"
+            error={errors.principal}
+            control="amount"
+            id="loan-principal"
+            step="0.01"
+            value={form.principal}
+            onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }}
+          />
+          <Field
+            label="Annual Rate (%)"
+            error={errors.annualRate}
+            control="amount"
+            id="loan-rate"
+            step="0.01"
+            value={form.annualRate}
+            onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }}
+          />
+          <Field
+            label="Term (months)"
+            error={errors.termMonths}
+            control="number"
+            id="loan-term"
+            placeholder="From payment"
+            value={form.termMonths}
+            onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }}
+          />
+          <Field
+            label="Payment"
+            error={errors.paymentAmount}
+            control="amount"
+            id="loan-payment"
+            step="0.01"
+            placeholder="From term"
+            value={form.paymentAmount}
+            onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }}
+          />
+          <Field
+            label="Frequency"
+            control="select"
+            value={form.paymentFrequency}
+            onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}
+            options={FREQUENCY_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
+          />
+          <Field
+            label="Extra/Payment"
+            control="amount"
+            step="0.01"
+            value={form.extraPayment}
+            onValueChange={(nv) => setForm({ ...form, extraPayment: nv })}
+          />
+          <Field
+            label="Start Date"
+            error={errors.startDate}
+            control="date"
+            id="loan-start"
+            value={form.startDate}
+            onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }}
+          />
           {form.type === "lease" && (
-            <Row label="Residual / Buyout" error={errors.residualValue}>
-              <AmountInput className={ROW_CONTROL} step="0.01" placeholder="Balance at term end" value={form.residualValue} onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }} />
-            </Row>
-          )}
-          <Row label="Linked account">
-            <Combobox
-              value={form.accountId}
-              // Mirror the server's precedence (explicit > linked account >
-              // display currency): picking an account moves the currency
-              // with it, so the form can't imply one and store another.
-              onValueChange={(v) => {
-                const acct = accounts.find((a) => String(a.id) === v);
-                if (acct?.currency) setCurrencyTouched(true);
-                setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
-              }}
-              items={sortAccount(
-                accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-                (a) => Number(a.value),
-                (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-              )}
-              placeholder="None"
-              searchPlaceholder="Search accounts…"
-              emptyMessage="No matches"
-              className="w-full"
+            <Field
+              label="Residual / Buyout"
+              error={errors.residualValue}
+              control="amount"
+              step="0.01"
+              placeholder="Balance at term end"
+              value={form.residualValue}
+              onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }}
             />
-          </Row>
-        </FormGroup>
+          )}
+          <Field
+            label="Linked account"
+            control="combobox"
+            value={form.accountId}
+            onValueChange={(v) => {
+              const acct = accounts.find((a) => String(a.id) === v);
+              if (acct?.currency) setCurrencyTouched(true);
+              setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
+            }}
+            options={sortAccount(
+              accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+              (a) => Number(a.value),
+              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+            )}
+            placeholder="None"
+            searchPlaceholder="Search accounts…"
+            emptyMessage="No matches"
+          />
+        </FieldGroup>
         {isEdit && loan && form.currency !== loan.currency && (
           <p className="text-xs text-warning">
             Changing the currency re-labels the amounts above as {form.currency}. It does not convert them.
@@ -276,11 +292,12 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
 
       {/* Re-denomination is not a conversion: the stored numbers stay put and
           only their currency label changes. Confirmed, never silent. */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={pendingRedenominate !== null}
-        onOpenChange={(open) => { if (!open) setPendingRedenominate(null); }}
+        onClose={() => { setPendingRedenominate(null); }}
         title="Change loan currency?"
-        description={
+        message={
           <>
             This re-labels the loan from <strong>{pendingRedenominate?.from}</strong> to{" "}
             <strong>{pendingRedenominate?.to}</strong>. The amounts are <strong>not</strong> converted —

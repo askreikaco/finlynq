@@ -55,7 +55,7 @@ afterEach(() => {
 describe("level 1: /portfolio/new operation list", () => {
   it("renders three grouped inset lists with a header each", () => {
     const { container } = render(<PortfolioNewPage />);
-    const headers = [...container.querySelectorAll("[data-slot='section-label']")].map((n) => n.textContent);
+    const headers = [...container.querySelectorAll("[data-slot='section-card-label']")].map((n) => n.textContent);
     expect(headers).toEqual(["Trades", "Transfers", "Income and other"]);
     const groups = container.querySelectorAll('div[class*="list-divider"]');
     expect(groups.length).toBe(3);
@@ -82,9 +82,10 @@ describe("level 1: /portfolio/new operation list", () => {
     expect(rows.length).toBe(8);
     for (const row of rows) {
       expect(row.querySelectorAll("svg").length).toBe(2); // leading icon + chevron
-      expect(row.className).toMatch(/min-h-14/);
+      expect(row.className).toContain("min-h-[56px]");
     }
-    expect(container.querySelector("section .grid, [data-slot='section-card'] .grid")).toBeNull();
+    // no card grid (the inside of a ListRow lays out its own parts with a grid)
+    expect(Array.from(container.querySelectorAll("section .grid, [data-slot='section-card'] .grid")).filter((el) => !el.closest("[data-slot='list-row']"))).toHaveLength(0);
     expect(container.querySelector("[data-slot='card']")).toBeNull();
     expect(screen.queryByText(/Open/)).toBeNull();
   });

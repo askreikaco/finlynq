@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
-vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/components/notice/feeds", () => ({ NoticeFeed: () => null }));
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),
   useSessionUserId: () => ({ userId: "mc-user", ready: true }),
@@ -39,7 +39,6 @@ vi.mock("@/components/portfolio/PerformanceChart", async (orig) => ({
   ...(await orig<typeof import("@/components/portfolio/PerformanceChart")>()),
   PerformanceChart: () => null,
 }));
-vi.mock("@/components/currency-audit-banner", () => ({ CurrencyAuditBanner: () => null }));
 vi.mock("@/components/onboarding-wizard", () => ({ OnboardingWizard: () => null }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/lib/utils/date", async (orig) => ({
@@ -565,11 +564,12 @@ describe("series builders", () => {
     expect(c.delta).toBe("+$50.00 vs last month");
     expect(c.badgePct).toBeCloseTo(50);
     expect(c.sparkData).toEqual([10, 20, 100, 150]);
-    expect(cardProps(c)).toMatchObject({ sub: "+$50.00 vs last month", sparkData: [10, 20, 100, 150] });
+    expect(cardProps(c)).toMatchObject({ delta: { pct: 50, text: "+$50.00 vs last month" }, sparkData: [10, 20, 100, 150] });
+    expect(cardProps(c, true).delta?.invert).toBe(true);
     const none = makeCardResolver(range, "USD")([], "last", 155);
     expect(none).toMatchObject({ value: 155, delta: null, badgePct: null });
     expect(none.sparkData).toBeUndefined();
-    expect(cardProps(none)).toEqual({ badgePct: null });
+    expect(cardProps(none)).toEqual({ delta: { pct: null } });
     const ranged = makeCardResolver({ selection: { range: "last_3_months" }, explicit: true, period: resolvePeriod({ range: "last_3_months" }, "2026-10-09") }, "USD")(pts, "sum", 999);
     // an explicit range uses the series figure, not the page value: Aug+Sep+Oct vs the months of May-Jul that have data (Jul)
     expect(ranged.value).toBe(270);

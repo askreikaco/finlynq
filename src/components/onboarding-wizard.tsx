@@ -2,17 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { currencyLabel } from "@/lib/fx/supported-currencies";
-import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import {
   Check,
   Coins,
@@ -34,7 +27,8 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AmountInput } from "@/components/amount-input";
+import { Field } from "@/components/ui/field";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface OnboardingWizardProps {
   userEmail: string;
@@ -136,8 +130,6 @@ export function OnboardingWizard({
   // the field. A fixed `pl-7` sized for `$` made JPY render as "JP¥600" with the
   // symbol sitting on top of the amount. Only reachable since the currency list
   // widened past USD/CAD, so scale the padding with the symbol instead.
-  const amountPadding =
-    currencySymbol.length >= 3 ? "pl-12" : currencySymbol.length === 2 ? "pl-9" : "pl-7";
 
   function goNext() {
     setDirection(1);
@@ -325,8 +317,7 @@ export function OnboardingWizard({
                   </motion.div>
                   <h2 className="text-2xl font-bold mb-2">Welcome to Finlynq</h2>
                   <p className="text-muted-foreground max-w-sm mb-4">
-                    Let&apos;s get you set up in 6 steps. You&apos;ll be tracking your finances and
-                    querying them with your AI in under 10 minutes.
+                    Set up in 6 steps, about 10 minutes.
                   </p>
                   <p className="text-xs text-muted-foreground">Signed in as {userEmail}</p>
 
@@ -362,33 +353,24 @@ export function OnboardingWizard({
                     <h2 className="text-lg font-semibold">
                       Which currency should we show your money in?
                     </h2>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    We report every total in one currency. Individual accounts and
-                    transactions keep their own — you can change this anytime in
-                    Settings.
-                  </p>
-
-                  <div>
-                    <label className="text-sm font-medium" htmlFor="currency">
-                      Reporting currency
-                    </label>
-                    <div className="mt-1.5">
-                      <Combobox
-                        value={currency}
-                        onValueChange={(v) => setCurrency(v || "USD")}
-                        items={currencyOptions}
-                        placeholder="Select currency"
-                        searchPlaceholder="Search currencies…"
-                        emptyMessage="No matching currency"
-                      />
-                    </div>
+                    <InfoTip
+                      label="About reporting currency"
+                      text="We report every total in one currency. Individual accounts and transactions keep their own. You can change this anytime in Settings."
+                    />
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Totals like net worth and monthly spending are converted to{" "}
-                    {currency}. The accounts you add next start in this currency.
-                  </p>
+                  <Field
+                    label="Reporting currency"
+                    control="combobox"
+                    id="currency"
+                    value={currency}
+                    onValueChange={(v) => setCurrency(v || "USD")}
+                    options={currencyOptions}
+                    placeholder="Select currency"
+                    searchPlaceholder="Search currencies…"
+                    emptyMessage="No matching currency"
+                  />
+
                 </div>
               )}
 
@@ -398,10 +380,8 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Wallet className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Add accounts</h2>
+                    <InfoTip label="About accounts" text="Pick the accounts you use. You can add more later." />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Pick the accounts you use. You can add more later.
-                  </p>
 
                   {/* The currency lives on its own step now — echo it here so
                       the choice stays visible (and changeable) instead of
@@ -453,9 +433,6 @@ export function OnboardingWizard({
                     <Database className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Import your data</h2>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    How would you like to start?
-                  </p>
                   <div className="space-y-3 mt-2">
                     {[
                       {
@@ -506,37 +483,34 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Target className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Set a starter budget</h2>
+                    <InfoTip
+                      label="About the starter budget"
+                      text="Adjust these monthly amounts to match your spending. You can fine-tune anytime. These budgets will be created for the current month."
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Adjust these monthly amounts to match your spending. You can fine-tune anytime.
-                  </p>
+
                   <div className="space-y-3 mt-1">
                     {BUDGET_PRESETS.map(({ category }) => (
                       <div key={category} className="flex items-center gap-3">
                         <span className="w-36 text-sm font-medium shrink-0">{category}</span>
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            {currencySymbol}
-                          </span>
-                          <AmountInput native
-                            min={0}
-                            step={10}
-                            value={budgetAmounts[category]}
-                            onValueChange={(nv) =>
-                              setBudgetAmounts((prev) => ({
-                                ...prev,
-                                [category]: Number(nv),
-                              }))
-                            }
-                            className={`w-full rounded-lg border bg-background ${amountPadding} pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20`}
-                          />
-                        </div>
+                        <Field
+                          control="amount"
+                          aria-label={`${category} budget`}
+                          min={0}
+                          step={10}
+                          value={budgetAmounts[category]}
+                          onValueChange={(nv) =>
+                            setBudgetAmounts((prev) => ({
+                              ...prev,
+                              [category]: Number(nv),
+                            }))
+                          }
+                          prefix={<span className="shrink-0 text-sm text-muted-foreground">{currencySymbol}</span>}
+                          className="flex-1"
+                        />
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    These budgets will be created for the current month.
-                  </p>
                 </div>
               )}
 
@@ -546,11 +520,11 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Bot className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Connect your AI assistant</h2>
+                    <InfoTip
+                      label="About the MCP server"
+                      text="The MCP server lets Claude, Cursor, or any AI client query your financial data using natural language. No manual exports needed."
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    The MCP server lets Claude, Cursor, or any AI client query your financial data
-                    using natural language — no manual exports needed.
-                  </p>
 
                   <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -683,34 +657,21 @@ export function OnboardingWizard({
       </motion.div>
 
       {/* Skip setup confirmation dialog */}
-      <Dialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Skip setup?</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            You can add accounts, import data and set budgets anytime from the menu.
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowSkipConfirm(false)}
-              disabled={loading}
-            >
-              Keep going
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSkip}
-              disabled={loading}
-            >
-              {loading ? "Skipping..." : "Skip"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        destructive={false}
+        open={showSkipConfirm}
+        onClose={() => setShowSkipConfirm(false)}
+        title="Skip setup?"
+        message="You can add accounts, import data and set budgets anytime from the menu."
+        cancelLabel="Keep going"
+        confirmLabel="Skip"
+        busyLabel="Skipping..."
+        busy={loading}
+        onConfirm={handleSkip}
+      >
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </Overlay>
     </div>
   );
 }

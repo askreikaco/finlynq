@@ -1,7 +1,6 @@
 "use client";
 
 import { Landmark } from "lucide-react";
-import { useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -22,7 +21,7 @@ import {
 const NONE = FAMILY_STRINGS.overview_none;
 
 /** Label text only (React escapes it). Generic fallback labels are muted + marked. */
-function Label({ text, generic }: { text: string; generic: boolean }) {
+function LabelText({ text, generic }: { text: string; generic: boolean }) {
   return generic ? (
     <span className="text-muted-foreground" title={FAMILY_STRINGS.overview_generic_badge}>
       {text}
@@ -83,7 +82,6 @@ export function MemberCard({
   asOf: string;
   ownMovers?: OwnMovers;
 }) {
-  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const money = (v: number | null | undefined) => (v == null ? NONE : formatCurrency(v, displayCurrency));
   const s = member.sections;
   const cs = chartMember?.sections ?? s; // Use chartMember sections for charts (lifetime data)
@@ -166,7 +164,6 @@ export function MemberCard({
                     currency={displayCurrency}
                     period="all"
                     name={member.name}
-                    gradientId={`nw-${uid}`}
                     note={
                       cs.net_worth.historyFxApproximation && cs.net_worth.history.length > 1
                         ? FAMILY_STRINGS.overview_history_fx_note
@@ -180,7 +177,6 @@ export function MemberCard({
                     period="all"
                     currency={displayCurrency}
                     asOf={asOf}
-                    idPrefix={`ie-${uid}-`}
                   />
                 )}
               </div>
@@ -198,11 +194,11 @@ export function MemberCard({
                 {s.loans.loans.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{NONE}</p>
                 ) : (
-                  <ul className="flex flex-col">
+                  <ul className="-mx-3 @[11rem]:-mx-5 flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {s.loans.loans.map((l) => (
                       <li key={l.ref}>
                         <ListRow
-                          title={<Label text={l.label} generic={l.labelIsGeneric} />}
+                          title={<LabelText text={l.label} generic={l.labelIsGeneric} />}
                           subtitle={`${formatPercent(l.annualRate, 2)} · ${FAMILY_STRINGS.overview_loan_balance}: ${money(l.remainingBalanceConverted)}${l.payoffDate ? ` · ${formatDate(l.payoffDate)}` : ""}`}
                           chevron={false}
                         />

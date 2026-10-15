@@ -18,7 +18,7 @@ afterEach(cleanup);
 
 function CardsPage({ onOpen }: { onOpen: () => void }) {
   usePageCustomize({ onOpen });
-  return <PageHeader title="Accounts" overflow={[{ label: "Show archived", onSelect: () => {} }]} actions={<button>Add</button>} />;
+  return <PageHeader title="Accounts" more={[{ label: "Show archived", onSelect: () => {} }]} primary={{ kind: "add", label: "Add", onSelect: () => {} }} />;
 }
 
 describe("PageHeader: Customize cards is a More item, never a bar button", () => {
@@ -48,7 +48,7 @@ describe("PageHeader: Customize cards is a More item, never a bar button", () =>
   });
 
   it("a page that registers nothing has no Customize item", async () => {
-    render(<PageHeader title="Import" overflow={[{ label: "Help", onSelect: () => {} }]} />);
+    render(<PageHeader title="Import" more={[{ label: "Help", onSelect: () => {} }]} />);
     await userEvent.click(screen.getByRole("button", { name: "More actions" }));
     expect((await screen.findAllByRole("menuitem")).map((i) => i.textContent)).toEqual(["Help"]);
   });

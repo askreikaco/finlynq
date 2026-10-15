@@ -1,7 +1,7 @@
 // G2-15: caller className overrides on ui primitives must not fight the pointer-based bases.
 // Rule A: no viewport variant (sm/md/lg/xl/2xl, max-*, regular, wide, max-regular) WITHOUT a
-//         pointer-fine/pointer-coarse modifier on a className passed to Input/Select/SelectTrigger/
-//         Combobox/GroupCombobox/Button/TabsList/TabsTrigger, except the reasoned EXCEPTIONS below
+//         pointer-fine/pointer-coarse modifier on a className passed to Field/
+//         Button/TabsList/TabsTrigger, except the reasoned EXCEPTIONS below
 //         (width and display toggles only). regular:pointer-fine:* is the sanctioned form.
 // Rule B: no viewport-variant size or font-size override (h-, min-h-, size-, text-*) without a
 //         pointer modifier, exceptions do not apply.
@@ -12,15 +12,13 @@ import * as path from "path";
 import ts from "typescript";
 
 const ROOT = process.cwd();
-const PRIMITIVES = new Set(["Input", "Select", "SelectTrigger", "Combobox", "GroupCombobox", "Button", "TabsList", "TabsTrigger"]);
+const PRIMITIVES = new Set(["Field", "Button", "TabsList", "TabsTrigger"]);
 const VIEWPORT_SEG = /^(max-)?(sm|md|lg|xl|2xl)$|^(regular|wide|max-regular)$/;
 const SIZE_UTIL = /^(h|min-h|size|text)-/;
 const POINTER_MOD = /pointer-(fine|coarse)/;
 
 // file -> viewport tokens allowed on primitives there. Width or display toggles only, never sizes.
 export const EXCEPTIONS: Record<string, string[]> = {
-  "src/app/(app)/settings/general/page.tsx": ["regular:w-48"],
-  "src/app/(app)/categories/[id]/page.tsx": ["max-regular:w-40"],
   "src/components/ui/pagination.tsx": ["max-regular:hidden"],
 };
 
