@@ -281,7 +281,7 @@ export function TransactionsWorkspace({
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  // Split view (list 2/3 | the entry form 1/3) from regular up, selection in ?sel. Off in the account-scoped embed.
+  // Split view (list 3/4 | the entry form 1/4) from regular up, selection in ?sel. Off in the account-scoped embed.
   const listDetail = useListDetail();
   const splitView = listDetail.split && !locked;
   // Other leg of each transfer row, so rows can show "From … To …".
@@ -870,7 +870,7 @@ export function TransactionsWorkspace({
               <EmptyState
                 icon={Receipt}
                 title="No transactions yet"
-                description="Add your first transaction or import bank statements to get started."
+                description="Add or import your first transactions."
                 action={{ label: "Import data", href: "/import" }}
               />
             }

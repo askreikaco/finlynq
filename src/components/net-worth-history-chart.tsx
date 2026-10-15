@@ -39,6 +39,7 @@ import { StackedChartLegend } from "@/components/chart-stack-legend";
 import type { BreakdownMember } from "@/lib/chart-breakdown";
 import { getDisplayLocale } from "@/lib/locale";
 import { useAnimations } from "@/hooks/use-animations";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export type Period = "6m" | "1y" | "all";
 
@@ -360,9 +361,11 @@ export function NetWorthHistoryChart({
         ) : !hasAnyValue ? (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <p className="text-sm text-muted-foreground max-w-sm">
-              No history to chart yet. Add accounts and transactions to see your
-              {accountId != null ? " balance" : " net worth"} over time. If the
-              chart looks stale or flat, rebuild your balance history.
+              No history to chart yet.
+              <InfoTip
+                label="About the history chart"
+                text={`Add accounts and transactions to see your${accountId != null ? " balance" : " net worth"} over time. If the chart looks stale or flat, rebuild your balance history.`}
+              />
             </p>
             <RebuildSnapshotsButton onDone={res.reload} />
           </div>

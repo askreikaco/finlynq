@@ -106,10 +106,14 @@ export function EtfXrayCard({
       <CardHeader className="pb-2">
         <div className="flex flex-col regular:flex-row regular:items-center justify-between gap-3">
           <div>
-            <CardTitle icon={Layers} tone="violet">ETF X-Ray</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Effective exposure across {etfXray.etfCount} ETF{etfXray.etfCount !== 1 ? "s" : ""} in your portfolio
-            </p>
+            <CardTitle
+              icon={Layers}
+              tone="violet"
+              infoLabel="About ETF X-Ray"
+              info={`Effective exposure across ${etfXray.etfCount} ETF${etfXray.etfCount !== 1 ? "s" : ""} in your portfolio. Stocks: your effective stock exposure across all ETFs, weighted by each ETF's portfolio allocation. ETFs: your ETF holdings and their weight in the ETF portfolio.`}
+            >
+              ETF X-Ray
+            </CardTitle>
           </div>
           <div className="flex gap-1">
             {([
@@ -136,9 +140,6 @@ export function EtfXrayCard({
         {/* ── Stocks Tab: Aggregated look-through ── */}
         {etfXrayTab === "stocks" && (
           <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Your effective stock exposure across all ETFs, weighted by each ETF&apos;s portfolio allocation.
-            </p>
             <EtfStockRows
               rows={etfXray.aggregatedStocks.slice((stocksPage - 1) * STOCKS_PER_PAGE, stocksPage * STOCKS_PER_PAGE)}
               startIndex={(stocksPage - 1) * STOCKS_PER_PAGE}
@@ -149,7 +150,7 @@ export function EtfXrayCard({
               const totalWeight = etfXray.aggregatedStocks.reduce((s, x) => s + x.effectiveWeight, 0);
               return (
                 <div className="flex flex-col regular:flex-row items-start regular:items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p data-keep="data" className="text-xs text-muted-foreground">
                     {etfXray.aggregatedStocks.length} stocks · Total weight: {formatPercent(totalWeight, 1)}
                   </p>
                   <div className="flex items-center gap-2">
@@ -237,7 +238,7 @@ export function EtfXrayCard({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No region data available.</p>
+              <p data-keep="empty" className="text-sm text-muted-foreground text-center py-8">No region data available.</p>
             )}
           </div>
         )}
@@ -285,7 +286,7 @@ export function EtfXrayCard({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No sector data available.</p>
+              <p data-keep="empty" className="text-sm text-muted-foreground text-center py-8">No sector data available.</p>
             )}
           </div>
         )}
@@ -293,9 +294,6 @@ export function EtfXrayCard({
         {/* ── Per ETF Tab ── */}
         {etfXrayTab === "etfs" && (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Your ETF holdings and their weight in the ETF portfolio.
-            </p>
             <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
               {etfXray.etfs.map((etf) => (
                 <ListRow

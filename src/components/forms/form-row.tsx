@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 
 export type FormLabelWidth = "default" | "narrow";
@@ -37,8 +38,10 @@ interface FormRowBaseProps {
   icon?: LucideIcon;
   /** Message rendered under the row (text-destructive). */
   error?: string;
-  /** Helper text rendered under the row (muted). Ignored when `error` is set. */
+  /** Short status / validation text rendered under the row (muted). Ignored when `error` is set. Explanations go in `info`. */
   hint?: React.ReactNode;
+  /** Help text in an (i) tip beside the label ("input" and "custom" rows; a "button" row is one <button>, so it has none). */
+  info?: React.ReactNode;
   /**
    * Icon-only mode: the label text stays in the DOM as sr-only text (accessible name, <label htmlFor>)
    * but only the icon shows, and the label column shrinks to the icon. Put the visible wording in
@@ -105,7 +108,8 @@ function ValueText({
  */
 export function FormRow(props: FormRowProps) {
   const generatedId = React.useId();
-  const { label, invalid, testId, right, className, error, hint, icon: Icon } = props;
+  const { label, invalid, testId, right, className, error, hint, info, icon: Icon } = props;
+  const tip = info ? <InfoTip text={info} label={`About ${label.toLowerCase()}`} className="-ml-3 shrink-0" /> : null;
   const iconOnly = !!props.hideLabel && !!Icon;
   const rowClass = cn(ROW_BASE, ROW_HEIGHT[props.height ?? "default"]);
   const labelClass = cn(
@@ -156,6 +160,7 @@ export function FormRow(props: FormRowProps) {
           <LabelTag htmlFor={props.htmlFor} className={labelClass}>
             {labelContent}
           </LabelTag>
+          {tip}
           <div className="min-w-0 flex-1">{props.children}</div>
           {right}
         </div>
@@ -171,6 +176,7 @@ export function FormRow(props: FormRowProps) {
         <label htmlFor={inputId} className={labelClass}>
           {labelContent}
         </label>
+        {tip}
         <input
           id={inputId}
           value={props.inputValue}

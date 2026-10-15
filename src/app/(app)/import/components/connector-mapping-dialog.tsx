@@ -83,7 +83,8 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
       onClose={() => onOpenChange(false)}
       size="2xl"
       title="Map WealthPosition to Finlynq"
-      info="Every WealthPosition account and category needs a Finlynq counterpart. By default, missing ones will be auto-created for you — you can override any mapping below."
+      info={<>Every WealthPosition account and category needs a Finlynq counterpart. By default,
+            missing ones will be auto-created for you — you can override any mapping below.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false) },
         { label: "Preview sync", kind: "primary", onClick: () => onConfirm(s) },

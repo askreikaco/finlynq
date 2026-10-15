@@ -259,6 +259,11 @@ export function Overlay({
                     </div>
                   )}
                   {title == null && info != null && <InfoTip text={info} />}
+                  {info != null && (
+                    <DialogPrimitive.Description data-slot="overlay-description" className="sr-only">
+                      {info}
+                    </DialogPrimitive.Description>
+                  )}
                   {subtitle != null && <div className="text-xs text-muted-foreground">{subtitle}</div>}
                 </div>
                 {headerAction}

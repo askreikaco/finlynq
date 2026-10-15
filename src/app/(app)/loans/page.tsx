@@ -31,6 +31,7 @@ import { isLoanCompleted } from "@/lib/loan-status";
 import { localDateISO } from "@/lib/utils/date";
 import type { Loan } from "./_components/loan-types";
 import { loanNextDue } from "./_components/loan-next-due";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type AmortRow = { period: number; date: string; payment: number; principal: number; interest: number; balance: number };
 type AccrualRow = { month: string; interest: number };
@@ -337,7 +338,7 @@ function LoansPageContent() {
                 <EmptyState
                   icon={Landmark}
                   title="No loans tracked yet"
-                  description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
+                  description="Add a mortgage, car loan or other debt."
                   action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
                 />
               )}
@@ -408,7 +409,10 @@ function LoansPageContent() {
                   </div>
                 </TabsContent>
                 <TabsContent value="monthly">
-                  <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
+                  <div className="mb-2 flex items-center gap-0.5 text-sm text-muted-foreground">
+                    Interest by month
+                    <InfoTip label="About monthly interest" text="Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries." />
+                  </div>
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(amort.monthlyAccrual ?? []).map((m) => (
                       <TxRow
@@ -424,7 +428,10 @@ function LoansPageContent() {
                   </div>
                 </TabsContent>
                 <TabsContent value="whatif">
-                  <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
+                  <div className="mb-2 flex items-center gap-0.5 text-sm text-muted-foreground">
+                    Extra payments ({selectedLoan.currency})
+                    <InfoTip label="About extra payments" text={`What if you added extra monthly payments? Amounts are in ${selectedLoan.currency}.`} />
+                  </div>
                   <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {whatIf.map((w) => (
                       <TxRow

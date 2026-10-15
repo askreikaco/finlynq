@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { MODES, MODE_ORDER, isMode, type Mode } from "./modes";
 
 export function ModePicker({
@@ -72,13 +73,13 @@ export function ModePicker({
           const isSelected = m === selected;
           const isCurrent = m === savedMode;
           return (
+            <div key={m} className="flex items-center gap-1">
             <button
-              key={m}
               type="button"
               role="radio"
               aria-checked={isSelected}
               onClick={() => setSelected(m)}
-              className={`w-full text-left rounded-lg border p-3 transition-colors ${
+              className={`min-w-0 flex-1 text-left rounded-lg border p-3 transition-colors ${
                 isSelected
                   ? "border-foreground/40 bg-muted/40"
                   : "hover:bg-muted/30"
@@ -113,12 +114,11 @@ export function ModePicker({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 ml-6">
-                    {cfg.subLabel}
-                  </p>
                 </div>
               </div>
             </button>
+            <InfoTip text={cfg.subLabel} label={`About ${cfg.label}`} side="left" />
+            </div>
           );
         })}
       </div>

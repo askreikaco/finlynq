@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { ArrowRight, Table2 } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
 
 interface SheetInfo {
   name: string;
@@ -106,8 +106,9 @@ export function ExcelMapperDialog({
       open={open}
       onClose={() => onOpenChange(false)}
       size="xl"
-      title="Map Excel Columns"
-      info="Map your spreadsheet columns to transaction fields."
+      title={<><FileSpreadsheet className="h-5 w-5 text-pos" />
+            Map Excel Columns</>}
+      info={<>Map your spreadsheet columns to transaction fields.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },
         { label: isMapping ? "Processing..." : "Preview Import", kind: "primary", onClick: handleSubmit, disabled: !isValid || isMapping },
@@ -144,7 +145,7 @@ export function ExcelMapperDialog({
 
         {/* Column mapping */}
         <div className="space-y-2 overflow-auto flex-1">
-          <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
+          <p data-keep="label" className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {sheet.headers.map((header) => (
             <div key={header} className="flex items-center gap-2">
               <Badge variant="outline" className="min-w-[120px] justify-center font-mono text-xs">

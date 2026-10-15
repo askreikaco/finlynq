@@ -195,7 +195,7 @@ function ThreadDialog({
       open={feedbackId != null}
       onClose={onClose}
       title={<span className="capitalize">{thread ? `${thread.type} feedback` : "Feedback"}</span>}
-      info="Replies from the team appear here. Please don't include sensitive financial details."
+      info="Team replies appear here. No sensitive details, please."
     >
         {error && !thread && <p className="text-sm text-destructive">{error}</p>}
 

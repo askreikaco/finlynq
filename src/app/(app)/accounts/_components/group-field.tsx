@@ -41,7 +41,7 @@ export function GroupField({
         id={inputId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="e.g. Checking or Emergency Fund"
+        placeholder="e.g. Checking"
         list={`${inputId}-suggestions`}
         autoComplete="off"
       />

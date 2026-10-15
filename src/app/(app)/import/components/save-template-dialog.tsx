@@ -15,6 +15,7 @@ import {
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 import { autoDetectColumnMapping } from "@/lib/import-templates";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -140,7 +141,7 @@ export function SaveTemplateDialog({
       onClose={() => handleOpenChange(false)}
       size="xl"
       title="Save as Template"
-      info="Save this column mapping so future uploads from the same source are auto-matched."
+      info={<>Save this column mapping so future uploads from the same source are auto-matched.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false), disabled: saving },
         { label: saving ? "Saving..." : "Save Template", kind: "primary", onClick: handleSave, disabled: saving },
@@ -152,17 +153,17 @@ export function SaveTemplateDialog({
               <Label htmlFor="tpl-name">Template Name</Label>
               <Input
                 id="tpl-name"
-                placeholder="e.g. TD Chequing, RBC Visa"
+                placeholder="e.g. TD Chequing"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Default Account (optional)</Label>
+              <Label>Default Account</Label>
               <Select value={defaultAccount} onValueChange={(v) => setDefaultAccount(v ?? "")}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Leave blank to keep per-row account" />
+                  <SelectValue placeholder="Per row" />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map((a) => (
@@ -174,8 +175,10 @@ export function SaveTemplateDialog({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Column Mapping</Label>
-            <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
+            <div className="flex items-center gap-0.5">
+              <Label className="text-sm font-medium">Column Mapping</Label>
+              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
+            </div>
             <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
@@ -203,12 +206,13 @@ export function SaveTemplateDialog({
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              Import options (skip header / footer rows, date format, default currency)
+              Import options
+              <InfoTip
+                label="About import options"
+                text="Skip header / footer rows, date format, default currency. Applied whenever this template is used. Leave at defaults for canonical exports."
+              />
             </summary>
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
-              </p>
               <div className="grid gap-3 regular:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="save-tpl-skip-h" className="text-xs">Skip N header rows</Label>

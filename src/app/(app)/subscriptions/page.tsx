@@ -516,7 +516,7 @@ function SubscriptionsPageContent() {
                     <Card className="col-span-full"><CardContent className="p-0"><EmptyState
                       icon={CreditCard}
                       title="No subscriptions tracked yet"
-                      description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
+                      description="Add streaming, insurance, memberships and other repeating bills."
                       action={{ label: "Add subscription", onClick: openAdd }}
                     /></CardContent></Card>
                   )}

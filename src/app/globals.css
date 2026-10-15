@@ -607,6 +607,12 @@ html {
   [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-slot="list-detail-main"] [class~="wide:grid-cols-4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* The split-view pane (ListDetailLayout, ~25% wide) is one narrow column: embedded detail pages lay their grids out as a single
+   column and size by the pane (a size container named "pane"), never by the viewport. */
+@media (width >= 64rem) {
+  [data-slot="list-detail-pane"] { container: pane / inline-size; }
+  [data-slot="list-detail-pane"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"], [class~="wide:grid-cols-4"], [class~="regular:grid-cols-2"], [class~="regular:grid-cols-3"]) { grid-template-columns: minmax(0, 1fr); }
+}
 @container split (width < 40rem) {
   [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: minmax(0, 1fr); }
 }

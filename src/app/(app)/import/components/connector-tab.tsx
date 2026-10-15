@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
 import { getDisplayLocale } from "@/lib/locale";
+import { FieldLabel } from "@/components/forms";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface PreviewRow extends RawTransaction {
   hash: string;
@@ -353,14 +355,9 @@ export function ConnectorTab() {
     <div className="space-y-4 mt-4">
       <Card>
         <CardHeader>
-          <CardTitle icon={LinkIcon} tone="indigo">
-            WealthPosition
-          </CardTitle>
-          <CardDescription>
-            Migrate your WealthPosition data to Finlynq. Upload your export ZIP
+          <CardTitle icon={LinkIcon} tone="indigo" infoLabel="About wealthposition" info={<>Migrate your WealthPosition data to Finlynq. Upload your export ZIP
             to import transactions, then (optionally) save an API key for
-            balance reconciliation.
-          </CardDescription>
+            balance reconciliation.</>}>WealthPosition</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -369,13 +366,11 @@ export function ConnectorTab() {
             <div className="flex items-center gap-2">
               <FileArchive className="h-4 w-4" />
               <h3 className="text-sm font-medium">1. Import your transactions</h3>
+              <InfoTip
+                label="About importing transactions"
+                text="Download your export from wealthposition.com → Profile → Export and upload the ZIP here. Every transaction is imported with its holding / quantity preserved — no rate limits, no API key needed."
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Download your export from{" "}
-              <span className="font-mono">wealthposition.com → Profile → Export</span>{" "}
-              and upload the ZIP here. Every transaction is imported with its
-              holding / quantity preserved — no rate limits, no API key needed.
-            </p>
 
             {zipError && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
@@ -485,13 +480,12 @@ export function ConnectorTab() {
           <div className="space-y-3 pt-2 border-t">
             <div className="flex items-center gap-2">
               <KeyRound className="h-4 w-4" />
-              <h3 className="text-sm font-medium">2. Save API key for balance reconciliation (optional)</h3>
+              <h3 className="text-sm font-medium">2. API key (optional)</h3>
+              <InfoTip
+                label="About the API key"
+                text="Balance reconciliation. The export ZIP doesn't include opening balances. After importing, save your WealthPosition API key to reconcile each account's Finlynq sum against WP's live balance."
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              The export ZIP doesn&rsquo;t include opening balances. After
-              importing, save your WealthPosition API key to reconcile each
-              account&rsquo;s Finlynq sum against WP&rsquo;s live balance.
-            </p>
 
             {credsError && (
               <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
@@ -518,13 +512,17 @@ export function ConnectorTab() {
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="wp-api-key" className="text-xs">API key</Label>
+                <FieldLabel
+                  label="API key"
+                  htmlFor="wp-api-key"
+                  info="Paste your key from wealthposition.com → Profile → Security → Developer API."
+                />
                 <Input
                   id="wp-api-key"
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Paste your key from wealthposition.com → Profile → Security → Developer API"
+                  placeholder="API key"
                   disabled={credsBusy}
                 />
                 <Button onClick={saveApiKey} disabled={credsBusy || !apiKey.trim()} size="sm">

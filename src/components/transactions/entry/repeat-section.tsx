@@ -380,7 +380,7 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
                   label="Times"
                   labelWidth="narrow"
                   height="tall"
-                  hint="Total payments, including this one"
+                  info="Total payments, including this one"
                 >
                   <Stepper
                     value={endCount}

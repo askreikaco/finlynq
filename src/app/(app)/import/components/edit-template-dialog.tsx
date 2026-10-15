@@ -19,6 +19,7 @@ import type {
   ImportTemplate,
 } from "@/lib/import-templates";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -151,7 +152,7 @@ export function EditTemplateDialog({
       onClose={() => onOpenChange(false)}
       size="xl"
       title="Edit Template"
-      info="Update this template's name, default account, column mapping, and parser options."
+      info={<>Update this template&apos;s name, default account, column mapping, and parser options.</>}
       actions={[
         { label: "Cancel", onClick: () => onOpenChange(false), disabled: saving },
         { label: saving ? "Saving..." : "Save Changes", kind: "primary", onClick: handleSave, disabled: saving },
@@ -170,7 +171,7 @@ export function EditTemplateDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Default Account (optional)</Label>
+              <Label>Default Account</Label>
               <Select
                 value={defaultAccount || NONE_ACCOUNT}
                 onValueChange={(v) =>
@@ -178,7 +179,7 @@ export function EditTemplateDialog({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Leave blank to keep per-row account" />
+                  <SelectValue placeholder="Per row" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE_ACCOUNT}>— none —</SelectItem>
@@ -192,12 +193,12 @@ export function EditTemplateDialog({
 
           <div className="flex items-center justify-between gap-3 min-h-row rounded-lg border px-3 py-2.5">
             <div className="flex-1">
-              <Label htmlFor="edit-tpl-default" className="cursor-pointer text-sm font-medium">
-                Default template
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Auto-apply this template when headers match.
-              </p>
+              <span className="flex items-center gap-0.5">
+                <Label htmlFor="edit-tpl-default" className="cursor-pointer text-sm font-medium">
+                  Default template
+                </Label>
+                <InfoTip label="About default template" text="Auto-apply this template when headers match." />
+              </span>
             </div>
             <Switch
               id="edit-tpl-default"
@@ -230,10 +231,8 @@ export function EditTemplateDialog({
                     className="h-4 w-4"
                   />
                   <span className="font-medium">Detailed</span>
+                  <InfoTip label="About Detailed" text="Review the parse on /import/pending before rows land. Recommended for new or messy formats." />
                 </div>
-                <p className="text-xs text-muted-foreground pl-6">
-                  Review the parse on /import/pending before rows land. Recommended for new or messy formats.
-                </p>
               </label>
               <label
                 className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${
@@ -252,17 +251,17 @@ export function EditTemplateDialog({
                     className="h-4 w-4"
                   />
                   <span className="font-medium">Simplified</span>
+                  <InfoTip label="About Simplified" text="Rows land directly in the bank ledger. Categorize on /reconcile. Use only for trusted, clean formats." />
                 </div>
-                <p className="text-xs text-muted-foreground pl-6">
-                  Rows land directly in the bank ledger. Categorize on /reconcile. Use only for trusted, clean formats.
-                </p>
               </label>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Column Mapping</Label>
-            <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
+            <div className="flex items-center gap-0.5">
+              <Label className="text-sm font-medium">Column Mapping</Label>
+              <InfoTip label="About column mapping" text="Map CSV columns to transaction fields." />
+            </div>
             <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
@@ -292,12 +291,13 @@ export function EditTemplateDialog({
 
           <details className="rounded-lg border bg-muted/30 p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              Import options (skip header / footer rows, date format, default currency)
+              Import options
+              <InfoTip
+                label="About import options"
+                text="Skip header / footer rows, date format, default currency. Applied whenever this template is used. Leave at defaults for canonical exports."
+              />
             </summary>
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
-              </p>
               <div className="grid gap-3 regular:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="edit-tpl-skip-h" className="text-xs">Skip N header rows</Label>

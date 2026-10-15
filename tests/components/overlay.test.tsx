@@ -73,7 +73,9 @@ describe("Overlay: one surface, every part a field", () => {
     render(<Overlay open onClose={() => {}} title="Import" info="Explains the import." />);
     const dlg = await screen.findByRole("dialog");
     expect(within(dlg).getByRole("button", { name: "About Import" })).toBeTruthy();
-    expect(dlg.querySelector('[data-slot="overlay-description"], p')).toBeNull();
+    // Screen readers still get the text (sr-only description); sighted users get it in the tip.
+    expect(dlg.querySelector('[data-slot="overlay-description"]')?.className).toContain("sr-only");
+    expect(dlg.querySelectorAll("p:not(.sr-only)").length).toBe(0);
   });
 
   it("detail variant: label/value rows in a dl, children below, subtitle under the title", async () => {

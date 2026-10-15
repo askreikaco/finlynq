@@ -16,6 +16,7 @@ import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -100,9 +101,17 @@ function TaxPageContent() {
       </SectionCard>
 
       {/* RRSP vs TFSA Calculator */}
-      <SectionCard label="RRSP vs TFSA Calculator" icon={Calculator} tone="indigo">
+      <SectionCard
+        label={
+          <>
+            RRSP vs TFSA Calculator
+            <InfoTip label="About RRSP vs TFSA" text="Compare the tax benefit of contributing to RRSP vs TFSA" />
+          </>
+        }
+        icon={Calculator}
+        tone="indigo"
+      >
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Compare the tax benefit of contributing to RRSP vs TFSA</p>
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground">Annual Income</Label>

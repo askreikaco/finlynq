@@ -157,7 +157,7 @@ export function ImportPreviewDialog({
       onClose={() => onOpenChange(false)}
       size="4xl"
       title="Import Preview"
-      info="Review the parsed transactions before importing."
+      info={<>Review the parsed transactions before importing.</>}
       footerClassName="regular:justify-between"
       footer={<>
           <div>
@@ -377,7 +377,7 @@ export function ImportPreviewDialog({
             );
           })}
           {allRows.length > 100 && (
-            <p className="py-4 text-center text-xs text-muted-foreground">
+            <p data-keep="status" className="py-4 text-center text-xs text-muted-foreground">
               Showing first 100 of {allRows.length} rows
             </p>
           )}

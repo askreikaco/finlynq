@@ -16,6 +16,7 @@ import {
 import { useAppSizeClass } from "@/components/adaptive";
 import type { Subscription } from "./types";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, Scale } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -259,9 +260,13 @@ export function SubscriptionsCalendar({
           icon={<Scale className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
-      <p className="text-xs text-muted-foreground">
-        Income and untracked bills are projected from repeating transactions in your history. Totals are in {displayCurrency} at today&apos;s rates.
-      </p>
+      <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+        Totals in {displayCurrency}
+        <InfoTip
+          label="About projections"
+          text={`Income and untracked bills are projected from repeating transactions in your history. Totals are in ${displayCurrency} at today's rates.`}
+        />
+      </div>
     </div>
   );
 }

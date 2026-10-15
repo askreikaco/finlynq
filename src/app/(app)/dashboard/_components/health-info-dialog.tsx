@@ -132,7 +132,9 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
       onClose={() => onOpenChange(false)}
       size="xl"
       title="How is the Financial Health score calculated?"
-      info="Six components, each scored 0-100 and weighted to produce your overall score. Components without enough data are excluded — the remaining weights renormalize so you're never penalized for a gap."
+      info={<>Six components, each scored 0-100 and weighted to produce your overall score.
+            Components without enough data are excluded — the remaining weights renormalize so
+            you&apos;re never penalized for a gap.</>}
     >
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">

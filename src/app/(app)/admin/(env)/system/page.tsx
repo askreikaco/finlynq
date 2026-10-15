@@ -406,6 +406,7 @@ export default function AdminSystemPage() {
   return (
     <SectionPage
       id="admin-system"
+      info="Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU / memory / disk are the whole VPS (prod and dev share this box); database queries, snapshots and rebuilds are this environment only."
       title={<>
             System
             {data?.env && (
@@ -431,13 +432,6 @@ export default function AdminSystemPage() {
           </>),
       }}
     >
-      <p className="mt-0.5 text-sm text-muted-foreground">
-        Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
-        memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
-        and dev share this box); database queries, snapshots and rebuilds are{" "}
-        <span className="font-medium text-foreground">this environment only</span>.
-      </p>
-
       {error && (
         <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
       )}

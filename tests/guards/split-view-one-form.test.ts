@@ -91,11 +91,11 @@ describe.each(ENTITIES)("split view: $name has one form", (e) => {
 });
 
 describe("split view: shared layout", () => {
-  it("one ListDetailLayout; list 2fr | pane 1fr; sticky below the top bar", () => {
+  it("one ListDetailLayout; list 3fr | pane 1fr; sticky below the top bar", () => {
     const layout = read("src/components/mobile/list-detail-layout.tsx");
     expect(layout).toContain("export function ListDetailLayout");
     const sel = read("src/lib/list-detail/selection.ts");
-    expect(sel).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(sel).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(sel).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
   });
 

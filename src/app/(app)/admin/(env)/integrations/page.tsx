@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Mail, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { ListRow, SectionCard } from "@/components/mobile";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type Source = "db" | "env" | "none";
 type SecretField = "brevoApiKey" | "resendApiKey" | "smtpUser" | "smtpPass";
@@ -315,10 +316,20 @@ export default function AdminIntegrationsPage() {
             </div>
           </SectionCard>
 
-          <SectionCard label="Settings" icon={Settings} tone="muted" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
-            </p>
+          <SectionCard
+            label={
+              <>
+                Settings
+                <InfoTip
+                  label="About settings"
+                  text="Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it."
+                />
+              </>
+            }
+            icon={Settings}
+            tone="muted"
+            className="space-y-4"
+          >
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email-provider">Provider</Label>

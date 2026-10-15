@@ -124,13 +124,12 @@ export function EditUserModal({
       onClose={() => onOpenChange(false)}
       size="md"
       title="Edit User"
-      info="Change this account's profile, role, plan or 2FA. Only the fields you change are saved."
+      info={<>Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.</>}
       actions={[
-        { label: "Cancel", disabled: loading },
-        { label: loading ? "Saving..." : "Save Changes", kind: "primary", onClick: () => handleSubmit(), disabled: loading },
+        { label: "Cancel", type: "button", onClick: () => onOpenChange(false), disabled: loading },
+        { label: loading ? "Saving..." : "Save Changes", kind: "primary", type: "button", onClick: () => handleSubmit(), disabled: loading },
       ]}
     >
-
         <div className="space-y-4">
           {error && (
             <div

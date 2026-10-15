@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 const read = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 const ACCOUNTS = "src/app/(app)/accounts/page.tsx";
 const PORTFOLIO = "src/app/(app)/portfolio/page.tsx";
-const DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
+const DETAIL = "src/app/(app)/accounts/_components/account-detail.tsx";
 
 describe("account create entry points", () => {
   it("accounts list no longer opens AccountDialog or registers the accounts.create FAB handler", () => {

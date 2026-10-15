@@ -26,6 +26,7 @@ import {
   type InvestmentExternalAccount,
 } from "./investment-statement-preview";
 import type { RawTransaction } from "@/lib/import-pipeline";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export function InvestmentStatementImporter() {
   const [accountNames, setAccountNames] = useState<string[]>([]);
@@ -132,13 +133,10 @@ export function InvestmentStatementImporter() {
         <p className="text-sm font-medium flex items-center gap-2">
           <Landmark className="h-4 w-4 text-primary" />
           Investment statements
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Upload an IBKR FlexQuery XML or an OFX/QFX investment statement
-          (with <code>&lt;INVSTMTRS&gt;</code>). Multi-account files let you
-          bind each brokerage sub-account to a different Finlynq account before
-          import. For plain CSV or bank OFX/QFX, use the Import page upload
-          instead.
+          <InfoTip
+            label="About investment statements"
+            text="Upload an IBKR FlexQuery XML or an OFX/QFX investment statement (with <INVSTMTRS>). Multi-account files let you bind each brokerage sub-account to a different Finlynq account before import. For plain CSV or bank OFX/QFX, use the Import page upload instead."
+          />
         </p>
       </div>
 

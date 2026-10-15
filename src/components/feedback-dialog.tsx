@@ -145,7 +145,7 @@ export function FeedbackDialog({
         reset();
       }}
       title="Send feedback"
-      info="Report a bug or suggest an improvement. Please don't include sensitive financial details."
+      info="No sensitive financial details, please."
       actions={
         done
           ? [{ label: "Close" }]
@@ -155,7 +155,6 @@ export function FeedbackDialog({
             ]
       }
     >
-
         {done ? (
           <div className="py-4 text-sm text-muted-foreground">
             Thanks! Your feedback has been sent.

@@ -15,4 +15,4 @@ export { MetricGrid, MetricItemCard, METRIC_GRID_CLASS, metricGridClass, type Me
 export { CardLayoutEditor } from "./card-layout-editor";
 export { useCardLayout } from "./use-card-layout";
 export { usePageCustomize, usePageCustomizeRegistration, type PageCustomizeRegistration } from "./page-customize";
-export { ListDetailLayout, ListDetailNewButton, ListDetailEmptyPane, useListDetail, type ListDetailApi, type ListDetailPaneApi, type ListDetailLayoutProps } from "./list-detail-layout";
+export { ListDetailLayout, ListDetailNewButton, ListDetailEmptyPane, useListDetail, usePaneTitle, type ListDetailApi, type ListDetailPaneApi, type ListDetailLayoutProps } from "./list-detail-layout";
