@@ -10,7 +10,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
 
-import { AccountRow, HoldingRow, MetricGrid, NetWorthHero } from "@/components/mobile";
+import { AccountRow, HoldingRow, MetricGrid } from "@/components/mobile";
 import { formatCurrency } from "@/lib/currency";
 
 afterEach(cleanup);
@@ -72,15 +72,7 @@ describe("HoldingRow", () => {
   });
 });
 
-describe("NetWorthHero + MetricGrid", () => {
-  it("net worth = assets + liabilities; tiles use pos/neg tokens, no raw colors", () => {
-    render(<NetWorthHero totalAssets={100} totalLiabilities={-40} currency="USD" />);
-    expect(screen.getByText("$60.00")).toBeTruthy();
-    expect(screen.getByText("$100.00").closest(".text-pos")).toBeTruthy();
-    expect(screen.getByText("-$40.00").closest(".text-neg")).toBeTruthy();
-    expect(document.querySelector("[data-slot=net-worth-hero]")!.innerHTML).not.toMatch(/emerald|rose-/);
-  });
-
+describe("MetricGrid", () => {
   it("MetricGrid is 2-col; counts plain, money via Amount", () => {
     render(<MetricGrid metrics={[{ icon: Wallet, label: "Holdings", value: <span>4</span> }, { icon: Wallet, label: "Cost", value: 1234.5, currency: "USD" }]} />);
     expect(cls(document.querySelector("[data-slot=metric-grid]")!)).toContain("grid-cols-2");

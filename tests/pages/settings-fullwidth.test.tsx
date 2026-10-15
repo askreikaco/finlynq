@@ -22,7 +22,6 @@ const NO_CAP_FILES = [
   "src/components/manage-accounts.tsx",
   "src/app/(app)/accounts/groups/page.tsx",
   "src/components/templates/detail-page.tsx",
-  "src/components/templates/hub-page.tsx",
 ];
 
 describe("tokens: the 3-column card grid", () => {
@@ -69,8 +68,7 @@ describe("settings: independent cards sit in the 3-column grid", () => {
     expect(code("src/app/(app)/account/info/page.tsx")).toContain("TW.grid3");
     expect(code("src/components/settings/account-content.tsx")).toContain("TW.grid3");
   });
-  it("hub and detail templates lay sections out in the grid", () => {
-    expect(code("src/components/templates/hub-page.tsx")).toContain("TW.grid3");
+  it("detail template lays sections out in the grid", () => {
     expect(code("src/components/templates/detail-page.tsx")).toContain("TW.grid3");
   });
 });

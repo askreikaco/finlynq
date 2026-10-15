@@ -8,7 +8,6 @@ import { PageToolbar } from "@/components/page-toolbar";
 import type { RangeSelection } from "@/lib/metrics/period";
 import { SectionCard } from "@/components/mobile/section-card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
-import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
 import { AccountRow } from "@/components/mobile/account-row";
 import { HoldingRow } from "@/components/mobile/holding-row";
@@ -44,7 +43,7 @@ function Group({ id, title, file, span, children }: { id: string; title: string;
   return (
     <section id={id} data-gallery-section={id} className={cn("scroll-mt-16 min-w-0 space-y-3", span && "col-span-full")}>
       <div>
-        <SectionLabel>{title}</SectionLabel>
+        <h2 className="px-1 text-xs font-bold uppercase tracking-normal text-muted-foreground">{title}</h2>
         <p className="px-1 text-[11px] text-muted-foreground">{file}</p>
       </div>
       {children}
@@ -538,7 +537,6 @@ function GalleryContent() {
               <ul className="space-y-1 text-sm">
                 <li>SectionPage: section-page.tsx (width/stack/grid; TW.grid3 body)</li>
                 <li>FormPage: form-page.tsx (load/save/delete, dirty guard)</li>
-                <li>HubPage: hub-page.tsx (grouped rows)</li>
                 <li>ListPage, DetailPage, ReportPage: templates/</li>
               </ul>
               <p className="mt-2 text-[11px] text-muted-foreground">Listed only: they need routing, data and nav context to mount.</p>

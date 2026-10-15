@@ -43,7 +43,6 @@ const LIST_FILES = [
   "src/components/more-menu.tsx",
   "src/components/settings-hub.tsx",
   "src/components/account-hub.tsx",
-  "src/components/templates/hub-page.tsx",
   "src/components/transactions/mobile-tx-list.tsx",
   "src/components/ui/field/field.tsx",
   "src/components/transactions/entry/grouped-picker.tsx",

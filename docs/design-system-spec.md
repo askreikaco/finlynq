@@ -87,11 +87,9 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
 | `mobile/list-row.tsx` | ListRow, ListRowProps | THE row of every list. Optional parts by prop: leading (icon tile, initials, status dot), title, subtitle, value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, href / onPress / select, selected, size (regular 56px / dense 44px), shape (square / rounded). Gallery: /dev/gallery#list-row |
 | `mobile/section-card.tsx` | `:6` SectionCard | Card with optional uppercase label (`:5` doc) |
-| `mobile/section-label.tsx` | `:5` SectionLabel | 12/700 uppercase muted label (`:4` doc) |
 | `mobile/stat-tile.tsx` | `:6` StatTile | Compact stat replacing tall icon cards below md (`:5` doc) |
 | `mobile/amount.tsx` | `:34` Amount, `:17` amountToneClass | Money amount, tabular, sign color (`:16`, `:25-26` doc) |
 | `mobile/metric-grid.tsx` | `:14` MetricGrid | Grid of metrics |
-| `mobile/net-worth-hero.tsx` | `:10` NetWorthHero | Hero total block |
 | `mobile/account-row.tsx` | AccountRow | Thin wrapper: account data to ListRow props |
 | `mobile/holding-row.tsx` | HoldingRow | Thin wrapper: holding data to ListRow props |
 | `mobile/tx-row.tsx` | TxRow | Thin wrapper: transaction / subscription / loan payment to ListRow props |
