@@ -162,6 +162,10 @@ const SNAPSHOT = {
       "href": "/goals/new",
       "icon": "LucidePlus"
     },
+    "/goals/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
+    },
     "/goals/[id]/edit": {
       "kind": "hidden",
       "reason": "is the edit flow"
@@ -191,6 +195,10 @@ const SNAPSHOT = {
     "/loans/new": {
       "kind": "hidden",
       "reason": "is the create flow"
+    },
+    "/loans/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
     },
     "/loans/[id]/edit": {
       "kind": "hidden",
@@ -335,6 +343,10 @@ const SNAPSHOT = {
     "/subscriptions/new": {
       "kind": "hidden",
       "reason": "is the create flow"
+    },
+    "/subscriptions/[id]": {
+      "kind": "hidden",
+      "reason": "read-only detail; Edit is in the header"
     },
     "/subscriptions/[id]/edit": {
       "kind": "hidden",

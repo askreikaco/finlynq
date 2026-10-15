@@ -14,7 +14,7 @@ const SETTINGS_GENERAL = "src/app/(app)/settings/general/page.tsx";
 // Budgets were merged into /categories (2026-10); /budgets redirects there.
 const BUDGETS = "src/app/(app)/categories/_page-content.tsx";
 const PERF_CHART = "src/components/portfolio/PerformanceChart.tsx";
-const ACCOUNT_DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
+const ACCOUNT_DETAIL = "src/app/(app)/accounts/_components/account-detail.tsx";
 const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holding-account-groups.tsx";
 const LOT_DIALOG = "src/components/portfolio/lot-inspector-dialog.tsx";
 const APP_LAYOUT = "src/app/(app)/layout.tsx";
@@ -84,7 +84,7 @@ describe("categories (with budgets) at 390", () => {
   it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
     expect(src).toMatch(/label="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
-    expect(src).toContain("padded={false}");
+    expect(src).toMatch(/label="Categories"[\s\S]*?\blist\b/);
     expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");
   });

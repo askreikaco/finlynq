@@ -395,7 +395,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
               onSelect: () => router.push(opHref(o.op)),
             })),
           ]}
-          primary={{ kind: "edit", label: "Edit account", onSelect: () => openEdit("details") }}
+          primary={{ kind: "edit", label: "Edit", onSelect: () => openEdit("details") }}
         />
       )}
       <div className="flex max-w-full flex-wrap gap-2">
