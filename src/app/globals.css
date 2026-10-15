@@ -437,7 +437,7 @@ html {
 }
 
 /* iOS 26-style liquid glass, every width (one top bar, owner 2026-10-13). Three parts: the round back button
- (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
+ (.glass-capsule on the Back Button), the page top bar (.glass-bar), and the grouped action capsule
  (.glass-capsule on [data-slot=header-capsule]). */
 .glass-capsule {
   background: var(--glass-capsule-bg);
@@ -464,19 +464,19 @@ html {
   flex-shrink: 0;
   border-radius: 9999px;
 }
-[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]) {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]):hover,
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]):active {
   background: oklch(0 0 0 / 7%);
 }
-.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]):hover,
+.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]):active {
   background: oklch(1 0 0 / 12%);
 }
 /* The page's primary action (PageHeader `primary`: Add / Edit / Save): its own round yellow button beside the capsule, a

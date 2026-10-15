@@ -40,7 +40,7 @@ export function ChipGroup<T extends string>({
             key={o.value}
             type="button"
             size="sm"
-            variant={value === o.value ? "default" : "outline"}
+            variant={value === o.value ? "primary" : "outline"}
             aria-pressed={value === o.value}
             disabled={disabled}
             onClick={() => onChange(o.value)}

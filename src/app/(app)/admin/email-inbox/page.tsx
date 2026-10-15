@@ -192,32 +192,24 @@ export default function AdminEmailInboxPage() {
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex flex-wrap gap-1.5">
           {ACTIONS.map((a) => (
-            <button
+            <Button
               key={a}
               onClick={() => setAction(a)}
-              className={`rounded-md border px-2.5 py-1 text-xs capitalize transition-colors ${
-                action === a
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
-              }`}
+              variant="outline" size="sm" pressed={action === a} className="capitalize"
             >
               {a.replace(/_/g, " ")}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-1.5">
           {SOURCE_KINDS.map((s) => (
-            <button
+            <Button
               key={s}
               onClick={() => setSourceKind(s)}
-              className={`rounded-md border px-2.5 py-1 text-xs capitalize transition-colors ${
-                sourceKind === s
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
-              }`}
+              variant="outline" size="sm" pressed={sourceKind === s} className="capitalize"
             >
               {s}
-            </button>
+            </Button>
           ))}
         </div>
         <Field label="From" control="date" value={since} onChange={(e) => setSince(e.target.value)} />

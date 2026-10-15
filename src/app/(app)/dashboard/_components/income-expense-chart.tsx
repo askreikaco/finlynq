@@ -94,7 +94,7 @@ export function IncomeExpenseChart({
           {stackable && (
             <Button
               size="sm"
-              variant={stacked ? "default" : "outline"}
+              variant={stacked ? "primary" : "outline"}
               onClick={() => setStacked((s) => !s)}
               title="Split into stacked top-10 category views"
             >

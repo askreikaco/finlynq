@@ -29,7 +29,6 @@
  */
 import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, type ReactNode } from "react";
-import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -248,7 +247,7 @@ export function ListPage<T, D = T[], X = unknown>({
           <h3 className="mb-2 text-lg font-semibold">{empty.title}</h3>
           <p className="mb-6 max-w-sm text-sm text-muted-foreground">{empty.body}</p>
           {empty.cta && (
-            <Button aria-label={empty.cta.label} render={<Link href={empty.cta.href} />}>
+            <Button aria-label={empty.cta.label} href={empty.cta.href}>
               <Plus className="mr-1 h-4 w-4" />
               {empty.cta.label}
             </Button>

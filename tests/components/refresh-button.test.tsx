@@ -14,12 +14,14 @@ import { SWRConfig } from "swr";
 vi.mock("next/link", () => ({ default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children) }));
 vi.mock("@/components/metric-range-select", () => ({ MetricRangeSelect: () => <div data-testid="range" /> }));
 
-import { RefreshButton } from "@/components/refresh-button";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useApi } from "@/lib/data/use-api";
 import { resetFetchActivity, mountedApiKeys } from "@/lib/data/fetch-activity";
 import { resetWriteClock } from "@/lib/swr/http-freshness";
+
+// The Refresh control is the PageToolbar `refresh` slot: a round iconOnly Button wired to useRefreshAll.
+const RefreshButton = () => <PageToolbar refresh />;
 
 type Deferred = { url: string; init?: RequestInit; resolve: (body: unknown) => void };
 let calls: Deferred[];
@@ -52,7 +54,7 @@ const button = () => screen.getByRole("button", { name: "Refresh" });
 const spinning = () => button().querySelector("svg")!.getAttribute("class")!.includes("animate-spin");
 const settle = async (c: Deferred, body: unknown) => { await act(async () => { c.resolve(body); }); };
 
-describe("RefreshButton", () => {
+describe("Refresh slot", () => {
   it("is icon only: aria-label Refresh, no visible text, idle = no spin", () => {
     render(<App><RefreshButton /></App>);
     expect(button().textContent).toBe("");
@@ -71,7 +73,7 @@ describe("RefreshButton", () => {
     await settle(calls[1], { n: 2 });
     await waitFor(() => expect(spinning()).toBe(false));
     expect(button().getAttribute("data-fetching")).toBe("false");
-    expect(button().getAttribute("aria-busy")).toBe("false");
+    expect(button().getAttribute("aria-busy")).toBeNull();
 
     fireEvent.click(button());
     await waitFor(() => expect(calls).toHaveLength(4));

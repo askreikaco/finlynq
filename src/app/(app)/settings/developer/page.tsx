@@ -90,7 +90,7 @@ export default function DeveloperSettingsPage() {
               </p>
             </div>
             <Button
-              variant={devMode ? "default" : "outline"}
+              variant={devMode ? "primary" : "outline"}
               size="sm"
               onClick={handleDevModeToggle}
               disabled={devModeLoading}

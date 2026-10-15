@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { BackButton } from "@/components/mobile/back-button";
+import { PageHeader } from "@/components/mobile/page-header";
 import { getNavDepth, incrementNavDepth, decrementNavDepth, resetNavDepth } from "@/lib/nav/history-depth";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/accounts",
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
@@ -31,7 +37,7 @@ describe("history depth", () => {
   });
 });
 
-describe("BackButton with an href", () => {
+describe("Back control with an href", () => {
   const back = vi.fn();
   beforeEach(() => {
     window.sessionStorage.clear();
@@ -45,7 +51,7 @@ describe("BackButton with an href", () => {
 
   it("uses real history back when the user navigated inside the app", () => {
     incrementNavDepth();
-    render(<BackButton href="/settings" label="Back" />);
+    render(<PageHeader title="Settings" back={{ href: "/settings", label: "Back" }} />);
     const link = screen.getByRole("link", { name: "Back" });
     const notPrevented = fireEvent.click(link);
     expect(back).toHaveBeenCalledTimes(1);
@@ -53,7 +59,7 @@ describe("BackButton with an href", () => {
   });
 
   it("falls back to the parent link on a fresh entry (depth 0)", () => {
-    render(<BackButton href="/settings" label="Back" />);
+    render(<PageHeader title="Settings" back={{ href: "/settings", label: "Back" }} />);
     const link = screen.getByRole("link", { name: "Back" });
     const notPrevented = fireEvent.click(link);
     expect(back).not.toHaveBeenCalled();
@@ -63,7 +69,7 @@ describe("BackButton with an href", () => {
 
   it("leaves a modified click (new tab) to the browser", () => {
     incrementNavDepth();
-    render(<BackButton href="/settings" label="Back" />);
+    render(<PageHeader title="Settings" back={{ href: "/settings", label: "Back" }} />);
     fireEvent.click(screen.getByRole("link", { name: "Back" }), { ctrlKey: true });
     expect(back).not.toHaveBeenCalled();
   });

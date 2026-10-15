@@ -381,18 +381,13 @@ export default function AdminFeedbackPage() {
     >
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button
+          <Button
             key={f}
             onClick={() => setFilter(f)}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm capitalize transition-colors",
-              filter === f
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border hover:bg-muted",
-            )}
+            variant="outline" pressed={filter === f} className="capitalize"
           >
             {f}
-          </button>
+          </Button>
         ))}
       </div>
 

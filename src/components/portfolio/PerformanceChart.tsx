@@ -163,7 +163,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
           >
             <Button
               size="sm"
-              variant={groupMode === "holding" ? "default" : "outline"}
+              variant={groupMode === "holding" ? "primary" : "outline"}
               onClick={() => setGroupMode((m) => (m === "holding" ? "off" : "holding"))}
               title="Stack per-holding market value (dollar axis)"
               className={CHIP_CLASS}
@@ -173,7 +173,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
             {canGroupByAccount && (
               <Button
                 size="sm"
-                variant={groupMode === "account" ? "default" : "outline"}
+                variant={groupMode === "account" ? "primary" : "outline"}
                 onClick={() => setGroupMode((m) => (m === "account" ? "off" : "account"))}
                 title="Stack per-account market value (dollar axis)"
                 className={CHIP_CLASS}
@@ -185,7 +185,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
               <Button
                 key={p}
                 size="sm"
-                variant={period === p ? "default" : "outline"}
+                variant={period === p ? "primary" : "outline"}
                 onClick={() => setPeriod(p)}
                 className={CHIP_CLASS}
               >

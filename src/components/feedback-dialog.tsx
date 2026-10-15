@@ -165,19 +165,14 @@ export function FeedbackDialog({
               <span className="text-sm font-medium">Type</span>
               <div className="flex flex-wrap gap-2">
                 {TYPES.map((t) => (
-                  <button
+                  <Button
                     key={t.value}
                     type="button"
                     onClick={() => setType(t.value)}
-                    className={cn(
-                      "rounded-md border px-3 py-1.5 text-sm transition-colors",
-                      type === t.value
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:bg-muted",
-                    )}
+                    variant="outline" pressed={type === t.value}
                   >
                     {t.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

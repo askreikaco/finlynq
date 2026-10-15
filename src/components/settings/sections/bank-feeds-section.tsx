@@ -407,7 +407,7 @@ export function BankFeedsSection() {
                           <Button
                             type="button"
                             size="sm"
-                            variant={choices[a.externalId]?.mode === "create" ? "default" : "outline"}
+                            variant={choices[a.externalId]?.mode === "create" ? "primary" : "outline"}
                             onClick={() => setChoice(a.externalId, { mode: "create" })}
                           >
                             <Plus className="h-3.5 w-3.5 mr-1" /> Create new
@@ -418,7 +418,7 @@ export function BankFeedsSection() {
                                 type="button"
                                 size="sm"
                                 variant={
-                                  choices[a.externalId]?.mode === "existing" ? "default" : "outline"
+                                  choices[a.externalId]?.mode === "existing" ? "primary" : "outline"
                                 }
                                 onClick={() =>
                                   setChoice(a.externalId, {

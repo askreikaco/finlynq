@@ -91,7 +91,7 @@ export function ApplyTemplateForm({
               </Button>
               <Button
                 variant="ghost"
-                size="icon"
+                iconOnly
                 className="h-8 w-8 text-muted-foreground"
                 aria-label={`Delete template ${name}`}
                 onClick={() => handleDeleteTemplate(name)}

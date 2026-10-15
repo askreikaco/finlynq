@@ -13,7 +13,7 @@ const nav = read("src/components/nav.tsx");
 const chat = read("src/app/(app)/chat/page.tsx");
 const pageFab = read("src/components/mobile/page-fab.tsx");
 
-const GLASS_SEL = '[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"])';
+const GLASS_SEL = '[data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"])';
 
 // Text of the top-bar glass block (from .glass-capsule to the tab bar section).
 function phoneGlassBlock(): string {
@@ -32,7 +32,7 @@ function bodyOf(source: string, selector: string): string {
 
 describe("M1: header glass excludes primary-filled buttons", () => {
   it("Button emits its variant as data-variant", () => {
-    expect(button).toContain("data-variant={variant}");
+    expect(button).toContain('"data-variant": variant');
   });
 
   it("non-primary action children are bare on the capsule; the exclusion is on the rule", () => {

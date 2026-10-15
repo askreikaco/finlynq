@@ -15,7 +15,6 @@ import { HoldingRow } from "@/components/mobile/holding-row";
 import { TxRow } from "@/components/mobile/tx-row";
 import { Amount } from "@/components/mobile/amount";
 import { InsetRow } from "@/components/mobile/inset-row";
-import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
 import { Chart } from "@/components/chart";
@@ -29,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
+import { ArrowRight, Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, RefreshCw, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 import { FieldsGallery } from "./fields";
@@ -112,7 +111,7 @@ function MetricPlayground() {
     tone: "indigo",
     value: 125000,
     ...(parts.info ? { info: "Assets minus liabilities." } : {}),
-    ...(parts.action ? { action: <Button variant="ghost" size="icon-sm" aria-label="Edit"><Pencil className="size-3.5" /></Button> } : {}),
+    ...(parts.action ? { action: <Button variant="ghost" iconOnly size="sm" aria-label="Edit"><Pencil className="size-3.5" /></Button> } : {}),
     ...(parts.hero ? { size: "hero" as const } : {}),
     ...(parts.delta ? { delta: { pct: 1.9, text: "+$2,300 vs last month" } } : {}),
     ...(parts.sub && !parts.delta ? { sub: "As of today" } : {}),
@@ -143,6 +142,7 @@ function GalleryContent() {
   const [overlay, setOverlay] = useState<"confirm" | "confirm-neutral" | "form" | "form-dialog" | "form-sheet" | "detail" | "picker" | null>(null);
   const closeOverlay = () => setOverlay(null);
   const [on, setOn] = useState(true);
+  const [pressed, setPressed] = useState(false);
   const [acc, setAcc] = useState<string | null>("one");
 
   useEffect(() => {
@@ -185,7 +185,7 @@ function GalleryContent() {
                 <MetricCard label="Delta (less is better)" icon={DollarSign} tone="rose" value={3100} delta={{ pct: 4.2, text: "+$124 vs last month", invert: true }} note="Second note line" />
                 <MetricCard label="Sparkline + delta + link" icon={TrendingUp} tone="emerald" value={150000} delta={{ pct: 8.5, text: "+$4,000 vs last month" }} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#10b981" href="/portfolio" />
                 <MetricCard label="Progress" icon={PiggyBank} tone="amber" value={800} sub="of $1,000" progress={{ value: 80, tone: "warning", caption: "80% spent" }} />
-                <MetricCard label="Info + action" icon={Wallet} tone="violet" value={4200} info="Shown in the label row." action={<Button variant="ghost" size="icon-sm" aria-label="Edit"><Pencil className="size-3.5" /></Button>} />
+                <MetricCard label="Info + action" icon={Wallet} tone="violet" value={4200} info="Shown in the label row." action={<Button variant="ghost" iconOnly size="sm" aria-label="Edit"><Pencil className="size-3.5" /></Button>} />
                 <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
                 <MetricCardSkeleton />
               </div>
@@ -297,14 +297,12 @@ function GalleryContent() {
                 ))}
               </SectionCard>
             </Item>
-            <Item name="Amount / PillButton">
+            <Item name="Amount">
               <div className="flex flex-wrap items-center gap-3">
                 <Amount value={1234.56} />
                 <Amount value={-100.5} />
                 <Amount value={0} />
                 <Amount value={5000000} currency="EUR" />
-                <PillButton>All</PillButton>
-                <PillButton>Income</PillButton>
               </div>
             </Item>
           </Group>
@@ -417,19 +415,51 @@ function GalleryContent() {
             <div className="surface-card rounded-xl border border-border/50 p-4 text-sm">.surface-card utility</div>
           </Group>
 
-          <Group id="buttons" title="Buttons / Badges" file="ui/button.tsx · ui/badge.tsx">
-            <Item name="Button variants">
-              <div className="flex flex-wrap gap-2">
-                {(["default", "secondary", "outline", "ghost", "destructive", "link"] as const).map((v) => (
-                  <Button key={v} variant={v}>{v}</Button>
+          <Group id="buttons" title="Button" file="ui/button.tsx (variant · size · shape · iconOnly · leading/trailing · loading · badge · pressed · fullWidth · href) · ui/badge.tsx">
+            <Item name="variant x size (rect)">
+              <div className="space-y-2">
+                {(["primary", "secondary", "outline", "ghost", "destructive", "link"] as const).map((v) => (
+                  <div key={v} className="flex flex-wrap items-center gap-2">
+                    <span className="w-20 text-[11px] text-muted-foreground">{v}</span>
+                    {(["sm", "md", "lg"] as const).map((s) => (
+                      <Button key={s} variant={v} size={s}>{s}</Button>
+                    ))}
+                    <Button variant={v} leading={Plus}>leading</Button>
+                    <Button variant={v} trailing={ArrowRight}>trailing</Button>
+                    <Button variant={v} disabled>disabled</Button>
+                  </div>
                 ))}
               </div>
             </Item>
-            <Item name="Button sizes">
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="xs">xs</Button><Button size="sm">sm</Button><Button>default</Button><Button size="lg">lg</Button>
-                <Button size="icon" aria-label="Add"><Plus /></Button>
-                <Button disabled>disabled</Button>
+            <Item name="iconOnly x shape (round ghost wears CONTROL_SURFACE)">
+              <div className="space-y-2">
+                {(["rect", "round"] as const).map((shape) => (
+                  <div key={shape} className="flex flex-wrap items-center gap-2">
+                    <span className="w-20 text-[11px] text-muted-foreground">{shape}</span>
+                    {(["sm", "md", "lg"] as const).map((s) => (
+                      <Button key={s} iconOnly shape={shape} variant="ghost" size={s} leading={Settings} aria-label={`${shape} ${s}`} />
+                    ))}
+                    <Button iconOnly shape={shape} variant="primary" leading={Plus} aria-label={`${shape} primary`} />
+                    <Button iconOnly shape={shape} variant="outline" leading={Pencil} aria-label={`${shape} outline`} />
+                    <Button iconOnly shape={shape} variant="destructive" leading={Trash2} aria-label={`${shape} destructive`} />
+                    <Button iconOnly shape={shape} variant="ghost" leading={Bell} badge={3} aria-label={`${shape} badge`} />
+                    <Button iconOnly shape={shape} variant="ghost" leading={Settings} disabled aria-label={`${shape} disabled`} />
+                  </div>
+                ))}
+              </div>
+            </Item>
+            <Item name="loading / badge / pressed / fullWidth / href / fab">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button loading>Saving</Button>
+                  <Button variant="outline" leading={RefreshCw} loading>Rebuilding</Button>
+                  <Button iconOnly shape="round" variant="ghost" leading={RefreshCw} loading aria-label="Refresh" />
+                  <Button variant="outline" size="sm" pressed={pressed} onClick={() => setPressed((p) => !p)}>Pressed: {String(pressed)}</Button>
+                  <Button variant="outline" size="sm" pressed>Selected</Button>
+                  <Button variant="ghost" href="/dashboard">Link (href)</Button>
+                  <Button size="fab" shape="round" iconOnly leading={Plus} aria-label="Add (fab)" />
+                </div>
+                <Button variant="outline" fullWidth>Full width</Button>
               </div>
             </Item>
             <Item name="Badge variants">

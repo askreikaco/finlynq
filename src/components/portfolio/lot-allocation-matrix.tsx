@@ -303,15 +303,15 @@ export function LotAllocationMatrix({
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
           <span className="font-medium w-9 shrink-0">Sales:</span>
           <div className="flex items-center gap-1 flex-wrap">
-            <button type="button" onClick={() => { setYearFilter("all"); setFromDate(""); setToDate(""); }}
-              className={`rounded-md border px-2 py-0.5 ${yearFilter === "all" && !fromDate && !toDate ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
+            <Button type="button" variant="outline" size="sm" onClick={() => { setYearFilter("all"); setFromDate(""); setToDate(""); }}
+              pressed={yearFilter === "all" && !fromDate && !toDate}>
               All
-            </button>
+            </Button>
             {sellYears.map((y) => (
-              <button key={y} type="button" onClick={() => { setYearFilter(y); setFromDate(""); setToDate(""); }}
-                className={`rounded-md border px-2 py-0.5 ${yearFilter === y ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
+              <Button key={y} type="button" onClick={() => { setYearFilter(y); setFromDate(""); setToDate(""); }}
+                variant="outline" size="sm" pressed={yearFilter === y}>
                 {y}
-              </button>
+              </Button>
             ))}
           </div>
           <span className="text-border">|</span>
@@ -334,15 +334,15 @@ export function LotAllocationMatrix({
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
           <span className="font-medium w-9 shrink-0">Buys:</span>
           <div className="flex items-center gap-1 flex-wrap">
-            <button type="button" onClick={() => { setBuyYear("all"); setBuyFrom(""); setBuyTo(""); }}
-              className={`rounded-md border px-2 py-0.5 ${buyYear === "all" && !buyFrom && !buyTo ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
+            <Button type="button" variant="outline" size="sm" onClick={() => { setBuyYear("all"); setBuyFrom(""); setBuyTo(""); }}
+              pressed={buyYear === "all" && !buyFrom && !buyTo}>
               All
-            </button>
+            </Button>
             {lotYears.map((y) => (
-              <button key={y} type="button" onClick={() => { setBuyYear(y); setBuyFrom(""); setBuyTo(""); }}
-                className={`rounded-md border px-2 py-0.5 ${buyYear === y ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>
+              <Button key={y} type="button" onClick={() => { setBuyYear(y); setBuyFrom(""); setBuyTo(""); }}
+                variant="outline" size="sm" pressed={buyYear === y}>
                 {y}
-              </button>
+              </Button>
             ))}
           </div>
           <span className="text-border">|</span>

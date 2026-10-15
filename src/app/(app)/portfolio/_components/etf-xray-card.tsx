@@ -120,7 +120,7 @@ export function EtfXrayCard({
             ]).map(tab => (
               <Button
                 key={tab.key}
-                variant={etfXrayTab === tab.key ? "default" : "outline"}
+                variant={etfXrayTab === tab.key ? "primary" : "outline"}
                 size="sm"
                 className="text-xs h-7 px-2.5"
                 onClick={() => setEtfXrayTab(tab.key)}

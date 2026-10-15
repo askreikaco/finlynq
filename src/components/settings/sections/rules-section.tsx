@@ -23,9 +23,8 @@ function rulePatch(f: Record<string, string | number | null>): Partial<RuleRow> 
 }
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { AlertTriangle, ListChecks, Plus, Trash2, Zap } from "lucide-react";
 import type { Condition, Action } from "@/lib/rules/schema";
@@ -202,9 +201,9 @@ export function RulesSection() {
                 </CardTitle>
               </div>
             </div>
-            <Link href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Link>
+            <Button href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} variant="outline" size="sm" leading={Plus}>
+              Add
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -248,13 +247,10 @@ export function RulesSection() {
                       aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}
                     />
                   </span>
-                  <Link
-                    href={`/settings/rules/${rule.id}/edit?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`}
-                    className={buttonVariants({ variant: "ghost", size: "sm" })}
-                  >
+                  <Button href={`/settings/rules/${rule.id}/edit?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} variant="ghost" size="sm">
                     Edit
-                  </Link>
-                  <Button aria-label="Delete rule" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
+                  </Button>
+                  <Button aria-label="Delete rule" variant="ghost" iconOnly className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>

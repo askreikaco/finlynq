@@ -18,7 +18,7 @@ export function RevealForm({
   open: boolean;
   onOpen: () => void;
   buttonLabel: string;
-  variant?: "outline" | "destructive" | "default";
+  variant?: "outline" | "destructive" | "primary";
   children: ReactNode;
 }) {
   if (open) return <>{children}</>;

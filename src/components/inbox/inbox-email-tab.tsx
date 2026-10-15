@@ -352,7 +352,7 @@ export function InboxEmailTab() {
                       </div>
                     </button>
                     <Button aria-label="Delete email"
-                      size="icon"
+                      iconOnly
                       variant="ghost"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={() => void remove(it.id)}

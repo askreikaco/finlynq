@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -433,24 +434,24 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
         )}
 
         <div className="space-y-3">
-          <button
+          <Button
             onClick={handleAllow}
             disabled={loading}
-            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+            size="lg" fullWidth
           >
             {loading ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Authorizing…</>
             ) : (
               "Allow Access"
             )}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleDeny}
             disabled={loading}
-            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted disabled:opacity-50"
+            variant="outline" size="lg" fullWidth
           >
             Deny
-          </button>
+          </Button>
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground/50">

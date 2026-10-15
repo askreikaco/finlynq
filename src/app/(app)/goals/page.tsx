@@ -241,7 +241,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
               </div>
               <Chart kind="progress" size="lg" value={detail.progress} tone={progressTone(detail.progress)} ariaLabel={`${detail.name} progress`} />
             </div>
-            <Button variant="outline" render={<Link href={`/goals/${detail.id}/edit`} />} aria-label={`Edit goal ${detail.name}`}>
+            <Button variant="outline" href={`/goals/${detail.id}/edit`} aria-label={`Edit goal ${detail.name}`}>
               <Pencil className="h-4 w-4 mr-1" /> Edit
             </Button>
             <Button

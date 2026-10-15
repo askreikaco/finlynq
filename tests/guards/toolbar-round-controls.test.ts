@@ -1,4 +1,4 @@
-// Icon-only toolbar / header buttons are ONE shared component (RoundIconButton); the toolbar controls share
+// Icon-only toolbar / header buttons are ONE shared component (Button iconOnly shape="round"); the toolbar controls share
 // CONTROL_SURFACE (card colour + border + inner shadow, light and dark).
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
@@ -9,22 +9,22 @@ describe("PageToolbar round controls", () => {
   const tb = read("src/components/page-toolbar.tsx");
   const header = read("src/components/mobile/page-header.tsx");
 
-  it("PageToolbar arrows, search and filter use RoundIconButton, not hand-built icon Buttons", () => {
-    expect(tb).toContain('from "@/components/ui/round-icon-button"');
-    expect(tb.match(/<RoundIconButton/g)!.length).toBeGreaterThanOrEqual(4);
-    expect(tb).not.toMatch(/size="icon"\s*$/m);
-    expect(tb).not.toMatch(/<Button[^>]*size="icon"(?!-)/);
+  it("PageToolbar arrows, search, filter and refresh are round iconOnly Buttons", () => {
+    expect(tb.match(/shape="round"/g)!.length).toBeGreaterThanOrEqual(5);
+    expect(tb.match(/\biconOnly\b/g)!.length).toBeGreaterThanOrEqual(5);
+    expect(tb).not.toMatch(/size="icon/);
   });
 
-  it("the top bar's icon buttons (More, bulk edit) use RoundIconButton", () => {
-    expect(header).toContain("<RoundIconButton");
-    expect(header).not.toMatch(/<Button[^>]*size="icon"/);
+  it("the top bar's icon buttons (Back, More, bulk edit, primary) are round iconOnly Buttons", () => {
+    expect(header.match(/shape="round"/g)!.length).toBeGreaterThanOrEqual(5);
+    expect(header).not.toMatch(/size="icon/);
   });
 
-  it("RoundIconButton is a round 44px circle", () => {
-    const src = read("src/components/ui/round-icon-button.tsx");
+  it("a round iconOnly Button is a 44px circle that wears CONTROL_SURFACE", () => {
+    const src = read("src/components/ui/button.tsx");
     expect(src).toContain("rounded-full");
-    expect(src).toContain("size-11");
+    expect(src).toContain("size-11 pointer-coarse:size-11 dense:pointer-fine:size-11");
+    expect(src).toContain("CONTROL_SURFACE");
   });
 
   it("range trigger, month group, search and the Spending/Income toggle share CONTROL_SURFACE", () => {

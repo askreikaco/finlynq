@@ -14,7 +14,6 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPath,
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
-vi.mock("@/components/theme-toggle", () => ({ ThemeToggle: () => null }));
 vi.mock("@/components/FinlynqLogo", () => ({ FinlynqLogo: () => null }));
 vi.mock("@/components/feedback-dialog", () => ({ FeedbackDialog: () => null }));
 vi.mock("framer-motion", () => ({

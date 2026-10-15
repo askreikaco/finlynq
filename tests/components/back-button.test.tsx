@@ -5,7 +5,7 @@ import "@testing-library/jest-dom";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
-import { BackButton, PageHeader } from "@/components/mobile";
+import { PageHeader } from "@/components/mobile";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/accounts",
@@ -27,49 +27,44 @@ afterEach(() => {
   cleanup();
 });
 
-describe("BackButton", () => {
+describe("Back control (round iconOnly Button in PageHeader)", () => {
   it("renders an <a> with href", () => {
-    render(<BackButton href="/previous" />);
+    render(<PageHeader title="T" back={{ href: "/previous" }} />);
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/previous");
   });
 
   it("has an accessible name (aria-label)", () => {
-    render(<BackButton href="/previous" />);
+    render(<PageHeader title="T" back={{ href: "/previous" }} />);
     const link = screen.getByRole("link", { name: "Back" });
     expect(link).toBeTruthy();
   });
 
   it("uses custom label for aria-label", () => {
-    render(<BackButton href="/previous" label="Go back" />);
+    render(<PageHeader title="T" back={{ href: "/previous", label: "Go back" }} />);
     const link = screen.getByRole("link", { name: "Go back" });
     expect(link).toBeTruthy();
   });
 
   it("is a 44x44 round hit area (size-11 rounded-full) at every width", () => {
-    render(<BackButton href="/previous" />);
+    render(<PageHeader title="T" back={{ href: "/previous" }} />);
     const link = screen.getByRole("link");
     expect(cls(link)).toEqual(expect.arrayContaining(["size-11", "rounded-full"]));
   });
 
   it("has data-slot attribute", () => {
-    render(<BackButton href="/previous" />);
+    render(<PageHeader title="T" back={{ href: "/previous" }} />);
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("data-slot", "back-button");
   });
 
   it("renders ChevronLeft icon with aria-hidden", () => {
-    const { container } = render(<BackButton href="/previous" />);
+    const { container } = render(<PageHeader title="T" back={{ href: "/previous" }} />);
     const svg = container.querySelector("svg");
     expect(svg).toBeTruthy();
     expect(svg).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("accepts custom className", () => {
-    render(<BackButton href="/previous" className="custom-class" />);
-    const link = screen.getByRole("link");
-    expect(cls(link)).toContain("custom-class");
-  });
 });
 
 describe("PageHeader with an explicit back", () => {

@@ -91,14 +91,14 @@ export function PdfPreview({
         {/* Toggle between parsed and raw */}
         <div className="flex items-center gap-2">
           <Button
-            variant={showRawText ? "outline" : "default"}
+            variant={showRawText ? "outline" : "primary"}
             size="sm"
             onClick={() => setShowRawText(false)}
           >
             Parsed ({rows.length})
           </Button>
           <Button
-            variant={showRawText ? "default" : "outline"}
+            variant={showRawText ? "primary" : "outline"}
             size="sm"
             onClick={() => setShowRawText(true)}
           >

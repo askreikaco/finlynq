@@ -7,6 +7,7 @@
  * data and requires the literal confirmation phrase "WIPE".
  */
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -135,13 +136,13 @@ function ResetPasswordForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <button
+      <Button
         type="submit"
         disabled={submitDisabled}
-        className="w-full rounded-xl bg-destructive px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+        variant="destructive" size="lg" fullWidth
       >
         {loading ? "Resetting..." : "Erase data and reset password"}
-      </button>
+      </Button>
     </form>
   );
 }

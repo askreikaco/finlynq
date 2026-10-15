@@ -27,7 +27,6 @@ vi.mock("framer-motion", () => {
 vi.mock("next/link", () => ({
   default: ({ children, href }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href }, children),
 }));
-vi.mock("@/components/theme-toggle", () => ({ ThemeToggle: () => null }));
 vi.mock("@/components/FinlynqLogo", () => ({ FinlynqLogo: () => null }));
 vi.mock("@/components/feedback-dialog", () => ({ FeedbackDialog: () => null }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD" }) }));

@@ -221,19 +221,21 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           ]}
           className="flex-1"
         />
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          iconOnly
+          shape="round"
+          leading={RefreshCw}
+          loading={refreshing}
           onClick={() => {
             setRefreshing(true);
             setRefreshNonce((n) => n + 1);
           }}
-          disabled={refreshing}
           aria-label="Refresh"
-          title={generatedAt ? `Refresh · updated ${formatUpdated(generatedAt)}` : "Refresh"}
-          className="ml-auto shrink-0 w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full flex items-center justify-center bg-muted active:bg-muted/70 text-muted-foreground hover:text-foreground disabled:opacity-60"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-        </button>
+          tooltip={generatedAt ? `Refresh · updated ${formatUpdated(generatedAt)}` : "Refresh"}
+          className="ml-auto shrink-0"
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 empty:hidden">

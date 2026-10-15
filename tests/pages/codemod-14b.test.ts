@@ -64,7 +64,7 @@ describe("codemod-14b: family folders", () => {
 
     const overview = read("src/app/(app)/family/_components/overview-tab.tsx");
     expect(overview).toContain("max-regular:top-[calc(var(--sat)+var(--phone-header-h))] regular:static");
-    expect(overview).toContain("pointer-coarse:w-11 pointer-coarse:h-11");
+    expect(overview).toContain("iconOnly"); // the Refresh control is a round iconOnly Button (44px on touch)
     // Desktop columns (owner 2026-10-13): only the household charts pair up at wide.
     expect(overview).toContain('data-slot="household-charts"');
   });

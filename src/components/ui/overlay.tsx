@@ -142,7 +142,7 @@ function ActionButton({ action, variant }: { action: OverlayAction; variant: Ove
   const kind = action.kind ?? "secondary";
   const label = action.busy && action.busyLabel !== undefined ? action.busyLabel : action.label;
   const common = {
-    variant: (kind === "primary" ? "default" : kind === "secondary" ? "outline" : kind) as "default" | "outline" | "destructive" | "ghost",
+    variant: (kind === "primary" ? "primary" : kind === "secondary" ? "outline" : kind) as "primary" | "outline" | "destructive" | "ghost",
     disabled: action.disabled || action.busy,
     "data-testid": action.testId,
     className: cn(variant === "confirm" && "flex-1", variant === "detail" && "h-11", action.className),
@@ -283,7 +283,7 @@ export function Overlay({
                 {showClose && (
                   <DialogPrimitive.Close
                     data-slot="overlay-close"
-                    render={<Button variant="ghost" size="icon-sm" className="-mr-1 -mt-1 shrink-0" />}
+                    render={<Button variant="ghost" iconOnly size="sm" className="-mr-1 -mt-1 shrink-0" />}
                   >
                     <XIcon />
                     <span className="sr-only">Close</span>

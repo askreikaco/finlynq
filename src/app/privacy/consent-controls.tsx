@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import {
   setAnalyticsConsent,
@@ -43,20 +44,20 @@ export function ConsentControls() {
         </strong>
       </p>
       <div className="flex gap-2 flex-wrap">
-        <button
+        <Button
           type="button"
           onClick={() => setAnalyticsConsent("accepted")}
-          className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
+          variant="outline"
         >
           Accept analytics
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setAnalyticsConsent("declined")}
-          className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
+          variant="outline"
         >
           Decline analytics
-        </button>
+        </Button>
       </div>
     </div>
   );

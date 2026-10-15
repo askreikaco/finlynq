@@ -3,7 +3,7 @@
 /**
  * Which API keys are mounted on screen and which of them are fetching right now.
  *
- * useApi reports every mounted key here. The page Refresh button (components/refresh-button.tsx) reads it to
+ * useApi reports every mounted key here. The page Refresh button (the PageToolbar refresh slot) reads it to
  * (a) revalidate exactly the keys of the current page and (b) spin only while one of them is fetching.
  * Module state, no React context: the keys live in the one SWR cache, this only counts hooks.
  */

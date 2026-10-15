@@ -1304,7 +1304,7 @@ export function StagedReviewSurface({
                 </span>
                 <Button
                   size="sm"
-                  variant={showOnlyUnmatched ? "default" : "outline"}
+                  variant={showOnlyUnmatched ? "primary" : "outline"}
                   onClick={() => setShowOnlyUnmatched((v) => !v)}
                   className="h-7"
                   title="Hide rows that already have a counterpart on the other side"

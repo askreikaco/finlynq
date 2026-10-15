@@ -12,7 +12,8 @@ vi.mock("next/link", () => ({
 
 import { MetricCard } from "@/components/metric-card";
 import { Hash } from "lucide-react";
-import { Amount, ListRow, SectionCard, SectionLabel, PillButton } from "@/components/mobile";
+import { Button } from "@/components/ui/button";
+import { Amount, ListRow, SectionCard, SectionLabel } from "@/components/mobile";
 import { Overlay } from "@/components/ui/overlay";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
@@ -154,23 +155,15 @@ describe("SectionCard / SectionLabel / MetricCard", () => {
   });
 });
 
-describe("PillButton", () => {
-  it("is a button with the native pill look and a 44px hit area", () => {
-    render(<PillButton>+ Add</PillButton>);
+describe("Button (header pill)", () => {
+  it("is a button with a 44px touch height", () => {
+    render(<Button size="lg">+ Add</Button>);
     const b = screen.getByRole("button", { name: "+ Add" });
-    expect(b.getAttribute("type")).toBe("button");
-    expect(cls(b)).toEqual(expect.arrayContaining(["h-9", "rounded-lg", "px-3.5", "font-bold", "bg-primary", "after:-inset-y-1"]));
-  });
-
-  it("36px box + 2x4px pseudo extension = 44px", () => {
-    render(<PillButton>x</PillButton>);
-    const c = cls(screen.getByRole("button"));
-    expect(c).toContain("h-9"); // 36
-    expect(c).toContain("after:-inset-y-1"); // +4 top +4 bottom
+    expect(cls(b)).toEqual(expect.arrayContaining(["h-11", "rounded-lg", "bg-primary", "pointer-coarse:h-11"]));
   });
 
   it("renders a link when href is given", () => {
-    render(<PillButton href="/x">Go</PillButton>);
+    render(<Button href="/x">Go</Button>);
     expect(screen.getByRole("link", { name: "Go" }).getAttribute("href")).toBe("/x");
   });
 });

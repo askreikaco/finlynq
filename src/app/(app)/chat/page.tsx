@@ -349,7 +349,7 @@ function ChatPageContent() {
           <Button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || loading}
-            size="icon"
+            iconOnly
             aria-label="Send message"
             className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
           >
