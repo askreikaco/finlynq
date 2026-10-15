@@ -26,7 +26,6 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import {
-  HEADER_DESKTOP_ONLY,
   Amount,
   ListRow,
   DetailSheet,
@@ -389,28 +388,14 @@ export default function RealizedGainsPage() {
       id="realized-gains"
       title="Realized gains"
       info={periodLabel}
-      backFallback="/portfolio"
-      backLabel="Back to portfolio"
+      back={{ href: "/portfolio", label: "Back to portfolio" }}
       width="none"
       minW0={false}
       padBottom="none"
       stack="4"
       className="regular:space-y-6"
       header={{
-        actions: (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCsv}
-              disabled={exportDisabled}
-              className={HEADER_DESKTOP_ONLY}
-            >
-              <Download className="mr-2 h-4 w-4" /> CSV
-            </Button>
-          </>
-        ),
-        overflow: [{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }],
+        more: [{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }],
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >

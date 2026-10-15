@@ -124,7 +124,7 @@ describe("PageHeader automatic back with ?returnTo", () => {
   it("an explicit backHref prop still wins over a valid returnTo", () => {
     mockPath = "/categories/9/edit";
     mockSearch = "returnTo=%2Ftransactions%2Fnew";
-    render(<PageHeader title="Category" backHref="/categories" />);
+    render(<PageHeader title="Category" back={{ href: "/categories" }} />);
     expect(backLink()?.getAttribute("href")).toBe("/categories");
   });
 
@@ -132,7 +132,7 @@ describe("PageHeader automatic back with ?returnTo", () => {
     mockPath = "/categories/9/edit";
     mockSearch = "returnTo=%2Ftransactions%2Fnew";
     const onBack = vi.fn();
-    render(<PageHeader title="Category" onBack={onBack} />);
+    render(<PageHeader title="Category" back={{ onBack: onBack }} />);
     expect(backLink()?.getAttribute("href")).toBeNull();
     expect(backLink()?.tagName).toBe("BUTTON");
   });

@@ -8,7 +8,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useReturnTo } from "@/lib/forms/use-return-to";
 import type { LoadState } from "@/lib/forms/load-state";
 import { Inbox, FileCog, Coins, Plus, Trash2, Wallet, ExternalLink } from "lucide-react";
-import { PageHeader, OverflowMenu, ListRow, type OverflowAction } from "@/components/mobile";
+import { PageHeader, MoreActionsMenu, ListRow, type MoreItem } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -213,7 +213,7 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
   }
 
   const archived = account?.archived === true;
-  const overflow: OverflowAction[] = account
+  const more: MoreItem[] = account
     ? [
         ...(archived ? [{ label: "Unarchive", icon: Wallet, onSelect: () => void handleUnarchive() }] : []),
         {
@@ -236,16 +236,10 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
           Open account page <ExternalLink className="size-3" aria-hidden />
         </Link>
       </div>
-      {overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
+      {more.length > 0 ? <MoreActionsMenu items={more} /> : null}
     </div>
   ) : (
-    <PageHeader
-      title="Edit account"
-      backHref={destination}
-      backLabel="Back"
-      overflow={overflow.length > 0 ? overflow : undefined}
-      className="flex items-center justify-between"
-    />
+    <PageHeader title="Edit account" back={{ href: destination }} more={more.length > 0 ? more : undefined} />
   );
   const rootProps = { "data-testid": "account-edit-root", "data-form": "account", "data-embedded": embedded ? "true" : undefined } as const;
   const bodyClass = embedded ? "" : `mt-3 ${TW.form} ${TW.formPad}`;
@@ -531,7 +525,7 @@ function CreateAccount(props: AccountFormPanelProps) {
       fallbackReturn="/accounts"
       form="external"
       useLoad={useAccountsLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => (
         <AccountForm

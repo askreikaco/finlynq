@@ -192,7 +192,7 @@ export function CategoryFormPanel(props: CategoryFormPanelProps) {
       fallbackReturn={(params) => (edit && params.id ? `/categories/${params.id}` : "/categories")}
       form="external"
       useLoad={useLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
       states={{
         loading: { chrome: false, variant: "cards", rows: 1 },
         error: { chrome: false, title: "Couldn't load categories", message: "Please try again.", retry: "reload" },

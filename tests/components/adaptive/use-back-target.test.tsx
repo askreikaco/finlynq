@@ -158,7 +158,7 @@ describe("PageHeader automatic back fallback", () => {
 
   it("an explicit backHref still wins over the registry", () => {
     mockPath = "/settings/rules/new";
-    render(<PageHeader title="New rule" backHref="/settings/rules" />);
+    render(<PageHeader title="New rule" back={{ href: "/settings/rules" }} />);
     const back = document.querySelector('[data-slot="back-button"]') as HTMLElement;
     expect(back.getAttribute("href")).toBe("/settings/rules");
   });

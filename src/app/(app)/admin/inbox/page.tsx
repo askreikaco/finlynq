@@ -252,12 +252,7 @@ export default function AdminInboxPage() {
       width="report"
       center
       header={{
-        actions: (
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        ),
+        more: [{ label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading }],
       }}
     >
       {error && (

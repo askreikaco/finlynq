@@ -168,7 +168,8 @@ describe("static guards", () => {
     const src = read("app/(app)/accounts/page.tsx");
     expect(src).not.toMatch(/ManageGroupsDialog|manage-groups-dialog|manageGroupsOpen/);
     expect(src).toContain('href: "/accounts/groups"');
-    expect(src).toContain('render={<Link href="/accounts/groups" />}');
+    // The only entry point is the top bar's More menu (no hidden inline duplicate button).
+    expect(src).toMatch(/more: \[\{ label: "Manage groups", icon: FolderCog, href: "\/accounts\/groups" \}\]/);
     expect(fs.existsSync(path.join(root, "app/(app)/accounts/_components/manage-groups-dialog.tsx"))).toBe(false);
   });
 

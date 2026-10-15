@@ -1,9 +1,6 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DetailPage } from "@/components/templates";
 import { GoalDetail } from "../_components/goal-detail";
 import type { Goal } from "../_components/goal-form";
@@ -23,11 +20,7 @@ export default function GoalDetailPage() {
         select: (list) => (Array.isArray(list) ? list.find((g) => String(g.id) === id) : undefined),
         notFound: { title: "Goal not found", message: "This goal doesn't exist, or it isn't one of yours." },
       }}
-      actions={(g) => (
-        <Button variant="outline" render={<Link href={`/goals/${g.id}/edit`} />} aria-label={`Edit goal ${g.name}`}>
-          <Pencil className="mr-1 h-4 w-4" /> Edit
-        </Button>
-      )}
+      primary={(g) => ({ kind: "edit", label: `Edit goal ${g.name ?? ""}`, href: `/goals/${g.id}/edit` })}
       sections={() => <GoalDetail id={id} />}
     />
   );

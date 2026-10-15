@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Paperclip, Send, X } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
@@ -355,13 +355,7 @@ export default function FeedbackPage() {
       width="report"
       center
       header={{
-        className: "flex items-start justify-between gap-3",
-        actions: (
-          <Button onClick={() => setSendOpen(true)}>
-            <Send className="size-4" aria-hidden />
-            Send feedback
-          </Button>
-        ),
+        primary: { kind: "add", label: "Send feedback", onSelect: () => setSendOpen(true) },
       }}
     >
       <div>

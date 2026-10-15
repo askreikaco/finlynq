@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 
 import { SettingsShell } from "@/components/settings-shell";
 import { SettingsHub } from "@/components/settings-hub";
-import { PageHeader, PHONE_BAR_TITLE } from "@/components/mobile/page-header";
+import { PageHeader } from "@/components/mobile/page-header";
 
 afterEach(() => {
   cleanup();
@@ -56,13 +56,13 @@ describe("Settings shell: no top bar of its own (the page's PageHeader is the on
     mockPath = "/settings/investments/securities/new";
     render(
       <SettingsShell>
-        <PageHeader title="Add security" backHref="/settings/investments?tab=securities" />
+        <PageHeader title="Add security" back={{ href: "/settings/investments?tab=securities" }} />
       </SettingsShell>,
     );
     const h1 = screen.getByRole("heading", { level: 1, name: "Add security" });
     expect(h1.className).not.toContain("sr-only");
     expect(h1.textContent).toBe("Add security");
-    for (const token of PHONE_BAR_TITLE.split(/\s+/)) {
+    for (const token of ["text-base", "font-semibold", "truncate"]) {
       expect(h1.className.split(/\s+/)).toContain(token);
     }
     expect(screen.queryByText("Investments", { selector: "span[aria-hidden]" })).toBeNull();

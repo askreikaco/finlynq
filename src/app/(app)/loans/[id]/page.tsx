@@ -1,9 +1,6 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DetailPage } from "@/components/templates";
 import { LoanDetail } from "../_components/loan-detail";
 import type { Loan } from "../_components/loan-types";
@@ -23,11 +20,7 @@ export default function LoanDetailPage() {
         select: (list) => (Array.isArray(list) ? list.find((l) => String(l.id) === id) : undefined),
         notFound: { title: "Loan not found", message: "This loan doesn't exist, or it isn't one of yours." },
       }}
-      actions={(l) => (
-        <Button variant="outline" render={<Link href={`/loans/${l.id}/edit`} />} aria-label={`Edit loan ${l.name}`}>
-          <Pencil className="mr-1 h-4 w-4" /> Edit
-        </Button>
-      )}
+      primary={(l) => ({ kind: "edit", label: `Edit loan ${l.name ?? ""}`, href: `/loans/${l.id}/edit` })}
       sections={() => <LoanDetail id={id} />}
     />
   );

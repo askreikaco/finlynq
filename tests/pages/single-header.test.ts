@@ -27,6 +27,7 @@ const EXEMPTIONS: Record<string, string> = {
  * under a prop (showHeader={false}, embedded). Any change to these counts fails here: re-review the branch first.
  */
 const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
+  "dev/gallery/page.tsx": { count: 7, reason: "the page's own bar (1) + the six top bar specimens of the Top bar section (TopBarDemos: bordered, non-sticky demo frames)" },
   "more/page.tsx": { count: 2, reason: "ColumnShell (cascading columns, wide only) renders the More list in col 1 and the Settings hub in col 2; each has its own column header, and the stacked phone view renders only the leaf" },
   "transactions/page.tsx": { count: 5, reason: "workspace header (showHeader) + the split pane's TransactionFormScreen branches, rendered embedded (compact pane header instead of the page bar)" },
   "transactions/new/page.tsx": { count: 4, reason: "TransactionFormScreen: loading, Missing, shared entry screen and legacy form fallback branches (exclusive; the create mode renders only the entry screen)" },

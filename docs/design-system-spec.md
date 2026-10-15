@@ -63,7 +63,7 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | `ui/confirm-dialog.tsx` | `:29`, `:49` | ConfirmDialog |
 | `ui/data-table.tsx` | `:57`, `:94`, `:153`, `:414` | DataTable, DataTableColumn, compareValues |
 | `ui/dialog.tsx` | `:146` | Dialog family |
-| `ui/dropdown-menu.tsx` | `:255` | DropdownMenu family (used by OverflowMenu, page-header.tsx:8-13) |
+| `ui/dropdown-menu.tsx` | `:255` | DropdownMenu family (used by MoreActionsMenu, page-header.tsx) |
 | `ui/group-combobox.tsx` | `:16` | GroupCombobox |
 | `ui/input.tsx` | `:20` | Input |
 | `ui/label.tsx` | `:20` | Label |
@@ -84,7 +84,7 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 
 | File | Export (file:line) | Purpose |
 |---|---|---|
-| `mobile/page-header.tsx` | PageHeader, OverflowMenu, HEADER_SECONDARY (alias HEADER_DESKTOP_ONLY) | One header for all sizes (see 3d); secondary actions in "..." menu below regular |
+| `mobile/page-header.tsx` | PageHeader, MoreActionsMenu | The one top bar (see 3d); typed slots: title, info, back, primary, more, filter, bulkEdit |
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
 | `mobile/list-row.tsx` | ListRow, ListRowProps | THE row of every list. Optional parts by prop: leading (icon tile, initials, status dot), title, subtitle, value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, href / onPress / select, selected, size (regular 56px / dense 44px), shape (square / rounded). Gallery: /dev/gallery#list-row |
@@ -136,17 +136,8 @@ No native `type="checkbox"` outside that list. Guard: `tests/guards/no-checkbox.
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
 - Numbers render system mono on md+; UI font below md.
 
-### 3d. Titles, subtitles, actions (PageHeader, G2-07)
-- One component, phone design as base. Below regular (640px) = `max-regular:` classes; regular+ = base/`regular:` classes. `mobile/page-header.tsx` has no `md:` tokens.
-- Title: below regular `text-base font-semibold` (`PHONE_BAR_TITLE`); regular+ `text-3xl/9 font-extrabold` (`HEADER_TITLE_CLASS`). 28/800 has no system size, so text-3xl is used (owner D4).
-- Subtitle: visible at every size. Below regular a truncated `text-xs` line; regular+ `text-sm` (`HEADER_SUBTITLE_CLASS`).
-- `titleClassName` / `subtitleClassName`: `@deprecated` no-ops, still accepted and ignored. `desktopClasses()` removed.
-- Secondary actions: `HEADER_SECONDARY` = `max-regular:hidden`; below regular they go to the `overflow` menu. `HEADER_DESKTOP_ONLY` is an alias of the same value.
-- Primary action: icon-only 44px circle below regular (`phone-icon-action`, globals.css `width < 40rem`); label visible from regular.
-- Right group (phone): capsule + 10px gap + primary. Capsule (`data-slot=header-capsule`, `glass-capsule`) = icon cells + overflow trigger only, each a 44px cell, max 3 icon cells + overflow (11rem). Status (`HeaderStatus`, e.g. saving spinner) is a cell. Primary (`data-slot=header-primary`, `phone-icon-action`) is a separate 44px filled control; alone it has no capsule. Text buttons never share the capsule. Extra secondary actions go to the overflow menu (audit: tests/ios/header-actions.test.ts).
-- Bar: sticky at every size (D5). Glass only below regular; opaque `regular:bg-background/90` from regular. `className` / `actionsClassName` stay caller-owned at every size.
-- Back link: `backHref` renders BackButton at every size. `backLabel` defaults to "Back" (`back-button.tsx`).
-- Overflow trigger: `regular:hidden`.
+### 3d. The top bar (PageHeader)
+- Superseded G2-07 text. One component, one anatomy: `[BACK] [TITLE + (i)] ... [MORE + FILTER|BULK EDIT] [PRIMARY]`, typed slot props only (`title`, `info`, `back`, `primary`, `more`, `filter`, `bulkEdit`). See docs/design-system.md "Page header". No subtitle line, no `HEADER_SECONDARY` / `HeaderStatus` / `actions` node.
 
 ### 3e. Adaptive guard (ratchet)
 - Test: `tests/design-system-guard.test.ts`. Banned regex (`tests/helpers/adaptive-scan.ts` `BANNED_PATTERN`): `md:hidden|hidden md:|hidden max-md:|isMobile|window.innerWidth|matchMedia|useMediaQuery`.

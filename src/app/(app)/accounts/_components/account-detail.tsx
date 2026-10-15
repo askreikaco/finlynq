@@ -8,16 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Inbox, Info, MoreHorizontal, Pencil, Plus, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -40,7 +32,7 @@ import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { useTransactionsToolbar } from "../../transactions/_hooks/use-transactions-toolbar";
 import {
-  PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize, usePaneTitle,
+  PageHeader, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize, usePaneTitle,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
@@ -342,7 +334,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
 
   if (!account && loadFailed) return (
     <div className="w-full space-y-6">
-      {!embedded && <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />}
+      {!embedded && <PageHeader title="Account" back={{ href: "/accounts", label: "Back to Accounts" }} />}
       <ErrorState
         title="Account not found"
         message="This account doesn't exist, or it isn't one of yours."
@@ -352,7 +344,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
 
   if (!account) return (
     <div className="w-full space-y-6">
-      {!embedded && <PageHeader title="Account" backHref="/accounts" backLabel="Back to accounts" />}
+      {!embedded && <PageHeader title="Account" back={{ href: "/accounts", label: "Back to Accounts" }} />}
       <div className={embedded ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 regular:grid-cols-3 gap-4"}>
         {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
       </div>
@@ -393,88 +385,30 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
 
   return (
     <div className={embedded ? "w-full space-y-4" : "w-full space-y-6"} data-testid="account-detail-root" data-embedded={embedded ? "true" : undefined}>
-      {embedded ? (
-        <div className="flex max-w-full flex-wrap gap-2">
-          <Badge variant="outline" className="text-xs">{account.currency}</Badge>
-          <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
-            {account.type === "A" ? "Asset" : "Liability"}
-          </Badge>
-          {isInvestment && <Badge variant="secondary" className="text-xs">Investment</Badge>}
-          {account.archived === true && <Badge variant="secondary" className="text-xs">Archived</Badge>}
-          {account.invisible === true && <InvisibleMark />}
-        </div>
-      ) : (
-      /* The back control is PageHeader's automatic back (level 2 under /accounts). */
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        filter={{ href: txToolbar.list.filterHref, activeCount: txToolbar.list.activeCount }}
-        title={account.name}
-        lead={
-          <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
-            {(account.name ?? "?").charAt(0)}
-          </div>
-        }
-        belowTitle={
-            <div className="flex max-w-full flex-wrap justify-center gap-2 mt-0.5 regular:justify-start">
-              <Badge variant="outline" className="text-xs">{account.currency}</Badge>
-              <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
-                {account.type === "A" ? "Asset" : "Liability"}
-              </Badge>
-              {isInvestment && (
-                <Badge variant="secondary" className="text-xs">Investment</Badge>
-              )}
-              {account.archived === true && (
-                <Badge variant="secondary" className="text-xs">Archived</Badge>
-              )}
-              {account.invisible === true && <InvisibleMark />}
-            </div>
-        }
-        overflow={[
-          ...(isInvestment ? INVESTMENT_OPS : normalInvestmentOps).map((o) => ({
-            label: o.label,
-            onSelect: () => router.push(opHref(o.op)),
-          })),
-          { label: "Edit", icon: Pencil, onSelect: () => openEdit("details") },
-        ]}
-        actions={
-        <>
-          {!isInvestment && (
-            <Button size="sm" aria-label="New transaction" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
-              <Receipt className="h-3.5 w-3.5 mr-1.5" /> Add<span className="max-regular:sr-only"> transaction</span>
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY}>
-                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Investment transaction
-                  <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="min-w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>
-                  {isInvestment ? "Investment operations" : "Brokerage cash move"}
-                </DropdownMenuLabel>
-                {(isInvestment ? INVESTMENT_OPS : normalInvestmentOps).map((o) => (
-                  <DropdownMenuItem
-                    key={o.op}
-                    onClick={() => router.push(opHref(o.op))}
-                  >
-                    {o.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} onClick={() => openEdit("details")}>
-            <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
-          </Button>
-        </>
-        }
-      />
+      {!embedded && (
+        /* The back control is PageHeader's automatic back (level 2 under /accounts). Primary = Edit on a detail page. */
+        <PageHeader
+          title={account.name}
+          filter={{ href: txToolbar.list.filterHref, activeCount: txToolbar.list.activeCount }}
+          more={[
+            ...(isInvestment ? [] : [{ label: "New transaction", icon: Plus, href: `/transactions/new?account=${account.id}` }]),
+            ...(isInvestment ? INVESTMENT_OPS : normalInvestmentOps).map((o) => ({
+              label: o.label,
+              onSelect: () => router.push(opHref(o.op)),
+            })),
+          ]}
+          primary={{ kind: "edit", label: "Edit account", onSelect: () => openEdit("details") }}
+        />
       )}
+      <div className="flex max-w-full flex-wrap gap-2">
+        <Badge variant="outline" className="text-xs">{account.currency}</Badge>
+        <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
+          {account.type === "A" ? "Asset" : "Liability"}
+        </Badge>
+        {isInvestment && <Badge variant="secondary" className="text-xs">Investment</Badge>}
+        {account.archived === true && <Badge variant="secondary" className="text-xs">Archived</Badge>}
+        {account.invisible === true && <InvisibleMark />}
+      </div>
 
       {/* Reconciliation mode, Import preferences and Cash sleeves live on the
           Edit account page (its tabs). Reached via the Edit button, or the

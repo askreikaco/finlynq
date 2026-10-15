@@ -16,7 +16,7 @@ export default function LinkAccountRoute() {
       form="external"
       width="form"
       padBottom="none"
-      header={{ actions: null }}
+      header={{ primary: null }}
       useLoad={useAccountLinkLoad}
       states={linkStates("account")}
     >

@@ -8,7 +8,7 @@
  * the same month last year, share of all spending, top payees and recent
  * transactions. Data: GET /api/reports/category (math in
  * lib/reports/category-detail.ts). Reached from the Reports category tables and
- * the Budgets page; the switcher in the header moves between categories.
+ * the Budgets page; the Edit button opens the shared form.
  *
  * `id` is a category id, or a GROUP id (`g-E-housing`, lib/categories/group-key.ts): a group shows the same cards
  * aggregated over its categories plus the list of those categories.
@@ -21,7 +21,6 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Bar,
   CartesianGrid,
@@ -36,20 +35,17 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { type CategoryDetail } from "@/lib/reports/category-detail";
-import { ArrowLeftRight, BarChart3, CalendarClock, Pencil, Percent, Receipt, Scale, Store, Tags, Users, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeftRight, BarChart3, CalendarClock, Percent, Receipt, Scale, Store, Tags, Users, Wallet } from "lucide-react";
 import {
-  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
+  Amount, CustomizeCardsSheet, ListRow, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, usePaneTitle,
 } from "@/components/mobile";
 import { isGroupSelId, resolveGroupSelId, type GroupLike } from "@/lib/categories/group-key";
@@ -119,7 +115,6 @@ function changeVs(value: number, base: number | null): { text: string; up: boole
 
 export function CategoryDetail({ id: idProp, embedded }: { id: string | number; embedded?: CategoryDetailEmbedded }) {
   const id = String(idProp);
-  const router = useRouter();
   const isGroupId = isGroupSelId(id);
 
   // The toolbar range (?range=&from=&to=&month=) drives the data: the report query is keyed on the selected period.
@@ -149,26 +144,12 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
       ? (catRes.errorStatus === 404 || catRes.errorStatus === 400 ? "not_found" : "failed")
       : null;
   const load = catRes.reload;
-  const sortCategory = useDropdownOrder("category");
   const detailCards = isGroupId ? GROUP_DETAIL_CARDS : CATEGORY_DETAIL_CARDS;
   const cardLayout = useCardLayout("category-detail", detailCards);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !error && !embedded ? { onOpen: () => setCustomizeOpen(true) } : null);
   usePaneTitle(data?.category.name ?? group?.name ?? null);
 
-
-
-  const switcherItems = useMemo(
-    () =>
-      sortCategory(
-        categories
-          .filter((c) => c.type === "E" || c.type === "I")
-          .map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name ?? `Category #${c.id}` })),
-        (c) => Number(c.value),
-        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-      ),
-    [categories, sortCategory],
-  );
 
   if (loading && !data) {
     return embedded
@@ -392,43 +373,16 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
 
   return (
     <div className={embedded ? "w-full space-y-4" : "w-full space-y-6"} data-testid="category-detail-root" data-embedded={embedded ? "true" : undefined}>
-      {embedded ? (
-        chips
-      ) : (
-      <PageHeader
-        className="flex flex-wrap items-start justify-between gap-3"
-        title={category.name ?? "Category"}
-        backHref={categoriesBackHref}
-        backLabel="Back to Categories"
-        belowTitle={chips}
-        actions={
-          <>
-          {switcherItems.length > 0 ? (
-            <span className={HEADER_DESKTOP_ONLY}>
-              <Combobox
-                value={isGroup ? "" : String(categoryId)}
-                onValueChange={(v) => {
-                  if (v && v !== String(categoryId)) router.push(`/categories/${v}${typeof window !== "undefined" ? window.location.search : ""}`);
-                }}
-                items={switcherItems}
-                placeholder="Switch category"
-                searchPlaceholder="Search categories…"
-                emptyMessage="No matches"
-                className="w-56 max-regular:w-40"
-              />
-            </span>
-          ) : null}
-          {/* Edit: the one shared category + budget form on /categories (slot for the toolbar's Filter button stays in the capsule) */}
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Edit" render={<Link href={`/categories/${id}/edit`} />}>
-            <Pencil className="mr-1 h-4 w-4" /> Edit
-          </Button>
-          </>
-        }
-        overflow={[
-          { label: "All categories", href: "/categories" },
-        ]}
-      />
+      {!embedded && (
+        <PageHeader
+          title={category.name ?? "Category"}
+          back={{ href: categoriesBackHref, label: "Back to Categories" }}
+          // Edit: the one shared category + budget form. Primary = Edit on a detail page.
+          primary={{ kind: "edit", label: "Edit", href: `/categories/${id}/edit` }}
+          more={[{ label: "All categories", href: "/categories" }]}
+        />
       )}
+      {chips}
 
       {/* Cards: summary and recent span the row, the chart takes 2 of 3 columns at wide, payees 1. The pane is one column. */}
       <div data-slot="category-detail-cards" className={embedded ? "grid grid-cols-1 gap-4" : TW.grid3}>
@@ -452,7 +406,7 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
         <Card>
           <CardContent className="py-12 text-center">
             <p className="font-semibold">No transactions in this category in {periodName}</p>
-            <p className="text-sm text-muted-foreground mt-1">Try another period, or pick another category above.</p>
+            <p className="text-sm text-muted-foreground mt-1">Try another period.</p>
           </CardContent>
         </Card>
       )}

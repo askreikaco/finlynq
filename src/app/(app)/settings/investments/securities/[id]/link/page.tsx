@@ -16,7 +16,7 @@ export default function LinkSecurityRoute() {
       form="external"
       width="form"
       padBottom="none"
-      header={{ actions: null }}
+      header={{ primary: null }}
       useLoad={useSecurityLinkLoad}
       states={linkStates("security")}
     >

@@ -73,7 +73,7 @@ describe("ListPage", () => {
     expect(container.querySelector("h1")?.textContent).toBe("Goals");
     const add = screen.getByRole("link", { name: "Add Goal" });
     expect(add.getAttribute("href")).toBe("/goals/new");
-    expect(add.className).toContain("phone-icon-action");
+    expect(add.getAttribute("data-slot")).toBe("topbar-primary");
   });
 
   it("omits the Add action when no add prop is given", () => {

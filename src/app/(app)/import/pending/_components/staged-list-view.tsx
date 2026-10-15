@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { RecentUploadsPanel } from "@/components/reconcile/recent-uploads-panel";
 import { daysUntil, type StagedRow } from "../_types";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader } from "@/components/mobile";
 
 export function StagedListView({
   list,
@@ -89,18 +89,10 @@ export function StagedListView({
         </div>
       ) : (
         <PageHeader
-          className="flex items-start justify-between gap-4"
-          backHref="/import"
-          backLabel="Back to Import"
+          back={{ href: "/import", label: "Back to Import" }}
           title="Pending Imports"
           info="Email and file imports (CSV / OFX / QFX) waiting for review. Rows expire after 60 days."
-          actions={
-            <Button variant="outline" size="sm" onClick={loadList} disabled={loading} className={HEADER_DESKTOP_ONLY}>
-              <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          }
-          overflow={[{ label: "Refresh", onSelect: loadList, disabled: loading }]}
+          more={[{ label: "Refresh", icon: RefreshCw, onSelect: loadList, disabled: loading }]}
         />
       )}
 

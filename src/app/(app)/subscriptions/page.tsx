@@ -327,11 +327,7 @@ function SubscriptionsPageContent() {
       center
       header={{
         filter: view === "list" ? { href: tb.filterHref, activeCount: tb.activeCount } : undefined,
-        actions: (
-          <Button onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Add subscription
-          </Button>
-        ),
+        primary: { kind: "add", label: "Add subscription", href: "/subscriptions/new", onSelect: detail.split ? detail.selectNew : undefined },
       }}
     >
       <ListDetailLayout

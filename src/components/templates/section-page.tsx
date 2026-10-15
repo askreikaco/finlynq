@@ -2,7 +2,7 @@
 
 /**
  * SectionPage: the chrome of a settings or admin section page.
- * Owns the global PageHeader (back to `backFallback`, or the registry auto-back when omitted), the width token,
+ * Owns the global PageHeader (`back`, or the registry auto-back when omitted), the width token,
  * the bottom pad, the `<id>-root` testid and the Suspense boundary for the page body (useSearchParams and friends).
  * The page passes only its config and children. Every variant prop is optional; omitted = the original output.
  */
@@ -16,27 +16,17 @@ export type SectionPageWidth = "section" | "report" | "form" | "doc" | "console"
 export type SectionPagePad = "default" | "max" | "none";
 export type SectionPageStack = "6" | "5" | "4";
 
-/** Page-header passthrough (PageHeader props the section chrome forwards). */
-export type SectionPageHeader = Pick<
-  React.ComponentProps<typeof PageHeader>,
-  "actions" | "overflow" | "filter" | "bulkEdit" | "className" | "belowTitle"
->;
+/** Top bar slots the section chrome forwards (the bar's action props; title, info and back are SectionPage props). */
+export type SectionPageHeader = Pick<React.ComponentProps<typeof PageHeader>, "primary" | "more" | "filter" | "bulkEdit">;
 
 export interface SectionPageProps {
   /** Stable page id; the root carries `data-testid="<id>-root"`. */
   id: string;
-  title: React.ReactNode;
+  title: string;
   /** Help text, shown only in the (i) InfoTip after the title. */
   info?: React.ReactNode;
-  /** @deprecated Alias of `info` (rendered in the InfoTip, never as a visible line). */
-  subtitle?: React.ReactNode;
-  /**
-   * Route the back control goes to (PageHeader backHref). Omitted = no explicit backHref, so PageHeader
-   * uses its nav-registry auto-back (today's settings/admin pages).
-   */
-  backFallback?: string;
-  /** Back control label (PageHeader backLabel). */
-  backLabel?: string;
+  /** Back control (PageHeader `back`). Omitted = the nav-registry auto-back; `false` = root destination. */
+  back?: React.ComponentProps<typeof PageHeader>["back"];
   /**
    * Width token. Every token is full width on desktop now (no max-w on the root); the names stay so call sites
    * keep compiling. Default "section".
@@ -50,7 +40,7 @@ export interface SectionPageProps {
   center?: boolean;
   /** Vertical rhythm between the header and body (`space-y-<n>`). Default "6". */
   stack?: SectionPageStack;
-  /** Passthrough to PageHeader (actions, overflow, className, belowTitle). */
+  /** Top bar action slots (primary, more, filter, bulkEdit). */
   header?: SectionPageHeader;
   /**
    * Lay the body's children out as the card grid (TW.grid3: 1 col phone, 2 at regular, 3 at wide, items-start).
@@ -92,9 +82,7 @@ export function SectionPage({
   id,
   title,
   info,
-  subtitle,
-  backFallback,
-  backLabel,
+  back,
   width = "section",
   padBottom = "default",
   minW0 = true,
@@ -122,15 +110,12 @@ export function SectionPage({
     >
       <PageHeader
         title={title}
-        info={info ?? subtitle}
-        backHref={backFallback}
-        backLabel={backLabel}
-        actions={header?.actions}
-        overflow={header?.overflow}
+        info={info}
+        back={back}
+        primary={header?.primary}
+        more={header?.more}
         filter={header?.filter}
         bulkEdit={header?.bulkEdit}
-        className={header?.className}
-        belowTitle={header?.belowTitle}
       />
       {body}
     </div>

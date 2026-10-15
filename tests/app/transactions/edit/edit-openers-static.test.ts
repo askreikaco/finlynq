@@ -40,7 +40,7 @@ describe("edit openers navigate instead of opening a dialog", () => {
 
   it("the edit page is a page route, not a modal: the Save primary is the form-bound header action", () => {
     const src = read("src/app/(app)/transactions/_components/transaction-edit-form.tsx");
-    expect(src).toMatch(/form=\{FORM_ID\}/);
+    expect(src).toMatch(/form: FORM_ID/);
     expect(src).toMatch(/<PageHeader/);
     expect(src).toMatch(/Delete this transaction\?|Delete this transfer\?/);
   });

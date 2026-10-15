@@ -139,15 +139,15 @@ describe("DetailPage", () => {
     expect(second.container.querySelector('[data-slot="back-button"]')?.getAttribute("href")).toBe("/accounts");
   });
 
-  it("actions and overflow reach the header: the overflow trigger is rendered", () => {
+  it("primary and more reach the header: the primary and the More trigger are rendered", () => {
     render(
       <DetailPage<Acct[], Acct>
         id="d"
         title={(rec) => rec.name}
         backFallback="/accounts"
         load={LOAD}
-        actions={(rec) => <button type="button">Edit {rec.name}</button>}
-        overflow={[{ label: "Archive", onSelect: vi.fn() }]}
+        primary={(rec) => ({ kind: "edit", label: `Edit ${rec.name}`, onSelect: vi.fn() })}
+        more={[{ label: "Archive", onSelect: vi.fn() }]}
         sections={null}
       />,
     );
@@ -155,7 +155,7 @@ describe("DetailPage", () => {
     expect(screen.getByRole("button", { name: "More actions" })).toBeTruthy();
   });
 
-  it("hides actions and overflow until the record loads", () => {
+  it("hides primary and more until the record loads", () => {
     api.state = { data: undefined, isLoading: true };
     render(
       <DetailPage<Acct[], Acct>
@@ -163,8 +163,8 @@ describe("DetailPage", () => {
         title="T"
         backFallback="/accounts"
         load={LOAD}
-        actions={<button type="button">Edit</button>}
-        overflow={[{ label: "Archive" }]}
+        primary={{ kind: "edit", label: "Edit", onSelect: vi.fn() }}
+        more={[{ label: "Archive" }]}
         sections={null}
       />,
     );

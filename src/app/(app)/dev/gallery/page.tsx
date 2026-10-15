@@ -521,27 +521,21 @@ function GalleryContent() {
             />
           </Group>
 
-          <Group id="topbar" title="Top bar" file="mobile/page-header.tsx · .glass-bar · .page-header-bleed" span>
-            <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
-              <Item name=".glass-bar">
-                <div className="glass-bar flex h-[60px] items-center justify-between rounded-xl border border-border/50 px-4 text-sm font-semibold">
-                  Title <Button size="sm" variant="outline">Action</Button>
-                </div>
-              </Item>
-              <Item name=".page-header-bleed (full-bleed rail + pad)">
-                <div className="page-header-bleed flex h-[60px] items-center border-y border-border/50 bg-muted/40 text-sm">
-                  Bleeds to the viewport edges
-                </div>
-              </Item>
-            </div>
-            <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page.</p>
+          <Group id="topbar" title="Top bar" file="mobile/page-header.tsx (PageHeader) · .glass-bar · .page-header-bleed" span>
+            <p className="px-1 text-xs text-muted-foreground" data-testid="topbar-anatomy">
+              One component on every page. Left to right: [Back] [Title (i)] ........ [More + Filter or Bulk edit] [Primary]. Back
+              shows on every non-root page. Title is required; the (i) tooltip is the <code>info</code> prop. Actions are props
+              only: <code>primary</code> (one Add / Edit / Save), <code>more</code>, <code>filter</code>, <code>bulkEdit</code>.
+            </p>
+            <TopBarDemos />
+            <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page (the gallery is a child of More, so it shows the automatic back).</p>
           </Group>
 
-          <Group id="toolbar" title="Page toolbar" file="page-toolbar.tsx · mobile/page-header.tsx actions" span>
+          <Group id="toolbar" title="Page toolbar" file="page-toolbar.tsx" span>
             <ToolbarDemo />
             <p className="px-1 text-[11px] text-muted-foreground">
-              Toolbar: range, month, search, filter. Top bar actions, right to left: primary (Add / Edit), then at most 2 of
-              [bulk edit or Filter] and [More]; with bulk edit, Filter moves inside More. Customize cards is a More item.
+              Toolbar: range, month, search, filter. A separate component below the top bar. The top bar's own actions
+              (primary, More, Filter / Bulk edit) are shown in the Top bar section.
             </p>
           </Group>
 
@@ -694,6 +688,67 @@ function GalleryContent() {
  * Dev gallery: review catalogue of the global components and styles.
  * Hidden unless the user enables dev mode (DevModeGuard).
  */
+/** A bar inside a bordered box: not sticky and not full-bleed, so several fit on one page. */
+function BarFrame({ name, children }: { name: string; children: React.ReactNode }) {
+  return (
+    <Item name={name}>
+      <div
+        data-testid="topbar-demo"
+        className="w-full overflow-hidden rounded-xl border border-border/50 bg-background [&_[data-slot=page-header]]:static! [&_[data-slot=page-header]]:mx-0! [&_[data-slot=page-header]]:px-3!"
+      >
+        {children}
+      </div>
+    </Item>
+  );
+}
+
+/** The anatomy in its combinations: root page, detail page (back + edit), filter + more, bulk edit state. */
+function TopBarDemos() {
+  const [bulk, setBulk] = useState(false);
+  const noop = () => {};
+  return (
+    <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
+      <BarFrame name="Root page: title + tooltip, no back, primary Add">
+        <PageHeader title="Accounts" info="Overview of your assets, liabilities, and net worth" back={false} primary={{ kind: "add", label: "Add account", onSelect: noop }} />
+      </BarFrame>
+      <BarFrame name="Detail page: back + title + primary Edit">
+        <PageHeader title="Checking" back={{ onBack: noop }} primary={{ kind: "edit", label: "Edit account", onSelect: noop }} />
+      </BarFrame>
+      <BarFrame name="Filter + More + primary Add">
+        <PageHeader
+          title="Goals"
+          back={{ onBack: noop }}
+          info="Track your savings targets"
+          filter={{ href: "/filter/goals?returnTo=%2Fdev%2Fgallery", activeCount: 2 }}
+          more={[{ label: "Manage groups", onSelect: noop }, { label: "Export CSV", onSelect: noop }]}
+          primary={{ kind: "add", label: "Add goal", onSelect: noop }}
+        />
+      </BarFrame>
+      <BarFrame name={bulk ? "Bulk edit on: Filter moves into More" : "Bulk edit off (tap the list button)"}>
+        <PageHeader
+          title="Transactions"
+          back={false}
+          bulkEdit={{ onToggle: () => setBulk((v) => !v), active: bulk }}
+          filter={{ href: "/filter/transactions?returnTo=%2Fdev%2Fgallery" }}
+          more={[{ label: "Export CSV", onSelect: noop }]}
+          primary={{ kind: "add", label: "Add transaction", onSelect: noop }}
+        />
+      </BarFrame>
+      <BarFrame name="Form page: back + title + primary Save (busy)">
+        <PageHeader title="Edit transaction" back={{ onBack: noop }} primary={{ kind: "save", label: "Save", onSelect: noop, busy: true }} />
+      </BarFrame>
+      <BarFrame name="Long title truncates before the actions">
+        <PageHeader
+          title="A very long page title that must truncate before it reaches the action buttons"
+          back={{ onBack: noop }}
+          more={[{ label: "Export CSV", onSelect: noop }]}
+          primary={{ kind: "edit", label: "Edit", onSelect: noop }}
+        />
+      </BarFrame>
+    </div>
+  );
+}
+
 function ToolbarDemo() {
   const [sel, setSel] = useState<RangeSelection>({ range: "this_month" });
   const [q, setQ] = useState("");

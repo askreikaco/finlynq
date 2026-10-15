@@ -27,7 +27,7 @@ function Host({ explicit, path }: { explicit: boolean; path: string }) {
   return (
     <SettingsShell>
       {explicit ? (
-        <PageHeader title="Security" backHref="/settings/investments?tab=securities" />
+        <PageHeader title="Security" back={{ href: "/settings/investments?tab=securities" }} />
       ) : (
         <PageHeader title="About" />
       )}

@@ -101,7 +101,7 @@ describe("one form, one page", () => {
   it("the page renders the shared form panel in the wide pane (no sheet), and has a topbar Add that opens it", () => {
     expect(page.match(/<CategoryFormPanel\b/g)).toHaveLength(1);
     expect(page).not.toMatch(/<CategoryBudgetForm\b|<Sheet\b/);
-    expect(page).toMatch(/<ListDetailNewButton href=\{`\/categories\/new\?month=\$\{month\}`\} label="Add">/);
+    expect(page).toMatch(/primary=\{\{ kind: "add", label: "Add", href: `\/categories\/new\?month=\$\{month\}`/);
     expect(page).toContain("openEdit(id)");
   });
 

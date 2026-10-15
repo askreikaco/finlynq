@@ -14,7 +14,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
   MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ListRow, type ProgressTone,
-  useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type DetailItem,
+  useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, type DetailItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
@@ -287,6 +287,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
 
 export default function GoalsPage() {
   const { displayCurrency } = useDisplayCurrency();
+  const detailApi = useListDetail();
   // One body for every view: the ListPage has no Cards / List toggle any more (ListRows at every width).
   const tb = useListToolbar({ filterPath: "/filter/goals", sorts: GOAL_SORTS, filterKeys: GOAL_FILTER_KEYS });
   const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} tb={tb} />;
@@ -312,9 +313,7 @@ export default function GoalsPage() {
         error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
         header={{
           filter: { href: tb.filterHref, activeCount: tb.activeCount },
-          actions: (
-            <ListDetailNewButton href="/goals/new" label="Add Goal" />
-          ),
+          primary: { kind: "add", label: "Add Goal", href: "/goals/new", onSelect: detailApi.split ? detailApi.selectNew : undefined },
         }}
         deleteFlow={{
           label: "Delete goal",

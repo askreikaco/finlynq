@@ -35,7 +35,7 @@ function CreateGoal(props: GoalFormPanelProps) {
       fallbackReturn="/goals"
       form="external"
       useLoad={useGoalNewLoad}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) =>
         ctx.extra ? (
@@ -84,7 +84,6 @@ function EditGoal(props: GoalFormPanelProps) {
         ),
         request: (goal) => fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" }),
         after: "returnTo",
-        whenMissing: "disabled",
         ignoreStatus: true,
       }}
     >

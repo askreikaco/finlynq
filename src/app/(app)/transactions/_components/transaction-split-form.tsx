@@ -11,7 +11,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { TW } from "@/lib/design/tokens";
@@ -219,20 +218,15 @@ export function TransactionSplitForm({
     >
       <PageHeader
         title="Split transaction"
-        backHref={returnTo}
-        backLabel="Back"
-        actions={
-          <Button
-            type="button"
-            data-testid="tx-split-save"
-            onClick={() => void handleSave()}
-            disabled={saving || !verdict.canSave}
-            className="h-11 gap-1.5"
-          >
-            <Check className="size-4" aria-hidden="true" />
-            Save splits
-          </Button>
-        }
+        back={{ href: returnTo }}
+        primary={{
+          kind: "save",
+          label: "Save splits",
+          onSelect: () => void handleSave(),
+          busy: saving,
+          disabled: saving || !verdict.canSave,
+          testId: "tx-split-save",
+        }}
       />
 
       <div className={`mt-3 space-y-3 px-4 ${TW.form} ${TW.formPad}`}>

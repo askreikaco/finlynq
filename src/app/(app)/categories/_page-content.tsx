@@ -19,7 +19,6 @@ import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type Rea
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -32,7 +31,7 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
-import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
+import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Receipt, Save, Tags, Wallet } from "lucide-react";
 import type { FormCategory } from "./_components/category-budget-form";
 import { CategoryDetail } from "./_components/category-detail";
 import { CategoryFormPanel } from "./_components/category-form-panel";
@@ -42,8 +41,8 @@ import { withMode, withSel } from "@/lib/list-detail/selection";
 import { sizeClassFor } from "@/components/ui/size-class";
 import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
-  type ListDetailPaneApi, type OverflowAction,
+  CustomizeCardsSheet, ListDetailLayout, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
+  type ListDetailPaneApi, type MoreItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -368,7 +367,7 @@ function CategoriesOverview() {
   }
 
   /** Budget tools: Copy last month, Save template, Apply template, Rules, Move money (top bar More). */
-  const overflow: OverflowAction[] = [
+  const budgetMore: MoreItem[] = [
     { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
     ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
     { label: "Apply template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` },
@@ -638,12 +637,10 @@ function CategoriesOverview() {
     <div className="space-y-6">
       <PageHeader
         title="Categories"
-        actions={
-          <ListDetailNewButton href={`/categories/new?month=${month}`} label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
-        }
+        primary={{ kind: "add", label: "Add", href: `/categories/new?month=${month}`, onSelect: detail.split ? detail.selectNew : undefined }}
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
-        overflow={isIncome && !twoCol ? undefined : overflow}
+        more={isIncome && !twoCol ? undefined : budgetMore}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
       {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 3/4, the pane is the right 1/4 at full page height. */}

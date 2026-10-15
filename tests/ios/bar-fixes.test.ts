@@ -10,18 +10,7 @@ import * as React from "react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { render, cleanup, screen } from "@testing-library/react";
-import {
-  PageHeader,
-  PHONE_BAR,
-  PHONE_BAR_CENTER,
-  PHONE_BAR_RIGHT,
-  PHONE_CAPSULE,
-  HEADER_MAX_PHONE_ACTIONS,
-  PHONE_BAR_TITLE,
-  PHONE_PRIMARY_CLASS,
-  HEADER_DESKTOP_ONLY,
-} from "@/components/mobile/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader, PHONE_BAR } from "@/components/mobile/page-header";
 import { resolvedDecls } from "../helpers/css-tokens";
 
 const h = React.createElement;
@@ -82,49 +71,28 @@ function contrast(x: RGB, y: RGB): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-describe("1. phone primary action is an icon-only 44pt filled circle (below regular)", () => {
-  it("PageHeader marks the visible primary with phone-icon-action and keeps its text as aria-label", () => {
-    render(h(PageHeader, { title: "Transactions", actions: h(Button, null, "Add") }));
+describe("1. the primary action is an icon-only 44pt filled circle (every width)", () => {
+  it("PageHeader renders the typed primary icon-only and keeps its label as aria-label", () => {
+    render(h(PageHeader, { title: "Transactions", primary: { kind: "add", label: "Add", onSelect: () => {} } }));
     const primary = screen.getByRole("button", { name: "Add" });
-    expect(cls(primary)).toContain(PHONE_PRIMARY_CLASS);
+    expect(primary.getAttribute("data-slot")).toBe("topbar-primary");
     expect(primary.getAttribute("aria-label")).toBe("Add");
     expect(primary.getAttribute("data-variant")).toBe("default");
-  });
-
-  it("an existing aria-label is kept, not replaced", () => {
-    render(h(PageHeader, { title: "Tx", actions: h(Button, { "aria-label": "Add transaction" }, "Add") }));
-    expect(screen.getByRole("button", { name: "Add transaction" }).getAttribute("aria-label")).toBe("Add transaction");
-  });
-
-  it("secondary actions hidden below regular are skipped: the last VISIBLE action is the primary", () => {
-    render(
-      h(PageHeader, {
-        title: "Budgets",
-        actions: [
-          h(Button, { key: "x", variant: "outline", className: HEADER_DESKTOP_ONLY }, "Export"),
-          h(Button, { key: "p" }, "Add Budget"),
-        ],
-      }),
-    );
-    expect(cls(screen.getByRole("button", { name: "Add Budget" }))).toContain(PHONE_PRIMARY_CLASS);
-    expect(cls(screen.getByRole("button", { name: "Export" }))).not.toContain(PHONE_PRIMARY_CLASS);
+    expect(primary.textContent).toBe("");
   });
 
   it("the primary rule is unconditional (no media gate, every width), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
-    const rule = body(phone, '[data-slot="header-capsule"] > :is(button, a).phone-icon-action');
-    expect(rule).toMatch(/background:\s*transparent;/);
-    expect(rule).toMatch(/color:\s*var\(--foreground\);/);
+    const rule = body(phone, '[data-slot="page-header-actions"] > [data-slot="topbar-primary"]');
+    expect(rule).toMatch(/background:\s*var\(--primary\);/);
+    expect(rule).toMatch(/color:\s*var\(--primary-foreground\);/);
     expect(rule).toMatch(/font-size:\s*0;/);
-    expect(rule).not.toMatch(/var\(--primary\)/);
-    expect(rule).not.toMatch(/var\(--primary-foreground\)/);
-    // the cell geometry comes from the shared capsule cell rule (44px, round)
-    expect(phone).toMatch(/\[data-slot="header-capsule"\] > :is\(button, a\) \{\s*width: 2\.75rem;/);
+    expect(rule).toMatch(/width:\s*2\.75rem;/);
     expect(rule).not.toMatch(/backdrop-filter:\s*blur/);
-    expect(css.slice(0, css.indexOf("iOS 26-style liquid glass, every width"))).not.toContain(".phone-icon-action");
+    expect(css.slice(0, css.indexOf("iOS 26-style liquid glass, every width"))).not.toContain("topbar-primary");
   });
 
-  it("the primary cell is neutral: its icon is --foreground on the glass capsule (no accent fill to check)", () => {
+  it("the primary's icon (--primary-foreground) reads on the --primary fill", () => {
     const fg = oklch(0.18, 0.015, 250);
     const glass = oklch(1, 0, 0);
     expect(contrast(fg, glass)).toBeGreaterThanOrEqual(4.5);
@@ -137,53 +105,41 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
   });
 });
 
-describe("2. title block insets equal the measured left slot and right capsule", () => {
-  it("the bar is a three-column grid: side tracks min 2.75rem (44pt) and auto, title in the 1fr middle", () => {
+describe("2. title block insets equal the measured left slot and right group", () => {
+  it("the bar is a three-column grid: side tracks auto, title in the 1fr middle", () => {
     expect(PHONE_BAR).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
     expect(PHONE_BAR).toContain("items-center");
     expect(PHONE_BAR).toContain("min-h-[var(--phone-header-h)]");
   });
 
-  it("the title block is the middle column, min-w-0, not an absolute overlay", () => {
-    expect(PHONE_BAR_CENTER).toContain("col-start-2");
-    expect(PHONE_BAR_CENTER).toContain("min-w-0");
-    expect(PHONE_BAR_CENTER).toContain("pointer-events-none");
-    expect(PHONE_BAR_CENTER).not.toContain("absolute");
-    expect(PHONE_BAR_CENTER).not.toMatch(/inset-x-\[/);
+  it("render: the title block is the middle column (min-w-0, no absolute overlay), the actions the third", () => {
+    const { container } = render(h(PageHeader, { title: "Accounts", primary: { kind: "add", label: "Add", onSelect: () => {} } }));
+    const block = cls(container.querySelector('[data-slot="page-header-title-block"]'));
+    expect(block).toEqual(expect.arrayContaining(["col-start-2", "min-w-0", "pointer-events-none"]));
+    expect(block).not.toContain("absolute");
+    const right = cls(container.querySelector('[data-slot="page-header-actions"]'));
+    expect(right).toEqual(expect.arrayContaining(["col-start-3", "justify-self-end"]));
+    expect(right).not.toContain("overflow-x-auto");
   });
 
-  it("the capsule is the third column, one 44px slot per item, capped at 11rem and never scrolling", () => {
-    expect(PHONE_BAR_RIGHT).toContain("col-start-3");
-    expect(PHONE_BAR_RIGHT).toContain("justify-self-end");
-    expect(PHONE_BAR_RIGHT).not.toContain("gap-2.5"); // one capsule child group; the primary sits inside it
-    expect(PHONE_CAPSULE).toContain("max-w-[11rem]");
-    expect(PHONE_CAPSULE).toContain("gap-0");
-    expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
-    expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
-    expect(PHONE_BAR_RIGHT).not.toContain("9.5rem");
-    // Arithmetic: 4 slots (3 actions + overflow trigger) x 44px = 176px = 11rem at a 16px root.
-    expect(HEADER_MAX_PHONE_ACTIONS + 1).toBe(4);
-    expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
+  it("the capsule holds at most two 44px slots (More + Filter or Bulk edit): 88px, never scrolling", () => {
+    const { container } = render(
+      h(PageHeader, { title: "Accounts", more: [{ label: "Export", onSelect: () => {} }], filter: { href: "/f" } }),
+    );
+    const capsule = container.querySelector('[data-slot="header-capsule"]');
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "gap-0", "h-11"]));
+    expect(cls(capsule)).not.toContain("overflow-x-auto");
+    expect(capsule?.children.length).toBe(2);
+    expect(2 * 44).toBeLessThanOrEqual(11 * 16);
   });
 
   it("the title truncates with ellipsis (one line)", () => {
-    expect(PHONE_BAR_TITLE).toContain("truncate");
+    render(h(PageHeader, { title: "Accounts" }));
+    expect(cls(screen.getByRole("heading", { level: 1 }))).toContain("truncate");
   });
 
-  it("render: title block in the middle column, capsule in the third, help text only in the InfoTip", () => {
-    const { container } = render(
-      h(PageHeader, {
-        title: "Accounts",
-        subtitle: "Every account you track, in one list",
-        actions: [h(Button, { key: "a", className: HEADER_DESKTOP_ONLY }, "Edit"), h(Button, { key: "b" }, "Add")],
-        overflow: [{ label: "Export", onSelect: () => {} }],
-      }),
-    );
-    const block = container.querySelector('[data-slot="page-header-title-block"]');
-    expect(cls(block)).toContain("col-start-2");
-    const capsule = container.querySelector('[data-slot="header-capsule"]');
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-w-[11rem]"]));
-    expect(cls(capsule?.parentElement ?? null)).toContain("col-start-3");
+  it("render: help text only in the InfoTip", () => {
+    const { container } = render(h(PageHeader, { title: "Accounts", info: "Every account you track, in one list" }));
     expect(screen.queryByText("Every account you track, in one list")).toBeNull();
     expect(container.querySelector('[data-slot="info-tip"]')).not.toBeNull();
   });
@@ -311,7 +267,7 @@ describe("6. back circle is centred in the 60px bar (shared bar and new-transact
   });
 
   it("the new-transaction header is the global PageHeader bar (the bar height, 3.75rem min, not a 44px row)", () => {
-    expect(newTx).toMatch(/<PageHeader\s+className="shrink-0"/);
+    expect(newTx).toMatch(/<PageHeader\s+title=/);
     expect(newTx).not.toMatch(/grid h-11 shrink-0 grid-cols-\[2\.75rem/);
   });
 });

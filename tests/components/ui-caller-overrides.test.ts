@@ -20,7 +20,6 @@ const POINTER_MOD = /pointer-(fine|coarse)/;
 // file -> viewport tokens allowed on primitives there. Width or display toggles only, never sizes.
 export const EXCEPTIONS: Record<string, string[]> = {
   "src/app/(app)/settings/general/page.tsx": ["regular:w-48"],
-  "src/app/(app)/categories/_components/category-detail.tsx": ["max-regular:w-40"],
   "src/components/ui/pagination.tsx": ["max-regular:hidden"],
 };
 

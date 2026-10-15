@@ -17,7 +17,7 @@ const H = vi.hoisted(() => {
   };
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: H.push, replace: vi.fn(), back: vi.fn() }), useSearchParams: () => H.SP, usePathname: () => "/transactions" }));
-vi.mock("next/link", () => ({ default: ({ children, href }: any) => React.createElement("a", { href }, children) }));
+vi.mock("next/link", () => ({ default: ({ children, href, ...p }: any) => React.createElement("a", { href, ...p }, children) }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => H.IDENT }));
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ["USD"] }));
@@ -42,24 +42,18 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("Add opens the New Transaction page, not the dialog", () => {
-  it("N1 header Add button navigates to /transactions/new and opens no dialog", () => {
+  it("N1 header Add is the bar's primary link to /transactions/new and opens no dialog", () => {
     render(<TransactionsWorkspace />);
-    const addBtn = screen.getByRole("button", { name: "Add Transaction" });
-    fireEvent.click(addBtn);
-    expect(H.push).toHaveBeenCalledWith("/transactions/new");
+    const add = screen.getByRole("link", { name: "Add Transaction" });
+    expect(add.getAttribute("href")).toBe("/transactions/new");
+    expect(add.getAttribute("data-slot")).toBe("topbar-primary");
+    fireEvent.click(add);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
-  it("N2 dropdown Transaction item navigates to /transactions/new", () => {
+  it("N2 More menu Transfer opens the New Transaction page on the Transfer tab", async () => {
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getByLabelText("More transaction types"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Transaction" }));
-    expect(H.push).toHaveBeenCalledWith("/transactions/new");
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-  it("N3 dropdown Transfer opens the New Transaction page on the Transfer tab", () => {
-    render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getByLabelText("More transaction types"));
-    fireEvent.click(screen.getByText("Transfer"));
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Transfer" }));
     expect(H.push).toHaveBeenCalledWith("/transactions/new?kind=transfer");
     expect(screen.queryByRole("dialog")).toBeNull();
   });

@@ -49,7 +49,7 @@ function NewTemplatePage() {
       fallbackReturn={`/categories?month=${month}`}
       form="external"
       useLoad={useTemplateBudgets}
-      header={{ actions: null }}
+      header={{ primary: null }}
     >
       {(ctx) => {
         const { budgets, loading } = ctx.extra ?? { budgets: [], loading: true };

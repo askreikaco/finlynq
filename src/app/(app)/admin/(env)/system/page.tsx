@@ -18,9 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
@@ -36,7 +34,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, MetricGrid, SectionCard } from "@/components/mobile";
+import { MetricGrid, SectionCard } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -407,31 +405,22 @@ export default function AdminSystemPage() {
     <SectionPage
       id="admin-system"
       info="Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU / memory / disk are the whole VPS (prod and dev share this box); database queries, snapshots and rebuilds are this environment only."
-      title={<>
-            System
-            {data?.env && (
-              <Badge variant="outline" className="ml-1 uppercase">
-                {data.env}
-              </Badge>
-            )}
-          </>}
+      title="System"
       width="report"
       center
       header={{
-        className: "flex flex-wrap items-center justify-between gap-3",
-        overflow: [{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }],
-        actions: (<>
-            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-              Auto-refresh
-              <Switch checked={auto} onCheckedChange={setAuto} />
-            </label>
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </>),
+        more: [
+          { label: "Refresh", icon: RefreshCw, onSelect: load, disabled: loading },
+          { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
+        ],
       }}
     >
+      {data?.env && (
+        <Badge variant="outline" className="uppercase">
+          {data.env}
+        </Badge>
+      )}
+
       {error && (
         <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
       )}

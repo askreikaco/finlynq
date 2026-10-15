@@ -11,8 +11,7 @@ import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader } from "@/components/mobile";
 import { SectionCard } from "@/components/mobile/section-card";
-import { Check, ClipboardList } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NEW_OP_HREF } from "./op-catalog";
 
@@ -49,27 +48,20 @@ export function OpPage({
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   children: React.ReactNode;
 }) {
+  const formId = React.useId();
   return (
     <form
+      id={formId}
       onSubmit={onSubmit ?? ((e) => e.preventDefault())}
       className="pb-[max(24px,var(--sab,0px))]"
     >
       <PageHeader
         title={title}
-        backHref={NEW_OP_HREF}
-        backLabel="All operations"
-        actions={
-          onSubmit ? (
-            <Button
-              type="submit"
-              variant="ghost"
-              className="h-11 px-3 text-sm font-semibold text-primary regular:pointer-fine:h-8"
-              disabled={saving || saveDisabled}
-            >
-              <Check className="hidden size-4 max-regular:block" aria-hidden />
-              {saving ? "Saving…" : saveLabel}
-            </Button>
-          ) : null
+        back={{ href: NEW_OP_HREF, label: "All operations" }}
+        primary={
+          onSubmit
+            ? { kind: "save", label: saveLabel, form: formId, busy: saving, disabled: saveDisabled }
+            : undefined
         }
       />
       <div className="mt-4 space-y-6">{children}</div>

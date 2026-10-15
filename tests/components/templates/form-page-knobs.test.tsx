@@ -114,16 +114,16 @@ describe("FormPage knob rootTestId", () => {
   });
 });
 
-describe("FormPage knob subtitle", () => {
+describe("FormPage knob info", () => {
   it("default: a static node renders in the InfoTip only", async () => {
     loaded();
-    renderPage({ ...loadCfg, subtitle: "Static line" });
+    renderPage({ ...loadCfg, info: "Static line" });
     expect(screen.queryByText("Static line")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^About / }));
     expect(await screen.findByText("Static line")).toBeTruthy();
   });
 
-  it("default: no subtitle renders no subtitle text", () => {
+  it("default: no info renders no info text", () => {
     loaded();
     renderPage(loadCfg);
     expect(screen.queryByText("Static line")).toBeNull();
@@ -131,28 +131,28 @@ describe("FormPage knob subtitle", () => {
 
   it("function: receives the loaded record", async () => {
     loaded();
-    const subtitle = vi.fn((r: Goal | undefined) => `Record: ${r?.name ?? "none"}`);
-    renderPage({ ...loadCfg, subtitle });
+    const info = vi.fn((r: Goal | undefined) => `Record: ${r?.name ?? "none"}`);
+    renderPage({ ...loadCfg, info });
     fireEvent.click(screen.getByRole("button", { name: /^About / }));
     expect(await screen.findByText("Record: Emergency fund")).toBeTruthy();
-    expect(subtitle).toHaveBeenLastCalledWith({ id: 1, name: "Emergency fund" });
+    expect(info).toHaveBeenLastCalledWith({ id: 1, name: "Emergency fund" });
   });
 
   it("function: receives undefined while the record is loading", async () => {
     const hook = hookWith({ status: "loading" });
-    const subtitle = vi.fn((r: Goal | undefined) => (r ? "has record" : "No record yet"));
-    renderPage({ useLoad: hook.useLoad, subtitle });
+    const info = vi.fn((r: Goal | undefined) => (r ? "has record" : "No record yet"));
+    renderPage({ useLoad: hook.useLoad, info });
     fireEvent.click(screen.getByRole("button", { name: /^About / }));
     expect(await screen.findByText("No record yet")).toBeTruthy();
-    expect(subtitle).toHaveBeenCalledWith(undefined);
+    expect(info).toHaveBeenCalledWith(undefined);
   });
 
   it("function: without any load it is called with undefined", async () => {
-    const subtitle = vi.fn(() => "Unloaded");
-    renderPage({ subtitle });
+    const info = vi.fn(() => "Unloaded");
+    renderPage({ info });
     fireEvent.click(screen.getByRole("button", { name: /^About / }));
     expect(await screen.findByText("Unloaded")).toBeTruthy();
-    expect(subtitle).toHaveBeenCalledWith(undefined);
+    expect(info).toHaveBeenCalledWith(undefined);
   });
 });
 

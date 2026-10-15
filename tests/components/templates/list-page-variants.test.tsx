@@ -45,7 +45,7 @@ function baseProps(): Props {
   return {
     id: "goals",
     title: "Goals",
-    subtitle: "Track targets",
+    info: "Track targets",
     add: { label: "Add Goal", href: "/goals/new" },
     viewKey: "goals" as const,
     load: { key: "/api/goals" },
@@ -85,26 +85,22 @@ describe("ListPage variants: defaults unchanged", () => {
   });
 });
 
-describe("ListPage variants: title and subtitle as ReactNode", () => {
-  it("renders a ReactNode title and a subtitle only inside the InfoTip", async () => {
+describe("ListPage variants: title and info", () => {
+  it("renders a string title and the info only inside the InfoTip", async () => {
     api.data = GOALS;
     const { container } = render(
-      <ListPage<Goal, Goal[], { tag: string }>
-        {...baseProps()}
-        title={<span data-testid="fire-title">Fire</span>}
-        subtitle={<em>Live</em>}
-      />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} title="Fire" info={<em>Live</em>} />,
     );
-    expect(container.querySelector("h1 [data-testid='fire-title']")).toBeTruthy();
+    expect(container.querySelector("h1")?.textContent).toBe("Fire");
     expect(container.querySelector("em")).toBeNull();
     fireEvent.click(container.querySelector("[data-slot=info-tip]")!);
     expect((await screen.findByText("Live")).tagName).toBe("EM");
   });
 
-  it("error default copy falls back to 'this list' for a non-string title", () => {
+  it("error default copy names the lower-cased title", () => {
     api.error = new Error("boom");
-    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} title={<span>Fire</span>} />);
-    expect(screen.getByRole("alert").textContent).toContain("Couldn't load this list");
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} title="Fire" />);
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't load fire");
   });
 });
 
@@ -275,26 +271,28 @@ describe("ListPage variants: toolbarPlacement", () => {
 });
 
 describe("ListPage variants: header, stack", () => {
-  it("header.actions replaces the Add button; null hides it", () => {
+  it("header.primary replaces the Add button; null hides it", () => {
     api.data = GOALS;
     const { unmount } = render(
-      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ actions: <button>custom-action</button> }} />,
+      <ListPage<Goal, Goal[], { tag: string }>
+        {...baseProps()}
+        header={{ primary: { kind: "edit", label: "custom-action", onSelect: () => {} } }}
+      />,
     );
     expect(screen.getByRole("button", { name: "custom-action" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Add Goal" })).toBeNull();
     unmount();
 
-    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ actions: null }} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ primary: null }} />);
     expect(screen.queryByRole("link", { name: "Add Goal" })).toBeNull();
   });
 
-  it("header.className is applied to the bar (the actions group layout is fixed)", () => {
+  it("the default Add is the bar's typed primary (a link, rightmost)", () => {
     api.data = GOALS;
-    const { container } = render(
-      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ className: "my-header" }} />,
-    );
-    expect(container.querySelector(".my-header")).toBeTruthy();
-    expect(container.querySelector("[data-slot=page-header-actions]")).toBeTruthy();
+    const { container } = render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} />);
+    const add = container.querySelector("[data-slot=topbar-primary]") as HTMLElement;
+    expect(add.getAttribute("href")).toBe("/goals/new");
+    expect(container.querySelector("[data-slot=page-header-actions]")?.lastElementChild).toBe(add);
   });
 
   it("stack 5 and 4 set the root gap class", () => {

@@ -53,12 +53,7 @@ function AccountGroupsContent() {
 
   return (
     <div className={`w-full space-y-4 pb-[max(1.5rem,var(--sab,0px))]`}>
-      <PageHeader
-        className="flex items-center justify-between"
-        title="Account groups"
-        backHref={backHref}
-        backLabel="Back to accounts"
-      />
+      <PageHeader title="Account groups" back={{ href: backHref, label: "Back to accounts" }} />
       {error ? (
         <ErrorState onRetry={load} />
       ) : balances === null ? (

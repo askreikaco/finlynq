@@ -23,7 +23,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -37,7 +36,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Upload } from "lucide-react";
 import { safeAccountName } from "@/lib/safe-name";
 import { LensChip } from "@/components/inbox/lens-chip";
 import { LensToast } from "@/components/inbox/lens-toast";
@@ -355,13 +353,7 @@ function ImportPageInner() {
       width="report"
       center
       header={{
-        actions: (<Button
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setUploadOpen(true)}
-          >
-            <Upload className="h-4 w-4" /> Upload
-          </Button>),
+        primary: { kind: "add", label: "Upload", onSelect: () => setUploadOpen(true) },
       }}
     >
 

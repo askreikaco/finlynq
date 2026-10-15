@@ -12,9 +12,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check, Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
-import type { OverflowAction } from "@/components/mobile/page-header";
+import type { MoreItem } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TW } from "@/lib/design/tokens";
@@ -106,7 +106,7 @@ export function TransactionEditForm({
     }
   }
 
-  const overflow: OverflowAction[] = isTransfer
+  const more: MoreItem[] = isTransfer
     ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
     : [
         {
@@ -122,21 +122,16 @@ export function TransactionEditForm({
     <div data-testid="tx-edit-root" className="w-full">
       <PageHeader
         title={isTransfer ? "Edit transfer" : "Edit transaction"}
-        backHref={returnTo}
-        backLabel="Back"
-        overflow={overflow}
-        actions={
-          <Button
-            type="submit"
-            form={FORM_ID}
-            data-testid="tx-edit-save"
-            disabled={f.saving || f.transferDeleting}
-            className="h-11 gap-1.5"
-          >
-            <Check className="size-4" aria-hidden="true" />
-            Save
-          </Button>
-        }
+        back={{ href: returnTo }}
+        more={more}
+        primary={{
+          kind: "save",
+          label: "Save",
+          form: FORM_ID,
+          busy: f.saving,
+          disabled: f.saving || f.transferDeleting,
+          testId: "tx-edit-save",
+        }}
       />
       <div className={`mt-3 px-4 ${TW.form} ${TW.formPad}`}>
         <TransactionFormBody

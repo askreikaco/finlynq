@@ -75,9 +75,9 @@ describe("page-level targets", () => {
     expect(workspace).toContain("<PageToolbar");
   });
   it("accounts/[id] not-found path uses the global PageHeader back (one back control, 44px via BackButton)", () => {
-    // The not-found and loading branches carry PageHeader with backHref=/accounts; the main render uses the automatic back.
-    expect(accountPage.split('backLabel="Back to Accounts"').length - 1).toBe(1);
-    expect(accountPage).toContain('backHref="/accounts"');
+    // The not-found and loading branches carry PageHeader with back=/accounts; the main render uses the automatic back.
+    expect(accountPage.split('label: "Back to Accounts"').length - 1).toBe(2);
+    expect(accountPage).toContain('back={{ href: "/accounts"');
     expect(accountPage).not.toContain('pointer-coarse:min-h-11 items-center gap-1.5');
     expect(accountPage).not.toContain("max-md:min-h-11");
   });

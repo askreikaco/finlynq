@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 describe("SectionPage", () => {
   it("renders the root testid, title, subtitle and children", () => {
     render(
-      <SectionPage id="settings-general" title="General" subtitle="Display" backFallback="/settings" width="section">
+      <SectionPage id="settings-general" title="General" info="Display" back={{ href: "/settings" }} width="section">
         <p>body</p>
       </SectionPage>,
     );
@@ -29,7 +29,7 @@ describe("SectionPage", () => {
 
   it("links Back to backFallback", () => {
     render(
-      <SectionPage id="admin-x" title="X" backFallback="/admin" width="report">
+      <SectionPage id="admin-x" title="X" back={{ href: "/admin" }} width="report">
         <p>body</p>
       </SectionPage>,
     );
@@ -38,7 +38,7 @@ describe("SectionPage", () => {
 
   it("does not cap the section width (full width on desktop)", () => {
     render(
-      <SectionPage id="w-section" title="S" backFallback="/settings" width="section">
+      <SectionPage id="w-section" title="S" back={{ href: "/settings" }} width="section">
         <p>body</p>
       </SectionPage>,
     );
@@ -48,7 +48,7 @@ describe("SectionPage", () => {
 
   it("applies the report width token", () => {
     render(
-      <SectionPage id="w-report" title="R" backFallback="/admin" width="report">
+      <SectionPage id="w-report" title="R" back={{ href: "/admin" }} width="report">
         <p>body</p>
       </SectionPage>,
     );
@@ -64,7 +64,7 @@ describe("SectionPage", () => {
       return <p>loaded body</p>;
     }
     render(
-      <SectionPage id="susp" title="Susp" backFallback="/settings" width="section">
+      <SectionPage id="susp" title="Susp" back={{ href: "/settings" }} width="section">
         <Suspender />
       </SectionPage>,
     );

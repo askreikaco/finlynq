@@ -41,8 +41,7 @@ function PortfolioNewInner() {
     <SectionPage
       id="portfolio-new"
       title="New operation"
-      backFallback="/portfolio"
-      backLabel="Investment"
+      back={{ href: "/portfolio", label: "Investment" }}
       width="section"
       center
       minW0={false}

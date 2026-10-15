@@ -36,7 +36,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { PageHeader, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile/page-header";
+import { PageHeader, type MoreItem, type PageHeaderProps, type TopBarPrimary } from "@/components/mobile/page-header";
 import { MetricGrid } from "@/components/mobile/metric-grid";
 import { DataView } from "@/components/adaptive/data-view";
 import { ViewModeToggle, type ViewKey } from "@/components/adaptive/view-mode";
@@ -62,12 +62,10 @@ export type ListPageLoadHook<T, X = unknown> = () => LoadState<T[], X>;
 export interface ListPageProps<T, D = T[], X = unknown> {
   /** Root testid prefix: the root renders as `data-testid="<id>-root"`. */
   id: string;
-  title: ReactNode;
+  title: string;
   /** Help text, shown only in the (i) InfoTip after the title. */
   info?: ReactNode;
-  /** @deprecated Alias of `info`. */
-  subtitle?: ReactNode;
-  /** Primary Add action in the header (phone: PHONE_PRIMARY_CLASS). The page also feeds the FAB from its route entry. */
+  /** Primary Add action in the top bar (yellow round, rightmost). */
   add?: { label: string; href: string };
   /** Summary stat cards. A function gets the loaded records; the grid is hidden while the list is empty. */
   summary?: MetricCardProps[] | ((records: T[]) => MetricCardProps[]);
@@ -105,13 +103,12 @@ export interface ListPageProps<T, D = T[], X = unknown> {
   emptySlot?: (ctx: ListPageContext<T, X>) => ReactNode;
   /** Replaces ViewModeToggle + DataView (grouped or accordion lists). The toggle is hidden. */
   body?: ListPageView<T, X>;
-  /** Header overrides. `actions` replaces the Add button (null hides it). */
+  /** Top bar slots. `primary` replaces the Add action (null hides it). */
   header?: {
-    className?: string;
-    actions?: ReactNode;
-    overflow?: OverflowAction[];
-    filter?: React.ComponentProps<typeof PageHeader>["filter"];
-    bulkEdit?: React.ComponentProps<typeof PageHeader>["bulkEdit"];
+    primary?: TopBarPrimary | null;
+    more?: MoreItem[];
+    filter?: PageHeaderProps["filter"];
+    bulkEdit?: PageHeaderProps["bulkEdit"];
   };
   /** Vertical gap between the root children. Default "6". */
   stack?: "6" | "5" | "4";
@@ -156,7 +153,6 @@ export function ListPage<T, D = T[], X = unknown>({
   id,
   title,
   info,
-  subtitle,
   add,
   summary,
   viewKey,
@@ -235,7 +231,7 @@ export function ListPage<T, D = T[], X = unknown>({
   } else if (failed) {
     const errorNode = (
       <ErrorState
-        title={error?.title ?? `Couldn't load ${typeof title === "string" ? title.toLowerCase() : "this list"}`}
+        title={error?.title ?? `Couldn't load ${title.toLowerCase()}`}
         message={error?.message ?? "We couldn't load this list. Please try again."}
         onRetry={reload}
       />
@@ -251,7 +247,7 @@ export function ListPage<T, D = T[], X = unknown>({
           <h3 className="mb-2 text-lg font-semibold">{empty.title}</h3>
           <p className="mb-6 max-w-sm text-sm text-muted-foreground">{empty.body}</p>
           {empty.cta && (
-            <Button className={PHONE_PRIMARY_CLASS} aria-label={empty.cta.label} render={<Link href={empty.cta.href} />}>
+            <Button aria-label={empty.cta.label} render={<Link href={empty.cta.href} />}>
               <Plus className="mr-1 h-4 w-4" />
               {empty.cta.label}
             </Button>
@@ -276,22 +272,16 @@ export function ListPage<T, D = T[], X = unknown>({
     );
   }
 
-  const addNode = add ? (
-    <Button className={PHONE_PRIMARY_CLASS} aria-label={add.label} render={<Link href={add.href} />}>
-      <Plus className="mr-1 h-4 w-4" />
-      {add.label}
-    </Button>
-  ) : undefined;
+  const addPrimary: TopBarPrimary | undefined = add ? { kind: "add", label: add.label, href: add.href } : undefined;
 
   return (
     <Suspense fallback={loadingNode ?? <PageSkeleton variant={skeleton} rows={suspenseRows} />}>
       <div data-testid={`${id}-root`} className={STACK_CLASS[stack]}>
         <PageHeader
-          className={header?.className}
           title={title}
-          info={info ?? subtitle}
-          actions={header?.actions !== undefined ? header.actions : addNode}
-          overflow={header?.overflow}
+          info={info}
+          primary={header?.primary !== undefined ? (header.primary ?? undefined) : addPrimary}
+          more={header?.more}
           filter={header?.filter}
           bulkEdit={header?.bulkEdit}
         />
