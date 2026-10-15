@@ -22,6 +22,7 @@ import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { CardLabel, type MetricTone } from "@/components/mobile/card-label";
 import { InfoTip } from "../info-tip";
 import {
   AmountControl,
@@ -62,6 +63,8 @@ export interface FieldChromeProps {
   hint?: React.ReactNode;
   /** Error message under the control; also marks the control invalid. */
   error?: React.ReactNode;
+  /** A non-blocking one-liner under the control (an alias that clashes, a value that will be converted). */
+  warning?: React.ReactNode;
   /** Mark invalid without a message (the control shows the red state; pickers read "Required" when empty). */
   invalid?: boolean;
   required?: boolean;
@@ -226,6 +229,7 @@ export function Field(props: FieldProps) {
     infoLabel,
     hint,
     error,
+    warning,
     invalid: invalidProp,
     required,
     optional,
@@ -255,7 +259,7 @@ export function Field(props: FieldProps) {
   const hasLabel = label !== undefined && label !== null && label !== false && label !== "";
   const toggle = TOGGLES.has(control);
   const placement: FieldLabelPlacement = labelPlacement ?? (toggle ? "inline" : row ? "left" : "top");
-  const describedBy = error ? errorId : hint ? hintId : undefined;
+  const describedBy = error ? errorId : warning || hint ? hintId : undefined;
   const ariaLabel = hasLabel && typeof label === "string" ? label : undefined;
 
   const state: ControlState = {
@@ -427,8 +431,12 @@ export function Field(props: FieldProps) {
   const slotLabel = labelEl && (labelVisible || Icon) ? labelEl : labelEl ? <div className="sr-only">{labelEl}</div> : null;
 
   const note = error ? (
-    <div id={errorId} data-slot="field-error" className={cn(NOTE, "text-destructive")}>
+    <div id={errorId} data-slot="field-error" role="alert" className={cn(NOTE, "text-destructive")}>
       {error}
+    </div>
+  ) : warning ? (
+    <div id={hintId} data-slot="field-warning" className={cn(NOTE, "text-warning")}>
+      {warning}
     </div>
   ) : hint ? (
     <div id={hintId} data-slot="field-hint" className={cn(NOTE, "text-muted-foreground")}>
@@ -443,7 +451,9 @@ export function Field(props: FieldProps) {
     </div>
   );
 
-  const rootBase = cn("@container min-w-0", row && "py-2", className);
+  // The root fills its parent (like the inputs it replaces) unless the caller sets a width. Only the left layout is a
+  // size container (it needs to measure itself); a size container collapses to 0 wide when it is shrink-to-fit.
+  const rootBase = cn("w-full min-w-0", row && "py-2", className);
   const dataAttrs = {
     "data-slot": "field",
     "data-control": control,
@@ -453,12 +463,21 @@ export function Field(props: FieldProps) {
   } as const;
 
   if (placement === "inline") {
+    // A bare toggle (no label) is just the control, sized to itself, so it can sit beside a caller's own label.
+    if (!slotLabel) {
+      return (
+        <div {...dataAttrs} className={cn("inline-flex min-w-0 flex-col", row && "py-2", className)}>
+          {controlRow}
+          {note}
+        </div>
+      );
+    }
     const isCheckbox = control === "checkbox";
     return (
       <div {...dataAttrs} className={rootBase}>
         <div className={cn("flex min-h-11 dense:pointer-fine:min-h-9 items-center gap-3", !isCheckbox && "justify-between")}>
           {isCheckbox ? controlRow : null}
-          {slotLabel ? <div className="min-w-0 flex-1">{slotLabel}</div> : <div className="flex-1" />}
+          <div className="min-w-0 flex-1">{slotLabel}</div>
           {!isCheckbox ? controlRow : null}
         </div>
         {note ? <div className={cn(isCheckbox ? "pl-7" : "pr-14")}>{note}</div> : null}
@@ -468,7 +487,7 @@ export function Field(props: FieldProps) {
 
   if (placement === "left") {
     return (
-      <div {...dataAttrs} className={rootBase}>
+      <div {...dataAttrs} className={cn(rootBase, "@container")}>
         <div
           className={cn(
             "grid grid-cols-1 gap-1.5",
@@ -499,28 +518,48 @@ export function Field(props: FieldProps) {
 /**
  * A card of Fields as divider rows (the --list-divider inset hairline between rows, none after the last), the same
  * look as a SectionCard list. Fields inside default to labelPlacement "left" with a borderless control; switches and
- * checkboxes stay inline. `bare` drops the card surface to sit inside a SectionCard that already is the card.
+ * checkboxes stay inline. `label` is the card's own title (the shared CardLabel row inside the card); `bare` drops the
+ * card surface to sit inside a SectionCard that already is the card.
  */
 export function FieldGroup({
   className,
   bare = false,
+  label,
+  icon,
+  tone,
   children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & { bare?: boolean }) {
-  return (
+}: React.HTMLAttributes<HTMLDivElement> & {
+  bare?: boolean;
+  label?: React.ReactNode;
+  icon?: LucideIcon;
+  tone?: MetricTone | (string & {});
+}) {
+  const rows = (
     <FieldRowContext.Provider value={true}>
-      <div
-        role="group"
-        data-slot="field-group"
-        className={cn(
-          "min-w-0 px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]",
-          !bare && "surface-card overflow-hidden rounded-xl border border-border/50 text-card-foreground",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </div>
+      <div className="min-w-0 px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</div>
     </FieldRowContext.Provider>
+  );
+  if (bare && !label) {
+    return (
+      <div role="group" data-slot="field-group" className={className} {...props}>
+        {rows}
+      </div>
+    );
+  }
+  return (
+    <div
+      role="group"
+      data-slot="field-group"
+      className={cn("@container min-w-0 surface-card overflow-hidden rounded-xl border border-border/50 text-card-foreground", className)}
+      {...props}
+    >
+      {label ? (
+        <CardLabel as="h2" slot="section-label" icon={icon} tone={tone}>
+          {label}
+        </CardLabel>
+      ) : null}
+      {rows}
+    </div>
   );
 }

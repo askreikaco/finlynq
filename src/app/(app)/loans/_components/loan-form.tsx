@@ -7,9 +7,8 @@ import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
-import { FormGroup } from "@/components/forms";
 import { TW } from "@/lib/design/tokens";
-import { Field, type FieldComboboxOption } from "@/components/ui/field";
+import { Field, type FieldComboboxOption, FieldGroup } from "@/components/ui/field";
 import { LOAN_TYPE_OPTIONS, type Loan, type LoanAccount } from "./loan-types";
 
 const FREQUENCY_OPTIONS = [
@@ -183,134 +182,118 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormGroup>
-          <Row label="Name" htmlFor="loan-name" error={errors.name}>
-            <Field
-              id="loan-name"
-              value={form.name}
-              onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Type">
-            <Field
-              control="select"
-              value={form.type}
-              onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}
-              className={ROW_CONTROL}
-              options={LOAN_TYPE_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
-            />
-          </Row>
-          <Row label="Currency">
-            <Field
-              control="select"
-              value={form.currency}
-              onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}
-              className={ROW_CONTROL}
-              options={currencyOptions.map((c) => ({ value: c, label: c }))}
-            />
-          </Row>
-          <Row label="Principal" htmlFor="loan-principal" error={errors.principal}>
-            <Field
-              control="amount"
-              id="loan-principal"
-              step="0.01"
-              value={form.principal}
-              onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Annual Rate (%)" htmlFor="loan-rate" error={errors.annualRate}>
-            <Field
-              control="amount"
-              id="loan-rate"
-              step="0.01"
-              value={form.annualRate}
-              onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Term (months)" htmlFor="loan-term" error={errors.termMonths}>
-            <Field
-              control="number"
-              id="loan-term"
-              placeholder="From payment"
-              value={form.termMonths}
-              onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Payment" htmlFor="loan-payment" error={errors.paymentAmount}>
-            <Field
-              control="amount"
-              id="loan-payment"
-              step="0.01"
-              placeholder="From term"
-              value={form.paymentAmount}
-              onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Frequency">
-            <Field
-              control="select"
-              value={form.paymentFrequency}
-              onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}
-              className={ROW_CONTROL}
-              options={FREQUENCY_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
-            />
-          </Row>
-          <Row label="Extra/Payment">
-            <Field
-              control="amount"
-              step="0.01"
-              value={form.extraPayment}
-              onValueChange={(nv) => setForm({ ...form, extraPayment: nv })}
-              className={ROW_CONTROL}
-            />
-          </Row>
-          <Row label="Start Date" htmlFor="loan-start" error={errors.startDate}>
-            <Field
-              control="date"
-              id="loan-start"
-              value={form.startDate}
-              onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }}
-              className={ROW_CONTROL}
-            />
-          </Row>
+        <FieldGroup>
+          <Field
+            label="Name"
+            error={errors.name}
+            id="loan-name"
+            value={form.name}
+            onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
+          />
+          <Field
+            label="Type"
+            control="select"
+            value={form.type}
+            onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}
+            options={LOAN_TYPE_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+          />
+          <Field
+            label="Currency"
+            control="select"
+            value={form.currency}
+            onValueChange={(v) => { setCurrencyTouched(true); setForm({ ...form, currency: v ?? defaultCurrency }); }}
+            options={currencyOptions.map((c) => ({ value: c, label: c }))}
+          />
+          <Field
+            label="Principal"
+            error={errors.principal}
+            control="amount"
+            id="loan-principal"
+            step="0.01"
+            value={form.principal}
+            onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }}
+          />
+          <Field
+            label="Annual Rate (%)"
+            error={errors.annualRate}
+            control="amount"
+            id="loan-rate"
+            step="0.01"
+            value={form.annualRate}
+            onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }}
+          />
+          <Field
+            label="Term (months)"
+            error={errors.termMonths}
+            control="number"
+            id="loan-term"
+            placeholder="From payment"
+            value={form.termMonths}
+            onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }}
+          />
+          <Field
+            label="Payment"
+            error={errors.paymentAmount}
+            control="amount"
+            id="loan-payment"
+            step="0.01"
+            placeholder="From term"
+            value={form.paymentAmount}
+            onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }}
+          />
+          <Field
+            label="Frequency"
+            control="select"
+            value={form.paymentFrequency}
+            onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}
+            options={FREQUENCY_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
+          />
+          <Field
+            label="Extra/Payment"
+            control="amount"
+            step="0.01"
+            value={form.extraPayment}
+            onValueChange={(nv) => setForm({ ...form, extraPayment: nv })}
+          />
+          <Field
+            label="Start Date"
+            error={errors.startDate}
+            control="date"
+            id="loan-start"
+            value={form.startDate}
+            onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }}
+          />
           {form.type === "lease" && (
-            <Row label="Residual / Buyout" error={errors.residualValue}>
-              <Field
-                control="amount"
-                step="0.01"
-                placeholder="Balance at term end"
-                value={form.residualValue}
-                onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }}
-                className={ROW_CONTROL}
-              />
-            </Row>
-          )}
-          <Row label="Linked account">
             <Field
-              control="combobox"
-              value={form.accountId}
-              onValueChange={(v) => {
-                const acct = accounts.find((a) => String(a.id) === v);
-                if (acct?.currency) setCurrencyTouched(true);
-                setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
-              }}
-              options={sortAccount(
-                accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
-                (a) => Number(a.value),
-                (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-              )}
-              placeholder="None"
-              searchPlaceholder="Search accounts…"
-              emptyMessage="No matches"
-              className="w-full"
+              label="Residual / Buyout"
+              error={errors.residualValue}
+              control="amount"
+              step="0.01"
+              placeholder="Balance at term end"
+              value={form.residualValue}
+              onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }}
             />
-          </Row>
-        </FormGroup>
+          )}
+          <Field
+            label="Linked account"
+            control="combobox"
+            value={form.accountId}
+            onValueChange={(v) => {
+              const acct = accounts.find((a) => String(a.id) === v);
+              if (acct?.currency) setCurrencyTouched(true);
+              setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
+            }}
+            options={sortAccount(
+              accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name })),
+              (a) => Number(a.value),
+              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+            )}
+            placeholder="None"
+            searchPlaceholder="Search accounts…"
+            emptyMessage="No matches"
+            className="w-full"
+          />
+        </FieldGroup>
         {isEdit && loan && form.currency !== loan.currency && (
           <p className="text-xs text-warning">
             Changing the currency re-labels the amounts above as {form.currency}. It does not convert them.

@@ -12,8 +12,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { parseSaveError } from "@/lib/save-error";
 import { ASSET_TYPE_LABELS, advisoryFor, type Security } from "./shared";
-import { Field } from "@/components/ui/field";
-import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { FormFooter, FormRow, SegmentedToggle } from "./form-rows";
 
 type PriceSource = "auto" | "manual";
 
@@ -111,56 +111,49 @@ export function EditSecurityForm({
         void submit();
       }}
     >
-      <FormCard>
+      <FieldGroup>
         {/* Ticker. Hidden for cash sleeves — their symbol IS a currency code and is
             structural, not a lookup key. Changing it re-points every position (and
             its full history) at the new ticker; the server reuses an existing
             security for that symbol if there is one. */}
         {!isCash && (
-          <FormRow
-            label="Ticker"
-            htmlFor="edit-symbol"
-            error={errors.symbol}
-            hint="Changing this re-points the holding and its history to the new ticker."
-            notice={
-              !errors.symbol && advisoryFor(security) ? (
-                <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
-              ) : undefined
-            }
-          >
-            <Field
-              id="edit-symbol"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              placeholder="e.g. AMZN"
-              controlClassName="font-mono"
-            />
-          </FormRow>
-        )}
-        <FormRow label="Display name" htmlFor="edit-name" error={errors.name}>
           <Field
-            id="edit-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Apple Inc."
+            label="Ticker"
+            error={errors.symbol}
+            info="Changing this re-points the holding and its history to the new ticker."
+            hint={
+                        !errors.symbol && advisoryFor(security) ? (
+                          <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
+                        ) : undefined
+                      }
+            id="edit-symbol"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            placeholder="e.g. AMZN"
+            controlClassName="font-mono"
           />
-        </FormRow>
+        )}
+        <Field
+          label="Display name"
+          error={errors.name}
+          id="edit-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Apple Inc."
+        />
         {/* Asset type override is meaningful only for tradable securities (the eq:
             stock/etf bucket). Changing it is purely a display override (never
             re-clusters). */}
         {!isCash && !isCrypto && (
-          <FormRow
+          <Field
             label="Asset type"
-            hint="Overrides the automatic (Yahoo) classification for the badge."
-          >
-            <Field
-              control="select"
-              value={assetType}
-              onValueChange={(v) => setAssetType(v ?? "stock")}
-              placeholder="Asset type"
-              options={[{ value: "stock", label: "Stock" }, { value: "etf", label: "ETF" }]}
-            />
-          </FormRow>
+            info="Overrides the automatic (Yahoo) classification for the badge."
+            control="select"
+            value={assetType}
+            onValueChange={(v) => setAssetType(v ?? "stock")}
+            placeholder="Asset type"
+            options={[{ value: "stock", label: "Stock" }, { value: "etf", label: "ETF" }]}
+          />
         )}
         {/* Pricing mode — manual securities are excluded from the market price API
             and valued off the prices you enter. Hidden for cash sleeves (always 1). */}
@@ -181,7 +174,7 @@ export function EditSecurityForm({
             />
           </FormRow>
         )}
-      </FormCard>
+      </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Cancel

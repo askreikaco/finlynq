@@ -434,16 +434,16 @@ export function BankFeedsSection() {
                                 <Field
                                   control="select"
                                   value={
-                                                                    (choices[a.externalId] as { accountId: number }).accountId
-                                                                  }
+                                    (choices[a.externalId] as { accountId: number }).accountId
+                                  }
                                   onValueChange={(v) => setChoice(a.externalId, {
-                                                                      mode: "existing",
-                                                                      accountId: Number(v),
-                                                                    })}
+                                    mode: "existing",
+                                    accountId: Number(v),
+                                  })}
                                   className={cn(
-                                                                    "h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none",
-                                                                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
-                                                                  )}
+                                    "h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none",
+                                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
+                                  )}
                                   options={preview.existingAccounts.map((ea) => ({ value: ea.id, label: `${ea.name}(${ea.currency})` }))}
                                 />
                               )}
@@ -509,20 +509,20 @@ export function BankFeedsSection() {
               <label htmlFor="simplefin-token" className="block text-sm font-medium">
                 Setup token
               </label>
-              <Field
-                control="textarea"
-                id="simplefin-token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                rows={3}
-                placeholder="Paste setup token"
-                disabled={connecting}
-                className={cn(
-                                "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
-                                "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                                "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
-                              )}
-              />
+                    <Field
+                      control="textarea"
+                      id="simplefin-token"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      rows={3}
+                      placeholder="Paste setup token"
+                      disabled={connecting}
+                      className={cn(
+                        "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
+                        "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+                      )}
+                    />
               {connectError && <p className="text-sm text-destructive">{connectError}</p>}
               <div className="flex items-center justify-between gap-3">
                 <a

@@ -41,7 +41,6 @@ import { SplitSection } from "./split-section";
 import { FormRow } from "./form-row";
 import { AmountRow } from "./amount-row";
 import { TypeSegmented } from "./type-segmented";
-import { ListCard } from "./list-card";
 import { buildPrefill, canDuplicate, readAndClearPrefill, writePrefill } from "@/lib/transactions/prefill";
 import {
   buildEntrySeed,
@@ -81,7 +80,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { Field } from "@/components/ui/field";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { PageHeader, OverflowMenu, HEADER_SAVE } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 
@@ -1308,7 +1307,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
 
         {/* Field list. Expense/Income: Date, Amount, Category, Account, Payee, Note.
             Transfer: Date, Amount, From Account, To Account, Received (cross-currency only), Note. */}
-        <ListCard className="shrink-0" data-testid="txnew-list">
+        <FieldGroup className="shrink-0" data-testid="txnew-list">
           {/* The OS date picker: a native date input (iOS/Android sheets, desktop calendar popup). */}
           <FormRow
             variant="custom"
@@ -1537,7 +1536,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             onCheckedChange={(checked) => setIsBusiness(checked)}
             className="shrink-0"
           />
-        </ListCard>
+        </FieldGroup>
 
         {/* Autocomplete pills sit below the list while the field is focused. */}
         {txType !== "Transfer" && (

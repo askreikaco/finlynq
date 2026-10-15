@@ -165,18 +165,17 @@ export function UnboundImportPicker({
             <div className="flex flex-wrap items-center gap-2">
               <Field
                 control="select"
-                value={selectedTemplateId ?? ""}
+                value={String(selectedTemplateId ?? "")}
                 onValueChange={(v) => {
-                                const v = v;
-                                setSelectedTemplateId(v ? Number(v) : null);
-                                setSelectedAccountId(null);
-                                setError(null);
-                              }}
+                  setSelectedTemplateId(v ? Number(v) : null);
+                  setSelectedAccountId(null);
+                  setError(null);
+                }}
                 disabled={submitting}
                 className="flex-1 min-w-[200px]"
                 options={[
                   { value: "", label: "— Pick a template —" },
-                  ...sortedTemplates.map((t) => ({ value: t.id, label: `${t.name}${t.matchesHeaders ? "  ★ matches headers" : ""}${t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}` })),
+                  ...sortedTemplates.map((t) => ({ value: String(t.id), label: `${t.name}${t.matchesHeaders ? "  ★ matches headers" : ""}${t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}` })),
                 ]}
               />
               <Button
@@ -201,18 +200,17 @@ export function UnboundImportPicker({
           <div className="flex flex-wrap items-center gap-2">
             <Field
               control="select"
-              value={selectedAccountId ?? ""}
+              value={String(selectedAccountId ?? "")}
               onValueChange={(v) => {
-                            const v = v;
-                            setSelectedAccountId(v ? Number(v) : null);
-                            setSelectedTemplateId(null);
-                            setError(null);
-                          }}
+                setSelectedAccountId(v ? Number(v) : null);
+                setSelectedTemplateId(null);
+                setError(null);
+              }}
               disabled={submitting}
               className="flex-1 min-w-[200px]"
               options={[
                 { value: "", label: "— Pick an account —" },
-                ...accounts.map((a) => ({ value: a.id, label: `${a.name}(${a.currency}) ${a.isInvestment ? " · investment" : ""}` })),
+                ...accounts.map((a) => ({ value: String(a.id), label: `${a.name}(${a.currency}) ${a.isInvestment ? " · investment" : ""}` })),
               ]}
             />
             <Button

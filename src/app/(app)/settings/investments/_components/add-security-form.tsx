@@ -11,8 +11,8 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
-import { Field } from "@/components/ui/field";
-import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { FormFooter, FormRow, SegmentedToggle } from "./form-rows";
 
 type PriceSource = "auto" | "manual";
 
@@ -139,7 +139,7 @@ export function AddSecurityForm({
         void submit();
       }}
     >
-      <FormCard>
+      <FieldGroup>
         <FormRow
           label="Ticker"
           htmlFor="sec-symbol"
@@ -163,28 +163,28 @@ export function AddSecurityForm({
             )}
           </div>
         </FormRow>
-        <FormRow label="Name" htmlFor="sec-name" hint="Auto-filled from the ticker, or type it.">
-          <Field
-            id="sec-name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              nameTouchedRef.current = true;
-            }}
-          />
-        </FormRow>
-        <FormRow label="Currency" htmlFor="sec-currency" error={errors.currency}>
-          <Field
-            id="sec-currency"
-            value={currency}
-            onChange={(e) => {
-              setCurrency(e.target.value.toUpperCase());
-              currencyTouchedRef.current = true;
-            }}
-            placeholder="USD"
-            maxLength={4}
-          />
-        </FormRow>
+        <Field
+          label="Name"
+          info="Auto-filled from the ticker, or type it."
+          id="sec-name"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            nameTouchedRef.current = true;
+          }}
+        />
+        <Field
+          label="Currency"
+          error={errors.currency}
+          id="sec-currency"
+          value={currency}
+          onChange={(e) => {
+            setCurrency(e.target.value.toUpperCase());
+            currencyTouchedRef.current = true;
+          }}
+          placeholder="USD"
+          maxLength={4}
+        />
         <FormRow label="Crypto">
           <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
             <span>Crypto asset</span>
@@ -220,7 +220,7 @@ export function AddSecurityForm({
             labels={{ auto: "Auto-fetch", manual: "Manual" }}
           />
         </FormRow>
-      </FormCard>
+      </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Cancel

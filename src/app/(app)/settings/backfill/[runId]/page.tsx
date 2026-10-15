@@ -905,15 +905,12 @@ function HoldingPicker({
   return (
     <Field
       control="select"
-      value={proposal.chosenHoldingId ?? ""}
-      onValueChange={(v) => {
-            const v = v;
-            onChange(v === "" ? null : Number(v));
-          }}
+      value={String(proposal.chosenHoldingId ?? "")}
+      onValueChange={(v) => onChange(v === "" ? null : Number(v))}
       className="w-full"
       options={[
         { value: "", label: "— Pick a holding —" },
-        ...candidates.map((id) => { const h = holdingMap[id]; const label = h?.name ?? `holding #${id}`; const currency = h?.currency ? ` (${h.currency})` : ""; return ({ value: id, label: `${label}${currency}` }); }),
+        ...candidates.map((id) => { const h = holdingMap[id]; const label = h?.name ?? `holding #${id}`; const currency = h?.currency ? ` (${h.currency})` : ""; return ({ value: String(id), label: `${label}${currency}` }); }),
       ]}
     />
   );
@@ -1262,12 +1259,12 @@ function KindOverridePicker({
           <div className="text-xs font-medium">Related stock holding (for reporting)</div>
           <Field
             control="select"
-            value={chosenRelatedHoldingId ?? ""}
+            value={String(chosenRelatedHoldingId ?? "")}
             onValueChange={(v) => setChosenRelatedHoldingId(v ? Number(v) : null)}
             className="w-full"
             options={[
               { value: "", label: "— pick a holding —" },
-              ...accountHoldings.map(([id, h]) => ({ value: id, label: `${h.name ?? `holding #${id}`}(${h.currency})` })),
+              ...accountHoldings.map(([id, h]) => ({ value: String(id), label: `${h.name ?? `holding #${id}`}(${h.currency})` })),
             ]}
           />
         </div>
@@ -1286,14 +1283,14 @@ function KindOverridePicker({
           </div>
           <Field
             control="select"
-            value={chosenCategoryId ?? ""}
+            value={String(chosenCategoryId ?? "")}
             onValueChange={(v) => setChosenCategoryId(v ? Number(v) : null)}
             className="w-full"
             options={[
               { value: "", label: autoCategoryName
                           ? `— auto: ${autoCategoryName} (created if needed) —`
                           : "— leave uncategorized —" },
-              ...categoryOptions.map(([id, c]) => ({ value: id, label: c.name ?? `category #${id}` })),
+              ...categoryOptions.map(([id, c]) => ({ value: String(id), label: c.name ?? `category #${id}` })),
             ]}
           />
         </div>

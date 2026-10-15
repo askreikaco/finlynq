@@ -12,7 +12,8 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseSaveError } from "@/lib/save-error";
-import { FormCard, FormFooter, FormRow } from "./form-rows";
+import { FormFooter, FormRow } from "./form-rows";
+import { FieldGroup } from "@/components/ui/field";
 import { descriptionOf, symbolLabel, type Account, type Security } from "./shared";
 
 export type LinkMode = "account" | "security";
@@ -101,7 +102,7 @@ export function LinkForm({
         void submit();
       }}
     >
-      <FormCard>
+      <FieldGroup>
         <FormRow
           label={label}
           error={error || undefined}
@@ -130,7 +131,7 @@ export function LinkForm({
             </SelectContent>
           </Select>
         </FormRow>
-      </FormCard>
+      </FieldGroup>
       <FormFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={linking}>
           Cancel

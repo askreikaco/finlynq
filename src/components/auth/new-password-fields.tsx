@@ -1,5 +1,3 @@
-import { Field } from "@/components/ui/field";
-
 "use client";
 
 /**
@@ -8,10 +6,9 @@ import { Field } from "@/components/ui/field";
  * values and decides when the form is submittable (see isNewPasswordValid).
  */
 
-export const NEW_PASSWORD_MIN = 12;
+import { Field } from "@/components/ui/field";
 
-export const AUTH_INPUT_CLASS =
-  "w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+export const NEW_PASSWORD_MIN = 12;
 
 export function isNewPasswordValid(password: string, confirm: string): boolean {
   return password.length >= NEW_PASSWORD_MIN && password === confirm;
@@ -33,42 +30,27 @@ export function NewPasswordFields({
   const mismatch = confirm.length > 0 && password !== confirm;
   return (
     <div className="space-y-4">
-      <div>
-        <label htmlFor={`${idPrefix}-new-password`} className="mb-1.5 block text-sm font-medium text-foreground">
-          New password
-        </label>
-        <Field
-          id={`${idPrefix}-new-password`}
-          type="password"
-          value={password}
-          onChange={(e) => onPasswordChange(e.target.value)}
-          placeholder="At least 12 characters"
-          autoComplete="new-password"
-          minLength={NEW_PASSWORD_MIN}
-          required
-          className={AUTH_INPUT_CLASS}
-        />
-      </div>
-      <div>
-        <label htmlFor={`${idPrefix}-confirm-password`} className="mb-1.5 block text-sm font-medium text-foreground">
-          Confirm new password
-        </label>
-        <Field
-          id={`${idPrefix}-confirm-password`}
-          type="password"
-          value={confirm}
-          onChange={(e) => onConfirmChange(e.target.value)}
-          autoComplete="new-password"
-          required
-          aria-invalid={mismatch}
-          className={AUTH_INPUT_CLASS}
-        />
-        {mismatch && (
-          <p className="mt-1 text-xs text-destructive" role="alert">
-            Passwords do not match.
-          </p>
-        )}
-      </div>
+      <Field
+        label="New password"
+        id={`${idPrefix}-new-password`}
+        type="password"
+        value={password}
+        onChange={(e) => onPasswordChange(e.target.value)}
+        placeholder="At least 12 characters"
+        autoComplete="new-password"
+        minLength={NEW_PASSWORD_MIN}
+        required
+      />
+      <Field
+        label="Confirm new password"
+        id={`${idPrefix}-confirm-password`}
+        type="password"
+        value={confirm}
+        onChange={(e) => onConfirmChange(e.target.value)}
+        autoComplete="new-password"
+        required
+        error={mismatch ? "Passwords do not match." : undefined}
+      />
     </div>
   );
 }

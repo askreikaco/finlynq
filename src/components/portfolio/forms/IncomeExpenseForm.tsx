@@ -29,11 +29,11 @@ import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { getDisplayLocale } from "@/lib/locale";
-import { Field } from "@/components/ui/field";
+import { Field, FieldGroup } from "@/components/ui/field";
 
 type Direction = "income" | "expense";
 
-import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { OpFooter, OpNote, OpPage, OpRow, OP_SELECT, safeReturnHref } from "./op-page";
 
 export default function IncomeExpenseForm() {
   const router = useRouter();
@@ -314,30 +314,30 @@ export default function IncomeExpenseForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit Income / expense" : "Income / expense"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit Income / expense" : "Income / expense"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
       <OpPage title="Income / expense">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Portfolio income and expense require an investment account.</OpNote>
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -350,80 +350,73 @@ export default function IncomeExpenseForm() {
       saveDisabled={submitting || !!loadError}
       onSubmit={handleSubmit}
     >
-      <OpGroup label="Entry">
-        <OpRow label="Account" error={errors.accountId}>
-          <Field
-            control="select"
-            value={accountId}
-            onValueChange={(v) => {
-              setAccountId(v ?? "");
-              setRelatedHoldingId("");
-            }}
-            placeholder="Pick an investment account"
-            className={OP_SELECT}
-            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
-          />
-        </OpRow>
+      <FieldGroup label="Entry">
+        <Field
+          label="Account"
+          error={errors.accountId}
+          control="select"
+          value={accountId}
+          onValueChange={(v) => {
+            setAccountId(v ?? "");
+            setRelatedHoldingId("");
+          }}
+          placeholder="Pick an investment account"
+          options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
 
-        <OpRow label="Direction">
-          <Field
-            control="select"
-            value={direction}
-            onValueChange={(v) => {
-              const d = (v ?? "income") as Direction;
-              setDirection(d);
-              // Reset the entry-type preset to the sensible default for the
-              // new sign (income→dividend, expense→fee).
-              setIncomeType(d === "income" ? "dividend" : "fee");
-              // Income-as-shares is income-only — drop back to cash for an
-              // expense so the form stays consistent.
-              if (d === "expense") setSettleAs("cash");
-            }}
-            className={OP_SELECT}
-            options={[{ value: "income", label: "Income (+)" }, { value: "expense", label: "Expense (−)" }]}
-          />
-        </OpRow>
+        <Field
+          label="Direction"
+          control="select"
+          value={direction}
+          onValueChange={(v) => {
+            const d = (v ?? "income") as Direction;
+            setDirection(d);
+            // Reset the entry-type preset to the sensible default for the
+            // new sign (income→dividend, expense→fee).
+            setIncomeType(d === "income" ? "dividend" : "fee");
+            // Income-as-shares is income-only — drop back to cash for an
+            // expense so the form stays consistent.
+            if (d === "expense") setSettleAs("cash");
+          }}
+          options={[{ value: "income", label: "Income (+)" }, { value: "expense", label: "Expense (−)" }]}
+        />
 
         {sharesMode ? (
-          <OpRow label="Shares" error={errors.quantity}>
-            <Field
-              control="amount"
-              step="any"
-              inputMode="decimal"
-              value={quantity}
-              onValueChange={(nv) => setQuantity(nv)}
-              placeholder="e.g. 1.2345"
-              className={OP_INPUT}
-            />
-          </OpRow>
+          <Field
+            label="Shares"
+            error={errors.quantity}
+            control="amount"
+            step="any"
+            inputMode="decimal"
+            value={quantity}
+            onValueChange={(nv) => setQuantity(nv)}
+            placeholder="e.g. 1.2345"
+          />
         ) : (
-          <OpRow label="Sleeve" error={errors.currency}>
-            <Field
-              control="select"
-              value={currency}
-              onValueChange={(v) => setCurrency(v ?? "")}
-              disabled={!selectedAccount || cashSleeves.length === 0}
-              placeholder={
-                    selectedAccount && cashSleeves.length === 0
-                      ? "No cash sleeves on this account"
-                      : "Pick a sleeve"
-                  }
-              className={OP_SELECT}
-              options={cashSleeves.map((s) => ({ value: s.currency, label: s.currency }))}
-            />
-          </OpRow>
+          <Field
+            label="Sleeve"
+            error={errors.currency}
+            control="select"
+            value={currency}
+            onValueChange={(v) => setCurrency(v ?? "")}
+            disabled={!selectedAccount || cashSleeves.length === 0}
+            placeholder={
+                  selectedAccount && cashSleeves.length === 0
+                    ? "No cash sleeves on this account"
+                    : "Pick a sleeve"
+                }
+            options={cashSleeves.map((s) => ({ value: s.currency, label: s.currency }))}
+          />
         )}
 
         {sharesAllowed && (
-          <OpRow label="Settle into">
-            <Field
-              control="select"
-              value={settleAs}
-              onValueChange={(v) => setSettleAs((v ?? "cash") as "cash" | "shares")}
-              className={OP_SELECT}
-              options={[{ value: "cash", label: "Cash sleeve" }, { value: "shares", label: "Holding (shares)" }]}
-            />
-          </OpRow>
+          <Field
+            label="Settle into"
+            control="select"
+            value={settleAs}
+            onValueChange={(v) => setSettleAs((v ?? "cash") as "cash" | "shares")}
+            options={[{ value: "cash", label: "Cash sleeve" }, { value: "shares", label: "Holding (shares)" }]}
+          />
         )}
 
         <OpRow label="Entry type">
@@ -454,65 +447,60 @@ export default function IncomeExpenseForm() {
           </Select>
         </OpRow>
 
-        <OpRow label={sharesMode ? "Dollar value" : "Amount"} error={errors.amount}>
-          <Field
-            control="amount"
-            step="any"
-            inputMode="decimal"
-            value={amount}
-            onValueChange={(nv) => setAmount(nv)}
-            placeholder="25.00"
-            className={OP_INPUT}
-          />
-        </OpRow>
+        <Field
+          label={sharesMode ? "Dollar value" : "Amount"}
+          error={errors.amount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={amount}
+          onValueChange={(nv) => setAmount(nv)}
+          placeholder="25.00"
+        />
 
-        <OpRow label="Date" error={errors.date}>
-          <Field
-            control="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={OP_INPUT}
-          />
-        </OpRow>
+        <Field
+          label="Date"
+          error={errors.date}
+          control="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
 
-        <OpRow label={sharesMode ? "Receives" : "Holding"} error={sharesMode ? errors.relatedHoldingId : undefined}>
-          <Field
-            control="select"
-            value={relatedHoldingId}
-            onValueChange={(v) => setRelatedHoldingId(v ?? "")}
-            disabled={!selectedAccount || accountHoldings.length === 0}
-            placeholder={
-                  selectedAccount
-                    ? accountHoldings.length === 0
-                      ? "No non-cash holdings"
-                      : sharesMode
-                        ? "Pick the holding the shares land on"
-                        : "Optional, for attribution"
-                    : "Pick an account first"
-                }
-            className={OP_SELECT}
-            options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`}</> }))}
-          />
-        </OpRow>
+        <Field
+          label={sharesMode ? "Receives" : "Holding"}
+          error={sharesMode ? errors.relatedHoldingId : undefined}
+          control="select"
+          value={relatedHoldingId}
+          onValueChange={(v) => setRelatedHoldingId(v ?? "")}
+          disabled={!selectedAccount || accountHoldings.length === 0}
+          placeholder={
+                selectedAccount
+                  ? accountHoldings.length === 0
+                    ? "No non-cash holdings"
+                    : sharesMode
+                      ? "Pick the holding the shares land on"
+                      : "Optional, for attribution"
+                  : "Pick an account first"
+              }
+          options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`}</> }))}
+        />
 
         {incomeType === "other" && (
-          <OpRow label="Category">
-            <Field
-              control="select"
-              value={categoryId}
-              onValueChange={(v) => setCategoryId(v ?? "")}
-              disabled={categories.length === 0}
-              placeholder={
-                    categories.length === 0
-                      ? "No categories available"
-                      : "Pick a category (optional)"
-                  }
-              className={OP_SELECT}
-              options={categories.map((c) => ({ value: String(c.id), label: <>{c.name ?? `#${c.id}`} {c.group ? ` (${c.group})` : ""}</> }))}
-            />
-          </OpRow>
+          <Field
+            label="Category"
+            control="select"
+            value={categoryId}
+            onValueChange={(v) => setCategoryId(v ?? "")}
+            disabled={categories.length === 0}
+            placeholder={
+                  categories.length === 0
+                    ? "No categories available"
+                    : "Pick a category (optional)"
+                }
+            options={categories.map((c) => ({ value: String(c.id), label: <>{c.name ?? `#${c.id}`} {c.group ? ` (${c.group})` : ""}</> }))}
+          />
         )}
-      </OpGroup>
+      </FieldGroup>
 
       {sharesAllowed && (
         <OpFooter>
@@ -545,41 +533,30 @@ export default function IncomeExpenseForm() {
         </OpFooter>
       )}
 
-      <OpGroup label="Details">
-        <OpRow label="Payee">
-          <Field
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="e.g. Quarterly dividend (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Note">
-          <Field
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Tags">
-          <Field
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="tag1, tag2 (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Details">
+        <Field
+          label="Payee"
+          value={payee}
+          onChange={(e) => setPayee(e.target.value)}
+          placeholder="e.g. Quarterly dividend (optional)"
+        />
+        <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+        <Field
+          label="Tags"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          placeholder="tag1, tag2 (optional)"
+        />
+      </FieldGroup>
 
       {submitError && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{submitError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
 
       {blockingClosureTxIds.length > 0 && (
-        <OpGroup label="Blocked by">
+        <FieldGroup label="Blocked by">
           <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
           {blockingClosureTxIds.map((id) => (
             <Link
@@ -590,7 +567,7 @@ export default function IncomeExpenseForm() {
               Transaction #{id}
             </Link>
           ))}
-        </OpGroup>
+        </FieldGroup>
       )}
     </OpPage>
   );

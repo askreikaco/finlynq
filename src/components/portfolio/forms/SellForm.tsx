@@ -25,8 +25,8 @@ import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { getDisplayLocale } from "@/lib/locale";
-import { Field } from "@/components/ui/field";
-import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { OpFooter, OpNote, OpPage, safeReturnHref } from "./op-page";
 
 export default function SellForm() {
   const router = useRouter();
@@ -255,25 +255,25 @@ export default function SellForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit Sell" : "Sell"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit Sell" : "Sell"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
       <OpPage title="Sell">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>
             No investment accounts. Sell operations require an investment account. Mark one of
             your accounts as an investment account first.
@@ -281,7 +281,7 @@ export default function SellForm() {
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -302,43 +302,41 @@ export default function SellForm() {
         saveDisabled={submitting || cashSleeveMissing || !!loadError}
         onSubmit={handleSubmit}
       >
-        <OpGroup label="Trade">
-          <OpRow label="Account" error={errors.accountId}>
-            <Field
-              control="select"
-              value={accountId}
-              onValueChange={(v) => {
-                setAccountId(v ?? "");
-                setHoldingId("");
-                setUseLotPicker(false);
-                setLotSelection([]);
-              }}
-              placeholder="Pick an investment account"
-              className={OP_SELECT}
-              options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
-            />
-          </OpRow>
+        <FieldGroup label="Trade">
+          <Field
+            label="Account"
+            error={errors.accountId}
+            control="select"
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v ?? "");
+              setHoldingId("");
+              setUseLotPicker(false);
+              setLotSelection([]);
+            }}
+            placeholder="Pick an investment account"
+            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+          />
 
-          <OpRow label="Holding" error={errors.holdingId}>
-            <Field
-              control="select"
-              value={holdingId}
-              onValueChange={(v) => {
-                setHoldingId(v ?? "");
-                setLotSelection([]);
-              }}
-              disabled={!selectedAccount}
-              placeholder={
-                    selectedAccount
-                      ? accountHoldings.length === 0
-                        ? "No non-cash holdings in this account"
-                        : "Pick a holding"
-                      : "Pick an account first"
-                  }
-              className={OP_SELECT}
-              options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
-            />
-          </OpRow>
+          <Field
+            label="Holding"
+            error={errors.holdingId}
+            control="select"
+            value={holdingId}
+            onValueChange={(v) => {
+              setHoldingId(v ?? "");
+              setLotSelection([]);
+            }}
+            disabled={!selectedAccount}
+            placeholder={
+                  selectedAccount
+                    ? accountHoldings.length === 0
+                      ? "No non-cash holdings in this account"
+                      : "Pick a holding"
+                    : "Pick an account first"
+                }
+            options={accountHoldings.map((h) => ({ value: String(h.id), label: <>{h.symbol ? `${h.symbol} — ` : ""} {h.name ?? `#${h.id}`} ({h.currency})</> }))}
+          />
 
           {selectedHolding && (
             <OpNote>
@@ -356,23 +354,19 @@ export default function SellForm() {
             </OpNote>
           )}
 
-          <OpRow
+          <Field
             label={useLotPicker ? "Qty (lots)" : "Quantity"}
             error={errors.qty}
-          >
-            <Field
-              control="amount"
-              step="any"
-              inputMode="decimal"
-              value={useLotPicker ? String(lotSelectionTotal || "") : qty}
-              onValueChange={(nv) => setQty(nv)}
-              placeholder="100"
-              readOnly={useLotPicker}
-              className={OP_INPUT}
-            />
-          </OpRow>
+            control="amount"
+            step="any"
+            inputMode="decimal"
+            value={useLotPicker ? String(lotSelectionTotal || "") : qty}
+            onValueChange={(nv) => setQty(nv)}
+            placeholder="100"
+            readOnly={useLotPicker}
+          />
 
-          <OpRow
+          <Field
             label={
               <>
                 Proceeds
@@ -380,27 +374,22 @@ export default function SellForm() {
               </>
             }
             error={errors.totalProceeds}
-          >
-            <Field
-              control="amount"
-              step="any"
-              inputMode="decimal"
-              value={totalProceeds}
-              onValueChange={(nv) => setTotalProceeds(nv)}
-              placeholder="1100.00"
-              className={OP_INPUT}
-            />
-          </OpRow>
+            control="amount"
+            step="any"
+            inputMode="decimal"
+            value={totalProceeds}
+            onValueChange={(nv) => setTotalProceeds(nv)}
+            placeholder="1100.00"
+          />
 
-          <OpRow label="Date" error={errors.date}>
-            <Field
-              control="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={OP_INPUT}
-            />
-          </OpRow>
-        </OpGroup>
+          <Field
+            label="Date"
+            error={errors.date}
+            control="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </FieldGroup>
 
         {showPreview && selectedHolding && (
           <OpFooter>
@@ -413,7 +402,7 @@ export default function SellForm() {
         )}
 
         {selectedHolding && (
-          <OpGroup label="Lots">
+          <FieldGroup label="Lots">
             <label className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm">
               <span>Choose specific lots (advanced). FIFO by default.</span>
               <Field
@@ -435,44 +424,33 @@ export default function SellForm() {
                 />
               </div>
             )}
-          </OpGroup>
+          </FieldGroup>
         )}
 
-        <OpGroup label="Details">
-          <OpRow label="Payee">
-            <Field
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="Broker name (optional)"
-              className={OP_INPUT}
-            />
-          </OpRow>
-          <OpRow label="Note">
-            <Field
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Optional"
-              className={OP_INPUT}
-            />
-          </OpRow>
-          <OpRow label="Tags">
-            <Field
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2 (optional)"
-              className={OP_INPUT}
-            />
-          </OpRow>
-        </OpGroup>
+        <FieldGroup label="Details">
+          <Field
+            label="Payee"
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Broker name (optional)"
+          />
+          <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+          <Field
+            label="Tags"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tag1, tag2 (optional)"
+          />
+        </FieldGroup>
 
         {submitError && (
-          <OpGroup>
+          <FieldGroup>
             <OpNote tone="destructive">{submitError}</OpNote>
-          </OpGroup>
+          </FieldGroup>
         )}
 
         {blockingClosureTxIds.length > 0 && (
-          <OpGroup label="Blocked by">
+          <FieldGroup label="Blocked by">
             <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
             {blockingClosureTxIds.map((id) => (
               <Link
@@ -483,7 +461,7 @@ export default function SellForm() {
                 Transaction #{id}
               </Link>
             ))}
-          </OpGroup>
+          </FieldGroup>
         )}
       </OpPage>
 

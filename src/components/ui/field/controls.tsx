@@ -81,7 +81,12 @@ export function TextControl({
         aria-describedby={describedBy}
         data-slot="input"
         {...rest}
-        className={cn(BARE_INPUT, type === "date" && "text-left [&::-webkit-date-and-time-value]:text-left", className)}
+        className={cn(
+          BARE_INPUT,
+          type === "date" && "text-left [&::-webkit-date-and-time-value]:text-left",
+          invalid && row && "placeholder:text-neg",
+          className,
+        )}
       />
       {suffix}
     </Surface>

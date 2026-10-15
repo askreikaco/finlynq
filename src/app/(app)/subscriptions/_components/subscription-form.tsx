@@ -155,27 +155,23 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl border border-border bg-card">
-        <Row label="Name" htmlFor="sub-name">
-          <Field
-            id="sub-name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. Netflix, car insurance, domain renewal"
-            required
-            className={ROW_CONTROL}
-          />
-        </Row>
-        <Row label="Amount per payment" htmlFor="sub-amount">
-          <Field
-            control="amount"
-            id="sub-amount"
-            step="0.01"
-            value={form.amount}
-            onValueChange={(v) => setForm({ ...form, amount: v })}
-            required
-            className={ROW_CONTROL}
-          />
-        </Row>
+        <Field
+          label="Name"
+          id="sub-name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="e.g. Netflix, car insurance, domain renewal"
+          required
+        />
+        <Field
+          label="Amount per payment"
+          control="amount"
+          id="sub-amount"
+          step="0.01"
+          value={form.amount}
+          onValueChange={(v) => setForm({ ...form, amount: v })}
+          required
+        />
         <Row label="How often">
           <Select value={form.frequency} onValueChange={(v) => setForm({ ...form, frequency: v ?? "monthly" })}>
             <SelectTrigger className={ROW_CONTROL}>
@@ -189,96 +185,85 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
           </Select>
         </Row>
         {form.frequency === "every_n_days" && (
-          <Row label="Every (days)" htmlFor="sub-interval">
-            <Field
-              control="number"
-              id="sub-interval"
-              inputMode="numeric"
-              min={MIN_INTERVAL_DAYS}
-              max={MAX_INTERVAL_DAYS}
-              step={1}
-              value={form.intervalDays}
-              onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
-              placeholder="e.g. 10"
-              required
-              className={ROW_CONTROL}
-            />
-          </Row>
+          <Field
+            label="Every (days)"
+            control="number"
+            id="sub-interval"
+            inputMode="numeric"
+            min={MIN_INTERVAL_DAYS}
+            max={MAX_INTERVAL_DAYS}
+            step={1}
+            value={form.intervalDays}
+            onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
+            placeholder="e.g. 10"
+            required
+          />
         )}
-        <Row label="Currency">
-          <Field
-            control="combobox"
-            value={formCurrency}
-            onValueChange={(v) => setForm({ ...form, currency: v || displayCurrency })}
-            options={sortCurrency(
-              currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
-              (c) => c.value,
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder={displayCurrency}
-            searchPlaceholder="Search…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Next payment" htmlFor="sub-next">
-          <Field
-            control="date"
-            id="sub-next"
-            value={form.nextDate}
-            onChange={(e) => setForm({ ...form, nextDate: e.target.value })}
-            className={ROW_CONTROL}
-          />
-        </Row>
-        <Row label="Category">
-          <Field
-            control="combobox"
-            value={form.categoryId}
-            onValueChange={(v) => setForm({ ...form, categoryId: v })}
-            options={sortCategory(
-              categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: c.name ?? "" })),
-              (c) => Number(c.value),
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder="None"
-            searchPlaceholder="Search categories…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Paid from">
-          <Field
-            control="combobox"
-            value={form.accountId}
-            onValueChange={(v) => setForm({ ...form, accountId: v })}
-            options={sortAccount(
-              accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name ?? "" })),
-              (a) => Number(a.value),
-              (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-            )}
-            placeholder="None"
-            searchPlaceholder="Search accounts…"
-            emptyMessage="No matches"
-            className="w-full"
-          />
-        </Row>
-        <Row label="Remind me to cancel on" htmlFor="sub-reminder">
-          <Field
-            control="date"
-            id="sub-reminder"
-            value={form.cancelReminderDate}
-            onChange={(e) => setForm({ ...form, cancelReminderDate: e.target.value })}
-            className={ROW_CONTROL}
-          />
-        </Row>
-        <Row label="Notes" htmlFor="sub-notes">
-          <Field
-            id="sub-notes"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            className={ROW_CONTROL}
-          />
-        </Row>
+        <Field
+          label="Currency"
+          control="combobox"
+          value={formCurrency}
+          onValueChange={(v) => setForm({ ...form, currency: v || displayCurrency })}
+          options={sortCurrency(
+            currencyOptions.map((c): FieldComboboxOption => ({ value: c, label: c })),
+            (c) => c.value,
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder={displayCurrency}
+          searchPlaceholder="Search…"
+          emptyMessage="No matches"
+          className="w-full"
+        />
+        <Field
+          label="Next payment"
+          control="date"
+          id="sub-next"
+          value={form.nextDate}
+          onChange={(e) => setForm({ ...form, nextDate: e.target.value })}
+        />
+        <Field
+          label="Category"
+          control="combobox"
+          value={form.categoryId}
+          onValueChange={(v) => setForm({ ...form, categoryId: v })}
+          options={sortCategory(
+            categories.map((c): FieldComboboxOption => ({ value: String(c.id), label: c.name ?? "" })),
+            (c) => Number(c.value),
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder="None"
+          searchPlaceholder="Search categories…"
+          emptyMessage="No matches"
+          className="w-full"
+        />
+        <Field
+          label="Paid from"
+          control="combobox"
+          value={form.accountId}
+          onValueChange={(v) => setForm({ ...form, accountId: v })}
+          options={sortAccount(
+            accounts.map((a): FieldComboboxOption => ({ value: String(a.id), label: a.name ?? "" })),
+            (a) => Number(a.value),
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+          )}
+          placeholder="None"
+          searchPlaceholder="Search accounts…"
+          emptyMessage="No matches"
+          className="w-full"
+        />
+        <Field
+          label="Remind me to cancel on"
+          control="date"
+          id="sub-reminder"
+          value={form.cancelReminderDate}
+          onChange={(e) => setForm({ ...form, cancelReminderDate: e.target.value })}
+        />
+        <Field
+          label="Notes"
+          id="sub-notes"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+        />
       </div>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <div className="flex gap-2">

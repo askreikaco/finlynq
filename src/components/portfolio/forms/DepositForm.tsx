@@ -15,8 +15,8 @@ import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
-import { OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
-import { Field } from "@/components/ui/field";
+import { OpNote, OpPage, safeReturnHref } from "./op-page";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { NEW_OP_HREF } from "./op-catalog";
 
 export default function DepositForm() {
@@ -213,25 +213,25 @@ export default function DepositForm() {
   if (loading) {
     return (
       <OpPage title={isEdit ? "Edit Deposit" : "Brokerage deposit"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote>Loading…</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (loadError) {
     return (
       <OpPage title={isEdit ? "Edit Deposit" : "Brokerage deposit"}>
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{loadError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
   if (investmentAccounts.length === 0 || nonInvestmentAccounts.length === 0) {
     return (
       <OpPage title="Brokerage deposit">
-        <OpGroup>
+        <FieldGroup>
           <OpNote>
             Deposits move cash from a non-investment account into a brokerage cash sleeve. You
             need at least one of each.
@@ -239,7 +239,7 @@ export default function DepositForm() {
           <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </OpGroup>
+        </FieldGroup>
       </OpPage>
     );
   }
@@ -252,42 +252,38 @@ export default function DepositForm() {
       saveDisabled={submitting || currencyMismatch}
       onSubmit={handleSubmit}
     >
-      <OpGroup label="Accounts">
-        <OpRow label="From" error={errors.sourceAccountId}>
-          <Field
-            control="select"
-            value={sourceAccountId}
-            onValueChange={(v) => setSourceAccountId(v ?? "")}
-            placeholder="Pick a source account"
-            className={OP_SELECT}
-            options={nonInvestmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
-          />
-        </OpRow>
-        <OpRow label="To" error={errors.destAccountId}>
-          <Field
-            control="select"
-            value={destAccountId}
-            onValueChange={(v) => setDestAccountId(v ?? "")}
-            placeholder="Pick an investment account"
-            className={OP_SELECT}
-            options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
-          />
-        </OpRow>
+      <FieldGroup label="Accounts">
+        <Field
+          label="From"
+          error={errors.sourceAccountId}
+          control="select"
+          value={sourceAccountId}
+          onValueChange={(v) => setSourceAccountId(v ?? "")}
+          placeholder="Pick a source account"
+          options={nonInvestmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
+        <Field
+          label="To"
+          error={errors.destAccountId}
+          control="select"
+          value={destAccountId}
+          onValueChange={(v) => setDestAccountId(v ?? "")}
+          placeholder="Pick an investment account"
+          options={investmentAccounts.map((a) => ({ value: String(a.id), label: <>{a.name ?? `#${a.id}`} ({a.currency})</> }))}
+        />
         {eligibleSleeves.length > 1 && (
-          <OpRow label="Cash sleeve">
-            <Field
-              control="select"
-              value={destCashSleeveHoldingId}
-              onValueChange={(v) => setDestCashSleeveHoldingId(v ?? "")}
-              className={OP_SELECT}
-              options={eligibleSleeves.map((s) => ({ value: String(s.id), label: s.name ?? `Cash ${s.currency}` }))}
-            />
-          </OpRow>
+          <Field
+            label="Cash sleeve"
+            control="select"
+            value={destCashSleeveHoldingId}
+            onValueChange={(v) => setDestCashSleeveHoldingId(v ?? "")}
+            options={eligibleSleeves.map((s) => ({ value: String(s.id), label: s.name ?? `Cash ${s.currency}` }))}
+          />
         )}
-      </OpGroup>
+      </FieldGroup>
 
       {sourceAcct && destAcct && currencyMismatch && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="warning">
             No {sourceAcct.currency} cash sleeve in this brokerage. Either create a{" "}
             {sourceAcct.currency} sleeve on the brokerage via its Cash sleeves panel, or{" "}
@@ -296,62 +292,44 @@ export default function DepositForm() {
             </Link>{" "}
             to the destination currency first.
           </OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
 
-      <OpGroup label="Amount">
-        <OpRow label={sourceAcct ? `Amount (${sourceAcct.currency})` : "Amount"} error={errors.amount}>
-          <Field
-            control="amount"
-            step="any"
-            inputMode="decimal"
-            value={amount}
-            onValueChange={(nv) => setAmount(nv)}
-            placeholder="100.00"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Date" error={errors.date}>
-          <Field
-            control="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Amount">
+        <Field
+          label={sourceAcct ? `Amount (${sourceAcct.currency})` : "Amount"}
+          error={errors.amount}
+          control="amount"
+          step="any"
+          inputMode="decimal"
+          value={amount}
+          onValueChange={(nv) => setAmount(nv)}
+          placeholder="100.00"
+        />
+        <Field
+          label="Date"
+          error={errors.date}
+          control="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </FieldGroup>
 
-      <OpGroup label="Details">
-        <OpRow label="Payee">
-          <Field
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Note">
-          <Field
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className={OP_INPUT}
-          />
-        </OpRow>
-        <OpRow label="Tags">
-          <Field
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="tag1, tag2 (optional)"
-            className={OP_INPUT}
-          />
-        </OpRow>
-      </OpGroup>
+      <FieldGroup label="Details">
+        <Field label="Payee" value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Optional" />
+        <Field label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+        <Field
+          label="Tags"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          placeholder="tag1, tag2 (optional)"
+        />
+      </FieldGroup>
 
       {submitError && (
-        <OpGroup>
+        <FieldGroup>
           <OpNote tone="destructive">{submitError}</OpNote>
-        </OpGroup>
+        </FieldGroup>
       )}
     </OpPage>
   );

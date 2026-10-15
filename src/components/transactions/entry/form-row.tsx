@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { FormRow as SharedFormRow, type FormRowProps } from "@/components/forms";
+import { type FormRowProps } from "@/components/forms";
 
 export type {
   FormRowButtonProps,
