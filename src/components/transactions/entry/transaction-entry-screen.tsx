@@ -1233,7 +1233,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
         <Field
           control="segmented"
           fill
-          label="Type"
+          aria-label="Transaction type"
           value={txType}
           onValueChange={(v) => {
             const next = v as TxType;
@@ -1310,6 +1310,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             testId="txnew-row-date"
             label="Date"
             icon={CalendarDays}
+            hideLabel
             id="txnew-date"
             value={date}
             placeholder="Date"
@@ -1334,6 +1335,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             testId="txnew-row-amount"
             label="Amount"
             icon={Banknote}
+            hideLabel
             aria-label="Amount"
             inputMode="none"
             placeholder="0"
@@ -1367,6 +1369,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               testId="txnew-row-category"
               label="Category"
               icon={Tag}
+              hideLabel
               value={
                 selectedCat ? (
                   <>
@@ -1394,6 +1397,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               testId="txnew-row-account"
               label={txType === "Transfer" ? "From" : "Account"}
               icon={Wallet}
+              hideLabel
               value={selectedAcc?.name}
               placeholder={loadingAccounts ? "Loading accounts..." : txType === "Transfer" ? "From account" : "Account"}
               invalid={invalidField === "account"}
@@ -1410,6 +1414,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
                   testId="txnew-row-to-account"
                   label="To"
                   icon={Wallet}
+                  hideLabel
                   value={selectedToAcc?.name}
                   placeholder={loadingAccounts ? "Loading accounts..." : "To account"}
                   invalid={invalidField === "toAccount"}
@@ -1458,6 +1463,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
               id="txnew-payee"
               label="Payee"
               icon={Store}
+              hideLabel
               value={payee}
               onChange={(e) => {
                 setPayee(e.target.value);
@@ -1487,6 +1493,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             testId="txnew-row-note"
             label="Note"
             icon={StickyNote}
+            hideLabel
             id="txnew-note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -1504,6 +1511,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
             id="txnew-tags"
             label="Tags"
             icon={Hash}
+            hideLabel
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="Tags"

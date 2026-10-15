@@ -281,10 +281,10 @@ export function TransactionFormBody({
                   Split rows (must sum to total amount)
                 </div>
                 {splitRows.map((row, i) => (
-                  <div key={i} className="flex gap-1.5 items-end">
+                  <div key={i} className="flex gap-1.5 items-center">
                     <Field
                       control="combobox"
-                      label="Category"
+                      aria-label="Split category"
                       value={row.categoryId}
                       onValueChange={(v) => {
                         const next = [...splitRows];
@@ -299,6 +299,7 @@ export function TransactionFormBody({
                         (c) => Number(c.value),
                         (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                       )}
+                      placeholder="Category"
                       searchPlaceholder="Search categories…"
                       emptyMessage="No matches"
                       compact
@@ -306,7 +307,7 @@ export function TransactionFormBody({
                     />
                     <Field
                       control="amount"
-                      label="Amount"
+                      aria-label="Split amount"
                       step="0.01"
                       min="0"
                       placeholder="0.00"
@@ -321,7 +322,8 @@ export function TransactionFormBody({
                       controlClassName="font-mono"
                     />
                     <Field
-                      label="Note"
+                      aria-label="Split note"
+                      placeholder="Note"
                       value={row.note}
                       onChange={(e) => {
                         const next = [...splitRows];
@@ -686,10 +688,11 @@ export function TransactionFormBody({
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
+                        <span className="text-xs font-medium">Destination holding (in {toAcct?.name ?? "—"})</span>
                         {toAcct ? (
                           <Field
                             control="select"
-                            label={`Destination holding (in ${toAcct.name})`}
+                            aria-label="Destination holding"
                             value={destSelectValue}
                             onValueChange={(v) => {
                               const val = v ?? destSentinel;
@@ -720,11 +723,11 @@ export function TransactionFormBody({
                             ]}
                           />
                         ) : (
-                          <Field label="Destination holding" value="" placeholder="Pick a destination account first" disabled />
+                          <Field aria-label="Destination holding" value="" placeholder="Pick a destination account first" disabled />
                         )}
                         {destHoldingTouched && destSelectValue === "__custom__" && (
                           <Field
-                            label="New holding name"
+                            aria-label="New holding name"
                             value={transferForm.destHoldingName}
                             onChange={(e) => setTransferForm({ ...transferForm, destHoldingName: e.target.value })}
                             placeholder={`New holding name in ${toAcct?.name ?? "destination"}`}
@@ -898,7 +901,7 @@ export function TransactionFormBody({
                   </div>
                   <Field
                     control="amount"
-                    label={`Received (${toAcct?.currency ?? displayCurrency})`}
+                    aria-label="Received amount"
                     step="0.01"
                     min="0"
                     value={transferForm.receivedAmount}

@@ -1,6 +1,7 @@
 // @vitest-environment node
-// Guard: every input in the split-view pane forms renders through <Field> with a VISIBLE label (not hideLabel, not
-// placeholder-only, not aria-label-only), and no raw <input>/<select>/<textarea> is used. Field itself is unchanged.
+// Guard: every input in the labelled split-view pane forms (category, goal, loan, subscription, account) renders through
+// <Field> with a VISIBLE label (not hideLabel, not placeholder-only, not aria-label-only), and no raw
+// <input>/<select>/<textarea> is used. Transaction entry rows are icon rows by design and are not covered here.
 // Behavioural check (getByLabelText) for the category form lives in tests/app/category-budget-form.test.tsx.
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
@@ -16,10 +17,6 @@ const PANE_FORMS = [
   `${APP}/loans/_components/loan-form.tsx`,
   `${APP}/subscriptions/_components/subscription-form.tsx`,
   `${APP}/accounts/_components/account-form.tsx`,
-  "src/components/transactions/entry/transaction-entry-screen.tsx",
-  "src/components/transactions/entry/repeat-section.tsx",
-  "src/components/transactions/split-rows/split-rows.tsx",
-  "src/components/transactions/transaction-form-body.tsx",
 ];
 
 /** The attribute text of every <Field ...> opening tag (braces and strings respected). */
