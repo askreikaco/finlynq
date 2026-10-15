@@ -113,7 +113,7 @@ const VARIANTS = [
   ["/transactions", `/transactions?sel=${ids.tx}`], ["/transactions", "/transactions?sel=new"],
   ["/transactions", "/transactions?range=last_month"], ["/transactions", "/transactions?q=grab&sort=amount&dir=asc"],
   ["/transactions/search", "/transactions/search?q=coffee"], ["/accounts", `/accounts?sel=${ids.account}`],
-  ["/categories", "/categories?edit=new"], ["/categories", `/categories?edit=${ids.category}`],
+  ["/categories", "/categories?sel=new"], ["/categories", `/categories?sel=${ids.category}`], ["/categories", `/categories?sel=${ids.category}&mode=edit`],
   ["/dashboard", "/dashboard?range=this_year"],
 ];
 for (const [route, url] of VARIANTS) targets.push({ route, url, wave: wave(route), variant: true });

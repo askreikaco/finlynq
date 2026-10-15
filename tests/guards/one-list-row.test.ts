@@ -87,4 +87,9 @@ describe("one list row", () => {
       expect(read(f), f).not.toMatch(/<(InsetRow|AccountCard)\b/);
     }
   });
+
+  // Folded in from the deleted one-tx-row guard (pane-detail-lists moved the loan schedule into loan-amortization.tsx).
+  it("loan amortization / payment rows (inside loan detail) still use TxRow", () => {
+    expect(read("src/app/(app)/loans/_components/loan-amortization.tsx")).toContain("<TxRow");
+  });
 });

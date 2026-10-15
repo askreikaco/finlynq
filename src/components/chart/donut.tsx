@@ -98,10 +98,13 @@ export function DonutView(p: ChartProps) {
           {p.center && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               {p.center === "total" ? (
-                <>
-                  <span className="text-xs text-muted-foreground">Total</span>
-                  <span className="max-w-full truncate px-2 text-xs font-bold tabular-nums">{formatValue(total)}</span>
-                </>
+                // The hole shrinks with the container: caption first, then the whole total, so the text never touches the ring.
+                inner * 2 < 64 ? null : (
+                  <>
+                    {inner * 2 >= 96 && <span className="text-xs text-muted-foreground">Total</span>}
+                    <span className={cn("max-w-full truncate font-bold tabular-nums", inner * 2 >= 96 ? "px-2 text-xs" : "px-1 text-[10px]")}>{formatValue(total)}</span>
+                  </>
+                )
               ) : (
                 p.center
               )}

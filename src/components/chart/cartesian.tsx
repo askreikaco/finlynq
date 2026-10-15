@@ -70,7 +70,7 @@ export function CartesianView(p: ChartProps) {
 
   const sparkColor = resolveSvgColor(p, PALETTE[0]);
   const rows = useMemo<ReadonlyArray<object>>(
-    () => (spark ? (p.values ?? []).map((value, index) => ({ index, value, label: p.labels?.[index] })) : (p.data ?? [])),
+    () => (spark ? (p.values ?? []).map((value, index) => ({ index, value, label: p.labels?.[index] ?? String(index) })) : (p.data ?? [])),
     [spark, p.values, p.labels, p.data],
   );
   const series: ChartSeries[] = useMemo(
