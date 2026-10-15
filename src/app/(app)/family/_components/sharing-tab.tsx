@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { AlertCircle, Loader2, Plus } from "lucide-react";
@@ -68,16 +68,14 @@ export function SharingTab({ reloadKey = 0, onSharesChanged }: { reloadKey?: num
 
   if (error && !shares) {
     return (
-      <Card className="border-destructive bg-destructive/5">
-        <CardContent className="pt-6 flex gap-3">
-          <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <div role="alert">
-            <p className="font-medium text-destructive">{error}</p>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => setVersion((v) => v + 1)}>
-              {FAMILY_STRINGS.sharing_try_again}
-            </Button>
-          </div>
-        </CardContent>
+      <Card frameClassName="border-destructive bg-destructive/5" className="pt-6 flex gap-3">
+        <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div role="alert">
+          <p className="font-medium text-destructive">{error}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => setVersion((v) => v + 1)}>
+            {FAMILY_STRINGS.sharing_try_again}
+          </Button>
+        </div>
       </Card>
     );
   }

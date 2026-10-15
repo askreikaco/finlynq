@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, type CardProps } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/notice";
 import { Chart } from "@/components/chart";
@@ -32,10 +32,7 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { type CategoryDetail } from "@/lib/reports/category-detail";
 import { ArrowLeftRight, BarChart3, CalendarClock, Percent, Receipt, Scale, Store, Tags, Users, Wallet } from "lucide-react";
-import {
-  Amount, CardLayoutEditor, ListRow, MetricGrid, PageHeader, SectionCard,
-  useCardLayout, usePageCustomize, usePaneTitle,
-} from "@/components/mobile";
+import { Amount, CardLayoutEditor, ListRow, MetricGrid, PageHeader, useCardLayout, usePageCustomize, usePaneTitle } from "@/components/mobile";
 import { isGroupSelId, resolveGroupSelId, type GroupLike } from "@/lib/categories/group-key";
 import type { PageCard } from "@/lib/card-layout";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -44,7 +41,6 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, periodLabel, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
 import { subLabel } from "@/lib/categories/group-overview";
 import { resolveCard } from "@/lib/metrics/delta";
-import type { MetricCardProps } from "@/components/metric-card";
 import { cardProps } from "@/lib/metrics/series";
 
 /** Cards of the category page, default order (Customize). The period selector and the header are not cards. */
@@ -195,9 +191,9 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
     ? (sel.range === "custom" ? periodName : sel.month ? periodName : RANGE_LABELS[sel.range])
     : "This month so far";
   const countCard = resolveCard({ points: countPts, period: metricRange.period, mode: "sum", isDefault: false, kind: "count", caption });
-  const summaryMetrics: MetricCardProps[] = [
+  const summaryMetrics: CardProps[] = [
     { icon: Wallet,
-      label: rangeTitle,
+      title: rangeTitle,
       value: metricRange.explicit || sel.month ? (thisCard.value ?? 0) : stats.thisMonth,
       currency: cur,
       ...cardProps(thisCard, !isIncome),
@@ -206,25 +202,25 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
         : `${countCard.value ?? currentMonth?.count ?? 0} transaction${(countCard.value ?? currentMonth?.count) === 1 ? "" : "s"}`,
     },
     { icon: Wallet,
-      label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
+      title: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
       value: stats.lastMonth,
       currency: cur,
       ...cardProps(lastCard, !isIncome),
       note: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
     { icon: Scale,
-      label: "Monthly average",
+      title: "Monthly average",
       value: stats.averageMonthly != null ? stats.averageMonthly : "—",
       currency: stats.averageMonthly != null ? cur : undefined,
       sub: stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month",
     },
     { icon: CalendarClock,
-      label: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
+      title: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
       value: stats.sameMonthLastYear,
       currency: cur,
       sub: "same month, a year ago",
     },
-    { icon: Percent, label: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, ${periodName}` },
+    { icon: Percent, title: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, ${periodName}` },
   ];
 
   // The narrow pane drops "same month last year" (the chart shows it) so the stack stays short.
@@ -239,7 +235,7 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
       </div>
     ),
     children: isGroup && (data.children?.length ?? 0) > 0 ? (
-      <SectionCard label="Categories" icon={Tags} tone="indigo" list>
+      <Card title="Categories" icon={Tags} tone="indigo" frame="list">
         <p className="px-4 py-3 text-xs text-muted-foreground">{data.children!.length} categor{data.children!.length === 1 ? "y" : "ies"} in {category.name}, {periodName}</p>
         {data.children!.map((c) => (
           <ListRow
@@ -250,10 +246,10 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
             value={<Amount value={c.amount} currency={cur} size="md" tone="none" />}
           />
         ))}
-      </SectionCard>
+      </Card>
     ) : null,
     chart: hasData ? (
-      <SectionCard label={`Monthly ${noun}`} icon={BarChart3} tone="indigo">
+      <Card title={`Monthly ${noun}`} icon={BarChart3} tone="indigo">
         <p className="mb-3 text-xs text-muted-foreground">
           Monthly in {cur}, {data.months.length} month{data.months.length === 1 ? "" : "s"} to {monthLabel(currentMonth?.month ?? "", "short")}
           {stats.averageMonthly != null && ` · average ${formatCurrency(stats.averageMonthly, cur)}`}
@@ -280,10 +276,10 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
             </>
           )}
         />
-      </SectionCard>
+      </Card>
     ) : null,
     payees: hasData ? (
-      <SectionCard label="Top payees" icon={Users} tone="violet" list>
+      <Card title="Top payees" icon={Users} tone="violet" frame="list">
         <p className="px-4 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, {periodName}</p>
         {data.payeesLocked ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
@@ -300,10 +296,10 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
             />
           ))
         )}
-      </SectionCard>
+      </Card>
     ) : null,
     recent: hasData ? (
-      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" list>
+      <Card title="Recent transactions" icon={ArrowLeftRight} tone="cyan" frame="list">
         <p className="px-4 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in {periodName}{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
         {data.recent.slice(0, listLimit).map((t) => (
           <ListRow
@@ -322,7 +318,7 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
             View all {stats.transactionCount} transactions
           </Link>
         </div>
-      </SectionCard>
+      </Card>
     ) : null,
   };
 
@@ -369,11 +365,9 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
       </div>
 
       {!hasData && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-semibold">No transactions in this category in {periodName}</p>
-            <p className="text-sm text-muted-foreground mt-1">Try another period.</p>
-          </CardContent>
+        <Card className="py-12 text-center">
+          <p className="font-semibold">No transactions in this category in {periodName}</p>
+          <p className="text-sm text-muted-foreground mt-1">Try another period.</p>
         </Card>
       )}
 

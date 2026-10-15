@@ -20,11 +20,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Overlay } from "@/components/ui/overlay";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { Field } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 
 export interface OfxPreviewRow {
   date: string;
@@ -161,7 +162,7 @@ export function OfxConfirmDialog({
               </span>
             </div>
             <div className="max-h-[42dvh] overflow-auto">
-              <SectionCard list>
+              <Card frame="list">
                 {previewRows.slice(0, 50).map((r) => (
                   <ListRow
                     key={r.fitId}
@@ -170,7 +171,7 @@ export function OfxConfirmDialog({
                     value={<span className="font-mono text-sm">{formatCurrency(r.amount, currency)}</span>}
                   />
                 ))}
-              </SectionCard>
+              </Card>
             </div>
             {rowCount > 50 && (
               <p data-keep="status" className="text-xs text-muted-foreground">First 50 of {rowCount} shown; all will import.</p>

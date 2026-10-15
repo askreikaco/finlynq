@@ -12,8 +12,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Coins, Loader2, SlidersHorizontal, Target } from "lucide-react";
@@ -126,83 +125,78 @@ export default function BackfillWizardPage() {
 
       <CashSleeveSymbolFix />
 
-      <Card>
-        <CardHeader>
-          <CardTitle icon={SlidersHorizontal} tone="indigo">
-            1. Mode
-            <InfoTip
-              label="About mode"
-              text="One-time fix so realized gains and lot tracking work; account balances are unchanged. Choose how to handle stock legs with no matching cash leg: flag them for manual fixing, or fabricate a paired cash leg."
-            />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ModeCard
-            label="I import cash transactions separately"
-            selected={mode === "refuse_orphans"}
-            onSelect={() => setMode("refuse_orphans")}
-          />
-          <ModeCard
-            label="I only track investments here"
-            warning="Fabricates a paired cash leg; the bank-side balance will diverge by that amount."
-            selected={mode === "synthesize_orphans"}
-            onSelect={() => setMode("synthesize_orphans")}
-          />
-        </CardContent>
+      <Card
+        title="1. Mode"
+        icon={SlidersHorizontal}
+        tone="indigo"
+        info="One-time fix so realized gains and lot tracking work; account balances are unchanged. Choose how to handle stock legs with no matching cash leg: flag them for manual fixing, or fabricate a paired cash leg."
+        infoLabel="About mode"
+        className="space-y-3"
+      >
+        <ModeCard
+          label="I import cash transactions separately"
+          selected={mode === "refuse_orphans"}
+          onSelect={() => setMode("refuse_orphans")}
+        />
+        <ModeCard
+          label="I only track investments here"
+          warning="Fabricates a paired cash leg; the bank-side balance will diverge by that amount."
+          selected={mode === "synthesize_orphans"}
+          onSelect={() => setMode("synthesize_orphans")}
+        />
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle icon={Target} tone="cyan">
-            2. Scope
-            <InfoTip label="About scope" text="Narrow which transactions the planner looks at." />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2 flex-wrap">
-            <ScopeChip label="All accounts" selected={scopeChoice === "all"} onSelect={() => setScopeChoice("all")} />
-            <ScopeChip label="Specific accounts" selected={scopeChoice === "accounts"} onSelect={() => setScopeChoice("accounts")} />
-            <ScopeChip label="Date range" selected={scopeChoice === "date_range"} onSelect={() => setScopeChoice("date_range")} />
+      <Card
+        title="2. Scope"
+        icon={Target}
+        tone="cyan"
+        info="Narrow which transactions the planner looks at."
+        infoLabel="About scope"
+        className="space-y-4"
+      >
+        <div className="flex gap-2 flex-wrap">
+          <ScopeChip label="All accounts" selected={scopeChoice === "all"} onSelect={() => setScopeChoice("all")} />
+          <ScopeChip label="Specific accounts" selected={scopeChoice === "accounts"} onSelect={() => setScopeChoice("accounts")} />
+          <ScopeChip label="Date range" selected={scopeChoice === "date_range"} onSelect={() => setScopeChoice("date_range")} />
+        </div>
+
+        {scopeChoice === "accounts" && (
+          <div className="space-y-1">
+            {accounts.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">No investment accounts.</p>}
+            {accounts.map((a) => (
+              <Field
+                key={a.accountId}
+                label={a.name}
+                control="checkbox"
+                checked={accountIds.includes(a.accountId)}
+                onChange={(e) => {
+                  setAccountIds((prev) =>
+                    e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
+                  );
+                }}
+              />
+            ))}
           </div>
+        )}
 
-          {scopeChoice === "accounts" && (
-            <div className="space-y-1">
-              {accounts.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">No investment accounts.</p>}
-              {accounts.map((a) => (
-                <Field
-                  key={a.accountId}
-                  label={a.name}
-                  control="checkbox"
-                  checked={accountIds.includes(a.accountId)}
-                  onChange={(e) => {
-                    setAccountIds((prev) =>
-                      e.target.checked ? [...prev, a.accountId] : prev.filter((id) => id !== a.accountId),
-                    );
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {scopeChoice === "date_range" && (
-            <div className="flex gap-3 items-center">
-              <Field
-                label="From:"
-                control="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="ml-1"
-              />
-              <Field
-                label="To:"
-                control="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="ml-1"
-              />
-            </div>
-          )}
-        </CardContent>
+        {scopeChoice === "date_range" && (
+          <div className="flex gap-3 items-center">
+            <Field
+              label="From:"
+              control="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="ml-1"
+            />
+            <Field
+              label="To:"
+              control="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="ml-1"
+            />
+          </div>
+        )}
       </Card>
 
       {error && (
@@ -306,26 +300,24 @@ function CashSleeveSymbolFix() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle icon={Coins} tone="amber">
-          0. Cash symbols
-          <InfoTip label="About cash symbols" text='Sets symbol = currency on cash sleeves with no symbol (a CAD sleeve gets "CAD"). Safe to repeat; only touches missing symbols.' />
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Button variant="outline" onClick={handleFix} disabled={busy}>
-          {busy ? <><Loader2 className="size-4 animate-spin mr-2" /> Fixing…</> : "Fix symbols"}
-        </Button>
-        {result && (
-          <div className="text-xs text-muted-foreground mt-2" data-keep="status">
-            Fixed {result.fixed} of {result.total}.
-          </div>
-        )}
-        {error && (
-          <div className="text-xs text-destructive mt-2">{error}</div>
-        )}
-      </CardContent>
+    <Card
+      title="0. Cash symbols"
+      icon={Coins}
+      tone="amber"
+      info='Sets symbol = currency on cash sleeves with no symbol (a CAD sleeve gets "CAD"). Safe to repeat; only touches missing symbols.'
+      infoLabel="About cash symbols"
+    >
+      <Button variant="outline" onClick={handleFix} disabled={busy}>
+        {busy ? <><Loader2 className="size-4 animate-spin mr-2" /> Fixing…</> : "Fix symbols"}
+      </Button>
+      {result && (
+        <div className="text-xs text-muted-foreground mt-2" data-keep="status">
+          Fixed {result.fixed} of {result.total}.
+        </div>
+      )}
+      {error && (
+        <div className="text-xs text-destructive mt-2">{error}</div>
+      )}
     </Card>
   );
 }

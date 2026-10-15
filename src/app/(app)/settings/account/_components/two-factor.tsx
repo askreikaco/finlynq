@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RevealForm } from "@/components/settings/reveal-form";
-import { AlertTriangle, Check, Shield, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, ShieldCheck } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import QRCode from "qrcode";
 
@@ -264,138 +263,49 @@ export function TwoFactor() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={ShieldCheck} tone="emerald">
-              {STRINGS.title}
-              <InfoTip label="About two-factor" text={STRINGS.description} />
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {mfaEnabled ? (
-          <>
-            <p className="text-sm text-pos flex items-center gap-2">
-              <Check className="h-4 w-4" />
-              {STRINGS.statusEnabled}
+    <Card
+      title={STRINGS.title}
+      icon={ShieldCheck}
+      tone="emerald"
+      info={STRINGS.description}
+      infoLabel="About two-factor"
+      className="space-y-4"
+    >
+      {mfaEnabled ? (
+        <>
+          <p className="text-sm text-pos flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            {STRINGS.statusEnabled}
+          </p>
+
+          {status && state.type !== "disabling" && (
+            <p className="text-sm text-pos flex items-center gap-1" role="status">
+              <Check className="h-3.5 w-3.5" />
+              {status}
             </p>
-
-            {status && state.type !== "disabling" && (
-              <p className="text-sm text-pos flex items-center gap-1" role="status">
-                <Check className="h-3.5 w-3.5" />
-                {status}
-              </p>
-            )}
-            {error && state.type !== "disabling" && (
-              <p className="text-sm text-destructive flex items-center gap-2" role="alert">
-                <AlertTriangle className="h-4 w-4" />
-                {error}
-              </p>
-            )}
-            <RevealForm open={state.type === "disabling"} onOpen={startDisable} buttonLabel={STRINGS.disableButton} variant="destructive">
-              <form onSubmit={(e) => { e.preventDefault(); handleDisableMfa(); }} className="space-y-3 max-w-sm">
-                <Field
-                  label={STRINGS.codeLabel}
-                  id="disable-code"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={STRINGS.codePlaceholder}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.slice(0, 6))}
-                  disabled={saving}
-                />
-
-                <Field
-                  label={STRINGS.passwordLabel}
-                  id="disable-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={saving}
-                />
-
-                {error && (
-                  <p className="text-sm text-destructive flex items-center gap-2" role="alert">
-                    <AlertTriangle className="h-4 w-4" />
-                    {error}
-                  </p>
-                )}
-                {status && (
-                  <p className="text-sm text-pos flex items-center gap-1" role="status">
-                    <Check className="h-3.5 w-3.5" />
-                    {status}
-                  </p>
-                )}
-
-                <div className="flex gap-2">
-                  <Button
-                    type="submit"
-                    variant="destructive"
-                    disabled={saving || !code || !password}
-                  >
-                    {saving ? STRINGS.disablingStatus : STRINGS.disableSubmit}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={cancelDisable} disabled={saving}>
-                    {STRINGS.cancel}
-                  </Button>
-                </div>
-              </form>
-            </RevealForm>
-          </>
-        ) : state.type === "enabling" ? (
-          <>
-            {qrDataUrl && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground" data-keep="label">{STRINGS.scanLabel}</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrDataUrl} alt={STRINGS.qrCodeAlt} className="w-48 h-48" />
-              </div>
-            )}
-
-            <Field
-              label={STRINGS.secretLabel}
-              info={STRINGS.secretHelp}
-              infoLabel="About secret key"
-              id="secret"
-              readOnly
-              value={secret}
-              controlClassName="font-mono"
-              suffix={
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopySecret}
-                  disabled={!secret}
-                >
-                  {secretCopied ? STRINGS.copiedButton : STRINGS.copyButton}
-                </Button>
-              }
-            />
-
-            <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">
+          )}
+          {error && state.type !== "disabling" && (
+            <p className="text-sm text-destructive flex items-center gap-2" role="alert">
+              <AlertTriangle className="h-4 w-4" />
+              {error}
+            </p>
+          )}
+          <RevealForm open={state.type === "disabling"} onOpen={startDisable} buttonLabel={STRINGS.disableButton} variant="destructive">
+            <form onSubmit={(e) => { e.preventDefault(); handleDisableMfa(); }} className="space-y-3 max-w-sm">
               <Field
                 label={STRINGS.codeLabel}
-                id="enable-code"
+                id="disable-code"
                 inputMode="numeric"
                 maxLength={6}
                 placeholder={STRINGS.codePlaceholder}
                 value={code}
                 onChange={(e) => setCode(e.target.value.slice(0, 6))}
                 disabled={saving}
-                autoFocus
               />
 
               <Field
                 label={STRINGS.passwordLabel}
-                id="enable-password"
+                id="disable-password"
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -409,54 +319,135 @@ export function TwoFactor() {
                   {error}
                 </p>
               )}
+              {status && (
+                <p className="text-sm text-pos flex items-center gap-1" role="status">
+                  <Check className="h-3.5 w-3.5" />
+                  {status}
+                </p>
+              )}
 
-              <Button
-                type="submit"
-                disabled={saving || !code || !password}
-              >
-                {saving ? STRINGS.enablingStatus : STRINGS.enableSubmit}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={saving || !code || !password}
+                >
+                  {saving ? STRINGS.disablingStatus : STRINGS.disableSubmit}
+                </Button>
+                <Button type="button" variant="ghost" onClick={cancelDisable} disabled={saving}>
+                  {STRINGS.cancel}
+                </Button>
+              </div>
+            </form>
+          </RevealForm>
+        </>
+      ) : state.type === "enabling" ? (
+        <>
+          {qrDataUrl && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground" data-keep="label">{STRINGS.scanLabel}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrDataUrl} alt={STRINGS.qrCodeAlt} className="w-48 h-48" />
+            </div>
+          )}
 
+          <Field
+            label={STRINGS.secretLabel}
+            info={STRINGS.secretHelp}
+            infoLabel="About secret key"
+            id="secret"
+            readOnly
+            value={secret}
+            controlClassName="font-mono"
+            suffix={
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => {
-                  setState({ type: "disabled" });
-                  setCode("");
-                  setPassword("");
-                  setSecret("");
-                  setQrDataUrl("");
-                  setError("");
-                }}
+                onClick={handleCopySecret}
+                disabled={!secret}
               >
-                {STRINGS.cancel}
+                {secretCopied ? STRINGS.copiedButton : STRINGS.copyButton}
               </Button>
-            </form>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground" data-keep="status">{STRINGS.statusDisabled}</p>
+            }
+          />
+
+          <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">
+            <Field
+              label={STRINGS.codeLabel}
+              id="enable-code"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder={STRINGS.codePlaceholder}
+              value={code}
+              onChange={(e) => setCode(e.target.value.slice(0, 6))}
+              disabled={saving}
+              autoFocus
+            />
+
+            <Field
+              label={STRINGS.passwordLabel}
+              id="enable-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={saving}
+            />
+
             {error && (
               <p className="text-sm text-destructive flex items-center gap-2" role="alert">
                 <AlertTriangle className="h-4 w-4" />
                 {error}
               </p>
             )}
-            {status && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1" data-keep="status">
-                {status}
-              </p>
-            )}
+
             <Button
-              onClick={handleGenerateQr}
-              disabled={state.type === "generating"}
+              type="submit"
+              disabled={saving || !code || !password}
             >
-              {state.type === "generating" ? STRINGS.generatingQr : STRINGS.enableButton}
+              {saving ? STRINGS.enablingStatus : STRINGS.enableSubmit}
             </Button>
-          </>
-        )}
-      </CardContent>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setState({ type: "disabled" });
+                setCode("");
+                setPassword("");
+                setSecret("");
+                setQrDataUrl("");
+                setError("");
+              }}
+            >
+              {STRINGS.cancel}
+            </Button>
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground" data-keep="status">{STRINGS.statusDisabled}</p>
+          {error && (
+            <p className="text-sm text-destructive flex items-center gap-2" role="alert">
+              <AlertTriangle className="h-4 w-4" />
+              {error}
+            </p>
+          )}
+          {status && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1" data-keep="status">
+              {status}
+            </p>
+          )}
+          <Button
+            onClick={handleGenerateQr}
+            disabled={state.type === "generating"}
+          >
+            {state.type === "generating" ? STRINGS.generatingQr : STRINGS.enableButton}
+          </Button>
+        </>
+      )}
     </Card>
   );
 }

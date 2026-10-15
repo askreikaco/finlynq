@@ -14,7 +14,7 @@ import { BarChart3 } from "lucide-react";
 import { Chart } from "@/components/chart";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatDate } from "@/lib/currency";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { BenchmarkData } from "../_types";
 import { prepareTimeSeries } from "@/lib/chart-series";
@@ -60,16 +60,12 @@ export function BenchmarkChart({
     },
   );
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle icon={BarChart3} tone="violet">Performance vs Benchmarks</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Compare major indices over time (% change)
-            </p>
-          </div>
-          <div className="flex gap-1">
+    <Card
+      title="Performance vs Benchmarks"
+      icon={BarChart3}
+      tone="violet"
+      info="Compare major indices over time (% change)"
+      action={<div className="flex gap-1">
             {(["ytd", "1y", "3y", "5y"] as const).map(p => (
               <Button
                 key={p}
@@ -81,54 +77,51 @@ export function BenchmarkChart({
                 {p.toUpperCase()}
               </Button>
             ))}
-          </div>
+          </div>}
+    >
+      {benchmarkLoading ? (
+        <div className="h-64 flex items-center justify-center">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      </CardHeader>
-      <CardContent>
-        {benchmarkLoading ? (
-          <div className="h-64 flex items-center justify-center">
-            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : benchmarks.length > 0 ? (
-          <>
-            <Chart
-              kind="line"
-              data={benchmarkChartData}
-              xKey="date"
-              height={280}
-              series={benchmarks.map((b) => ({
-                key: b.name,
-                name: b.name,
-                color: b.color,
-                connectNulls: true,
-              }))}
-              yDomain={domain}
-              formatX={(v) => formatDateNames(new Date(v + "T00:00:00"), { month: "short", year: "2-digit" })}
-              formatY={(v) => `${v > 0 ? "+" : ""}${v}%`}
-              formatValue={(v) => `${v > 0 ? "+" : ""}${formatPercent(v, 2)}`}
-              formatLabel={formatDate}
-            />
-            <div className={`mt-4 ${metricGridClass(benchmarks.length)}`}>
-              {benchmarks.map(b => (
-                <div key={b.symbol} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
-                  {/* Dot colour set via ref-callback (CSP, FINLYNQ-83) */}
-                  <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" ref={(el) => { if (el) el.style.background = b.color; }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground truncate">{b.name}</p>
-                    <p className={`text-sm font-mono font-semibold ${b.returnPct >= 0 ? "text-pos" : "text-destructive"}`}>
-                      {b.returnPct >= 0 ? "+" : ""}{formatPercent(b.returnPct, 2)}
-                    </p>
-                  </div>
+      ) : benchmarks.length > 0 ? (
+        <>
+          <Chart
+            kind="line"
+            data={benchmarkChartData}
+            xKey="date"
+            height={280}
+            series={benchmarks.map((b) => ({
+              key: b.name,
+              name: b.name,
+              color: b.color,
+              connectNulls: true,
+            }))}
+            yDomain={domain}
+            formatX={(v) => formatDateNames(new Date(v + "T00:00:00"), { month: "short", year: "2-digit" })}
+            formatY={(v) => `${v > 0 ? "+" : ""}${v}%`}
+            formatValue={(v) => `${v > 0 ? "+" : ""}${formatPercent(v, 2)}`}
+            formatLabel={formatDate}
+          />
+          <div className={`mt-4 ${metricGridClass(benchmarks.length)}`}>
+            {benchmarks.map(b => (
+              <div key={b.symbol} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                {/* Dot colour set via ref-callback (CSP, FINLYNQ-83) */}
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" ref={(el) => { if (el) el.style.background = b.color; }} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground truncate">{b.name}</p>
+                  <p className={`text-sm font-mono font-semibold ${b.returnPct >= 0 ? "text-pos" : "text-destructive"}`}>
+                    {b.returnPct >= 0 ? "+" : ""}{formatPercent(b.returnPct, 2)}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
-            Unable to load benchmark data. Try again later.
+              </div>
+            ))}
           </div>
-        )}
-      </CardContent>
+        </>
+      ) : (
+        <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+          Unable to load benchmark data. Try again later.
+        </div>
+      )}
     </Card>
   );
 }

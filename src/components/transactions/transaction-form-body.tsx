@@ -284,6 +284,7 @@ export function TransactionFormBody({
                   <div key={i} className="flex gap-1.5 items-center">
                     <Field
                       control="combobox"
+                      aria-label="Split category"
                       value={row.categoryId}
                       onValueChange={(v) => {
                         const next = [...splitRows];
@@ -306,6 +307,7 @@ export function TransactionFormBody({
                     />
                     <Field
                       control="amount"
+                      aria-label="Split amount"
                       step="0.01"
                       min="0"
                       placeholder="0.00"
@@ -320,6 +322,7 @@ export function TransactionFormBody({
                       controlClassName="font-mono"
                     />
                     <Field
+                      aria-label="Split note"
                       placeholder="Note"
                       value={row.note}
                       onChange={(e) => {
@@ -689,6 +692,7 @@ export function TransactionFormBody({
                         {toAcct ? (
                           <Field
                             control="select"
+                            aria-label="Destination holding"
                             value={destSelectValue}
                             onValueChange={(v) => {
                               const val = v ?? destSentinel;
@@ -719,10 +723,11 @@ export function TransactionFormBody({
                             ]}
                           />
                         ) : (
-                          <Field value="" placeholder="Pick a destination account first" disabled />
+                          <Field aria-label="Destination holding" value="" placeholder="Pick a destination account first" disabled />
                         )}
                         {destHoldingTouched && destSelectValue === "__custom__" && (
                           <Field
+                            aria-label="New holding name"
                             value={transferForm.destHoldingName}
                             onChange={(e) => setTransferForm({ ...transferForm, destHoldingName: e.target.value })}
                             placeholder={`New holding name in ${toAcct?.name ?? "destination"}`}
@@ -896,6 +901,7 @@ export function TransactionFormBody({
                   </div>
                   <Field
                     control="amount"
+                    aria-label="Received amount"
                     step="0.01"
                     min="0"
                     value={transferForm.receivedAmount}

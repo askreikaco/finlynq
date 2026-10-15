@@ -75,9 +75,9 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("categories: ONE full-width SectionCard list (single column, rows reflow by container width); metric cards max 3 columns", () => {
+  it("categories: ONE full-width Card list (single column, rows reflow by container width); metric cards max 3 columns", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
-    expect(src).toMatch(/label="Categories"[\s\S]*shadow-\[var\(--list-divider\)\]/);
+    expect(src).toMatch(/title="Categories"[\s\S]*frame="list"/);
     expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
     expect(code("src/components/mobile/list-row.tsx")).toContain("@container");
   });
@@ -94,7 +94,7 @@ describe("desktop columns: card grids", () => {
     expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
     expect(src).toMatch(/Found in your transactions" icon=\{Search\} tone="cyan" padded=\{false\} className="col-span-full/);
     expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
-    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><Notice/);
+    expect(src).toMatch(/<Card frameClassName="col-span-full" className="p-0"><Notice/);
   });
 
   it("dashboard: the 3-card row is a counted grid (columns follow rendered cards: 1 / 2 / 3)", () => {
@@ -110,9 +110,9 @@ describe("desktop columns: card grids", () => {
     expect(src).toMatch(/income-expense-chart" minHeight=\{300\} className=\{`[^`]*wide:col-span-2/);
   });
 
-  it("accounts: Assets / Liabilities headings are SectionCard labels inside the card; group headers are not monospace", () => {
+  it("accounts: Assets / Liabilities headings are Card labels inside the card; group headers are not monospace", () => {
     const src = code(`${APP}/accounts/page.tsx`);
-    expect(src).toMatch(/<SectionCard\s+label=\{/);
+    expect(src).toMatch(/<Card\s+title=\{/);
     expect(src).not.toMatch(/font-mono/);
     expect(src).not.toMatch(/<h2 className="text-xl font-semibold">/);
   });

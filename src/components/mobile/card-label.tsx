@@ -3,9 +3,9 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * CardLabel — the ONE card header used by MetricCard (Total Net Worth, ...), SectionCard (Action Center,
- * Weekly Recap, ...) and the shadcn CardTitle: icon tile + uppercase label at the same position, padding
- * and typography on every card. Every number below is the single source of truth for that position.
+ * CardLabel — the ONE card title row, drawn by `Card` (ui/card.tsx) for every card (Total Net Worth, Action Center,
+ * Weekly Recap, ...) and by FieldGroup: icon tile + uppercase label at the same position, padding and
+ * typography on every card. Every number below is the single source of truth for that position.
  */
 
 /** Icon tile colours, so pages pick a name instead of hand-writing classes. */
@@ -22,13 +22,7 @@ export type MetricTone = keyof typeof METRIC_TONES;
 
 /** Left/right padding of a card's content. Container-query based: needs an `@container` ancestor. */
 export const CARD_PAD_X = "px-3 @[11rem]:px-5";
-/** Top padding between the card frame padding and the label row (MetricCard CardContent). */
-export const CARD_PAD_T = "pt-4";
-/**
- * Top padding for a label row that sits directly in a card frame with no frame padding (SectionCard):
- * = the shadcn Card's own py-3 / regular:py-4 / dense:pointer-fine:py-2.5 plus CARD_PAD_T, so the label
- * lands at the exact same offset as MetricCard's (Card py + CardContent pt-4).
- */
+/** Top padding of the label row: the Card frame has no vertical padding, the row pads itself. */
 export const CARD_LABEL_TOP = "pt-7 regular:pt-8 dense:pointer-fine:pt-[26px]";
 /** Gap between the icon tile and the label, and the space under the row. */
 export const CARD_LABEL_GAP = "gap-2.5";
@@ -48,8 +42,6 @@ export type CardLabelProps = {
   icon?: LucideIcon;
   /** A METRIC_TONES name, or raw classes for the icon tile. */
   tone?: MetricTone | (string & {});
-  /** true = the parent already pads the row (MetricCard's CardContent); false = the row pads itself. */
-  inset?: boolean;
   /** Heading element for the label text. */
   as?: "h2" | "h3" | "p" | "div";
   /** Optional control on the right of the row. */
@@ -66,7 +58,6 @@ export function CardLabel({
   children,
   icon: Icon,
   tone = "muted",
-  inset = false,
   as: Tag = "p",
   action,
   className,
@@ -77,7 +68,7 @@ export function CardLabel({
   return (
     <div
       data-slot="card-label"
-      className={cn("flex items-center", CARD_LABEL_GAP, CARD_LABEL_MB, !inset && [CARD_LABEL_TOP, CARD_PAD_X], className)}
+      className={cn("flex items-center", CARD_LABEL_GAP, CARD_LABEL_MB, CARD_LABEL_TOP, CARD_PAD_X, className)}
     >
       {Icon && (
         <div className={cn(CARD_ICON_TILE, resolveTone(tone), tileClassName)} data-slot="card-label-icon">

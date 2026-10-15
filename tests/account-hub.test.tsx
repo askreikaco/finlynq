@@ -102,7 +102,7 @@ describe("AccountHub", () => {
     const listRows = screen.getAllByText(/Info|Security/);
     expect(listRows.length).toBeGreaterThan(0);
 
-    const sectionCard = document.querySelector('[data-slot="section-card"]');
+    const sectionCard = document.querySelector('[data-slot="card"]');
     expect(sectionCard).not.toBeNull();
   });
 

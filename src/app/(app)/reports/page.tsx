@@ -1,12 +1,11 @@
 "use client";
 
 
-import { MetricCard, type MetricCardProps } from "@/components/metric-card";
 import { Fragment, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, type CardProps } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -202,7 +201,7 @@ export default function ReportsPage() {
   );
   const yoyData: YoYData | null = yoyRes.data && typeof yoyRes.data === "object" ? yoyRes.data : null;
 
-  // Metric cards: the ONE MetricCard design. A monthly income / expense history (a second read of the trends endpoint,
+  // Metric cards: the ONE Card design. A monthly income / expense history (a second read of the trends endpoint,
   // same filters) feeds them: the selected metric range (default this month) against the period before it.
   const metricWin = useMemo(() => seriesWindow(metricRange.period), [metricRange.period]);
   const lastDayOf = (m: string) => `${m}-${String(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()).padStart(2, "0")}`;
@@ -334,28 +333,28 @@ export default function ReportsPage() {
   const netCard = resolveFlow(netPts, "sum");
   const rateCard = resolveRatioCard({ num: netPts, den: incomePts, period: metricRange.period, caption });
   const reportNote = (v: string) => `${startDate} to ${endDate}: ${v}`;
-  const summaryMetrics: MetricCardProps[] = trendsData
+  const summaryMetrics: CardProps[] = trendsData
     ? [
         {
-          id: "report-income", label: "Total Income", icon: TrendingUp, tone: "emerald", valueTone: "pos", sparkColor: "#10b981",
-          value: incomeCard.value ?? trendsData.totalIncome, currency: displayCurrency, ...cardProps(incomeCard),
+          id: "report-income", title: "Total Income", icon: TrendingUp, tone: "emerald", valueTone: "pos", 
+          value: incomeCard.value ?? trendsData.totalIncome, currency: displayCurrency, ...cardProps(incomeCard, false, "#10b981"),
           ...(incomeCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalIncome, displayCurrency)) } : {}),
         },
         {
-          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, tone: "rose", valueTone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e",
-          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard, true),
+          id: "report-expenses", title: "Total Expenses", icon: TrendingDown, tone: "rose", valueTone: "none", valueClassName: "text-destructive", 
+          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard, true, "#f43f5e"),
           ...(expenseCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalExpenses, displayCurrency)) } : {}),
         },
         {
-          id: "report-net-savings", label: "Net Savings", icon: DollarSign, tone: "indigo", valueTone: "auto", sparkColor: "#6366f1",
-          value: netCard.value ?? trendsData.netSavings, currency: displayCurrency, ...cardProps(netCard),
+          id: "report-net-savings", title: "Net Savings", icon: DollarSign, tone: "indigo", valueTone: "auto", 
+          value: netCard.value ?? trendsData.netSavings, currency: displayCurrency, ...cardProps(netCard, false, "#6366f1"),
           ...(netCard.value != null ? { note: reportNote(formatCurrency(trendsData.netSavings, displayCurrency)) } : {}),
         },
         {
-          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, tone: "violet", sparkColor: "#8b5cf6",
+          id: "report-savings-rate", title: "Savings Rate", icon: PiggyBank, tone: "violet", 
           value: <span>{rateCard.value ?? trendsData.savingsRate}%</span>,
           valueClassName: (rateCard.value ?? trendsData.savingsRate) >= 0 ? "text-pos" : "text-destructive",
-          ...cardProps(rateCard),
+          ...cardProps(rateCard, false, "#8b5cf6"),
           // No delta available -> still show the basis so the tile has a caption line like its siblings.
           ...(rateCard.delta ? {} : { sub: "Income minus expenses / income" }),
           ...(rateCard.value != null ? { note: reportNote(`${trendsData.savingsRate}%`) } : {}),
@@ -378,7 +377,7 @@ export default function ReportsPage() {
       {trendsData && (
         <>
           <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
-            {summaryMetrics.map((m) => <MetricCard key={m.id ?? String(m.label)} {...m} />)}
+            {summaryMetrics.map((m) => <Card key={m.id ?? String(m.title)} {...m} />)}
           </div>
         </>
       )}
@@ -472,180 +471,147 @@ export default function ReportsPage() {
             <div className="space-y-6">
               {/* Expense breakdown bar chart */}
               {trendsData.timeseries.length > 1 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle icon={BarChart3} tone="indigo" info={`Stacked income and expenses per ${period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}`} infoLabel="About breakdown">{periodLabels[period]} Breakdown</CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Chart
-                      kind="bar"
-                      data={trendsData.timeseries}
-                      xKey="label"
-                      height={288}
-                      currency={displayCurrency}
-                      grid
-                      legend
-                      series={[
-                        { key: "income", name: "Income", color: CHART_COLORS.positive },
-                        { key: "expenses", name: "Expenses", color: CHART_COLORS.negative },
-                      ]}
-                      xInterval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
-                      xAngle={period === "daily" ? -45 : undefined}
-                      yWidth={90}
-                    />
-                  </CardContent>
+                <Card
+                  title={`${periodLabels[period]} Breakdown`}
+                  icon={BarChart3}
+                  tone="indigo"
+                  info={`Stacked income and expenses per ${period === "daily" ? "day" : period === "weekly" ? "week" : period === "monthly" ? "month" : "quarter"}`}
+                  infoLabel="About breakdown"
+                >
+                  <Chart
+                    kind="bar"
+                    data={trendsData.timeseries}
+                    xKey="label"
+                    height={288}
+                    currency={displayCurrency}
+                    grid
+                    legend
+                    series={[
+                      { key: "income", name: "Income", color: CHART_COLORS.positive },
+                      { key: "expenses", name: "Expenses", color: CHART_COLORS.negative },
+                    ]}
+                    xInterval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
+                    xAngle={period === "daily" ? -45 : undefined}
+                    yWidth={90}
+                  />
                 </Card>
               )}
 
               {/* Income table with grouping */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
-                        <ArrowUpRight className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <CardTitle icon={TrendingUp} tone="emerald">Income</CardTitle>
-                        <CardDescription>
-                          {trendsData.income.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalIncome, displayCurrency)}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <Button
+              <Card
+                title="Income"
+                icon={TrendingUp}
+                tone="emerald"
+                description={<>{trendsData.income.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalIncome, displayCurrency)}</>}
+                action={<Button
                       variant="outline"
                       size="sm"
                       onClick={() => exportBreakdownCSV(trendsData.income, "income-breakdown.csv")}
                     >
                       <Download className="h-4 w-4 mr-1" /> Export
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {groupBy === "category" ? (
-                    <GroupedStatementRows
-                      groups={groupItems(trendsData.income)}
-                      expanded={expandedIncomeGroups}
-                      onToggle={(g) => toggleGroup("income", g)}
-                      tone="pos"
-                      total={trendsData.totalIncome}
-                      currency={displayCurrency}
-                      startDate={startDate}
-                      endDate={endDate}
-                      timeseries={trendsData.timeseries}
-                      totalLabel="Total"
-                    />
-                  ) : (
-                    <FlatStatementRows
-                      items={trendsData.income}
-                      tone="pos"
-                      currency={displayCurrency}
-                      startDate={startDate}
-                      endDate={endDate}
-                      timeseries={trendsData.timeseries}
-                      totalLabel="Total"
-                    />
-                  )}
-                  <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
-                    <span className="font-semibold text-sm">Total Income</span>
-                    <span className="font-bold font-mono text-pos">
-                      {formatCurrency(trendsData.totalIncome, displayCurrency)}
-                    </span>
-                  </div>
-                </CardContent>
+                    </Button>}
+              >
+                {groupBy === "category" ? (
+                  <GroupedStatementRows
+                    groups={groupItems(trendsData.income)}
+                    expanded={expandedIncomeGroups}
+                    onToggle={(g) => toggleGroup("income", g)}
+                    tone="pos"
+                    total={trendsData.totalIncome}
+                    currency={displayCurrency}
+                    startDate={startDate}
+                    endDate={endDate}
+                    timeseries={trendsData.timeseries}
+                    totalLabel="Total"
+                  />
+                ) : (
+                  <FlatStatementRows
+                    items={trendsData.income}
+                    tone="pos"
+                    currency={displayCurrency}
+                    startDate={startDate}
+                    endDate={endDate}
+                    timeseries={trendsData.timeseries}
+                    totalLabel="Total"
+                  />
+                )}
+                <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
+                  <span className="font-semibold text-sm">Total Income</span>
+                  <span className="font-bold font-mono text-pos">
+                    {formatCurrency(trendsData.totalIncome, displayCurrency)}
+                  </span>
+                </div>
               </Card>
 
               {/* Expenses table with grouping */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-                        <ArrowDownRight className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <CardTitle icon={TrendingDown} tone="rose">Expenses</CardTitle>
-                        <CardDescription>
-                          {trendsData.expenses.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalExpenses, displayCurrency)}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <Button
+              <Card
+                title="Expenses"
+                icon={TrendingDown}
+                tone="rose"
+                description={<>{trendsData.expenses.length} {groupBy === "group" ? "groups" : "categories"} &middot; {formatCurrency(trendsData.totalExpenses, displayCurrency)}</>}
+                action={<Button
                       variant="outline"
                       size="sm"
                       onClick={() => exportBreakdownCSV(trendsData.expenses, "expense-breakdown.csv")}
                     >
                       <Download className="h-4 w-4 mr-1" /> Export
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {groupBy === "category" ? (
-                    <GroupedStatementRows
-                      groups={groupItems(trendsData.expenses)}
-                      expanded={expandedExpenseGroups}
-                      onToggle={(g) => toggleGroup("expense", g)}
-                      tone="neg"
-                      total={trendsData.totalExpenses}
-                      currency={displayCurrency}
-                      startDate={startDate}
-                      endDate={endDate}
-                      timeseries={trendsData.timeseries}
-                      totalLabel="Total"
-                    />
-                  ) : (
-                    <FlatStatementRows
-                      items={trendsData.expenses}
-                      tone="neg"
-                      currency={displayCurrency}
-                      startDate={startDate}
-                      endDate={endDate}
-                      timeseries={trendsData.timeseries}
-                      totalLabel="Total"
-                    />
-                  )}
-                  <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
-                    <span className="font-semibold text-sm">Total Expenses</span>
-                    <span className="font-bold font-mono text-destructive">
-                      {formatCurrency(trendsData.totalExpenses, displayCurrency)}
-                    </span>
-                  </div>
-                </CardContent>
+                    </Button>}
+              >
+                {groupBy === "category" ? (
+                  <GroupedStatementRows
+                    groups={groupItems(trendsData.expenses)}
+                    expanded={expandedExpenseGroups}
+                    onToggle={(g) => toggleGroup("expense", g)}
+                    tone="neg"
+                    total={trendsData.totalExpenses}
+                    currency={displayCurrency}
+                    startDate={startDate}
+                    endDate={endDate}
+                    timeseries={trendsData.timeseries}
+                    totalLabel="Total"
+                  />
+                ) : (
+                  <FlatStatementRows
+                    items={trendsData.expenses}
+                    tone="neg"
+                    currency={displayCurrency}
+                    startDate={startDate}
+                    endDate={endDate}
+                    timeseries={trendsData.timeseries}
+                    totalLabel="Total"
+                  />
+                )}
+                <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
+                  <span className="font-semibold text-sm">Total Expenses</span>
+                  <span className="font-bold font-mono text-destructive">
+                    {formatCurrency(trendsData.totalExpenses, displayCurrency)}
+                  </span>
+                </div>
               </Card>
 
               {/* ── Unrealized gains / losses ── */}
               {unrealizedData && (unrealizedData.accounts.length > 0 || Math.abs(unrealizedData.totals.totalGL) > 0.005) && (
                 <>
-                  {/* Totals: standard MetricCards in the standard grid */}
+                  {/* Totals: standard Cards in the standard grid */}
                   <MetricGrid
                     columns={3}
                     metrics={[
-                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, valueTone: "auto", sub: "Asset price moves, period change" },
-                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, valueTone: "auto", sub: "Currency translation, period change" },
-                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, valueTone: "auto", sub: "Valuation + FX" },
+                      { icon: TrendingUp, title: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, valueTone: "auto", sub: "Asset price moves, period change" },
+                      { icon: TrendingUp, title: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, valueTone: "auto", sub: "Currency translation, period change" },
+                      { icon: Layers, title: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, valueTone: "auto", sub: "Valuation + FX" },
                     ]}
                   />
-                  <Card>
-                    <CardHeader>
-                      <CardTitle
-                        icon={TrendingUp}
-                        tone="amber"
-                        infoLabel="About unrealized gains"
-                        info="How asset valuations and FX translation moved during the selected period. Computed as snapshot at period end − snapshot at period start, so the totals match what you'd get reporting monthly, quarterly, or annually."
-                      >
-                        Unrealized gains / losses
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {/* Per-account drilldown */}
-                      {unrealizedData.accounts.length > 0 && (
-                        <UnrealizedStatementRows rows={unrealizedData.accounts} displayCurrency={displayCurrency} />
-                      )}
-                    </CardContent>
+                  <Card
+                    title="Unrealized gains / losses"
+                    icon={TrendingUp}
+                    tone="amber"
+                    info="How asset valuations and FX translation moved during the selected period. Computed as snapshot at period end − snapshot at period start, so the totals match what you'd get reporting monthly, quarterly, or annually."
+                    infoLabel="About unrealized gains"
+                  >
+                    {/* Per-account drilldown */}
+                    {unrealizedData.accounts.length > 0 && (
+                      <UnrealizedStatementRows rows={unrealizedData.accounts} displayCurrency={displayCurrency} />
+                    )}
                   </Card>
                 </>
               )}
@@ -656,19 +622,12 @@ export default function ReportsPage() {
         {/* ============ Balance Sheet ============ */}
         <TabsContent value="balance">
           {balanceSheet && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle icon={Scale} tone="indigo">Balance Sheet</CardTitle>
-                      <p className="text-xs text-muted-foreground">As of {balanceSheet.date}</p>
-                    </div>
-                  </div>
-                  <Button
+            <Card
+              title="Balance Sheet"
+              icon={Scale}
+              tone="indigo"
+              description={<p className="text-xs text-muted-foreground">As of {balanceSheet.date}</p>}
+              action={<Button
                     variant="outline"
                     size="sm"
                     onClick={() =>
@@ -682,33 +641,29 @@ export default function ReportsPage() {
                     }
                   >
                     <Download className="h-4 w-4 mr-1" /> Export
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 mb-3">
-                  <ArrowUpRight className="h-4 w-4 text-pos" />
-                  <h3 className="font-semibold text-pos">Assets</h3>
-                </div>
-                <BalanceStatementRows rows={balanceSheet.assets} totalLabel="Total Assets" total={balanceSheet.totalAssets} displayCurrency={displayCurrency} tone="pos" />
-                <Separator className="my-5" />
-                <div className="flex items-center gap-2 mb-3">
-                  <ArrowDownRight className="h-4 w-4 text-destructive" />
-                  <h3 className="font-semibold text-destructive">Liabilities</h3>
-                </div>
-                <BalanceStatementRows rows={balanceSheet.liabilities} totalLabel="Total Liabilities" total={balanceSheet.totalLiabilities} displayCurrency={displayCurrency} tone="neg" />
-                <Separator className="my-5" />
-                <MetricCard
-                  label="Net Worth"
-                  icon={Wallet}
-                  tone="indigo"
-                  value={balanceSheet.netWorth}
-                  currency={displayCurrency}
-                  valueClassName={balanceSheet.netWorth >= 0 ? "text-pos" : "text-destructive"}
-                  sparkColor="#6366f1"
-                  {...(balanceNet ? cardProps(balanceNet) : {})}
-                />
-              </CardContent>
+                  </Button>}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowUpRight className="h-4 w-4 text-pos" />
+                <h3 className="font-semibold text-pos">Assets</h3>
+              </div>
+              <BalanceStatementRows rows={balanceSheet.assets} totalLabel="Total Assets" total={balanceSheet.totalAssets} displayCurrency={displayCurrency} tone="pos" />
+              <Separator className="my-5" />
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowDownRight className="h-4 w-4 text-destructive" />
+                <h3 className="font-semibold text-destructive">Liabilities</h3>
+              </div>
+              <BalanceStatementRows rows={balanceSheet.liabilities} totalLabel="Total Liabilities" total={balanceSheet.totalLiabilities} displayCurrency={displayCurrency} tone="neg" />
+              <Separator className="my-5" />
+              <Card
+                title="Net Worth"
+                icon={Wallet}
+                tone="indigo"
+                value={balanceSheet.netWorth}
+                currency={displayCurrency}
+                valueClassName={balanceSheet.netWorth >= 0 ? "text-pos" : "text-destructive"}
+                {...(balanceNet ? cardProps(balanceNet, false, "#6366f1") : {})}
+              />
             </Card>
           )}
         </TabsContent>
@@ -716,20 +671,14 @@ export default function ReportsPage() {
         {/* ============ Cash Flow (Sankey) — dev only ============ */}
         {devMode && (
           <TabsContent value="cashflow">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-                    <Workflow className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <CardTitle icon={ArrowLeftRight} tone="cyan" infoLabel="About cash flow" info={`How income flows into expense categories (${startDate} to ${endDate})`}>Cash Flow Diagram</CardTitle>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Chart kind="sankey" sankey={{ income: sankeyIncome, expenses: sankeyExpenses }} currency={displayCurrency} />
-              </CardContent>
+            <Card
+              title="Cash Flow Diagram"
+              icon={ArrowLeftRight}
+              tone="cyan"
+              info={`How income flows into expense categories (${startDate} to ${endDate})`}
+              infoLabel="About cash flow"
+            >
+              <Chart kind="sankey" sankey={{ income: sankeyIncome, expenses: sankeyExpenses }} currency={displayCurrency} />
             </Card>
           </TabsContent>
         )}
@@ -737,96 +686,90 @@ export default function ReportsPage() {
         {/* ============ Year over Year — dev only ============ */}
         {devMode && <TabsContent value="yoy">
           <div className="space-y-6">
-            <Card className="bg-muted/30 border-dashed">
-              <CardContent className="pt-4">
-                <div className="flex items-end gap-4 flex-wrap">
-                  <Field
-                    label="Year 1"
-                    control="number"
-                    value={yoyYear1}
-                    onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
-                    min={2000}
-                    max={currentYear}
-                    className="mt-1 w-28"
-                  />
-                  <Field
-                    label="Year 2"
-                    control="number"
-                    value={yoyYear2}
-                    onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
-                    min={2000}
-                    max={currentYear}
-                    className="mt-1 w-28"
-                  />
-                </div>
-              </CardContent>
+            <Card frameClassName="bg-muted/30 border-dashed" className="pt-4">
+              <div className="flex items-end gap-4 flex-wrap">
+                <Field
+                  label="Year 1"
+                  control="number"
+                  value={yoyYear1}
+                  onChange={(e) => setYoyYear1(parseInt(e.target.value, 10))}
+                  min={2000}
+                  max={currentYear}
+                  className="mt-1 w-28"
+                />
+                <Field
+                  label="Year 2"
+                  control="number"
+                  value={yoyYear2}
+                  onChange={(e) => setYoyYear2(parseInt(e.target.value, 10))}
+                  min={2000}
+                  max={currentYear}
+                  className="mt-1 w-28"
+                />
+              </div>
             </Card>
 
             {yoyData && (
               <>
                 {/* Two charts side by side at wide, stacked below. */}
                 <div className="grid grid-cols-1 gap-6 wide:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-                        <GitCompareArrows className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <CardTitle icon={BarChart3} tone="rose" infoLabel="About spending comparison" info={`${yoyData.year1} vs ${yoyData.year2} expenses by month`}>Monthly Spending Comparison</CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Chart
-                      kind="bar"
-                      data={yoyData.monthly}
-                      xKey="month"
-                      height={320}
-                      currency={displayCurrency}
-                      grid
-                      legend
-                      series={[
-                        { key: "year1Expenses", name: `${yoyData.year1} Expenses`, color: CHART_COLORS.categories[0] },
-                        { key: "year2Expenses", name: `${yoyData.year2} Expenses`, color: CHART_COLORS.categories[1] },
-                      ]}
-                      formatY={(v) => formatCurrency(v, displayCurrency)}
-                      yWidth={90}
-                    />
-                  </CardContent>
+                <Card
+                  title="Monthly Spending Comparison"
+                  icon={BarChart3}
+                  tone="rose"
+                  info={`${yoyData.year1} vs ${yoyData.year2} expenses by month`}
+                  infoLabel="About spending comparison"
+                >
+                  <Chart
+                    kind="bar"
+                    data={yoyData.monthly}
+                    xKey="month"
+                    height={320}
+                    currency={displayCurrency}
+                    grid
+                    legend
+                    series={[
+                      { key: "year1Expenses", name: `${yoyData.year1} Expenses`, color: CHART_COLORS.categories[0] },
+                      { key: "year2Expenses", name: `${yoyData.year2} Expenses`, color: CHART_COLORS.categories[1] },
+                    ]}
+                    formatY={(v) => formatCurrency(v, displayCurrency)}
+                    yWidth={90}
+                  />
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle icon={BarChart3} tone="emerald" infoLabel="About income comparison" info={`${yoyData.year1} vs ${yoyData.year2} income by month`}>Monthly Income Comparison</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Chart
-                      kind="bar"
-                      data={yoyData.monthly}
-                      xKey="month"
-                      height={320}
-                      currency={displayCurrency}
-                      grid
-                      legend
-                      series={[
-                        { key: "year1Income", name: `${yoyData.year1} Income`, color: CHART_COLORS.positive },
-                        { key: "year2Income", name: `${yoyData.year2} Income`, color: CHART_COLORS.categories[3] },
-                      ]}
-                      formatY={(v) => formatCurrency(v, displayCurrency)}
-                      yWidth={90}
-                    />
-                  </CardContent>
+                <Card
+                  title="Monthly Income Comparison"
+                  icon={BarChart3}
+                  tone="emerald"
+                  info={`${yoyData.year1} vs ${yoyData.year2} income by month`}
+                  infoLabel="About income comparison"
+                >
+                  <Chart
+                    kind="bar"
+                    data={yoyData.monthly}
+                    xKey="month"
+                    height={320}
+                    currency={displayCurrency}
+                    grid
+                    legend
+                    series={[
+                      { key: "year1Income", name: `${yoyData.year1} Income`, color: CHART_COLORS.positive },
+                      { key: "year2Income", name: `${yoyData.year2} Income`, color: CHART_COLORS.categories[3] },
+                    ]}
+                    formatY={(v) => formatCurrency(v, displayCurrency)}
+                    yWidth={90}
+                  />
                 </Card>
                 </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle icon={Tags} tone="violet" infoLabel="About category comparison" info="Expense categories year-over-year change">Category Comparison</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <YoYStatementRows rows={yoyData.categories} year1={yoyData.year1} year2={yoyData.year2} currency={displayCurrency} />
-                  </CardContent>
+                <Card
+                  title="Category Comparison"
+                  icon={Tags}
+                  tone="violet"
+                  info="Expense categories year-over-year change"
+                  infoLabel="About category comparison"
+                >
+                  <YoYStatementRows rows={yoyData.categories} year1={yoyData.year1} year2={yoyData.year2} currency={displayCurrency} />
                 </Card>
               </>
             )}

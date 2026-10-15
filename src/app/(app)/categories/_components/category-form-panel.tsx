@@ -159,7 +159,7 @@ function GroupRenameForm({ groupId, categories, onSaved, onCancel }: {
           {error}
         </div>
       )}
-      <Field label="Group name" hideLabel value={name} onChange={(e) => setName(e.target.value)} placeholder="Group name" />
+      <Field label="Group name" value={name} onChange={(e) => setName(e.target.value)} />
       <p className="text-xs text-muted-foreground">
         Renames the group on its {members.length} categor{members.length === 1 ? "y" : "ies"}. Move a single category by editing it.
       </p>

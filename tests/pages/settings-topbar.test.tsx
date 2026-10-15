@@ -59,8 +59,8 @@ describe("nothing caps, clips or hides the header", () => {
     expect(fp).toMatch(/cn\("w-full", WIDTH_CLASS\[width\]/);
   });
 
-  it("DetailPage, HubPage and the account shell roots are not capped or left-pinned", () => {
-    for (const f of ["src/components/templates/detail-page.tsx", "src/components/templates/hub-page.tsx", "src/components/account-shell.tsx", "src/components/settings/account-content.tsx"]) {
+  it("DetailPage and the account shell roots are not capped or left-pinned", () => {
+    for (const f of ["src/components/templates/detail-page.tsx", "src/components/account-shell.tsx", "src/components/settings/account-content.tsx"]) {
       const src = code(f);
       expect(src, f).not.toMatch(/max-w-(report|section|form|doc|console|2xl)\b/);
       expect(src, f).not.toMatch(/TW\.(section|report|doc|console)\b/);

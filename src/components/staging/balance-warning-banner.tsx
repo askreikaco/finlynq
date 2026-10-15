@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -50,90 +50,88 @@ export function BalanceWarningBanner({
       : `${warnings.length} days don't match the bank's reported balance`;
 
   return (
-    <Card className="border-warning/30 bg-warning/10">
-      <CardContent className="py-2.5 px-3 space-y-2">
-        <div className="flex items-start gap-2.5">
-          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0 text-sm">
-            <div className="font-medium text-warning">
-              Bank balance check: {label}
-            </div>
-            <p className="text-xs text-warning/90 mt-0.5">
-              Approve still works — this is a heads-up that one or more
-              transactions may be missing, duplicated, or wrong on the
-              affected days.
-            </p>
+    <Card frameClassName="border-warning/30 bg-warning/10" className="py-2.5 px-3 space-y-2">
+      <div className="flex items-start gap-2.5">
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0 text-sm">
+          <div className="font-medium text-warning">
+            Bank balance check: {label}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-warning hover:bg-warning/10"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-          >
-            {open ? (
-              <>
-                Hide
-                <ChevronUp className="h-3.5 w-3.5 ml-1" />
-              </>
-            ) : (
-              <>
-                Details
-                <ChevronDown className="h-3.5 w-3.5 ml-1" />
-              </>
-            )}
-          </Button>
+          <p className="text-xs text-warning/90 mt-0.5">
+            Approve still works — this is a heads-up that one or more
+            transactions may be missing, duplicated, or wrong on the
+            affected days.
+          </p>
         </div>
-        {open && (
-          <div className="rounded-md border border-warning/30 bg-white overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-warning/10 text-warning">
-                <tr>
-                  <th className="text-left px-2 py-1.5 font-medium">Date</th>
-                  <th className="text-left px-2 py-1.5 font-medium">
-                    Prior anchor
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-medium">
-                    Expected
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-medium">
-                    Bank says
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-medium">Δ</th>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-warning hover:bg-warning/10"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+        >
+          {open ? (
+            <>
+              Hide
+              <ChevronUp className="h-3.5 w-3.5 ml-1" />
+            </>
+          ) : (
+            <>
+              Details
+              <ChevronDown className="h-3.5 w-3.5 ml-1" />
+            </>
+          )}
+        </Button>
+      </div>
+      {open && (
+        <div className="rounded-md border border-warning/30 bg-white overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-warning/10 text-warning">
+              <tr>
+                <th className="text-left px-2 py-1.5 font-medium">Date</th>
+                <th className="text-left px-2 py-1.5 font-medium">
+                  Prior anchor
+                </th>
+                <th className="text-right px-2 py-1.5 font-medium">
+                  Expected
+                </th>
+                <th className="text-right px-2 py-1.5 font-medium">
+                  Bank says
+                </th>
+                <th className="text-right px-2 py-1.5 font-medium">Δ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-warning/30 text-warning">
+              {warnings.map((w) => (
+                <tr key={w.date}>
+                  <td className="px-2 py-1.5 font-mono">{w.date}</td>
+                  <td className="px-2 py-1.5">
+                    <span className="font-mono">{w.priorAnchorDate}</span>
+                    <span className="text-warning/80 ml-1">
+                      ({fmt(w.priorAnchorBalance, currency)})
+                    </span>
+                  </td>
+                  <td className="px-2 py-1.5 text-right font-mono">
+                    {fmt(w.expected, currency)}
+                  </td>
+                  <td className="px-2 py-1.5 text-right font-mono">
+                    {fmt(w.actual, currency)}
+                  </td>
+                  <td
+                    className={
+                      "px-2 py-1.5 text-right font-mono " +
+                      (w.delta >= 0 ? "text-pos" : "text-destructive")
+                    }
+                  >
+                    {w.delta >= 0 ? "+" : ""}
+                    {fmt(w.delta, currency)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-warning/30 text-warning">
-                {warnings.map((w) => (
-                  <tr key={w.date}>
-                    <td className="px-2 py-1.5 font-mono">{w.date}</td>
-                    <td className="px-2 py-1.5">
-                      <span className="font-mono">{w.priorAnchorDate}</span>
-                      <span className="text-warning/80 ml-1">
-                        ({fmt(w.priorAnchorBalance, currency)})
-                      </span>
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono">
-                      {fmt(w.expected, currency)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono">
-                      {fmt(w.actual, currency)}
-                    </td>
-                    <td
-                      className={
-                        "px-2 py-1.5 text-right font-mono " +
-                        (w.delta >= 0 ? "text-pos" : "text-destructive")
-                      }
-                    >
-                      {w.delta >= 0 ? "+" : ""}
-                      {fmt(w.delta, currency)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CardContent>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   );
 }

@@ -55,7 +55,7 @@ afterEach(() => {
 describe("level 1: /portfolio/new operation list", () => {
   it("renders three grouped inset lists with a header each", () => {
     const { container } = render(<PortfolioNewPage />);
-    const headers = [...container.querySelectorAll("[data-slot='section-card-label']")].map((n) => n.textContent);
+    const headers = [...container.querySelectorAll("[data-slot='card-label-text']")].map((n) => n.textContent);
     expect(headers).toEqual(["Trades", "Transfers", "Income and other"]);
     const groups = container.querySelectorAll('div[class*="list-divider"]');
     expect(groups.length).toBe(3);
@@ -85,8 +85,8 @@ describe("level 1: /portfolio/new operation list", () => {
       expect(row.className).toContain("min-h-[56px]");
     }
     // no card grid (the inside of a ListRow lays out its own parts with a grid)
-    expect(Array.from(container.querySelectorAll("section .grid, [data-slot='section-card'] .grid")).filter((el) => !el.closest("[data-slot='list-row']"))).toHaveLength(0);
-    expect(container.querySelector("[data-slot='card']")).toBeNull();
+    expect(Array.from(container.querySelectorAll("section .grid, [data-slot='card'] .grid")).filter((el) => !el.closest("[data-slot='list-row']"))).toHaveLength(0);
+    expect(container.querySelector("[data-slot='card'] [data-slot='card']")).toBeNull();
     expect(screen.queryByText(/Open/)).toBeNull();
   });
 
@@ -136,7 +136,7 @@ describe("level 2: each operation page renders its form", () => {
     const { container } = render(<OpRoute slug={slug} />);
     expect(container.querySelector("[data-slot='page-header']")).not.toBeNull();
     expect(container.querySelector("[data-slot='back-button']")?.getAttribute("href")).toBe("/portfolio/new");
-    expect(container.querySelector("[data-slot='card']")).toBeNull();
+    expect(container.querySelector("[data-slot='card'] [data-slot='card']")).toBeNull();
     expect(container.querySelector("h1")?.textContent).toBe(title);
     expect(container.querySelector("button[type='submit']")).not.toBeNull();
   });

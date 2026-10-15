@@ -17,8 +17,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Overlay } from "@/components/ui/overlay";
@@ -277,305 +276,284 @@ export function BankFeedsSection() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-              <Landmark className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <CardTitle icon={Landmark} tone="indigo" className="flex items-center gap-2">
-                SimpleFIN
-                <InfoTip
-                  label="About SimpleFIN"
-                  text="Pulls bank transactions via SimpleFIN. Link banks at simplefin.org ($15/yr, paid to them) and paste the setup token here. Synced rows go to import review; Finlynq never sees your bank login."
-                />
-                {status?.connected && (
-                  <Badge variant="outline" className="text-xs text-pos border-pos/40">
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
-                  </Badge>
-                )}
-              </CardTitle>
-
-            </div>
+      <Card
+        title="SimpleFIN"
+        icon={Landmark}
+        tone="indigo"
+        info="Pulls bank transactions via SimpleFIN. Link banks at simplefin.org ($15/yr, paid to them) and paste the setup token here. Synced rows go to import review; Finlynq never sees your bank login."
+        infoLabel="About SimpleFIN"
+        action={
+          status?.connected ? (
+            <Badge variant="outline" className="text-xs text-pos border-pos/40">
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+            </Badge>
+          ) : undefined
+        }
+        className="space-y-4"
+      >
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {loading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </div>
-          ) : loadError ? (
+        ) : loadError ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-destructive">{loadError}</p>
+            <Button variant="outline" size="sm" onClick={load}>
+              Retry
+            </Button>
+          </div>
+        ) : status?.connected ? (
+          <div className="space-y-4">
+            {/* ── Header row: last sync + actions ── */}
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-destructive">{loadError}</p>
-              <Button variant="outline" size="sm" onClick={load}>
-                Retry
-              </Button>
-            </div>
-          ) : status?.connected ? (
-            <div className="space-y-4">
-              {/* ── Header row: last sync + actions ── */}
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground" data-keep="status">
-                  {status.lastSyncAt
-                    ? `Last synced ${formatDateTime(status.lastSyncAt)}`
-                    : "Never synced"}
-                </p>
-                <div className="flex items-center gap-2">
-                  {!preview && (
-                    <Button size="sm" onClick={handleDetect} disabled={detecting}>
-                      {detecting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Detecting…
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-1.5" /> Sync now
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setConfirmDisconnect(true)}
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              </div>
-
-              {/* ── Last sync (automatic or manual) failed or reported problems ── */}
-              {status.lastSync && !status.lastSync.ok && (
-                <div
-                  role="status"
-                  className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  <span>
-                    {status.lastSync.trigger === "auto" ? "Automatic sync" : "Sync"}{" "}
-                    {status.lastSync.partial ? "finished with problems" : "failed"} on{" "}
-                    {formatDateTime(status.lastSync.at)}.
-                    {status.lastSync.message ? ` ${status.lastSync.message}` : ""}
-                    {!preview && (
+              <p className="text-sm text-muted-foreground" data-keep="status">
+                {status.lastSyncAt
+                  ? `Last synced ${formatDateTime(status.lastSyncAt)}`
+                  : "Never synced"}
+              </p>
+              <div className="flex items-center gap-2">
+                {!preview && (
+                  <Button size="sm" onClick={handleDetect} disabled={detecting}>
+                    {detecting ? (
                       <>
-                        {" "}
-                        <button
-                          type="button"
-                          onClick={handleDetect}
-                          disabled={detecting}
-                          className="underline underline-offset-2 hover:text-warning disabled:opacity-50"
-                        >
-                          Sync now
-                        </button>{" "}
-                        to try again.
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Detecting…
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-1.5" /> Sync now
                       </>
                     )}
-                  </span>
-                </div>
-              )}
-
-              {detectError && <p className="text-sm text-destructive">{detectError}</p>}
-              {stageError && <p className="text-sm text-destructive">{stageError}</p>}
-
-              {/* ── Detected accounts: create/link mapping ── */}
-              {preview && (
-                <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                  <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
-                    Accounts found
-                  </div>
-                  {preview.accounts.map((a) => (
-                    <div key={a.externalId} className="px-4 py-3 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{a.name}</p>
-                          <p className="text-xs text-muted-foreground" data-keep="status">
-                            {a.currency} · {a.txCount} transaction{a.txCount === 1 ? "" : "s"}
-                          </p>
-                        </div>
-                        {a.status === "mapped" && (
-                          <Badge variant="outline" className="text-xs shrink-0">
-                            <Link2 className="h-3 w-3 mr-1" /> Linked to {a.accountName}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {a.status !== "mapped" && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={choices[a.externalId]?.mode === "create" ? "primary" : "outline"}
-                            onClick={() => setChoice(a.externalId, { mode: "create" })}
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" /> Create new
-                          </Button>
-                          {preview.existingAccounts.length > 0 && (
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={
-                                  choices[a.externalId]?.mode === "existing" ? "primary" : "outline"
-                                }
-                                onClick={() =>
-                                  setChoice(a.externalId, {
-                                    mode: "existing",
-                                    accountId:
-                                      a.accountId ?? preview.existingAccounts[0].id,
-                                  })
-                                }
-                              >
-                                <Link2 className="h-3.5 w-3.5 mr-1" /> Link existing
-                              </Button>
-                              {choices[a.externalId]?.mode === "existing" && (
-                                <Field
-                                  control="select"
-                                  value={
-                                    String((choices[a.externalId] as { accountId: number }).accountId)
-                                  }
-                                  onValueChange={(v) => setChoice(a.externalId, {
-                                    mode: "existing",
-                                    accountId: Number(v),
-                                  })}
-                                  compact
-                                  options={preview.existingAccounts.map((ea) => ({ value: String(ea.id), label: `${ea.name}(${ea.currency})` }))}
-                                />
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  <div className="px-4 py-3 flex items-center justify-between gap-3">
-                    <Button variant="ghost" size="sm" onClick={() => setPreview(null)} disabled={staging}>
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={handleStage} disabled={staging}>
-                      {staging ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importing…
-                        </>
-                      ) : (
-                        `Import ${totalToStage} to review`
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Result after staging ── */}
-              {stageResult && (
-                <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
-                  <p className="text-sm font-medium">Ready for review</p>
-                  <p className="text-sm text-muted-foreground" data-keep="status">
-                    {stageResult.staged.reduce((n, s) => n + s.rowCount, 0)} transaction
-                    {stageResult.staged.reduce((n, s) => n + s.rowCount, 0) === 1 ? "" : "s"} staged
-                    across {stageResult.staged.length} account
-                    {stageResult.staged.length === 1 ? "" : "s"}
-                    {stageResult.accountsCreated > 0
-                      ? ` · ${stageResult.accountsCreated} account${stageResult.accountsCreated === 1 ? "" : "s"} created`
-                      : ""}
-                    {stageResult.skippedPending > 0
-                      ? ` · ${stageResult.skippedPending} pending skipped`
-                      : ""}
-                    .
-                  </p>
-                  {stageResult.skippedNoChoice.length > 0 && (
-                    <p className="text-xs text-warning">
-                      Skipped:{" "}
-                      {stageResult.skippedNoChoice.map((s) => s.name).join(", ")}
-                    </p>
-                  )}
-                  <Link
-                    href="/import/pending"
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                  >
-                    Review in Import <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* ── Not connected: paste setup token ── */
-            <div className="space-y-3">
-              <Field
-                label="Setup token"
-                control="textarea"
-                id="simplefin-token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                rows={3}
-                placeholder="Paste setup token"
-                disabled={connecting}
-                controlClassName="font-mono"
-              />
-              {connectError && <p className="text-sm text-destructive">{connectError}</p>}
-              <div className="flex items-center justify-between gap-3">
-                <a
-                  href="https://beta-bridge.simplefin.org/"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirmDisconnect(true)}
                 >
-                  Get a token <ExternalLink className="h-3 w-3" />
-                </a>
-                <Button size="sm" onClick={handleConnect} disabled={connecting || !token.trim()}>
-                  {connecting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Connecting…
-                    </>
-                  ) : (
-                    "Connect"
-                  )}
+                  Disconnect
                 </Button>
               </div>
             </div>
-          )}
-        </CardContent>
+
+            {/* ── Last sync (automatic or manual) failed or reported problems ── */}
+            {status.lastSync && !status.lastSync.ok && (
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>
+                  {status.lastSync.trigger === "auto" ? "Automatic sync" : "Sync"}{" "}
+                  {status.lastSync.partial ? "finished with problems" : "failed"} on{" "}
+                  {formatDateTime(status.lastSync.at)}.
+                  {status.lastSync.message ? ` ${status.lastSync.message}` : ""}
+                  {!preview && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        onClick={handleDetect}
+                        disabled={detecting}
+                        className="underline underline-offset-2 hover:text-warning disabled:opacity-50"
+                      >
+                        Sync now
+                      </button>{" "}
+                      to try again.
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {detectError && <p className="text-sm text-destructive">{detectError}</p>}
+            {stageError && <p className="text-sm text-destructive">{stageError}</p>}
+
+            {/* ── Detected accounts: create/link mapping ── */}
+            {preview && (
+              <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
+                  Accounts found
+                </div>
+                {preview.accounts.map((a) => (
+                  <div key={a.externalId} className="px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{a.name}</p>
+                        <p className="text-xs text-muted-foreground" data-keep="status">
+                          {a.currency} · {a.txCount} transaction{a.txCount === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      {a.status === "mapped" && (
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          <Link2 className="h-3 w-3 mr-1" /> Linked to {a.accountName}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {a.status !== "mapped" && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={choices[a.externalId]?.mode === "create" ? "primary" : "outline"}
+                          onClick={() => setChoice(a.externalId, { mode: "create" })}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Create new
+                        </Button>
+                        {preview.existingAccounts.length > 0 && (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={
+                                choices[a.externalId]?.mode === "existing" ? "primary" : "outline"
+                              }
+                              onClick={() =>
+                                setChoice(a.externalId, {
+                                  mode: "existing",
+                                  accountId:
+                                    a.accountId ?? preview.existingAccounts[0].id,
+                                })
+                              }
+                            >
+                              <Link2 className="h-3.5 w-3.5 mr-1" /> Link existing
+                            </Button>
+                            {choices[a.externalId]?.mode === "existing" && (
+                              <Field
+                                control="select"
+                                value={
+                                  String((choices[a.externalId] as { accountId: number }).accountId)
+                                }
+                                onValueChange={(v) => setChoice(a.externalId, {
+                                  mode: "existing",
+                                  accountId: Number(v),
+                                })}
+                                compact
+                                options={preview.existingAccounts.map((ea) => ({ value: String(ea.id), label: `${ea.name}(${ea.currency})` }))}
+                              />
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <div className="px-4 py-3 flex items-center justify-between gap-3">
+                  <Button variant="ghost" size="sm" onClick={() => setPreview(null)} disabled={staging}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleStage} disabled={staging}>
+                    {staging ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Importing…
+                      </>
+                    ) : (
+                      `Import ${totalToStage} to review`
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Result after staging ── */}
+            {stageResult && (
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
+                <p className="text-sm font-medium">Ready for review</p>
+                <p className="text-sm text-muted-foreground" data-keep="status">
+                  {stageResult.staged.reduce((n, s) => n + s.rowCount, 0)} transaction
+                  {stageResult.staged.reduce((n, s) => n + s.rowCount, 0) === 1 ? "" : "s"} staged
+                  across {stageResult.staged.length} account
+                  {stageResult.staged.length === 1 ? "" : "s"}
+                  {stageResult.accountsCreated > 0
+                    ? ` · ${stageResult.accountsCreated} account${stageResult.accountsCreated === 1 ? "" : "s"} created`
+                    : ""}
+                  {stageResult.skippedPending > 0
+                    ? ` · ${stageResult.skippedPending} pending skipped`
+                    : ""}
+                  .
+                </p>
+                {stageResult.skippedNoChoice.length > 0 && (
+                  <p className="text-xs text-warning">
+                    Skipped:{" "}
+                    {stageResult.skippedNoChoice.map((s) => s.name).join(", ")}
+                  </p>
+                )}
+                <Link
+                  href="/import/pending"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Review in Import <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Not connected: paste setup token ── */
+          <div className="space-y-3">
+            <Field
+              label="Setup token"
+              control="textarea"
+              id="simplefin-token"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              rows={3}
+              placeholder="Paste setup token"
+              disabled={connecting}
+              controlClassName="font-mono"
+            />
+            {connectError && <p className="text-sm text-destructive">{connectError}</p>}
+            <div className="flex items-center justify-between gap-3">
+              <a
+                href="https://beta-bridge.simplefin.org/"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                Get a token <ExternalLink className="h-3 w-3" />
+              </a>
+              <Button size="sm" onClick={handleConnect} disabled={connecting || !token.trim()}>
+                {connecting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Connecting…
+                  </>
+                ) : (
+                  "Connect"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* ── Pending charges (holds / not-yet-posted) ── */}
       {status?.connected && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground dark:text-foreground">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <CardTitle icon={Clock} tone="amber">
-                  Pending charges
-                  <InfoTip label="About pending charges" text="Bank holds not yet posted. Shown for visibility only; not added to your ledger." />
-                </CardTitle>
-              </div>
+        <Card
+          title="Pending charges"
+          icon={Clock}
+          tone="amber"
+          info="Bank holds not yet posted. Shown for visibility only; not added to your ledger."
+          infoLabel="About pending charges"
+        >
+          {pendingLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
-          </CardHeader>
-
-          <CardContent>
-            {pendingLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-              </div>
-            ) : pending.length === 0 ? (
-              <p className="text-sm text-muted-foreground" data-keep="empty">No pending charges.</p>
-            ) : (
-              <div className="overflow-hidden rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                {pending.map((p) => (
-                  <ListRow
-                    key={`${p.accountId ?? "x"}-${p.fitId}`}
-                    title={safeName(p.payee, "charge", 0)}
-                    subtitle={`${p.date} · ${p.accountName}`}
-                    value={formatCurrency(p.amount, p.currency)}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
+          ) : pending.length === 0 ? (
+            <p className="text-sm text-muted-foreground" data-keep="empty">No pending charges.</p>
+          ) : (
+            <div className="overflow-hidden rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              {pending.map((p) => (
+                <ListRow
+                  key={`${p.accountId ?? "x"}-${p.fitId}`}
+                  title={safeName(p.payee, "charge", 0)}
+                  subtitle={`${p.date} · ${p.accountName}`}
+                  value={formatCurrency(p.amount, p.currency)}
+                />
+              ))}
+            </div>
+          )}
         </Card>
       )}
 

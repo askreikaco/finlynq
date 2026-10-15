@@ -5,9 +5,10 @@ import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "l
 import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
-import { SectionCard, TxRow, type TileTone } from "@/components/mobile";
+import { TxRow, type TileTone } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { PendingSyncBadge } from "./pending-sync-badge";
+import { Card } from "@/components/ui/card";
 
 /** Bulk selection for the list: rows show a checkbox and a tap toggles the row. Pending rows are never selectable. */
 export interface TxListSelection {
@@ -18,8 +19,10 @@ export interface TxListSelection {
 interface MobileTxListProps {
   transactions: Transaction[];
   isLoading?: boolean;
-  /** Row tap (opens the row's detail sheet, or the edit page for a queued row). */
+  /** Row tap: selects the row in the split-view pane, or opens a queued / investment row's own editor. */
   onOpen: (t: Transaction) => void;
+  /** Link target of a row (the edit page). null / omitted = the row uses `onOpen` instead. */
+  hrefFor?: (t: Transaction) => string | null;
   showAccountName?: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
@@ -37,7 +40,7 @@ interface MobileTxListProps {
 }
 
 /**
- * The one transactions list at every width: date-grouped SectionCards of native ListRows.
+ * The one transactions list at every width: date-grouped Cards of native ListRows.
  * Each row: type tile | payee (fallback category) + "Waiting to sync" badge | amount with sign.
  * Subtitle: category · account (when not scoped to one account), or "From … · To …" for transfers.
  * Icons match the Accounts page: income = ArrowUpRight, expense = ArrowDownRight, transfer = ArrowLeftRight.
@@ -46,6 +49,7 @@ export function MobileTxList({
   transactions,
   isLoading,
   onOpen,
+  hrefFor,
   showAccountName = false,
   onLoadMore,
   hasMore = false,
@@ -79,26 +83,27 @@ export function MobileTxList({
         className="grid grid-cols-1 items-start gap-6"
       >
       {Object.entries(grouped).map(([dateLabel, txns]) => (
-        <SectionCard
+        <Card
           key={dateLabel}
-          label={dateLabel}
-          labelPlacement="outside"
+          title={dateLabel}
+          titlePlacement="outside"
           /* The date label sits ABOVE the card group and sticks under the page header while its group scrolls. */
-          labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
-          list
+          titleClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
+          frame="list"
         >
           {txns.map((t) => (
             <TransactionRow
               key={t.id}
               transaction={t}
               onOpen={onOpen}
+              href={hrefFor?.(t) ?? undefined}
               showAccountName={showAccountName}
               peer={transferPeers?.get(t.id) ?? null}
               selection={selection}
               selected={selectedId === t.id}
             />
           ))}
-        </SectionCard>
+        </Card>
       ))}
       </div>
 
@@ -188,6 +193,7 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; tile:
 function TransactionRow({
   transaction: t,
   onOpen,
+  href,
   showAccountName,
   peer,
   selection,
@@ -196,6 +202,7 @@ function TransactionRow({
   selected?: boolean;
   transaction: Transaction;
   onOpen: (t: Transaction) => void;
+  href?: string;
   showAccountName: boolean;
   peer: TransferPeer | null;
   selection?: TxListSelection;
@@ -219,5 +226,8 @@ function TransactionRow({
   const select = selection && t.id > 0 && !t.pendingSync
     ? { checked: selection.selected.has(t.id), onToggle: () => selection.onToggle(t.id), label: `Select ${payee}` }
     : undefined;
-  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} select={select} selected={select ? undefined : selected} onPress={select ? undefined : () => onOpen(t)} />;
+  // A queued edit or delete waiting to sync has nothing to open: a calm, non-interactive row (the badge says why).
+  const inert = t.pendingSync?.status === "pending" && t.pendingSync.kind !== "create";
+  const press = select || inert || href ? undefined : () => onOpen(t);
+  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} select={select} selected={select ? undefined : selected} href={select ? undefined : href} onPress={press} />;
 }

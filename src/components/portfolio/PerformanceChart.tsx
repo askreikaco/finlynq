@@ -15,7 +15,7 @@
 import { TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Chart, type ChartSeries } from "@/components/chart";
@@ -150,13 +150,12 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   const axisGroupLabel = groupMode === "account" ? "account" : "holding";
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex min-w-0 flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">
-          <CardTitle icon={TrendingUp} tone="emerald">Performance</CardTitle>
-          {/* One chip row. Phones: horizontal scroll inside the card (overscroll-x-contain keeps the
-              page from scrolling sideways); md+: wraps like before. Chips are 44px tall on phones. */}
-          <div
+    <Card
+      title="Performance"
+      icon={TrendingUp}
+      tone="emerald"
+      description={<>{/* One chip row. Phones: horizontal scroll inside the card (overscroll-x-contain keeps the
+              page from scrolling sideways); md+: wraps like before. Chips are 44px tall on phones. */}<div
             role="group"
             aria-label="Performance controls"
             className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] regular:flex-wrap regular:overflow-visible regular:pb-0"
@@ -192,43 +191,40 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                 {p.toUpperCase()}
               </Button>
             ))}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : !data || chartData.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No snapshots yet. The nightly cron starts populating data on first run;
-            for historical fill, run scripts/backfill-portfolio-snapshots.ts.
+          </div></>}
+    >
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : !data || chartData.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No snapshots yet. The nightly cron starts populating data on first run;
+          for historical fill, run scripts/backfill-portfolio-snapshots.ts.
+        </p>
+      ) : (
+        <>
+          <PerformanceBadges twrr={data.twrr} mwrr={data.mwrr} gapsFilledDays={data.gapsFilledDays} />
+          {/* Axis-unit label — flips from the TWRR/value line to a per-holding
+              dollar stack in stacked mode (tc-2: "y-axis switches to $"). */}
+          <p className="text-xs text-muted-foreground mb-1">
+            {showStacked
+              ? `Market value by ${axisGroupLabel} (${stackCurrency})`
+              : `Market value (${data.currency})`}
           </p>
-        ) : (
-          <>
-            <PerformanceBadges twrr={data.twrr} mwrr={data.mwrr} gapsFilledDays={data.gapsFilledDays} />
-            {/* Axis-unit label — flips from the TWRR/value line to a per-holding
-                dollar stack in stacked mode (tc-2: "y-axis switches to $"). */}
-            <p className="text-xs text-muted-foreground mb-1">
-              {showStacked
-                ? `Market value by ${axisGroupLabel} (${stackCurrency})`
-                : `Market value (${data.currency})`}
+          {showStacked ? (
+            <Chart kind="stacked-area" data={stackedRows} series={legend} height={288} currency={stackCurrency} tooltipWide legend />
+          ) : (
+            <Chart kind="line" data={chartData} height={288} currency={data.currency} series={PERFORMANCE_SERIES} yDomain={domain} zeroLine={spansZero} />
+          )}
+          {stacked && holdingsLoading && (
+            <p className="text-xs text-muted-foreground mt-2">Loading per-holding values…</p>
+          )}
+          {stacked && !holdingsLoading && legend.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              No per-holding values to stack for this range.
             </p>
-            {showStacked ? (
-              <Chart kind="stacked-area" data={stackedRows} series={legend} height={288} currency={stackCurrency} tooltipWide legend />
-            ) : (
-              <Chart kind="line" data={chartData} height={288} currency={data.currency} series={PERFORMANCE_SERIES} yDomain={domain} zeroLine={spansZero} />
-            )}
-            {stacked && holdingsLoading && (
-              <p className="text-xs text-muted-foreground mt-2">Loading per-holding values…</p>
-            )}
-            {stacked && !holdingsLoading && legend.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                No per-holding values to stack for this range.
-              </p>
-            )}
-          </>
-        )}
-      </CardContent>
+          )}
+        </>
+      )}
     </Card>
   );
 }

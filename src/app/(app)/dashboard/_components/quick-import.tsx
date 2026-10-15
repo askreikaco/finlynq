@@ -2,10 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SectionCard } from "@/components/mobile/section-card";
 import { FileText, FileUp, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { setHandoffFile } from "@/lib/import/file-handoff";
+import { Card } from "@/components/ui/card";
 
 type DropState = "idle" | "hover";
 
@@ -47,9 +47,9 @@ export function QuickImport() {
   const isActive = state === "hover";
 
   return (
-    <SectionCard
-      label="Quick Import" icon={Upload} tone="cyan"
-      cardClassName={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
+    <Card
+      title="Quick Import" icon={Upload} tone="cyan"
+      frameClassName={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -94,6 +94,6 @@ export function QuickImport() {
           </div>
         </label>
       </div>
-    </SectionCard>
+    </Card>
   );
 }

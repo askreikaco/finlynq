@@ -10,11 +10,10 @@
  */
 
 import { useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Overlay } from "@/components/ui/overlay";
-import { Loader2, Monitor, Moon, Palette, Settings2, Sun } from "lucide-react";
+import { Loader2, Monitor, Moon, Palette, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
@@ -99,95 +98,87 @@ export default function GeneralSettingsPage() {
     >
 
       {/* Display Preferences */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-              <Settings2 className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Palette} tone="violet">
-                Display
-                <InfoTip label="About display" text="Customize how data is displayed." />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* Shared `useDisplayCurrencyOptions` rather than the bare built-in
-              list: it also offers any currency the user has a custom rate
-              for. Without that, the PUT route's own rejection message ("Add a
-              custom rate via Settings → Custom exchange rates first") was a
-              dead end — after adding the rate, no picker listed the currency. */}
-          <Field
-            label="Currency"
-            labelPlacement="inline"
-            control="combobox"
-            info="Totals are converted to this currency. Row amounts keep their own currency."
-            controlWidth="w-44 regular:w-56"
-            value={displayCurrency}
-            onValueChange={handleCurrencySelect}
-            options={currencyOptions}
-            placeholder="Select currency"
-            searchPlaceholder="Search currencies…"
-            emptyMessage="No matching currency"
-          />
+      <Card
+        title="Display"
+        icon={Palette}
+        tone="violet"
+        info="Customize how data is displayed."
+        infoLabel="About display"
+        className="space-y-3"
+      >
+        {/* Shared `useDisplayCurrencyOptions` rather than the bare built-in
+            list: it also offers any currency the user has a custom rate
+            for. Without that, the PUT route's own rejection message ("Add a
+            custom rate via Settings → Custom exchange rates first") was a
+            dead end — after adding the rate, no picker listed the currency. */}
+        <Field
+          label="Currency"
+          labelPlacement="inline"
+          control="combobox"
+          info="Totals are converted to this currency. Row amounts keep their own currency."
+          controlWidth="w-44 regular:w-56"
+          value={displayCurrency}
+          onValueChange={handleCurrencySelect}
+          options={currencyOptions}
+          placeholder="Select currency"
+          searchPlaceholder="Search currencies…"
+          emptyMessage="No matching currency"
+        />
 
-          <Field
-            label="Font"
-            labelPlacement="inline"
-            control="select"
-            info="This browser only."
-            controlWidth="w-44 regular:w-48"
-            value={font}
-            onValueChange={(v) => setFont(v as FontKey)}
-            options={FONT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
-          />
+        <Field
+          label="Font"
+          labelPlacement="inline"
+          control="select"
+          info="This browser only."
+          controlWidth="w-44 regular:w-48"
+          value={font}
+          onValueChange={(v) => setFont(v as FontKey)}
+          options={FONT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+        />
 
-          <Field
-            label="Theme"
-            labelPlacement="inline"
-            control="segmented"
-            value={theme ?? "system"}
-            onValueChange={(v) => setTheme(v)}
-            options={[
-              { value: "system", label: "System", icon: Monitor },
-              { value: "light", label: "Light", icon: Sun },
-              { value: "dark", label: "Dark", icon: Moon },
-            ]}
-          />
+        <Field
+          label="Theme"
+          labelPlacement="inline"
+          control="segmented"
+          value={theme ?? "system"}
+          onValueChange={(v) => setTheme(v)}
+          options={[
+            { value: "system", label: "System", icon: Monitor },
+            { value: "light", label: "Light", icon: Sun },
+            { value: "dark", label: "Dark", icon: Moon },
+          ]}
+        />
 
-          <Field
-            label="Animations"
-            labelPlacement="inline"
-            control="switch"
-            info="Smooth number and chart transitions. Off is faster."
-            id="animation-toggle"
-            checked={animationsEnabled}
-            onCheckedChange={setAnimationsEnabled}
-          />
+        <Field
+          label="Animations"
+          labelPlacement="inline"
+          control="switch"
+          info="Smooth number and chart transitions. Off is faster."
+          id="animation-toggle"
+          checked={animationsEnabled}
+          onCheckedChange={setAnimationsEnabled}
+        />
 
-          {currencyError ? (
-            <p className="text-sm text-destructive">{currencyError}</p>
-          ) : null}
-          {recompute?.active ? (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-              {recompute.finished ? (
-                <span className="text-pos">
-                  Reports updated to {recompute.target}.
+        {currencyError ? (
+          <p className="text-sm text-destructive">{currencyError}</p>
+        ) : null}
+        {recompute?.active ? (
+          <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+            {recompute.finished ? (
+              <span className="text-pos">
+                Reports updated to {recompute.target}.
+              </span>
+            ) : (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>
+                  Recalculating reports in {recompute.target} at historical rates
+                  {recompute.total > 0 ? ` (${recompute.done}/${recompute.total})` : "…"}
                 </span>
-              ) : (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>
-                    Recalculating reports in {recompute.target} at historical rates
-                    {recompute.total > 0 ? ` (${recompute.done}/${recompute.total})` : "…"}
-                  </span>
-                </>
-              )}
-            </div>
-          ) : null}
-        </CardContent>
+              </>
+            )}
+          </div>
+        ) : null}
       </Card>
 
       {/* Confirm currency switch — re-derives every stored reporting amount. */}

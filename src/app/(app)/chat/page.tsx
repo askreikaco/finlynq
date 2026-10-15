@@ -3,7 +3,7 @@
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -276,13 +276,11 @@ function ChatPageContent() {
 
                   {/* Inline visualization */}
                   {msg.chartData && msg.chartData.length > 0 && (
-                    <Card className="overflow-hidden border-border/60">
-                      <CardContent className="p-3">
-                        {msg.chartType === "bar" && <InlineChart type="bar" data={msg.chartData} currency={displayCurrency} />}
-                        {msg.chartType === "pie" && <InlineChart type="pie" data={msg.chartData} currency={displayCurrency} />}
-                        {msg.chartType === "line" && <InlineChart type="line" data={msg.chartData} currency={displayCurrency} />}
-                        {msg.chartType === "table" && <InlineTable data={msg.chartData} />}
-                      </CardContent>
+                    <Card frameClassName="overflow-hidden border-border/60" className="p-3">
+                      {msg.chartType === "bar" && <InlineChart type="bar" data={msg.chartData} currency={displayCurrency} />}
+                      {msg.chartType === "pie" && <InlineChart type="pie" data={msg.chartData} currency={displayCurrency} />}
+                      {msg.chartType === "line" && <InlineChart type="line" data={msg.chartData} currency={displayCurrency} />}
+                      {msg.chartType === "table" && <InlineTable data={msg.chartData} />}
                     </Card>
                   )}
                 </div>

@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -86,65 +86,63 @@ export function AutoRuleBanner({
   const hasMore = data.items.length > PREVIEW_LIMIT;
 
   return (
-    <Card className="border-pos/30 bg-pos/5">
-      <CardContent className="py-4 space-y-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Sparkles className="h-4 w-4 text-pos" />
-          <p className="text-sm font-medium">
-            {data.count} row{data.count === 1 ? "" : "s"} auto-applied by rules
-            in the last {data.windowDays} day{data.windowDays === 1 ? "" : "s"}
-          </p>
-          <Badge
-            variant="outline"
-            className="text-xs font-mono uppercase border-pos/40 text-pos"
+    <Card frameClassName="border-pos/30 bg-pos/5" className="py-4 space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Sparkles className="h-4 w-4 text-pos" />
+        <p className="text-sm font-medium">
+          {data.count} row{data.count === 1 ? "" : "s"} auto-applied by rules
+          in the last {data.windowDays} day{data.windowDays === 1 ? "" : "s"}
+        </p>
+        <Badge
+          variant="outline"
+          className="text-xs font-mono uppercase border-pos/40 text-pos"
+        >
+          rule
+        </Badge>
+      </div>
+      <div className="space-y-1">
+        {preview.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onRowClick?.(item.id)}
+            className="w-full text-left rounded-md border bg-card/60 px-3 py-2 hover:bg-card transition-colors"
           >
-            rule
-          </Badge>
-        </div>
-        <div className="space-y-1">
-          {preview.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onRowClick?.(item.id)}
-              className="w-full text-left rounded-md border bg-card/60 px-3 py-2 hover:bg-card transition-colors"
-            >
-              <div className="flex items-baseline gap-3 flex-wrap text-xs">
-                <span className="font-mono text-muted-foreground w-20 shrink-0">
-                  {item.date}
-                </span>
-                <span className="truncate flex-1 min-w-0">
-                  {item.payee ?? "(no payee)"}
-                </span>
-                {item.categoryName && (
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    {item.categoryName}
-                  </Badge>
-                )}
-                <span
-                  className={`font-mono w-20 text-right shrink-0 ${
-                    item.amount < 0 ? "text-destructive" : "text-pos"
-                  }`}
-                >
-                  {formatCurrency(item.amount, item.currency || "CAD")}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-        {hasMore && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={() => setExpanded((e) => !e)}
-          >
-            {expanded
-              ? `Show fewer`
-              : `Show ${data.items.length - PREVIEW_LIMIT} more`}
-          </Button>
-        )}
-      </CardContent>
+            <div className="flex items-baseline gap-3 flex-wrap text-xs">
+              <span className="font-mono text-muted-foreground w-20 shrink-0">
+                {item.date}
+              </span>
+              <span className="truncate flex-1 min-w-0">
+                {item.payee ?? "(no payee)"}
+              </span>
+              {item.categoryName && (
+                <Badge variant="secondary" className="text-xs font-mono">
+                  {item.categoryName}
+                </Badge>
+              )}
+              <span
+                className={`font-mono w-20 text-right shrink-0 ${
+                  item.amount < 0 ? "text-destructive" : "text-pos"
+                }`}
+              >
+                {formatCurrency(item.amount, item.currency || "CAD")}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {hasMore && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          {expanded
+            ? `Show fewer`
+            : `Show ${data.items.length - PREVIEW_LIMIT} more`}
+        </Button>
+      )}
     </Card>
   );
 }

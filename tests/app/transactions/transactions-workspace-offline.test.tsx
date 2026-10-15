@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import fs from "fs";
 import path from "path";
 const H = vi.hoisted(() => {
@@ -59,7 +59,7 @@ const pend = (o: object) => ({ creates: [], edits: {}, deletes: {}, ...o });
 const CREATE = { opId: "op1", ...entry, createdAt: 5, fields: { date: "2026-02-01", accountId: 1, categoryId: 4, enteredCurrency: "USD", enteredAmount: -9, payee: "Queued cafe" } };
 
 beforeEach(() => {
-  push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: the row sheet path (wide opens the split pane)
+  push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: plain rows link to the edit page (wide opens the split pane)
   H.PEND = EMPTY_PENDING; H.ACTIVE = false;
   H.queueDel = vi.fn(async () => true); H.discard = vi.fn(async () => true);
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
@@ -69,10 +69,9 @@ beforeEach(() => {
   (window as any).matchMedia ??= () => ({ matches: false, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} });
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-/** Taps a list row (opens its detail sheet), then the sheet action. The list has no table or per-row buttons. */
-function openRowAction(index: number, action: string) {
+/** Taps list row `index` (queued rows are tap targets or inert; plain rows are links, see the flag-off test). */
+function tapRow(index: number) {
   fireEvent.click(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]')[index]);
-  fireEvent.click(screen.getByRole("button", { name: action }));
 }
 class FakeIntersectionObserver {
   constructor(cb: (e: any[]) => void) { H.IO.cbs.push(cb); }
@@ -80,18 +79,17 @@ class FakeIntersectionObserver {
 }
 
 describe("flag off", () => {
-  it("no badges, no notice; a refused delete behaves as before and never touches the queue", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (_u: string, init?: any) => init?.method === "DELETE"
-      ? ({ ok: false, status: 500, json: async () => ({ error: "boom" }) }) : ({ ok: true, json: async () => ({ data: [] }) })));
+  it("no badges, no notice; plain rows are edit-page links and the list never touches the queue", async () => {
     render(<TransactionsWorkspace />);
     expect(screen.queryByTestId("tx-waiting-sync")).toBeNull();
     expect(screen.queryByTestId("tx-sync-failed")).toBeNull();
     expect(screen.queryByTestId("tx-pending-deletes")).toBeNull();
-    openRowAction(0, "Delete");
-    const dlg = await screen.findByRole("dialog");
-    fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
-    expect((await within(dlg).findByRole("alert")).textContent).toContain("boom");
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="/edit?returnTo="]'));
+    expect(links.map((a) => a.getAttribute("href")!.split("?")[0])).toEqual(["/transactions/1/edit", "/transactions/2/edit"]);
+    fireEvent.click(links[0]);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(H.queueDel).not.toHaveBeenCalled();
+    expect(H.discard).not.toHaveBeenCalled();
   });
 });
 
@@ -112,11 +110,19 @@ describe("queued rows in the list", () => {
     expect(within(rows[1]).getByTestId("tx-waiting-sync")).toBeTruthy();
     expect(screen.queryByText("Linked")).toBeNull();
     expect(screen.getByTestId("tx-pending-deletes").textContent).toContain("1 deleted transaction is hidden until it syncs.");
-    // queued rows cannot be bulk-selected or split: the sheet has Edit and Delete only
+    // queued rows cannot be bulk-selected; there is no sheet (no Split / Delete): a queued create reopens the entry
+    // screen, a queued edit has nothing newer to open (inert row: the badge says why).
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    fireEvent.click(rows[1]);
+    expect(push).not.toHaveBeenCalled();
+    expect(rows[1].tagName).not.toBe("BUTTON");
+    expect(rows[1].closest("a")).toBeNull();
     fireEvent.click(rows[0]);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("button", { name: "Split" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith("/transactions/new?queued=op1");
   });
 
   it("List view: a failed entry shows Sync failed linking to Settings > Data", () => {
@@ -142,74 +148,22 @@ describe("queued rows in the list", () => {
     expect(screen.getByText("Edited offline")).toBeTruthy();
     expect(screen.queryByText("Linked")).toBeNull();
     expect(screen.getAllByTestId("tx-waiting-sync")).toHaveLength(3); // create + edit + the delete notice
-    // tapping a queued create reopens the entry screen from the outbox; a failed one goes to Settings > Data
-    openRowAction(0, "Edit");
+    // tapping a queued create reopens the entry screen from the outbox (where it can be edited or discarded)
+    tapRow(0);
     expect(push).toHaveBeenCalledWith("/transactions/new?queued=op1");
   });
 
-  it("a failed row: its sheet's Edit opens Settings > Data", () => {
+  it("a failed row: a tap opens Settings > Data (Retry / Discard live there)", () => {
     SIZE.current = "compact";
     H.ACTIVE = true;
     H.PEND = pend({ deletes: { 1: { opId: "d1", status: "failed", failReason: "Row changed on the server" } } });
     render(<TransactionsWorkspace />);
     expect(screen.getAllByTestId("tx-sync-failed")).toHaveLength(1);
-    openRowAction(0, "Edit");
+    tapRow(0);
     expect(push).toHaveBeenCalledWith("/settings/data");
   });
 });
 
-describe("offline delete", () => {
-  const networkDown = (splits: unknown = []) => vi.fn(async (url: string, init?: any) => {
-    if (init?.method === "DELETE") throw new TypeError("Failed to fetch");
-    if (String(url).includes("/splits")) return { ok: true, json: async () => splits };
-    return { ok: true, json: async () => ({ data: [] }) };
-  });
-  const confirm = async () => {
-    const dlg = await screen.findByRole("dialog");
-    fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
-    return dlg;
-  };
-
-  it("a network failure on a simple row queues the delete (with the row's updatedAt) and closes the dialog", async () => {
-    H.ACTIVE = true;
-    vi.stubGlobal("fetch", networkDown());
-    render(<TransactionsWorkspace />);
-    openRowAction(0, "Delete");
-    await screen.findByRole("dialog");
-    await new Promise((r) => setTimeout(r, 0)); // splits prefetch settles
-    await confirm();
-    await waitFor(() => expect(H.queueDel).toHaveBeenCalledTimes(1));
-    expect(H.queueDel.mock.calls[0][0]).toBe(1);
-    expect(H.queueDel.mock.calls[0][1]).toMatchObject({ payee: "Plain", updatedAt: "2026-01-02T00:00:00.000Z" });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  });
-
-  it("the confirm dialog opens a splits check only while the queue is active", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [] })));
-    render(<TransactionsWorkspace />);
-    openRowAction(0, "Delete");
-    await screen.findByRole("dialog");
-    const idle = (fetch as any).mock.calls.filter((c: any[]) => String(c[0]).includes("splits?transactionId=1")).length;
-    cleanup();
-    H.ACTIVE = true;
-    (fetch as any).mockClear();
-    render(<TransactionsWorkspace />);
-    openRowAction(0, "Delete");
-    await screen.findByRole("dialog");
-    const active = (fetch as any).mock.calls.filter((c: any[]) => String(c[0]).includes("splits?transactionId=1")).length;
-    expect(active).toBeGreaterThan(idle); // the extra request is the prefetch
-  });
-
-  it("deleting a queued create drops the outbox entry and sends nothing", async () => {
-    H.ACTIVE = true;
-    H.PEND = pend({ creates: [CREATE] });
-    const f = vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) }));
-    vi.stubGlobal("fetch", f);
-    render(<TransactionsWorkspace />);
-    openRowAction(0, "Delete");
-    await confirm();
-    await waitFor(() => expect(H.discard).toHaveBeenCalledWith("op1"));
-    expect(f.mock.calls.some((c: any[]) => (c[1] as any)?.method === "DELETE")).toBe(false);
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  });
-});
+// Offline delete (network failure queues it, the splits pre-check) and discarding a queued create moved with the row sheet:
+// they run on the edit page now. See tests/app/transactions/edit/edit-page-row-flows.test.tsx (G2) and
+// tests/app/transactions/new/offline-queue-edit.test.tsx (G3).

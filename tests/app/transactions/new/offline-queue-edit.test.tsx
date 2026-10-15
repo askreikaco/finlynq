@@ -4,13 +4,14 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 
 const Q = vi.hoisted(() => ({
   on: true,
   fields: { date: "2026-02-01", accountId: 2, categoryId: 10, enteredCurrency: "USD", enteredAmount: -150, payee: "ACME", note: "keep me" } as Record<string, unknown> | null,
   get: vi.fn(),
   save: vi.fn(async (_id: string, _f: unknown) => true),
+  discard: vi.fn(async (_id: string) => true),
   push: vi.fn(),
 }));
 vi.mock("@/lib/data/local-write-queue", () => ({
@@ -20,6 +21,7 @@ vi.mock("@/lib/data/local-write-queue", () => ({
   queueOfflineEdit: vi.fn(async () => true),
   getQueuedCreate: (id: string) => Q.get(id),
   saveQueuedCreate: (id: string, f: unknown) => Q.save(id, f),
+  discardQueuedCreate: (id: string) => Q.discard(id),
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -39,7 +41,7 @@ vi.mock("@/lib/data/use-api", () => ({
 import Page from "@/app/(app)/transactions/new/page";
 
 beforeEach(() => {
-  Q.on = true; Q.push.mockClear(); Q.save.mockClear();
+  Q.on = true; Q.push.mockClear(); Q.save.mockClear(); Q.discard.mockReset(); Q.discard.mockImplementation(async () => true);
   Q.get.mockReset(); Q.get.mockImplementation(async () => Q.fields);
   sessionStorage.clear(); localStorage.clear();
   window.history.replaceState({}, "", "/transactions/new?queued=op1");
@@ -85,3 +87,49 @@ describe("edit of a queued create", () => {
     expect(screen.queryByDisplayValue("ACME")).toBeNull();
   });
 });
+
+// G3: the list's row sheet used to be the only place to discard a queued create. The entry screen now owns it.
+describe("discard a queued create from the entry screen", () => {
+  const openDiscard = async () => {
+    render(<Page />);
+    await screen.findByDisplayValue("ACME");
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Discard entry" }));
+    return screen.findByRole("dialog");
+  };
+
+  it("Discard asks first, drops the outbox entry, sends nothing to the server and returns to the list", async () => {
+    const dlg = await openDiscard();
+    expect(within(dlg).getByText("Discard this entry?")).toBeTruthy();
+    expect(Q.discard).not.toHaveBeenCalled();
+    fireEvent.click(within(dlg).getByRole("button", { name: "Discard" }));
+    await waitFor(() => expect(Q.discard).toHaveBeenCalledWith("op1"));
+    await waitFor(() => expect(Q.push).toHaveBeenCalledWith("/transactions"));
+    expect((fetch as any).mock.calls.some((c: any[]) => (c[1] as any)?.method === "DELETE")).toBe(false);
+  });
+
+  it("Cancel keeps the entry", async () => {
+    const dlg = await openDiscard();
+    fireEvent.click(within(dlg).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(Q.discard).not.toHaveBeenCalled();
+    expect(Q.push).not.toHaveBeenCalled();
+  });
+
+  it("an entry being sent right now cannot be dropped: the message shows and the page stays", async () => {
+    Q.discard.mockImplementation(async () => false);
+    const dlg = await openDiscard();
+    fireEvent.click(within(dlg).getByRole("button", { name: "Discard" }));
+    expect(await within(dlg).findByText(/being sent right now/)).toBeTruthy();
+    expect(Q.push).not.toHaveBeenCalled();
+  });
+
+  it("a plain New entry (no ?queued=) has no Discard", async () => {
+    window.history.replaceState({}, "", "/transactions/new");
+    render(<Page />);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole("menuitem", { name: "Discard entry" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
+  });
+});
+

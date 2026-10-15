@@ -1,12 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -259,160 +254,162 @@ export function MoneyProConnectorTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle icon={FileSpreadsheet} tone="violet" infoLabel="About money pro" info={<>Migrate your Money Pro history to Finlynq. In Money Pro, open the{" "}
+      <Card
+        title="Money Pro"
+        icon={FileSpreadsheet}
+        tone="violet"
+        info={<>Migrate your Money Pro history to Finlynq. In Money Pro, open the{" "}
             <span className="font-medium">Transactions report</span> and export
             it as <span className="font-mono">CSV</span>, then upload it here.
             Expenses, income, transfers, and opening balances are imported with
-            the right sign and currency.</>}>Money Pro</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
-              <div className="flex-1">{error}</div>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-3.5 w-3.5 mr-1.5" />
-              {file ? "Choose a different file" : "Choose CSV file"}
-            </Button>
-            {file && (
-              <>
-                <Badge variant="secondary" className="font-mono text-xs">
-                  {file.name} ({Math.round(file.size / 1024)} KB)
-                </Badge>
-                <Button size="sm" onClick={runPreview} disabled={busy}>
-                  {stage === "previewing" && (
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  )}
-                  {stage === "executed" ? "Re-preview" : "Preview import"}
-                </Button>
-              </>
-            )}
+            the right sign and currency.</>}
+        infoLabel="About money pro"
+        className="space-y-4"
+      >
+        {error && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div className="flex-1">{error}</div>
           </div>
+        )}
 
-          {summary && stage !== "executed" && (
-            <div className="space-y-4">
-              <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono">
-                {summary.transactions.toLocaleString(getDisplayLocale())} transactions ·{" "}
-                {summary.transfers} transfers · {summary.categories.length}{" "}
-                categories
-                {summary.rowErrors.length > 0 && (
-                  <span className="text-warning">
-                    {" "}
-                    · {summary.rowErrors.length} rows skipped
-                  </span>
-                )}
-              </div>
-
-              <IssueDetails
-                title="Rows skipped while reading the file"
-                items={summary.rowErrors.map(
-                  (e) => `Row ${e.row}: ${e.reason}`,
-                )}
-              />
-
-              <div className="space-y-2">
-                <h3 className="flex items-center gap-0.5 text-sm font-medium">
-                  Map accounts
-                  <InfoTip
-                    label="About mapping accounts"
-                    text="Each Money Pro account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
-                  />
-                </h3>
-                <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                  {summary.accounts.map((p) => {
-                    const sel = target[p.sourceName] ?? "new";
-                    return (
-                      <div
-                        key={p.sourceName}
-                        className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
-                      >
-                        <div className="flex-1 min-w-[160px]">
-                          <span className="font-medium">{p.sourceName}</span>
-                          <span className="text-muted-foreground text-xs ml-2 font-mono">
-                            {p.currency} · {p.txCount} tx
-                          </span>
-                        </div>
-                        <Field
-                          control="combobox"
-                          value={sel}
-                          onValueChange={(v) =>
-                            setTarget((prev) => ({
-                              ...prev,
-                              [p.sourceName]: v || "new",
-                            }))
-                          }
-                          options={accountItems}
-                          placeholder="Select account"
-                          searchPlaceholder="Search accounts…"
-                          emptyMessage="No matching account"
-                          compact
-                          className="w-[220px]"
-                        />
-                        {sel === "new" && (
-                          <Field
-                            control="select"
-                            value={newType[p.sourceName] ?? "A"}
-                            onValueChange={(v) =>
-                              setNewType((prev) => ({
-                                ...prev,
-                                [p.sourceName]: (v as "A" | "L") ?? "A",
-                              }))
-                            }
-                            compact
-                            className="w-[110px]"
-                            options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <Button onClick={runExecute} disabled={busy}>
-                {stage === "executing" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
+            {file ? "Choose a different file" : "Choose CSV file"}
+          </Button>
+          {file && (
+            <>
+              <Badge variant="secondary" className="font-mono text-xs">
+                {file.name} ({Math.round(file.size / 1024)} KB)
+              </Badge>
+              <Button size="sm" onClick={runPreview} disabled={busy}>
+                {stage === "previewing" && (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                 )}
-                Import {summary.transactions.toLocaleString(getDisplayLocale())} transactions
+                {stage === "executed" ? "Re-preview" : "Preview import"}
               </Button>
-            </div>
+            </>
           )}
+        </div>
 
-          {result && stage === "executed" && (
-            <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-1">
-              <div className="font-medium flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-pos" />
-                Import complete
-              </div>
-              <div className="text-xs text-muted-foreground font-mono space-y-0.5 mt-1">
-                <div>Imported: {result.imported}</div>
-                <div>Skipped duplicates: {result.skippedDuplicates}</div>
-                <div>Accounts created: {result.accountsCreated}</div>
-                <div>Categories created: {result.categoriesCreated}</div>
-              </div>
-              {result.errors && result.errors.length > 0 && (
-                <IssueDetails title="Warnings" items={result.errors} />
+        {summary && stage !== "executed" && (
+          <div className="space-y-4">
+            <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono">
+              {summary.transactions.toLocaleString(getDisplayLocale())} transactions ·{" "}
+              {summary.transfers} transfers · {summary.categories.length}{" "}
+              categories
+              {summary.rowErrors.length > 0 && (
+                <span className="text-warning">
+                  {" "}
+                  · {summary.rowErrors.length} rows skipped
+                </span>
               )}
             </div>
-          )}
-        </CardContent>
+
+            <IssueDetails
+              title="Rows skipped while reading the file"
+              items={summary.rowErrors.map(
+                (e) => `Row ${e.row}: ${e.reason}`,
+              )}
+            />
+
+            <div className="space-y-2">
+              <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                Map accounts
+                <InfoTip
+                  label="About mapping accounts"
+                  text="Each Money Pro account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
+                />
+              </h3>
+              <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                {summary.accounts.map((p) => {
+                  const sel = target[p.sourceName] ?? "new";
+                  return (
+                    <div
+                      key={p.sourceName}
+                      className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
+                    >
+                      <div className="flex-1 min-w-[160px]">
+                        <span className="font-medium">{p.sourceName}</span>
+                        <span className="text-muted-foreground text-xs ml-2 font-mono">
+                          {p.currency} · {p.txCount} tx
+                        </span>
+                      </div>
+                      <Field
+                        control="combobox"
+                        value={sel}
+                        onValueChange={(v) =>
+                          setTarget((prev) => ({
+                            ...prev,
+                            [p.sourceName]: v || "new",
+                          }))
+                        }
+                        options={accountItems}
+                        placeholder="Select account"
+                        searchPlaceholder="Search accounts…"
+                        emptyMessage="No matching account"
+                        compact
+                        className="w-[220px]"
+                      />
+                      {sel === "new" && (
+                        <Field
+                          control="select"
+                          value={newType[p.sourceName] ?? "A"}
+                          onValueChange={(v) =>
+                            setNewType((prev) => ({
+                              ...prev,
+                              [p.sourceName]: (v as "A" | "L") ?? "A",
+                            }))
+                          }
+                          compact
+                          className="w-[110px]"
+                          options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Button onClick={runExecute} disabled={busy}>
+              {stage === "executing" && (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              )}
+              Import {summary.transactions.toLocaleString(getDisplayLocale())} transactions
+            </Button>
+          </div>
+        )}
+
+        {result && stage === "executed" && (
+          <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-1">
+            <div className="font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-pos" />
+              Import complete
+            </div>
+            <div className="text-xs text-muted-foreground font-mono space-y-0.5 mt-1">
+              <div>Imported: {result.imported}</div>
+              <div>Skipped duplicates: {result.skippedDuplicates}</div>
+              <div>Accounts created: {result.accountsCreated}</div>
+              <div>Categories created: {result.categoriesCreated}</div>
+            </div>
+            {result.errors && result.errors.length > 0 && (
+              <IssueDetails title="Warnings" items={result.errors} />
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -28,10 +28,9 @@ describe("loans list: navigates, no create/edit dialog", () => {
   });
   it("create and edit go to the full pages", () => {
     expect(src).toContain('router.push("/loans/new")');
-    expect(src).toContain("router.push(`/loans/${loan.id}/edit`)");
   });
-  it("keeps the delete confirm on the list", () => {
-    expect(src).toContain('title="Delete loan"');
+  it("no delete confirm on the list: delete lives in the edit form", () => {
+    expect(src).not.toContain('title="Delete loan"');
   });
   it("no longer registers the create FAB handler", () => {
     expect(src).not.toMatch(/usePageFab\(/);
@@ -50,8 +49,8 @@ describe("subscriptions list: navigates, no create/edit dialog", () => {
     expect(src).toContain("router.push(`/subscriptions/${id}/edit");
     expect(src).toContain("router.push(draftSearchParams(");
   });
-  it("keeps the delete confirm on the list", () => {
-    expect(src).toContain('title="Delete subscription"');
+  it("no delete confirm on the list: delete lives in the edit form", () => {
+    expect(src).not.toContain('title="Delete subscription"');
   });
   it("no longer registers the create FAB handler", () => {
     expect(src).not.toMatch(/usePageFab\(/);

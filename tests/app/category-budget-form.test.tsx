@@ -86,6 +86,23 @@ describe("CategoryBudgetForm", () => {
     expect(calls[0]).toMatchObject({ method: "DELETE", url: "/api/categories?id=2" });
   });
 
+  it("every input has a visible label (getByLabelText, not hidden or placeholder-only)", () => {
+    stubFetch();
+    const { unmount } = render(<CategoryBudgetForm {...base} category={null} onSaved={vi.fn()} onCancel={vi.fn()} onDeleted={vi.fn()} />);
+    // A visible label: a <label> in the Field's label row whose text is the name, with no sr-only (hideLabel) wrapper.
+    const isVisible = (name: string) => {
+      const control = screen.getByLabelText(name);
+      const field = control.closest("[data-slot='field']");
+      return [...(field?.querySelectorAll("[data-slot='field-label-row'] label") ?? [])]
+        .some((l) => l.textContent === name && !l.querySelector(".sr-only"));
+    };
+    for (const name of ["Name", "Type", "Group", "Budget"]) expect(isVisible(name), name).toBe(true);
+    unmount();
+    render(<CategoryBudgetForm {...base} category={CATS[0]} onSaved={vi.fn()} onCancel={vi.fn()} onDeleted={vi.fn()} />);
+    for (const name of ["Name", "Group", "Budget"]) expect(isVisible(name), name).toBe(true);
+    expect(screen.queryByLabelText("Type")).toBeNull();
+  });
+
   it("name is required", async () => {
     stubFetch();
     render(<CategoryBudgetForm {...base} category={null} onSaved={vi.fn()} onCancel={vi.fn()} onDeleted={vi.fn()} />);

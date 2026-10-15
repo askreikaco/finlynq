@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { ArrowLeftRight, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Plus, Trash2 } from "lucide-react";
 import {
   currencyLabel,
   isSupportedCurrency,
@@ -126,158 +125,150 @@ export function FxOverridesSection() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-            <RefreshCw className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={ArrowLeftRight} tone="cyan">
-              Custom rates
-              <InfoTip label="About custom rates" text="Pin your own FX rate when the market rate differs from your bank's, or for currencies we don't fetch. Stored as 1 USD = N currency." />
-            </CardTitle>
-          </div>
+    <Card
+      title="Custom rates"
+      icon={ArrowLeftRight}
+      tone="cyan"
+      info="Pin your own FX rate when the market rate differs from your bank's, or for currencies we don't fetch. Stored as 1 USD = N currency."
+      infoLabel="About custom rates"
+      className="space-y-3"
+    >
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {loading ? (
+        <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
+      ) : overrides.length === 0 ? (
+        <p className="text-xs text-muted-foreground" data-keep="status">No custom rates.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {overrides.map((o) => (
+            <div key={o.id} className="flex items-center justify-between gap-3 rounded-md border border-border/50 px-3 py-2 text-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="font-mono text-xs font-semibold w-12">{o.currency}</span>
+                <span className="font-mono text-xs">
+                  1 {o.currency} = {o.rateToUsd.toFixed(6)} USD
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {o.dateFrom}{o.dateTo ? ` → ${o.dateTo}` : " (open-ended)"}
+                </span>
+                {o.note ? <span className="text-xs text-muted-foreground italic truncate">{o.note}</span> : null}
+              </div>
+              <Button aria-label="Delete override" size="sm" variant="ghost" onClick={() => handleDelete(o.id)} className="h-7 w-7 p-0">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      )}
 
-        {loading ? (
-          <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
-        ) : overrides.length === 0 ? (
-          <p className="text-xs text-muted-foreground" data-keep="status">No custom rates.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {overrides.map((o) => (
-              <div key={o.id} className="flex items-center justify-between gap-3 rounded-md border border-border/50 px-3 py-2 text-sm">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="font-mono text-xs font-semibold w-12">{o.currency}</span>
-                  <span className="font-mono text-xs">
-                    1 {o.currency} = {o.rateToUsd.toFixed(6)} USD
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {o.dateFrom}{o.dateTo ? ` → ${o.dateTo}` : " (open-ended)"}
-                  </span>
-                  {o.note ? <span className="text-xs text-muted-foreground italic truncate">{o.note}</span> : null}
-                </div>
-                <Button aria-label="Delete override" size="sm" variant="ghost" onClick={() => handleDelete(o.id)} className="h-7 w-7 p-0">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {adding ? (
-          <div className="rounded-md border border-border/50 p-3 space-y-3">
-            <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
-              <div>
-                <span className="text-xs font-medium">Currency</span>
-                {customCode ? (
-                  <div className="flex items-center gap-1">
-                    <Field
-                      placeholder="3-4 letter code"
-                      value={form.currency}
-                      onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })}
-                      maxLength={4}
-                      compact
-                      controlClassName="font-mono"
-                    />
-                    <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" onClick={() => { setCustomCode(false); setForm({ ...form, currency: "EUR" }); }}>
-                      Pick from list
-                    </Button>
-                  </div>
-                ) : (
-                  <Field
-                    control="combobox"
-                    value={form.currency}
-                    onValueChange={(v) => {
-                      if (v === "__custom__") { setCustomCode(true); setForm({ ...form, currency: "" }); return; }
-                      setForm({ ...form, currency: v || "EUR" });
-                    }}
-                    options={[
-                      ...sortCurrency(
-                        activeCurrencies
-                          .filter((c) => c !== "USD")
-                          .map((c): FieldComboboxOption => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
-                        (c) => c.value,
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      ),
-                      { value: "__custom__", label: "+ Custom currency code…" } satisfies FieldComboboxOption,
-                    ]}
-                    placeholder="EUR"
-                    searchPlaceholder="Search currencies…"
-                    emptyMessage="No matches"
-                    compact
-                  />
-                )}
-                {customCode ? (
-                  <p className="mt-1 text-xs text-muted-foreground" data-keep="status">
-                    Added to your currencies automatically.
-                  </p>
-                ) : null}
-              </div>
-              <div>
-                <span className="text-xs font-medium">Rate</span>
+      {adding ? (
+        <div className="rounded-md border border-border/50 p-3 space-y-3">
+          <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
+            <div>
+              <span className="text-xs font-medium">Currency</span>
+              {customCode ? (
                 <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">1</span>
                   <Field
-                    control="select"
-                    value={form.rateMode === "to-usd" ? form.currency : "USD"}
-                    onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}
+                    placeholder="3-4 letter code"
+                    value={form.currency}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })}
+                    maxLength={4}
                     compact
-                    className="w-20"
-                    options={[{ value: form.currency, label: form.currency }, { value: "USD", label: "USD" }]}
+                    controlClassName="font-mono"
                   />
-                  <span className="text-xs text-muted-foreground">=</span>
-                  <Field
-                    control="amount"
-                    step="0.000001"
-                    value={form.rateInput}
-                    onValueChange={(nv) => setForm({ ...form, rateInput: nv })}
-                    compact
-                  />
-                  <span className="text-xs text-muted-foreground font-mono w-8">{form.rateMode === "to-usd" ? "USD" : form.currency}</span>
+                  <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" onClick={() => { setCustomCode(false); setForm({ ...form, currency: "EUR" }); }}>
+                    Pick from list
+                  </Button>
                 </div>
+              ) : (
+                <Field
+                  control="combobox"
+                  value={form.currency}
+                  onValueChange={(v) => {
+                    if (v === "__custom__") { setCustomCode(true); setForm({ ...form, currency: "" }); return; }
+                    setForm({ ...form, currency: v || "EUR" });
+                  }}
+                  options={[
+                    ...sortCurrency(
+                      activeCurrencies
+                        .filter((c) => c !== "USD")
+                        .map((c): FieldComboboxOption => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
+                      (c) => c.value,
+                      (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                    ),
+                    { value: "__custom__", label: "+ Custom currency code…" } satisfies FieldComboboxOption,
+                  ]}
+                  placeholder="EUR"
+                  searchPlaceholder="Search currencies…"
+                  emptyMessage="No matches"
+                  compact
+                />
+              )}
+              {customCode ? (
+                <p className="mt-1 text-xs text-muted-foreground" data-keep="status">
+                  Added to your currencies automatically.
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <span className="text-xs font-medium">Rate</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">1</span>
+                <Field
+                  control="select"
+                  value={form.rateMode === "to-usd" ? form.currency : "USD"}
+                  onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}
+                  compact
+                  className="w-20"
+                  options={[{ value: form.currency, label: form.currency }, { value: "USD", label: "USD" }]}
+                />
+                <span className="text-xs text-muted-foreground">=</span>
+                <Field
+                  control="amount"
+                  step="0.000001"
+                  value={form.rateInput}
+                  onValueChange={(nv) => setForm({ ...form, rateInput: nv })}
+                  compact
+                />
+                <span className="text-xs text-muted-foreground font-mono w-8">{form.rateMode === "to-usd" ? "USD" : form.currency}</span>
               </div>
-              <Field
-                label="From date"
-                control="date"
-                value={form.dateFrom}
-                onChange={(e) => setForm({ ...form, dateFrom: e.target.value })}
-                compact
-              />
-              <Field
-                label="To date"
-                optional
-                control="date"
-                value={form.dateTo}
-                onChange={(e) => setForm({ ...form, dateTo: e.target.value })}
-                placeholder="Leave blank for open-ended"
-                compact
-              />
             </div>
             <Field
-              label="Note"
-              optional
-              value={form.note}
-              onChange={(e) => setForm({ ...form, note: e.target.value })}
-              placeholder="e.g. Wise actual rate on 2026-04-15"
+              label="From date"
+              control="date"
+              value={form.dateFrom}
+              onChange={(e) => setForm({ ...form, dateFrom: e.target.value })}
               compact
             />
-            <div className="flex items-center gap-2 pt-1">
-              <Button size="sm" onClick={handleAdd}>Save override</Button>
-              <Button size="sm" variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
-            </div>
+            <Field
+              label="To date"
+              optional
+              control="date"
+              value={form.dateTo}
+              onChange={(e) => setForm({ ...form, dateTo: e.target.value })}
+              placeholder="Leave blank for open-ended"
+              compact
+            />
           </div>
-        ) : (
-          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
-            Add custom rate
-          </Button>
-        )}
-      </CardContent>
+          <Field
+            label="Note"
+            optional
+            value={form.note}
+            onChange={(e) => setForm({ ...form, note: e.target.value })}
+            placeholder="e.g. Wise actual rate on 2026-04-15"
+            compact
+          />
+          <div className="flex items-center gap-2 pt-1">
+            <Button size="sm" onClick={handleAdd}>Save override</Button>
+            <Button size="sm" variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
+          </div>
+        </div>
+      ) : (
+        <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Add custom rate
+        </Button>
+      )}
     </Card>
   );
 }

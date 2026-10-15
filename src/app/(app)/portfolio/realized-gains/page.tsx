@@ -17,14 +17,13 @@
  * md+ keeps the table with a sticky header inside its own scroll box.
  */
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Receipt, RefreshCw, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
-import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Amount, ListRow, MetricGrid } from "@/components/mobile";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
 import { Notice } from "@/components/notice";
@@ -37,6 +36,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { localDateISO } from "@/lib/utils/date";
+import { Card, type CardProps } from "@/components/ui/card";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
 // position; gain inverts (cost − buy_price). short_open = the audit-marker
@@ -284,17 +284,17 @@ export default function RealizedGainsPage() {
     [visibleRows],
   );
 
-  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
-    const items: MetricCardProps[] = [];
+  const summaryMetrics = useMemo<CardProps[]>(() => {
+    const items: CardProps[] = [];
     // Monthly history of the closed lots in view (their close dates). A tax-year load is complete for that year, so
     // its empty months are real zeros; earlier months were not loaded and give no comparison.
     const today = localDateISO().slice(0, 7);
     const through = taxYear && `${taxYear}-12` < today ? `${taxYear}-12` : today;
     const from = taxYear ? `${taxYear}-01` : undefined;
-    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricCardProps => {
+    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): CardProps => {
       const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
+        title: label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -308,7 +308,7 @@ export default function RealizedGainsPage() {
     }
     const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Closed lots", value: <span>{lots.value ?? visibleRows.length}</span>, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
+      icon: Receipt, title: "Closed lots", value: <span>{lots.value ?? visibleRows.length}</span>, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
       ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
     });
     return items;
@@ -428,7 +428,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" list>
+                <Card title={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" frame="list">
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -437,11 +437,11 @@ export default function RealizedGainsPage() {
                       value={<Amount value={g.realizedGain} currency={unifiedCurrency} size="md" tone="auto" showSign />}
                     />
                   ))}
-                </SectionCard>
+                </Card>
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" list>
+                    <Card title={monthLabel(ym)} icon={CalendarDays} tone="muted" frame="list">
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;
@@ -460,7 +460,7 @@ export default function RealizedGainsPage() {
                           />
                         );
                       })}
-                    </SectionCard>
+                    </Card>
                   </section>
                 ))
               )}

@@ -1,8 +1,8 @@
 "use client";
 
 import { Landmark } from "lucide-react";
-import { MetricCard } from "@/components/metric-card";
 import { formatCurrency } from "@/lib/currency";
+import { Card } from "@/components/ui/card";
 
 export interface NetWorthHeroCardProps {
   value: number;
@@ -25,7 +25,7 @@ export interface NetWorthHeroCardProps {
 
 /**
  * The dashboard's "Total Net Worth" hero card (also rendered by the Family overview) — the
- * global MetricCard in its "hero" size: when the card is wide the sparkline fills a
+ * global Card in its "hero" size: when the card is wide the sparkline fills a
  * right-hand column, when narrow it runs along the bottom.
  */
 export function NetWorthHeroCard({
@@ -42,8 +42,8 @@ export function NetWorthHeroCard({
   comparison,
 }: NetWorthHeroCardProps) {
   return (
-    <MetricCard
-      label="Total Net Worth"
+    <Card
+      title="Total Net Worth"
       icon={Landmark}
       tone="indigo"
       size="hero"
@@ -52,12 +52,10 @@ export function NetWorthHeroCard({
       delta={{ pct: comparison ? comparison.pct : change != null ? changePct : null }}
       sub={comparison ? (comparison.delta ?? undefined) : change != null ? `${change >= 0 ? "+" : ""}${formatCurrency(change, currency)} ${changeCaption}` : undefined}
       note={footnote}
-      sparkData={sparkData}
-      sparkLabels={sparkLabels}
-      sparkColor="#6366f1"
+      spark={{ data: sparkData, color: "#6366f1", labels: sparkLabels }}
       href={href}
       onMouseMove={onMouseMove}
-      className="mouse-glow"
+      frameClassName="mouse-glow"
     />
   );
 }

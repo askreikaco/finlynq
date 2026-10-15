@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import {
   OTHER_GROUP,
   orderGroups,
@@ -34,6 +34,7 @@ import {
 } from "@/lib/accounts/groups";
 import { Field } from "@/components/ui/field";
 import { ArrowDown, ArrowUp, Check, Layers, Merge, MoreHorizontal, Pencil, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const TYPE_LABELS: Record<AccountGroupType, string> = {
   A: "Asset groups",
@@ -278,7 +279,7 @@ export function ManageGroupsPanel({
     const list = ordered[type];
     const movable = list.filter((g) => g.toLowerCase() !== OTHER_GROUP.toLowerCase());
     return (
-      <SectionCard label={TYPE_LABELS[type]} icon={Layers} tone="indigo" padded={false} data-slot={`manage-groups-${type}`}>
+      <Card title={TYPE_LABELS[type]} icon={Layers} tone="indigo" padded={false} data-slot={`manage-groups-${type}`}>
         {list.length === 0 ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">No groups in use yet.</p>
         ) : (
@@ -286,7 +287,7 @@ export function ManageGroupsPanel({
             {list.map((g) => renderRow(type, g, movable))}
           </ul>
         )}
-      </SectionCard>
+      </Card>
     );
   }
 

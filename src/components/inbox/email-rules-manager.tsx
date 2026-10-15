@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -124,106 +124,104 @@ export function EmailRulesManager() {
   );
 
   return (
-    <Card>
-      <CardContent className="space-y-4 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Email rules</p>
-            <p className="text-xs text-muted-foreground">
-              Match on sender / subject / body / payee / amount (all conditions
-              must match) → an account, so body emails record automatically
-              (mode <span className="font-mono">auto</span>) or wait for one
-              click (<span className="font-mono">review</span>). Add field
-              mapping to reverse the amount sign, choose the date, or rename the
-              payee.
-            </p>
-          </div>
-          <Button size="sm" className="gap-1.5" onClick={() => setDialogInit({})}>
-            <Plus className="h-4 w-4" /> Add rule
-          </Button>
+    <Card className="space-y-4 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">Email rules</p>
+          <p className="text-xs text-muted-foreground">
+            Match on sender / subject / body / payee / amount (all conditions
+            must match) → an account, so body emails record automatically
+            (mode <span className="font-mono">auto</span>) or wait for one
+            click (<span className="font-mono">review</span>). Add field
+            mapping to reverse the amount sign, choose the date, or rename the
+            payee.
+          </p>
         </div>
+        <Button size="sm" className="gap-1.5" onClick={() => setDialogInit({})}>
+          <Plus className="h-4 w-4" /> Add rule
+        </Button>
+      </div>
 
-        {error && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+          {error}
+        </div>
+      )}
 
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : rules.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No email rules yet.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {rules.map((r) => {
-              const transforms = [
-                r.flipSign ? "flip sign" : null,
-                r.dateSource === "received" ? "date: received" : null,
-                r.payeeOverride ? `payee: ${r.payeeOverride}` : null,
-                r.currency ? `currency: ${r.currency}` : null,
-              ].filter(Boolean) as string[];
-              return (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">{r.name}</span>
-                      <Badge variant="outline" className="text-xs">{r.mode}</Badge>
-                      {!r.isActive && <Badge variant="outline" className="text-xs">off</Badge>}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {summarizeConditions(r.conditions)} → {acctLabel(r.accountId)}
-                      {r.transferDestAccountId != null
-                        ? ` → transfer to ${acctLabel(r.transferDestAccountId)}`
-                        : catLabel(r.categoryId)
-                          ? ` · ${catLabel(r.categoryId)}`
-                          : ""}
-                      {transforms.length > 0 ? ` · ${transforms.join(" · ")}` : ""}
-                    </div>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : rules.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No email rules yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {rules.map((r) => {
+            const transforms = [
+              r.flipSign ? "flip sign" : null,
+              r.dateSource === "received" ? "date: received" : null,
+              r.payeeOverride ? `payee: ${r.payeeOverride}` : null,
+              r.currency ? `currency: ${r.currency}` : null,
+            ].filter(Boolean) as string[];
+            return (
+              <div
+                key={r.id}
+                className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">{r.name}</span>
+                    <Badge variant="outline" className="text-xs">{r.mode}</Badge>
+                    {!r.isActive && <Badge variant="outline" className="text-xs">off</Badge>}
                   </div>
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void toggleActive(r)}>
-                    {r.isActive ? "Disable" : "Enable"}
-                  </Button>
-                  <Button aria-label="Edit"
-                    iconOnly
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={() =>
-                      setDialogInit({
-                        id: r.id,
-                        name: r.name,
-                        conditions: r.conditions,
-                        accountId: r.accountId,
-                        categoryId: r.categoryId,
-                        transferDestAccountId: r.transferDestAccountId,
-                        mode: r.mode,
-                        flipSign: r.flipSign,
-                        dateSource: r.dateSource,
-                        payeeOverride: r.payeeOverride,
-                        currency: r.currency,
-                      })
-                    }
-                    title="Edit"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button aria-label="Delete"
-                    iconOnly
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => void remove(r.id)}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {summarizeConditions(r.conditions)} → {acctLabel(r.accountId)}
+                    {r.transferDestAccountId != null
+                      ? ` → transfer to ${acctLabel(r.transferDestAccountId)}`
+                      : catLabel(r.categoryId)
+                        ? ` · ${catLabel(r.categoryId)}`
+                        : ""}
+                    {transforms.length > 0 ? ` · ${transforms.join(" · ")}` : ""}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void toggleActive(r)}>
+                  {r.isActive ? "Disable" : "Enable"}
+                </Button>
+                <Button aria-label="Edit"
+                  iconOnly
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() =>
+                    setDialogInit({
+                      id: r.id,
+                      name: r.name,
+                      conditions: r.conditions,
+                      accountId: r.accountId,
+                      categoryId: r.categoryId,
+                      transferDestAccountId: r.transferDestAccountId,
+                      mode: r.mode,
+                      flipSign: r.flipSign,
+                      dateSource: r.dateSource,
+                      payeeOverride: r.payeeOverride,
+                      currency: r.currency,
+                    })
+                  }
+                  title="Edit"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button aria-label="Delete"
+                  iconOnly
+                  variant="ghost"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={() => void remove(r.id)}
+                  title="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {dialogInit && (
         <EmailRuleDialog

@@ -9,9 +9,10 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Chart } from "@/components/chart";
 import { Calculator, CalendarClock, Coins, Home, Landmark, Percent, PiggyBank, Receipt, SlidersHorizontal, Sparkles, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Amount, ListRow, MetricGrid } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
+import { Card } from "@/components/ui/card";
 
 /** Y-axis tick: $12k. */
 const fmtK = (v: number) => `$${(v / 1000).toFixed(0)}k`;
@@ -53,9 +54,9 @@ type Loan = {
 /** Empty state for a calculator tab that has no result yet. */
 function Placeholder({ text }: { text: string }) {
   return (
-    <SectionCard>
+    <Card>
       <p className="py-12 text-center text-sm text-muted-foreground">{text}</p>
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -92,7 +93,7 @@ function HomePurchaseTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Purchase details" icon={Home} tone="indigo">
+      <Card title="Purchase details" icon={Home} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <Field
@@ -137,20 +138,20 @@ function HomePurchaseTab() {
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
           </Button>
         </div>
-      </SectionCard>
+      </Card>
 
       <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <MetricGrid
             metrics={[
-              { icon: Landmark, label: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
-              { icon: Wallet, label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, valueTone: "neg" },
-              { icon: PiggyBank, label: "Down Payment", value: result.downPayment, currency: displayCurrency },
-              { icon: Percent, label: "Total Interest", value: result.totalInterest, currency: displayCurrency, valueTone: "neg" },
+              { icon: Landmark, title: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
+              { icon: Wallet, title: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, valueTone: "neg" },
+              { icon: PiggyBank, title: "Down Payment", value: result.downPayment, currency: displayCurrency },
+              { icon: Percent, title: "Total Interest", value: result.totalInterest, currency: displayCurrency, valueTone: "neg" },
             ]}
           />
-          <SectionCard label="Mortgage balance over time" icon={TrendingDown} tone="rose">
+          <Card title="Mortgage balance over time" icon={TrendingDown} tone="rose">
             <Chart
               kind="line"
               data={result.balanceOverTime}
@@ -165,12 +166,12 @@ function HomePurchaseTab() {
               formatX={(v) => `Yr ${v}`}
               formatY={fmtK}
             />
-          </SectionCard>
+          </Card>
           <MetricGrid
             metrics={[
-              { icon: Receipt, label: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
-              { icon: Receipt, label: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
-              { icon: Coins, label: "Total Payments", value: result.totalPayments, currency: displayCurrency },
+              { icon: Receipt, title: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
+              { icon: Receipt, title: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
+              { icon: Coins, title: "Total Payments", value: result.totalPayments, currency: displayCurrency },
             ]}
           />
         </>
@@ -206,7 +207,7 @@ function ExtraSavingsTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Savings details" icon={PiggyBank} tone="emerald">
+      <Card title="Savings details" icon={PiggyBank} tone="emerald">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <Field
@@ -233,19 +234,19 @@ function ExtraSavingsTab() {
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
           </Button>
         </div>
-      </SectionCard>
+      </Card>
 
       <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <MetricGrid
             metrics={[
-              { icon: TrendingUp, label: "Future Value", value: result.futureValue, currency: displayCurrency, valueTone: "pos" },
-              { icon: PiggyBank, label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
-              { icon: Coins, label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
+              { icon: TrendingUp, title: "Future Value", value: result.futureValue, currency: displayCurrency, valueTone: "pos" },
+              { icon: PiggyBank, title: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
+              { icon: Coins, title: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
             ]}
           />
-          <SectionCard label="Growth over time" icon={TrendingUp} tone="emerald">
+          <Card title="Growth over time" icon={TrendingUp} tone="emerald">
             <Chart
               kind="stacked-area"
               data={result.projections}
@@ -260,7 +261,7 @@ function ExtraSavingsTab() {
               formatX={(v) => `Yr ${v}`}
               formatY={fmtK}
             />
-          </SectionCard>
+          </Card>
         </>
       ) : (
         <Placeholder text="Enter savings details and click Calculate" />
@@ -273,12 +274,12 @@ function ExtraSavingsTab() {
 /** One payoff strategy: totals as tiles, then the order the debts are cleared in. */
 function StrategyCard({ title, hint, data, currency }: { title: string; hint: string; data: DebtStrategy; currency: string }) {
   return (
-    <SectionCard label={`${title} · ${hint}`} icon={SlidersHorizontal} tone="indigo">
+    <Card title={`${title} · ${hint}`} icon={SlidersHorizontal} tone="indigo">
       <div className="space-y-4">
         <MetricGrid
           metrics={[
-            { icon: Percent, label: "Total Interest", value: data.totalInterest, currency, valueTone: "neg" },
-            { icon: CalendarClock, label: "Months to Debt-Free", value: String(data.totalMonths) },
+            { icon: Percent, title: "Total Interest", value: data.totalInterest, currency, valueTone: "neg" },
+            { icon: CalendarClock, title: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
         <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
@@ -287,7 +288,7 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
           ))}
         </div>
       </div>
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -350,7 +351,7 @@ function DebtPayoffTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Your debts" icon={Landmark} tone="rose">
+      <Card title="Your debts" icon={Landmark} tone="rose">
         {loansLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -382,7 +383,7 @@ function DebtPayoffTab() {
             </Button>
           </div>
         )}
-      </SectionCard>
+      </Card>
 
       <div className="space-y-4 wide:col-span-2">
       {result ? (
@@ -391,16 +392,16 @@ function DebtPayoffTab() {
           <StrategyCard title="Snowball" hint="Lowest balance first" data={result.snowball} currency={displayCurrency} />
 
           {result.avalanche.totalInterest !== result.snowball.totalInterest && (
-            <SectionCard className="bg-pos/10 border-pos/30">
+            <Card className="bg-pos/10 border-pos/30">
               <p className="text-sm text-pos">
                 {result.avalanche.totalInterest < result.snowball.totalInterest
                   ? `Avalanche saves you ${formatCurrency(result.snowball.totalInterest - result.avalanche.totalInterest, displayCurrency)} in interest and ${result.snowball.totalMonths - result.avalanche.totalMonths} months.`
                   : `Snowball saves you ${formatCurrency(result.avalanche.totalInterest - result.snowball.totalInterest, displayCurrency)} in interest.`}
               </p>
-            </SectionCard>
+            </Card>
           )}
 
-          <SectionCard label="Total debt over time" icon={TrendingDown} tone="rose">
+          <Card title="Total debt over time" icon={TrendingDown} tone="rose">
             <Chart
               kind="line"
               data={chartData}
@@ -415,7 +416,7 @@ function DebtPayoffTab() {
               formatX={(v) => `Mo ${v}`}
               formatY={fmtK}
             />
-          </SectionCard>
+          </Card>
         </>
       ) : (
         loans.length > 0 && <Placeholder text="Click Compare Strategies to see results" />
@@ -428,16 +429,16 @@ function DebtPayoffTab() {
 /** One side of the income comparison: the figures for that income. */
 function IncomeSide({ label, data, currency }: { label: string; data: IncomeChangeResult["current"]; currency: string }) {
   return (
-    <SectionCard label={label} icon={SlidersHorizontal} tone="indigo">
+    <Card title={label} icon={SlidersHorizontal} tone="indigo">
       <MetricGrid
         metrics={[
-          { icon: Wallet, label: "Annual Income", value: data.annualIncome, currency },
-          { icon: Wallet, label: "Monthly Take-Home", value: data.monthlyNet, currency },
-          { icon: PiggyBank, label: "Monthly Savings", value: data.monthlySavings, currency },
-          { icon: Percent, label: "Savings Rate", value: `${data.savingsRate}%` },
+          { icon: Wallet, title: "Annual Income", value: data.annualIncome, currency },
+          { icon: Wallet, title: "Monthly Take-Home", value: data.monthlyNet, currency },
+          { icon: PiggyBank, title: "Monthly Savings", value: data.monthlySavings, currency },
+          { icon: Percent, title: "Savings Rate", value: `${data.savingsRate}%` },
         ]}
       />
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -465,7 +466,7 @@ function IncomeChangeTab() {
 
   return (
     <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
-      <SectionCard label="Income details" icon={Wallet} tone="indigo">
+      <Card title="Income details" icon={Wallet} tone="indigo">
         <div className="space-y-4">
           <div className={FORM_GRID}>
             <Field
@@ -491,23 +492,23 @@ function IncomeChangeTab() {
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate Impact"}
           </Button>
         </div>
-      </SectionCard>
+      </Card>
 
       <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <IncomeSide label="Current" data={result.current} currency={displayCurrency} />
           <IncomeSide label="New" data={result.new} currency={displayCurrency} />
-          <SectionCard label="Impact summary" icon={Sparkles} tone="cyan" cardClassName="bg-info/10 border-info/30">
+          <Card title="Impact summary" icon={Sparkles} tone="cyan" frameClassName="bg-info/10 border-info/30">
             <MetricGrid
               metrics={[
-                { icon: Wallet, label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, valueTone: "pos", showSign: true },
-                { icon: PiggyBank, label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, valueTone: "pos", showSign: true },
-                { icon: Receipt, label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, valueTone: "neg", showSign: true },
-                { icon: TrendingUp, label: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
+                { icon: Wallet, title: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, valueTone: "pos", showSign: true },
+                { icon: PiggyBank, title: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, valueTone: "pos", showSign: true },
+                { icon: Receipt, title: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, valueTone: "neg", showSign: true },
+                { icon: TrendingUp, title: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
               ]}
             />
-          </SectionCard>
+          </Card>
         </>
       ) : (
         <Placeholder text="Enter income details and click Calculate Impact" />

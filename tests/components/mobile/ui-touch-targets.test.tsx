@@ -92,9 +92,9 @@ describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device
     expect(c.filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
   });
 
-  it("Card padding is a layout token: py-3 by default, regular:py-4 from 640px", () => {
-    const src = read("src/components/ui/card.tsx");
-    expect(src).toContain("py-3 regular:py-4");
+  it("Card title padding is a layout token: pt-7 by default, regular:pt-8 from 640px", () => {
+    const src = read("src/components/mobile/card-label.tsx");
+    expect(src).toContain("pt-7 regular:pt-8");
     expect(src).not.toMatch(/max-md:/);
   });
 });

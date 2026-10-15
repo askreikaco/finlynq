@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
-import { MetricCard } from "@/components/metric-card";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { HealthData } from "./types";
 import { HealthInfoDialog } from "./health-info-dialog";
 import type { MetricTrend } from "./key-metrics";
+import { Card } from "@/components/ui/card";
 
 const itemVariants = {
   hidden: { opacity: 1, y: 0 },
@@ -47,8 +47,8 @@ export function HealthScoreCard({ health: healthProp, trend }: { health?: Health
           }
         }}
       >
-        <MetricCard
-          label="Financial Health"
+        <Card
+          title="Financial Health"
           icon={Activity}
           tone={toneName}
           value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
@@ -62,9 +62,7 @@ export function HealthScoreCard({ health: healthProp, trend }: { health?: Health
           }
           note={health && trend?.delta ? <span>{health.grade} ⓘ</span> : undefined}
           delta={health ? { pct: trend?.badgePct } : undefined}
-          sparkData={health ? trend?.sparkData : undefined}
-          sparkLabels={health ? trend?.sparkLabels : undefined}
-          sparkColor="#6366f1"
+          spark={{ data: health ? trend?.sparkData : undefined, color: "#6366f1", labels: health ? trend?.sparkLabels : undefined }}
         />
       </div>
       {health ? (

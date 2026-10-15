@@ -14,11 +14,10 @@
  * can't disagree with the other. `/calendar` redirects to `?view=calendar`.
  *
  * One layout at every size: the list is inset ListRows in SectionCards (no table);
- * a row opens a DetailSheet with the fields and the actions.
+ * a row opens /subscriptions/[id] on phones and selects into the split pane on wide screens.
  */
 
-import type { MetricCardProps } from "@/components/metric-card";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useState, type MouseEvent } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -28,17 +27,15 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
-import { Overlay, type DetailItem } from "@/components/ui/overlay";
+import { ListRow, MetricGrid, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
-import { DueActions, STATUS_BADGE, SubscriptionDetail, SubscriptionStatusActions, dueLabel, isDue, relativeDue, subDetailItems } from "./_components/subscription-detail";
+import { DueActions, STATUS_BADGE, SubscriptionDetail, dueLabel, isDue, relativeDue } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import { Notice } from "@/components/notice";
-import { Card, CardContent } from "@/components/ui/card";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
+import { Card, type CardProps, CARD_ROW_GRID } from "@/components/ui/card";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
@@ -48,7 +45,6 @@ import {
   frequencyLabel,
   frequencySuffix,
   addDays,
-  daysBetween,
   frequencyOrMonthly,
   monthlyEquivalent,
   rollForwardNextDate,
@@ -63,11 +59,11 @@ import {
   type RecurringRow,
 } from "@/lib/subscriptions/calendar-events";
 import { EMPTY_DRAFT, type SubscriptionDraft } from "./_components/subscription-form";
-import { dueSubscriptions, postNowHref, skipOccurrence } from "@/lib/subscriptions/due";
+import { postNowHref, skipOccurrence } from "@/lib/subscriptions/due";
 import { draftSearchParams } from "./_components/draft-params";
 import { SubscriptionsCalendar } from "./_components/subscriptions-calendar";
 import type { Subscription } from "./_components/types";
-import { Bell, BellOff, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, CreditCard, List, Pause, Pencil, Play, Plus, Repeat, RotateCcw, Search, Sparkles, Trash2, XCircle } from "lucide-react";
+import { Bell, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, CreditCard, List, Plus, Repeat, Search, Sparkles } from "lucide-react";
 
 type View = "list" | "calendar";
 type SeriesRow = { month: string; monthly: number; annual: number; active: number; dueSoon: number; dueSoonCount: number };
@@ -86,8 +82,14 @@ export default function SubscriptionsPage() {
 function SubscriptionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Split view (regular+): a row opens the edit form in the pane (?sel=<id>); phones keep the sheet / edit route.
+  // Wide (split view): a row selects it into the pane (?sel=<id>). Phone: the row link goes to /subscriptions/[id].
   const detail = useListDetail();
+  const rowPress = (id: number) => (e?: MouseEvent<HTMLElement>) => {
+    if (detail.split) {
+      e?.preventDefault();
+      detail.select(id);
+    }
+  };
   const view: View = searchParams.get("view") === "calendar" ? "calendar" : "list";
   const { displayCurrency: ctxCurrency } = useDisplayCurrency();
 
@@ -107,9 +109,6 @@ function SubscriptionsPageContent() {
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [openSubId, setOpenSubId] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const today = localDateISO();
 
@@ -139,7 +138,7 @@ function SubscriptionsPageContent() {
     const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
     return Array.isArray(rows) ? rows : null;
   }, [seriesRes.data]);
-  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
+  const summaryMetrics = useMemo<CardProps[]>(() => {
     const caption = compareCaption(selection);
     const pts = (pick: (r: SeriesRow) => number): MonthPoint[] | null => (seriesRows ? seriesRows.map((r) => ({ month: r.month, value: pick(r) })) : null);
     const card = (pick: (r: SeriesRow) => number, pageValue: number, kind: "money" | "count") =>
@@ -148,18 +147,18 @@ function SubscriptionsPageContent() {
     const annual = card((r) => r.annual, totals.annual, "money");
     const due = card((r) => r.dueSoon, totals.dueSoonAmount, "money");
     const active = card((r) => r.active, totals.activeCount, "count");
-    const shared = (c: ReturnType<typeof card>, invert = false) => ({
+    const shared = (c: ReturnType<typeof card>, invert = false, color?: string) => ({
       delta: { pct: c.badgePct, text: c.delta ?? NO_HISTORY_CAPTION, ...(invert ? { invert } : {}) },
-      sparkData: c.sparkData, sparkLabels: c.sparkLabels,
+      spark: { data: c.sparkData, labels: c.sparkLabels, color },
     });
     return [
-      { id: "monthly", icon: CalendarClock, tone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
+      { id: "monthly", icon: CalendarClock, tone: "indigo", title: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
         note: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
-      { id: "yearly", icon: CalendarRange, tone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, sparkColor: "#8b5cf6", ...shared(annual, true),
+      { id: "yearly", icon: CalendarRange, tone: "violet", title: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, ...shared(annual, true, "#8b5cf6"),
         note: "Annualised" },
-      { id: "due-soon", icon: CalendarClock, tone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, sparkColor: "#f59e0b", ...shared(due, true),
+      { id: "due-soon", icon: CalendarClock, tone: "amber", title: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, ...shared(due, true, "#f59e0b"),
         note: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}` },
-      { id: "active", icon: CheckCircle2, tone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
+      { id: "active", icon: CheckCircle2, tone: "emerald", title: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, ...shared(active, false, "#10b981"),
         note: `of ${subs.length} tracked` },
     ];
   }, [seriesRows, period, explicit, selection, totals, displayCurrency, subs.length]);
@@ -237,9 +236,6 @@ function SubscriptionsPageContent() {
     }
   }
 
-  const putSub = (body: Record<string, unknown>) =>
-    fetch("/api/subscriptions", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-
   function trackDetected(r: RecurringRow) {
     const d = draftFromDetected(r);
     return mutate(
@@ -276,31 +272,6 @@ function SubscriptionsPageContent() {
     return mutate(`skip:${sub.id}`, () => skipOccurrence(sub.id, occurrence), "Couldn't skip this payment");
   }
 
-  function changeStatus(sub: Subscription, status: string) {
-    return mutate(`status:${sub.id}`, () => putSub({ id: sub.id, status }), "Couldn't update the subscription");
-  }
-
-  function toggleReminder(sub: Subscription) {
-    let cancelReminderDate: string | null = null;
-    if (!sub.cancelReminderDate) {
-      // Default: a week before the next payment (or a week from today).
-      const next = effectiveNextDate(sub, today);
-      const candidate = next ? addDays(next, -7) : addDays(today, 7);
-      cancelReminderDate = candidate < today ? today : candidate;
-    }
-    return mutate(`reminder:${sub.id}`, () => putSub({ id: sub.id, cancelReminderDate }), "Couldn't update the reminder");
-  }
-
-  async function handleDelete() {
-    if (deleteId == null) return;
-    setDeleting(true);
-    const ok = await mutate(`delete:${deleteId}`, () => fetch(`/api/subscriptions?id=${deleteId}`, { method: "DELETE" }), "Couldn't delete the subscription");
-    setDeleting(false);
-    if (ok) setDeleteId(null);
-  }
-
-  const deletingSub = subs.find((s) => s.id === deleteId) ?? null;
-
   if (loading) return <Notice variant="skeleton" skeleton="list" rows={5} />;
   if (loadError) {
     return (
@@ -315,8 +286,6 @@ function SubscriptionsPageContent() {
   }
 
   const visibleSuggestions = showAllSuggestions ? suggestions : suggestions.slice(0, SUGGESTIONS_PREVIEW);
-  const openSub = subs.find((s) => s.id === openSubId) ?? null;
-  const closeSheet = () => setOpenSubId(null);
 
   return (
     <SectionPage
@@ -384,7 +353,7 @@ function SubscriptionsPageContent() {
                 <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
                   {/* Detected from transactions */}
                   {suggestions.length > 0 && (
-                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
+                    <Card title="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
                       <p className="px-4 pt-3 pb-1 text-sm text-muted-foreground">
                         {suggestions.length === 1
                           ? "1 payment repeats on a schedule but isn't tracked yet."
@@ -418,24 +387,24 @@ function SubscriptionsPageContent() {
                           {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
                         </Button>
                       )}
-                    </SectionCard>
+                    </Card>
                   )}
 
                   {subs.length === 0 && (
-                    <Card className="col-span-full"><CardContent className="p-0"><Notice
-                      variant="empty"
-                      icon={CreditCard}
-                      title="No subscriptions tracked yet"
-                      action={{ label: "Add subscription", onClick: openAdd }}
-                    >
-                      Add streaming, insurance, memberships and other repeating bills.
-                    </Notice></CardContent></Card>
+                    <Card frameClassName="col-span-full" className="p-0"><Notice
+                    variant="empty"
+                    icon={CreditCard}
+                    title="No subscriptions tracked yet"
+                    action={{ label: "Add subscription", onClick: openAdd }}
+                  >
+                    Add streaming, insurance, memberships and other repeating bills.
+                  </Notice></Card>
                   )}
 
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full ${CARD_ROW_GRID}`}>
+                      <Card key={g.key} titlePlacement="outside" title={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} frame="list" className={`col-span-full ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}
@@ -444,12 +413,13 @@ function SubscriptionsPageContent() {
                             displayCurrency={displayCurrency}
                             busy={busyKey !== null}
                             selected={detail.selectedId === String(sub.id)}
-                            onOpen={() => (detail.split ? detail.select(sub.id) : setOpenSubId(sub.id))}
+                            href={`/subscriptions/${sub.id}`}
+                            onPress={rowPress(sub.id)}
                             onPost={() => postNow(sub)}
                             onSkip={() => skipDue(sub)}
                           />
                         ))}
-                      </SectionCard>
+                      </Card>
                     ),
                   )}
                 </div>
@@ -457,46 +427,18 @@ function SubscriptionsPageContent() {
           </>
       </ListDetailLayout>
 
-      {openSub && (
-        <Overlay
-          variant="detail"
-          open
-          onClose={() => closeSheet()}
-          title={openSub.name ?? "Subscription"}
-          subtitle={STATUS_BADGE[openSub.status]?.label ?? "Active"}
-          items={subDetailItems(openSub, today, displayCurrency)}
-        >
-          <Button variant="outline" onClick={() => { closeSheet(); openEditById(openSub.id); }}>
-            <Pencil className="h-4 w-4" /> Edit
-          </Button>
-          <SubscriptionStatusActions sub={openSub} today={today} before={closeSheet} onChanged={loadSubs} />
-          <Button variant="outline" className="text-destructive" onClick={() => { closeSheet(); setDeleteId(openSub.id); }}>
-            <Trash2 className="h-4 w-4" /> Delete
-          </Button>
-        </Overlay>
-      )}
-
-      <Overlay
-        variant="confirm"
-        open={deleteId !== null}
-        onClose={() => { if (!deleting) setDeleteId(null); }}
-        title="Delete subscription"
-        message={<>Delete <strong>{deletingSub?.name ?? "this subscription"}</strong>? Your transactions are not affected. This cannot be undone.</>}
-        confirmLabel="Delete subscription"
-        busy={deleting}
-        onConfirm={handleDelete}
-      />
     </SectionPage>
   );
 }
 
-/** One subscription in a status group: tap opens the detail sheet; due payments get their actions under the row. */
+/** One subscription in a status group: tap opens its detail page (wide: the pane); due payments get their actions under the row. */
 function SubscriptionRow({
   sub,
   today,
   displayCurrency,
   busy,
-  onOpen,
+  href,
+  onPress,
   onPost,
   onSkip,
   selected,
@@ -506,7 +448,8 @@ function SubscriptionRow({
   today: string;
   displayCurrency: string;
   busy: boolean;
-  onOpen: () => void;
+  href: string;
+  onPress: (e?: MouseEvent<HTMLElement>) => void;
   onPost: () => void;
   onSkip: () => void;
 }) {
@@ -546,7 +489,8 @@ function SubscriptionRow({
         currency={sub.currency}
         meta={showMonthly ? `≈ ${formatCurrency(monthly, displayCurrency)} / mo` : `per ${frequencySuffix(sub.frequency, sub.intervalDays)}`}
         selected={selected}
-        onPress={onOpen}
+        href={href}
+        onPress={onPress}
       />
       {due && (
         <div className="flex items-center gap-1.5 pb-3 pl-16">

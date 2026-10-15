@@ -1,8 +1,8 @@
 "use client";
 
-import { MetricCard } from "@/components/metric-card";
 import { PiggyBank, Scale } from "lucide-react";
 import type { HealthData } from "./types";
+import { Card } from "@/components/ui/card";
 
 // Higher savings rate is better; lower DTI is better. Neutral (muted) is used
 // when a figure can't be computed or is flagged unreliable, so we never paint a
@@ -89,7 +89,7 @@ export function KeyMetrics({
   const cells = [
     {
       key: "savings",
-      label: "Savings Rate",
+      title: "Savings Rate",
       icon: PiggyBank,
       value: savings != null ? `${savings}%` : "—",
       tone: savings != null ? toneForSavings(savings) : NEUTRAL,
@@ -106,7 +106,7 @@ export function KeyMetrics({
     },
     {
       key: "dti",
-      label: "Debt-to-Income",
+      title: "Debt-to-Income",
       icon: Scale,
       value: dtiPct != null ? `${dtiPct}%` : "—",
       // Only a MISSING figure is painted neutral. `reliable:false` used to mean
@@ -132,9 +132,9 @@ export function KeyMetrics({
   const trendOf = (key: string): SavingsTrend | DtiTrend | undefined => (key === "savings" ? savingsTrend : key === "dti" ? dtiTrend : undefined);
 
   const tileNodes = cells.map((c) => (
-    <MetricCard
+    <Card
       key={c.key}
-      label={c.label}
+      title={c.title}
       icon={c.icon}
       tone={c.key === "savings" ? "emerald" : "amber"}
       value={c.value}
@@ -146,15 +146,13 @@ export function KeyMetrics({
           : "threeMonth" in c ? c.threeMonth : undefined
       }
       delta={{ pct: trendOf(c.key)?.badgePct, invert: c.key === "dti" }}
-      sparkData={trendOf(c.key)?.sparkData}
-      sparkLabels={trendOf(c.key)?.sparkLabels}
-      sparkColor={c.key === "savings" ? "#10b981" : "#f59e0b"}
+      spark={{ data: trendOf(c.key)?.sparkData, color: c.key === "savings" ? "#10b981" : "#f59e0b", labels: trendOf(c.key)?.sparkLabels }}
       loading={loading}
     />
   ));
   if (tiles) return <>{tileNodes}</>;
 
-  // Two global MetricCards (same design as every other metric card).
+  // Two global Cards (same design as every other metric card).
   return (
     // side by side only when the slot is wide enough; stacked next to the Net Worth hero
     <div className="@container h-full">

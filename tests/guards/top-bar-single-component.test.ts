@@ -101,7 +101,7 @@ describe("PageHeader is the only top bar", () => {
   });
 
   it("templates take typed slots: primary / more / filter / bulkEdit / back, never an actions node", () => {
-    for (const p of ["list-page", "section-page", "form-page", "report-page", "detail-page", "hub-page"]) {
+    for (const p of ["list-page", "section-page", "form-page", "report-page", "detail-page"]) {
       const text = readFileSync(join(ROOT, `src/components/templates/${p}.tsx`), "utf8");
       expect(text, p).not.toMatch(/\bactions\??:\s*(React\.)?ReactNode/);
       expect(text, p).not.toMatch(/\boverflow\??:\s*OverflowAction/);

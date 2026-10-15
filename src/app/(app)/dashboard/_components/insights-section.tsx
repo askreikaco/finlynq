@@ -1,6 +1,5 @@
 "use client";
 
-import { SectionCard } from "@/components/mobile/section-card";
 import { ListRow } from "@/components/mobile/list-row";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -9,6 +8,7 @@ import { motion } from "framer-motion";
 import type { MetricTone } from "@/components/mobile/card-label";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { InsightsData, RecurringData } from "./types";
+import { Card } from "@/components/ui/card";
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -35,10 +35,10 @@ function InsightCard({
 }) {
   return (
     <motion.div variants={itemVariants}>
-      <SectionCard label={title} icon={Icon} tone={tone} cardClassName="card-hover">
+      <Card title={title} icon={Icon} tone={tone} frameClassName="card-hover">
         <p className="mb-3 text-xs text-muted-foreground">{subtitle}</p>
         <div>{children}</div>
-      </SectionCard>
+      </Card>
     </motion.div>
   );
 }

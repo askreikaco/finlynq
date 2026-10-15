@@ -71,7 +71,7 @@ describe("SettingsHub", () => {
   it("renders grouped inset lists without a separate label (title is the page title)", () => {
     render(<SettingsHub />);
 
-    // SectionCard is rendered without a label prop, so no separate section-label element
+    // Card is rendered without a label prop, so no separate section-label element
     const settingsLabel = document.querySelector('[data-slot="section-label"]');
     expect(settingsLabel).toBeNull();
 

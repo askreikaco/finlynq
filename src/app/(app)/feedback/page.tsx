@@ -351,7 +351,7 @@ export default function FeedbackPage() {
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {items && items.length === 0 && !error && (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <Card className="p-4 text-center text-sm text-muted-foreground">
           You haven&apos;t sent any feedback yet.
           <div className="mt-3">
             <Button onClick={() => setSendOpen(true)}>Send feedback</Button>
@@ -364,7 +364,7 @@ export default function FeedbackPage() {
           <Card
             key={t.id}
             onClick={() => setOpenId(t.id)}
-            className="cursor-pointer p-4 transition-colors hover:bg-muted/40"
+            frameClassName="cursor-pointer transition-colors hover:bg-muted/40"
           >
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={typeColor[t.type] ?? typeColor.other}>{t.type}</Badge>

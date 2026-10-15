@@ -6,9 +6,6 @@ import { useSizeClass } from "@/components/ui/size-class";
 import { PageHeader } from "@/components/mobile/page-header";
 import { PageToolbar } from "@/components/page-toolbar";
 import type { RangeSelection } from "@/lib/metrics/period";
-import { SectionCard } from "@/components/mobile/section-card";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
-import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
 import { AccountRow } from "@/components/mobile/account-row";
 import { HoldingRow } from "@/components/mobile/holding-row";
@@ -16,15 +13,14 @@ import { TxRow } from "@/components/mobile/tx-row";
 import { Amount } from "@/components/mobile/amount";
 import { InsetRow } from "@/components/mobile/inset-row";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
-import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
-import { Chart } from "@/components/chart";
+import { METRIC_TONES, type MetricTone } from "@/components/mobile/card-label";
 import { ChartDemos, NoticeDemos } from "./chart-notice-demos";
 import { TW } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CARD_ROW_GRID, type CardProps } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -43,7 +39,7 @@ function Group({ id, title, file, span, children }: { id: string; title: string;
   return (
     <section id={id} data-gallery-section={id} className={cn("scroll-mt-16 min-w-0 space-y-3", span && "col-span-full")}>
       <div>
-        <SectionLabel>{title}</SectionLabel>
+        <h2 className="px-1 text-xs font-bold uppercase tracking-normal text-muted-foreground">{title}</h2>
         <p className="px-1 text-[11px] text-muted-foreground">{file}</p>
       </div>
       {children}
@@ -84,10 +80,18 @@ function Swatch({ name }: { name: string }) {
   );
 }
 
-/** Every optional part of the one MetricCard, as a switch. */
-const METRIC_PARTS = [
+/** Every optional part of the one Card, as a switch. Order = title block, frame, metric block, link. */
+const CARD_PARTS = [
+  ["title", "Title"],
+  ["titleOutside", "Title outside"],
+  ["icon", "Icon tile"],
   ["info", "Info tip"],
+  ["description", "Description"],
+  ["descriptionOutside", "Description outside"],
   ["action", "Action"],
+  ["padded", "Padded body"],
+  ["body", "Body (children)"],
+  ["value", "Value (metric)"],
   ["hero", "Hero size"],
   ["delta", "Delta"],
   ["sub", "Sub-line"],
@@ -97,39 +101,61 @@ const METRIC_PARTS = [
   ["href", "Link"],
   ["loading", "Loading"],
 ] as const;
-type MetricPart = (typeof METRIC_PARTS)[number][0];
+type CardPart = (typeof CARD_PARTS)[number][0];
 
-/** Switches in, ONE MetricCard out: each part shows only when its prop is given. */
-function MetricPlayground() {
-  const [parts, setParts] = useState<Record<MetricPart, boolean>>({
-    info: false, action: false, hero: false, delta: true, sub: true, note: false, spark: true, progress: false, href: false, loading: false,
+const FRAMES = [
+  { value: "card", label: "card" },
+  { value: "bare", label: "bare" },
+  { value: "list", label: "list" },
+];
+
+/** Switches in, ONE Card out: each part shows only when its prop is given. */
+function CardPlayground() {
+  const [parts, setParts] = useState<Record<CardPart, boolean>>({
+    title: true, titleOutside: false, icon: true, info: false, description: false, descriptionOutside: false, action: false, padded: true, body: true,
+    value: true, hero: false, delta: true, sub: true, note: false, spark: true, progress: false, href: false, loading: false,
   });
-  const toggle = (k: MetricPart) => setParts((p) => ({ ...p, [k]: !p[k] }));
-  const card: MetricCardProps = {
-    label: "Net worth",
-    icon: Wallet,
-    tone: "indigo",
-    value: 125000,
+  const [frame, setFrame] = useState<"card" | "bare" | "list">("card");
+  const toggle = (k: CardPart) => setParts((p) => ({ ...p, [k]: !p[k] }));
+  const card: CardProps = {
+    frame,
+    padded: parts.padded,
+    ...(parts.title ? { title: "Net worth", titlePlacement: parts.titleOutside ? ("outside" as const) : ("inside" as const) } : {}),
+    ...(parts.icon ? { icon: Wallet, tone: "indigo" } : {}),
     ...(parts.info ? { info: "Assets minus liabilities." } : {}),
+    ...(parts.description ? { description: "One line under the title.", descriptionPlacement: parts.descriptionOutside ? ("outside" as const) : ("inside" as const) } : {}),
     ...(parts.action ? { action: <Button variant="ghost" iconOnly size="sm" aria-label="Edit"><Pencil className="size-3.5" /></Button> } : {}),
+    ...(parts.value ? { value: 125000 } : {}),
     ...(parts.hero ? { size: "hero" as const } : {}),
     ...(parts.delta ? { delta: { pct: 1.9, text: "+$2,300 vs last month" } } : {}),
     ...(parts.sub && !parts.delta ? { sub: "As of today" } : {}),
     ...(parts.note ? { note: "Second note line" } : {}),
-    ...(parts.spark ? { sparkData: SPARK, sparkLabels: SPARK_LABELS, sparkColor: "#6366f1" } : {}),
+    ...(parts.spark ? { spark: { data: SPARK, labels: SPARK_LABELS, color: "#6366f1" } } : {}),
     ...(parts.progress ? { progress: { value: 64, caption: "64% of goal" } } : {}),
     ...(parts.href ? { href: "/dashboard" } : {}),
     ...(parts.loading ? { loading: true } : {}),
   };
   return (
-    <div className="grid gap-4 regular:grid-cols-[14rem_minmax(0,1fr)]" data-testid="metric-playground">
+    <div className="grid gap-4 regular:grid-cols-[14rem_minmax(0,1fr)]" data-testid="card-playground">
       <div className="space-y-2 rounded-xl border border-border/50 p-3">
-        {METRIC_PARTS.map(([k, name]) => (
+        <Field control="select" label="Frame" value={frame} onValueChange={(v) => setFrame(v as typeof frame)} options={FRAMES} />
+        {CARD_PARTS.map(([k, name]) => (
           <Field key={k} control="switch" label={name} checked={parts[k]} onCheckedChange={() => toggle(k)} />
         ))}
       </div>
       <div className="min-w-0 self-start">
-        <MetricCard {...card} />
+        <Card {...card}>
+          {parts.body ? (
+            frame === "list" ? (
+              <>
+                <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} />
+                <ListRow title="Savings" value={<Amount value={10000} />} icon={PiggyBank} />
+              </>
+            ) : (
+              <p className="text-sm">Body content (children).</p>
+            )
+          ) : undefined}
+        </Card>
       </div>
     </div>
   );
@@ -150,10 +176,10 @@ function GalleryContent() {
   }, [sizeClass]);
 
   const metrics = [
-    { id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, sparkData: SPARK, sparkColor: "#6366f1" },
-    { id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },
-    { id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },
-    { id: "g4", label: "Savings", icon: PiggyBank, value: "32%", tone: "amber" as const },
+    { id: "g1", title: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, spark: { data: SPARK, color: "#6366f1" } },
+    { id: "g2", title: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },
+    { id: "g3", title: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },
+    { id: "g4", title: "Savings", icon: PiggyBank, value: "32%", tone: "amber" as const },
   ];
 
   return (
@@ -174,29 +200,28 @@ function GalleryContent() {
         </nav>
 
         <div className={TW.grid3}>
-          <Group id="metric" title="MetricCard" file="components/metric-card.tsx · mobile/metric-grid.tsx" span>
+          <Group id="card" title="Card" file="ui/card.tsx · mobile/metric-grid.tsx · mobile/list-row.tsx · mobile/inset-row.tsx" span>
             <Item name="One component, every part optional" file="switch a part on / off">
-              <MetricPlayground />
+              <CardPlayground />
             </Item>
-            <Item name="Combinations" file="same MetricCard, different props">
+            <Item name="Metric combinations" file="same Card, different props">
               <div className="grid gap-3 regular:grid-cols-2 wide:grid-cols-3">
-                <MetricCard label="Value only" icon={Wallet} tone="indigo" value={25000} />
-                <MetricCard label="Value + sub" icon={Wallet} tone="cyan" value={25000} sub="Checking" />
-                <MetricCard label="Delta (less is better)" icon={DollarSign} tone="rose" value={3100} delta={{ pct: 4.2, text: "+$124 vs last month", invert: true }} note="Second note line" />
-                <MetricCard label="Sparkline + delta + link" icon={TrendingUp} tone="emerald" value={150000} delta={{ pct: 8.5, text: "+$4,000 vs last month" }} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#10b981" href="/portfolio" />
-                <MetricCard label="Progress" icon={PiggyBank} tone="amber" value={800} sub="of $1,000" progress={{ value: 80, tone: "warning", caption: "80% spent" }} />
-                <MetricCard label="Info + action" icon={Wallet} tone="violet" value={4200} info="Shown in the label row." action={<Button variant="ghost" iconOnly size="sm" aria-label="Edit"><Pencil className="size-3.5" /></Button>} />
-                <MetricCard label="Loading" icon={Wallet} tone="cyan" value={0} loading />
-                <MetricCardSkeleton />
+                <Card title="Value only" icon={Wallet} tone="indigo" value={25000} />
+                <Card title="Value + sub" icon={Wallet} tone="cyan" value={25000} sub="Checking" />
+                <Card title="Delta (less is better)" icon={DollarSign} tone="rose" value={3100} delta={{ pct: 4.2, text: "+$124 vs last month", invert: true }} note="Second note line" />
+                <Card title="Sparkline + delta + link" icon={TrendingUp} tone="emerald" value={150000} delta={{ pct: 8.5, text: "+$4,000 vs last month" }} spark={{ data: SPARK, color: "#10b981", labels: SPARK_LABELS }} href="/portfolio" />
+                <Card title="Progress" icon={PiggyBank} tone="amber" value={800} sub="of $1,000" progress={{ value: 80, tone: "warning", caption: "80% spent" }} />
+                <Card title="Info + action" icon={Wallet} tone="violet" value={4200} info="Shown in the label row." action={<Button variant="ghost" iconOnly size="sm" aria-label="Edit"><Pencil className="size-3.5" /></Button>} />
+                <Card title="Loading" icon={Wallet} tone="cyan" value={0} loading />
               </div>
             </Item>
             <Item name="Hero size" file="size=&quot;hero&quot;">
-              <MetricCard label="Hero" icon={Wallet} tone="violet" value={275000} size="hero" delta={{ pct: 3.4, text: "+$9,200 vs last month" }} sparkData={SPARK} sparkLabels={SPARK_LABELS} sparkColor="#8b5cf6" progress={{ value: 55, caption: "55% of goal" }} />
+              <Card title="Hero" icon={Wallet} tone="violet" value={275000} size="hero" delta={{ pct: 3.4, text: "+$9,200 vs last month" }} spark={{ data: SPARK, color: "#8b5cf6", labels: SPARK_LABELS }} progress={{ value: 55, caption: "55% of goal" }} />
             </Item>
             <Item name="Tones" file="METRIC_TONES">
               <div className="grid grid-cols-2 gap-3 regular:grid-cols-4 wide:grid-cols-7">
                 {TONES.map((t) => (
-                  <MetricCard key={t} label={t} icon={Wallet} tone={t} value={t} />
+                  <Card key={t} title={t} icon={Wallet} tone={t} value={t} />
                 ))}
               </div>
             </Item>
@@ -206,96 +231,93 @@ function GalleryContent() {
             <Item name="MetricGrid columns=3, 3 items">
               <MetricGrid metrics={metrics.slice(0, 3)} columns={3} />
             </Item>
-            <Item name="PctBadge">
-              <div className="flex gap-3">
-                <PctBadge pct={5.2} />
-                <PctBadge pct={-3.1} />
-                <PctBadge pct={5.2} invert />
+            <Item name="Delta (badge up, down, less-is-better)">
+              <div className="grid gap-3 regular:grid-cols-3">
+                <Card title="Up" icon={TrendingUp} tone="emerald" value={150} delta={{ pct: 5.2 }} />
+                <Card title="Down" icon={TrendingUp} tone="rose" value={150} delta={{ pct: -3.1 }} />
+                <Card title="Up, invert" icon={DollarSign} tone="amber" value={150} delta={{ pct: 5.2, invert: true }} />
               </div>
             </Item>
-          </Group>
-
-          <Group id="section-card" title="SectionCard / ListRow" file="mobile/section-card.tsx · mobile/list-row.tsx · mobile/inset-row.tsx" span>
             <div className={TW.grid3}>
               <Item name="Label inside (default)" file="labelPlacement">
-                <SectionCard label="Label inside" icon={Wallet} tone="indigo">
+                <Card title="Label inside" icon={Wallet} tone="indigo">
                   <p className="text-sm">Body content. The label is the card&apos;s first row.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="Label outside" file='labelPlacement="outside"'>
-                <SectionCard label="Label outside" labelPlacement="outside">
+                <Card title="Label outside" titlePlacement="outside">
                   <p className="text-sm">The label sits above the card box (px-4).</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="Outside + bare" file="bare">
-                <SectionCard label="Bare" labelPlacement="outside" bare>
-                  <p className="px-4 text-sm">No card surface; label and body sit on the page.</p>
-                </SectionCard>
+                <Card title="Bare" titlePlacement="outside" frame="bare">
+                  <p className="px-1 text-sm">No card surface; title and body sit on the page.</p>
+                </Card>
               </Item>
               <Item name="Description inside" file="description">
-                <SectionCard label="Plan" description="Billed monthly, renews on the 1st.">
+                <Card title="Plan" description="Billed monthly, renews on the 1st.">
                   <p className="text-sm">Follows the label: inside the card.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="Description outside" file='labelPlacement="outside"'>
-                <SectionCard label="Plan" labelPlacement="outside" description="Billed monthly, renews on the 1st.">
+                <Card title="Plan" titlePlacement="outside" description="Billed monthly, renews on the 1st.">
                   <p className="text-sm">Follows the label: under the heading.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="Description placement override" file="descriptionPlacement">
-                <SectionCard label="Plan" labelPlacement="outside" description="Billed monthly." descriptionPlacement="inside">
+                <Card title="Plan" titlePlacement="outside" description="Billed monthly." descriptionPlacement="inside">
                   <p className="text-sm">Outside label, description inside the card.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="InfoTip inside" file="info">
-                <SectionCard label="Budget" info="Resets on the first of each month." icon={PiggyBank} tone="amber">
+                <Card title="Budget" info="Resets on the first of each month." icon={PiggyBank} tone="amber">
                   <p className="text-sm">(i) next to the label.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="InfoTip outside" file="info">
-                <SectionCard label="Budget" labelPlacement="outside" info="Resets on the first of each month.">
+                <Card title="Budget" titlePlacement="outside" info="Resets on the first of each month.">
                   <p className="text-sm">(i) next to the outside label.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="Description + InfoTip + action" file="description, info, action">
-                <SectionCard label="Everything" info="Tap the icon for help." description="One line under the label." action={<Button size="sm" variant="ghost">Edit</Button>}>
+                <Card title="Everything" info="Tap the icon for help." description="One line under the label." action={<Button size="sm" variant="ghost">Edit</Button>}>
                   <p className="text-sm">All options together.</p>
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="No label" file="plain card">
-                <SectionCard>
+                <Card>
                   <p className="text-sm">No label (padded body only).</p>
-                </SectionCard>
+                </Card>
               </Item>
             </div>
             <Item name="list, label inside (ListRow)" file="list">
-              <SectionCard label="Accounts" list icon={Wallet} tone="indigo">
+              <Card title="Accounts" frame="list" icon={Wallet} tone="indigo">
                 <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
                 <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
                 <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setOverlay("detail")} />
-              </SectionCard>
+              </Card>
             </Item>
             <div className={TW.grid3}>
               <Item name="list, label outside, edge-to-edge InsetRow" file="list + InsetRow">
-                <SectionCard label="Explore" labelPlacement="outside" list>
+                <Card title="Explore" titlePlacement="outside" frame="list">
                   <InsetRow href="/reports" label="Reports" icon={TrendingUp} />
                   <InsetRow href="/goals" label="Goals" icon={PiggyBank} badge={2} />
                   <InsetRow href="/settings" label="Settings" icon={Inbox} value="On" />
-                </SectionCard>
+                </Card>
               </Item>
               <Item name="list, label inside, InsetRow" file="list + InsetRow">
-                <SectionCard label="Tools" list description="Descriptions fit lists too." icon={Plus} tone="amber">
+                <Card title="Tools" frame="list" description="Descriptions fit lists too." icon={Plus} tone="amber">
                   <InsetRow href="/import" label="Import" icon={Inbox} />
                   <InsetRow destructive icon={Wallet} label="Log out" onClick={() => {}} />
-                </SectionCard>
+                </Card>
               </Item>
             </div>
             <Item name="CARD_ROW_GRID" file="regular: 2 columns, wide: 3">
-              <SectionCard label="CARD_ROW_GRID" list className={CARD_ROW_GRID}>
+              <Card title="CARD_ROW_GRID" frame="list" className={CARD_ROW_GRID}>
                 {["A", "B", "C", "D"].map((n) => (
                   <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
                 ))}
-              </SectionCard>
+              </Card>
             </Item>
             <Item name="Amount">
               <div className="flex flex-wrap items-center gap-3">
@@ -314,22 +336,22 @@ function GalleryContent() {
               selected, size, shape. AccountRow, HoldingRow and TxRow only map data to these props.
             </p>
             <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2">
-              <SectionCard label="Leading" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <Card title="Leading" frame="list">
                 <ListRow icon={Wallet} title="Icon tile" subtitle="icon" />
                 <ListRow icon={ShoppingCart} tile="neg" title="Tile tone neg" subtitle="tile=&quot;neg&quot;" />
                 <ListRow initials="CC" title="Initials" subtitle="initials (avatar)" />
                 <ListRow dot="var(--pos)" title="Status dot" subtitle="dot=var(--pos)" />
                 <ListRow title="No leading" subtitle="title and subtitle only" />
-              </SectionCard>
-              <SectionCard label="Trailing" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              </Card>
+              <Card title="Trailing" frame="list">
                 <ListRow icon={Wallet} title="Value" value={<Amount value={2500} />} />
                 <ListRow icon={PiggyBank} title="Value + secondary" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" />
                 <ListRow icon={Bell} title="Quiet value" value="Pro plan" quietValue />
                 <ListRow icon={Bell} title="Unread" unread={3} href="/dev/gallery" />
                 <ListRow title="Count and badge" count={4} badge={<Badge variant="outline" className="text-xs">new</Badge>} />
                 <ListRow icon={Settings} title="Trailing node" trailing={<Field control="switch" checked={on} onCheckedChange={setOn} aria-label="Demo switch" />} />
-              </SectionCard>
-              <SectionCard label="Behaviour" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              </Card>
+              <Card title="Behaviour" frame="list">
                 <ListRow icon={Wallet} title="Link row (href)" subtitle="chevron by default" href="/dev/gallery" />
                 <ListRow icon={PiggyBank} title="Button row (onPress)" subtitle="opens the sheet" onPress={() => setOverlay("detail")} />
                 <ListRow icon={Wallet} title="Selected (split view)" subtitle="selected" selected onPress={() => {}} />
@@ -339,16 +361,16 @@ function GalleryContent() {
                 <ListRow icon={LogOut} tone="destructive" title="Destructive action" onPress={() => {}} />
                 <ListRow icon={Trash2} title="Row with actions" subtitle="buttons sit outside the link" actions={<Button size="sm" variant="outline">Delete</Button>} />
                 <ListRow title="Select" subtitle="click toggles the checkbox" select={{ checked: on, onToggle: () => setOn((v) => !v), label: "Select demo row" }} />
-              </SectionCard>
-              <SectionCard label="Size and shape" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              </Card>
+              <Card title="Size and shape" frame="list">
                 <ListRow icon={Wallet} title="Regular (56px, 44px compact)" value={<Amount value={100} />} />
                 <ListRow size="dense" icon={Wallet} title="Dense (44px)" value={<Amount value={100} />} />
                 <div className="space-y-2 p-3">
                   <ListRow shape="rounded" icon={Wallet} title="Rounded" className="bg-muted/40" value={<Amount value={100} />} />
                   <ListRow icon={Wallet} title="Square (default)" className="bg-muted/40" value={<Amount value={100} />} />
                 </div>
-              </SectionCard>
-              <SectionCard label="Chart, progress, delta" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              </Card>
+              <Card title="Chart, progress, delta" frame="list">
                 <ListRow
                   dot="var(--primary)"
                   title="Category row"
@@ -387,30 +409,27 @@ function GalleryContent() {
                   chevron={false}
                   onPress={() => {}}
                 />
-              </SectionCard>
-              <SectionCard label="Domain wrappers" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              </Card>
+              <Card title="Domain wrappers" frame="list">
                 <AccountRow accountId={1} accountName="Checking" alias="TCB" currency="EUR" balance={2500} displayCurrency="EUR" type="asset" />
                 <AccountRow accountId={2} accountName="Credit card" currency="GBP" balance={-420.5} convertedBalance={-495} displayCurrency="EUR" type="liability" />
                 <HoldingRow name="AAPL" marketValue={5000} unrealizedPct={5.5} currency="EUR" onPress={() => setOverlay("detail")} />
                 <TxRow icon={ShoppingCart} tile="muted" title="Groceries" subtitle="Food · Checking" amount={-54.3} currency="EUR" />
                 <TxRow icon={Repeat} tile="warn" title="Netflix" subtitle="monthly · next Nov 1" amount={-15.99} currency="EUR" meta="per month" onPress={() => {}} />
                 <TxRow icon={CalendarClock} tile="pos" title="Salary" subtitle="Income" amount={3200} currency="EUR" amountTone="pos" showSign />
-              </SectionCard>
-              <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("[&>*:not(:last-child)]:shadow-[var(--list-divider)] ", CARD_ROW_GRID)}>
+              </Card>
+              <Card title="CARD_ROW_GRID" frame="list" className={CARD_ROW_GRID}>
                 {["A", "B", "C", "D"].map((n) => (
                   <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
                 ))}
-              </SectionCard>
+              </Card>
             </div>
           </Group>
 
           <Group id="shadow" title="Card shadow token" file="ui/card.tsx · .surface-card · --shadow-card">
-            <Card>
-              <CardHeader><CardTitle>Card</CardTitle></CardHeader>
-              <CardContent className="text-sm">Standard Card: surface-card + var(--shadow-card).</CardContent>
+            <Card title="Card" className="text-sm">Standard Card: surface-card + var(--shadow-card).
             </Card>
-            <Card className="bg-muted/50">
-              <CardContent className="pt-4 text-sm">Muted variant</CardContent>
+            <Card frameClassName="bg-muted/50" className="pt-4 text-sm">Muted variant
             </Card>
             <div className="surface-card rounded-xl border border-border/50 p-4 text-sm">.surface-card utility</div>
           </Group>
@@ -564,15 +583,14 @@ function GalleryContent() {
           </Group>
 
           <Group id="pages" title="Page patterns" file="components/templates/*.tsx">
-            <SectionCard label="Templates">
+            <Card title="Templates">
               <ul className="space-y-1 text-sm">
                 <li>SectionPage: section-page.tsx (width/stack/grid; TW.grid3 body)</li>
                 <li>FormPage: form-page.tsx (load/save/delete, dirty guard)</li>
-                <li>HubPage: hub-page.tsx (grouped rows)</li>
                 <li>ListPage, DetailPage, ReportPage: templates/</li>
               </ul>
               <p className="mt-2 text-[11px] text-muted-foreground">Listed only: they need routing, data and nav context to mount.</p>
-            </SectionCard>
+            </Card>
           </Group>
 
           <Group id="charts" title="Chart" file="components/chart/ (sparkline · line · area · bar · stacked-bar · stacked-area · donut · sankey · progress)" span>
@@ -605,9 +623,9 @@ function GalleryContent() {
               Standalone
               <InfoTip label="About standalone" text="Tap, click or focus the icon to read the help text." />
             </div>
-            <SectionCard label="On a card label" info="Pass `info` to SectionCard to put it next to the label.">
-              <p className="text-sm">See the SectionCard group for every placement.</p>
-            </SectionCard>
+            <Card title="On a card label" info="Pass `info` to Card to put it next to the title.">
+              <p className="text-sm">See the Card group for every placement.</p>
+            </Card>
           </Group>
 
           <Group id="colors" title="Color tokens" file="app/globals.css :root / .dark" span>
@@ -655,7 +673,7 @@ function GalleryContent() {
             </Item>
           </Group>
 
-          <Group id="grids" title="Grid helpers" file="metric-grid.tsx · section-card.tsx · lib/design/tokens.ts" span>
+          <Group id="grids" title="Grid helpers" file="metric-grid.tsx · ui/card.tsx · lib/design/tokens.ts" span>
             {([
               ["metricGridClass(4)", metricGridClass(4), 4],
               ["metricGridClass(3)", metricGridClass(3), 3],
@@ -674,12 +692,12 @@ function GalleryContent() {
           </Group>
 
           <Group id="size-class" title="Size class" file="ui/size-class.ts">
-            <SectionCard>
+            <Card>
               <div className="space-y-1 text-sm">
                 <p>compact &lt; 640 · regular 640-1024 · wide &gt; 1024</p>
                 <p className="text-xs text-muted-foreground">Container width: {width || "..."}px · class: {sizeClass}</p>
               </div>
-            </SectionCard>
+            </Card>
           </Group>
         </div>
         <div className="pb-8" />

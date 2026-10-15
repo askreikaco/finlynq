@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, within, fireEvent } from "@testing-library/react";
 
-// Real SectionCard / ListRow / MetricGrid; only the PageHeader is stubbed (heading level 1 so it can be found by role).
+// Real Card / ListRow / MetricGrid; only the PageHeader is stubbed (heading level 1 so it can be found by role).
 vi.mock("@/components/mobile", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/mobile")>()),
   PageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,

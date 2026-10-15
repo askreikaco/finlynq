@@ -164,7 +164,7 @@ export default function AdminAnnouncementsPage() {
 
       <div data-slot="announcement-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Create / edit form */}
-      <Card ref={formRef} className="p-4">
+      <Card ref={formRef}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">
             {editingId ? `Editing #${editingId}` : "New announcement"}

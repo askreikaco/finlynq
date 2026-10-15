@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import fs from "fs";
 import path from "path";
 const H = vi.hoisted(() => {
@@ -52,17 +52,16 @@ class FakeIntersectionObserver {
   disconnect() {}
   takeRecords() { return []; }
 }
-beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: the row sheet path (wide opens the split pane, see transactions-dataview)
+beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: rows link to the edit page (wide opens the split pane, see transactions-dataview)
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   (globalThis as any).ResizeObserver ??= class { observe(){} unobserve(){} disconnect(){} };
   (Element.prototype as any).scrollIntoView ??= () => {}; (Element.prototype as any).hasPointerCapture ??= () => false;
   (window as any).matchMedia ??= () => ({ matches: false, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} }); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-/** Taps a list row (opens its detail sheet), then the sheet action. The list has no table or per-row buttons. */
-function openRowAction(index: number, action: string) {
-  fireEvent.click(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]')[index]);
-  fireEvent.click(screen.getByRole("button", { name: action }));
+/** Phone rows are links to the edit page (no bottom sheet): the anchor of list row `index`. */
+function rowLink(index: number) {
+  return document.querySelectorAll<HTMLElement>('a[href$="/edit"], a[href*="/edit?"]')[index];
 }
 async function exportItem() {
   fireEvent.click(screen.getByRole("button", { name: "More actions" }));
@@ -80,25 +79,25 @@ describe("workspace", () => {
     expect(onboardingTipsIndex).toBeGreaterThan(-1);
     expect(pageHeaderIndex).toBeLessThan(onboardingTipsIndex);
   });
-  it("W1 sheet Duplicate -> writes prefill + pushes ?prefill=1", () => {
+  // Duplicate / Split / Delete moved to the edit page overflow (tests/app/transactions/edit/*): the list has no row actions.
+  it("W2 a phone row is a link to /transactions/<id>/edit with the current list as returnTo (no sheet, no dialog)", () => {
     render(<TransactionsWorkspace />);
-    openRowAction(0, "Duplicate");
-    expect(push).toHaveBeenCalledWith("/transactions/new?prefill=1");
-    const d = JSON.parse(sessionStorage.getItem(KEY)!);
-    expect(d).toMatchObject({ v: 1, amount: "50", accountId: "1", categoryId: "4", payee: "pp", note: "nn", tags: "t", isBusiness: true, txType: "Expense" });
-  });
-  it("W2 sheet Edit navigates to /transactions/<id>/edit with the current list as returnTo (no dialog)", () => {
-    render(<TransactionsWorkspace />);
-    openRowAction(0, "Edit");
-    expect(push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
+    expect(rowLink(0).getAttribute("href")).toMatch(/^\/transactions\/1\/edit\?returnTo=/);
+    fireEvent.click(rowLink(0));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(sessionStorage.getItem(KEY)).toBeNull();
   });
-  it("W3 Edit on a transfer row also navigates; the edit page decides transfer mode (no dialog)", () => {
+  it("W3 a transfer row links to the same edit URL; the edit page decides transfer mode (no dialog)", () => {
     render(<TransactionsWorkspace />);
-    openRowAction(1, "Edit");
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(rowLink(1).getAttribute("href")).toMatch(/^\/transactions\/2\/edit\?returnTo=/);
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it("W4 a row tap never opens a bottom sheet or a delete confirm", () => {
+    render(<TransactionsWorkspace />);
+    fireEvent.click(rowLink(0));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Split" })).toBeNull();
   });
   it("loadError: shows shared ErrorState with retry and calls loadTxns once", () => {
     const saved = { ...H.RES };
@@ -118,23 +117,6 @@ describe("workspace", () => {
     }
   });
 
-  it("delete failure shows an inline Alert in the dialog, not native alert()", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: any) => init?.method === "DELETE"
-      ? ({ ok: false, status: 500, json: async () => ({ error: "boom" }) })
-      : ({ ok: true, json: async () => ({ data: [] }) })));
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    try {
-      render(<TransactionsWorkspace />);
-      openRowAction(0, "Delete");
-      const dlg = await screen.findByRole("dialog");
-      fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
-      const alertEl = await within(dlg).findByRole("alert");
-      expect(alertEl.textContent).toContain("boom");
-      expect(alertSpy).not.toHaveBeenCalled();
-    } finally {
-      alertSpy.mockRestore();
-    }
-  });
   it("observer loads the next page only when idle: no load in flight, no failed page, more to load", () => {
     const loadNextPage = vi.fn();
     const saved = { ...H.RES };

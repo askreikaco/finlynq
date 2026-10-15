@@ -8,12 +8,12 @@ describe("every value-only metric tile has a sub-line (delta or muted caption)",
   it("subscriptions: every card has a delta line or the muted no-history caption", () => {
     const src = code("src/app/(app)/subscriptions/page.tsx");
     expect(src).toContain("c.delta ?? NO_HISTORY_CAPTION");
-    for (const label of ['"Per month"', '"Per year"', "Due in next", '"Active"']) expect(src).toContain(`label: ${label.startsWith('"') ? label : "`" + label}`);
+    for (const label of ['"Per month"', '"Per year"', "Due in next", '"Active"']) expect(src).toContain(`title: ${label.startsWith('"') ? label : "`" + label}`);
   });
   it("portfolio summary: Holdings and Accounts captions; the rest fall back to NO_HISTORY_CAPTION", () => {
     const src = code("src/app/(app)/portfolio/_components/mobile-portfolio.tsx");
-    expect(src).toMatch(/label: "Holdings"[^\n]*sub: `Across/);
-    expect(src).toMatch(/label: "Accounts"[^\n]*sub: `/);
+    expect(src).toMatch(/title: "Holdings"[^\n]*sub: `Across/);
+    expect(src).toMatch(/title: "Accounts"[^\n]*sub: `/);
     expect(src).toMatch(/m\.sub \|\| m\.delta\?\.text \? m : \{ \.\.\.m, sub: NO_HISTORY_CAPTION \}/);
   });
   it("dividends + realized gains tiles fall back to NO_HISTORY_CAPTION when there is no delta", () => {

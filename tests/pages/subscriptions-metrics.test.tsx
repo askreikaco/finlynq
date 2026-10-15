@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-// /subscriptions metric cards: the shared MetricCard (sparkline + % badge + "+$X vs last month"), frequency groups
+// /subscriptions metric cards: the shared Card (sparkline + % badge + "+$X vs last month"), frequency groups
 // and the offline path (no series = value only).
 import * as React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
@@ -58,7 +58,7 @@ beforeEach(() => { localStorage.clear(); H.search = ""; });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("/subscriptions metric cards", () => {
-  it("every summary card is the shared MetricCard with a sparkline, % badge and a signed delta vs last month", async () => {
+  it("every summary card is the shared Card with a sparkline, % badge and a signed delta vs last month", async () => {
     stub(SERIES);
     const { container } = render(<SubscriptionsPage />);
     const grid = await waitFor(() => {

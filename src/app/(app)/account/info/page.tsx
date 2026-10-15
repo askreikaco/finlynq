@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { AlertCircle, AtSign, Check, Mail, Phone, Trash2, User } from "lucide-react";
@@ -308,163 +308,143 @@ export default function InfoPage() {
   return (
     <div data-slot="account-info-grid" className={`${TW.grid3} [&>*]:min-w-0`}>
       {/* Avatar */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-              <User className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={User} tone="indigo" infoLabel="About avatar" info={<>Upload your profile picture (JPEG or PNG, max 140KB)</>}>Avatar</CardTitle>
+      <Card
+        title="Avatar"
+        icon={User}
+        tone="indigo"
+        info={<>Upload your profile picture (JPEG or PNG, max 140KB)</>}
+        infoLabel="About avatar"
+        className="space-y-4"
+      >
+        {/* Avatar Preview */}
+        {avatarPreview && (
+          <div className="flex items-start gap-4">
+            <img
+              src={avatarPreview}
+              alt="Avatar preview"
+              className="w-24 h-24 rounded-lg object-cover border border-border"
+            />
+            <div className="flex-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveAvatar}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Remove Avatar
+              </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Avatar Preview */}
-          {avatarPreview && (
-            <div className="flex items-start gap-4">
-              <img
-                src={avatarPreview}
-                alt="Avatar preview"
-                className="w-24 h-24 rounded-lg object-cover border border-border"
-              />
-              <div className="flex-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveAvatar}
-                  className="gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remove Avatar
-                </Button>
-              </div>
-            </div>
-          )}
+        )}
 
-          {!avatarPreview && (
-            <div className="flex items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed border-border bg-muted/30">
-              <User className="h-8 w-8 text-muted-foreground" />
-            </div>
-          )}
+        {!avatarPreview && (
+          <div className="flex items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed border-border bg-muted/30">
+            <User className="h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
 
-          <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
-            Change Avatar
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleAvatarChange}
-            />
-          </label>
+        <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+          Change Avatar
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleAvatarChange}
+          />
+        </label>
 
-          {avatarError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {avatarError}</p>}
-          {avatarStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {avatarStatus}</p>}
-        </CardContent>
+        {avatarError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {avatarError}</p>}
+        {avatarStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {avatarStatus}</p>}
       </Card>
 
       {/* Username (read-only) */}
-      <Card>
-        <CardHeader>
-          <CardTitle icon={AtSign} tone="cyan" infoLabel="About username" info="Your username cannot be changed.">Username</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Field value={profile.username || ""} disabled className="max-w-sm" />
-        </CardContent>
+      <Card
+        title="Username"
+        icon={AtSign}
+        tone="cyan"
+        info="Your username cannot be changed."
+        infoLabel="About username"
+      >
+        <Field value={profile.username || ""} disabled className="max-w-sm" />
       </Card>
 
       {/* Display Name */}
-      <Card>
-        <CardHeader>
-          <CardTitle icon={User} tone="violet">Display Name</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveDisplayName} className="space-y-3 max-w-sm">
-            <Field
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your full name"
-              maxLength={80}
-            />
-            {displayNameError && <p className="text-sm text-destructive">{displayNameError}</p>}
-            {displayNameStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {displayNameStatus}</p>}
-            <Button type="submit" disabled={displayNameSaving}>
-              {displayNameSaving ? "Saving…" : "Save"}
-            </Button>
-          </form>
-        </CardContent>
+      <Card title="Display Name" icon={User} tone="violet">
+        <form onSubmit={handleSaveDisplayName} className="space-y-3 max-w-sm">
+          <Field
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Your full name"
+            maxLength={80}
+          />
+          {displayNameError && <p className="text-sm text-destructive">{displayNameError}</p>}
+          {displayNameStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {displayNameStatus}</p>}
+          <Button type="submit" disabled={displayNameSaving}>
+            {displayNameSaving ? "Saving…" : "Save"}
+          </Button>
+        </form>
       </Card>
 
       {/* Phone */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
-              <Phone className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Phone} tone="emerald" infoLabel="About phone" info="Optional phone number for your profile. Accepts +, digits, spaces, parentheses, and hyphens.">Phone</CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSavePhone} className="space-y-3 max-w-sm">
-            <Field
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 123-4567"
-              maxLength={32}
-            />
-            {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
-            {phoneStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
-            <Button type="submit" disabled={phoneSaving}>
-              {phoneSaving ? "Saving…" : "Save"}
-            </Button>
-          </form>
-        </CardContent>
+      <Card
+        title="Phone"
+        icon={Phone}
+        tone="emerald"
+        info="Optional phone number for your profile. Accepts +, digits, spaces, parentheses, and hyphens."
+        infoLabel="About phone"
+      >
+        <form onSubmit={handleSavePhone} className="space-y-3 max-w-sm">
+          <Field
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            maxLength={32}
+          />
+          {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
+          {phoneStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
+          <Button type="submit" disabled={phoneSaving}>
+            {phoneSaving ? "Saving…" : "Save"}
+          </Button>
+        </form>
       </Card>
 
       {/* Email */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-              <Mail className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Mail} tone="amber" infoLabel="About email" info={<>Recovery email used to reset a forgotten password</>}>Email</CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p data-keep="data" className="text-xs text-muted-foreground">
-            Current: <span className="font-medium text-foreground">{profile?.email || "none set"}</span>
-          </p>
-          <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
-            <Field
-              label="New email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-            />
-            <Field
-              label="Current password"
-              type="password"
-              autoComplete="current-password"
-              value={emailPw}
-              onChange={(e) => setEmailPw(e.target.value)}
-            />
-            {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-            {emailStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {emailStatus}</p>}
-            <Button type="submit" disabled={emailSaving || !email || !emailPw}>
-              {emailSaving ? "Saving…" : "Update email"}
-            </Button>
-          </form>
-        </CardContent>
+      <Card
+        title="Email"
+        icon={Mail}
+        tone="amber"
+        info={<>Recovery email used to reset a forgotten password</>}
+        infoLabel="About email"
+        className="space-y-3"
+      >
+        <p data-keep="data" className="text-xs text-muted-foreground">
+          Current: <span className="font-medium text-foreground">{profile?.email || "none set"}</span>
+        </p>
+        <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
+          <Field
+            label="New email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+          <Field
+            label="Current password"
+            type="password"
+            autoComplete="current-password"
+            value={emailPw}
+            onChange={(e) => setEmailPw(e.target.value)}
+          />
+          {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+          {emailStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {emailStatus}</p>}
+          <Button type="submit" disabled={emailSaving || !email || !emailPw}>
+            {emailSaving ? "Saving…" : "Update email"}
+          </Button>
+        </form>
       </Card>
     </div>
   );

@@ -13,15 +13,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
 import { SlidersHorizontal, Zap } from "lucide-react";
-import { InfoTip } from "@/components/ui/info-tip";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
 import { RulesSection } from "@/components/settings/sections/rules-section";
@@ -140,111 +134,100 @@ export default function ReconciliationSettingsPage() {
       grid
     >
 
-      <Card>
-        <CardHeader>
-          <CardTitle icon={SlidersHorizontal} tone="indigo">
-            Fuzzy match
-            <InfoTip
-              label="About fuzzy match"
-              text={
+      <Card
+        title="Fuzzy match"
+        icon={SlidersHorizontal}
+        tone="indigo"
+        info={
                 <>
                   Tunes how <Link href="/reconcile" className="underline">/reconcile</Link> pairs bank rows with
                   transactions. A pair matches when amount and date are within the windows and the score passes the
                   threshold. Exact-hash matches always show.
                 </>
               }
-            />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <NumberKnob
-            label="Date window (days)"
-            description="Maximum date gap between a transaction and a bank row. Most settlement lag fits in 3–7 days."
-            value={thresholds.dateToleranceDays}
-            min={0}
-            max={30}
-            step={1}
-            disabled={loading}
-            onChange={(v) =>
-              setThresholds((t) => ({ ...t, dateToleranceDays: v }))
-            }
-          />
-          <NumberKnob
-            label="Amount window (%)"
-            description="Maximum percentage gap between amounts. Catches FX spread and rounding. 0 = exact."
-            value={thresholds.amountTolerancePct * 100}
-            min={0}
-            max={100}
-            step={0.5}
-            disabled={loading}
-            onChange={(v) =>
-              setThresholds((t) => ({
-                ...t,
-                amountTolerancePct: v / 100,
-              }))
-            }
-          />
-          <NumberKnob
-            label="Amount floor"
-            description="Minimum window in the transaction currency: max(amount × %, floor)."
-            value={thresholds.amountToleranceFloor}
-            min={0}
-            max={10000}
-            step={0.5}
-            disabled={loading}
-            onChange={(v) =>
-              setThresholds((t) => ({ ...t, amountToleranceFloor: v }))
-            }
-          />
-          <NumberKnob
-            label="Min score"
-            description="Pairs below this score are hidden. Higher = fewer, more precise matches. Default 0.6; 0.7+ is strict."
-            value={thresholds.scoreThreshold}
-            min={0}
-            max={1}
-            step={0.05}
-            disabled={loading}
-            onChange={(v) =>
-              setThresholds((t) => ({ ...t, scoreThreshold: v }))
-            }
-          />
+        infoLabel="About fuzzy match"
+        className="space-y-5"
+      >
+        <NumberKnob
+          label="Date window (days)"
+          description="Maximum date gap between a transaction and a bank row. Most settlement lag fits in 3–7 days."
+          value={thresholds.dateToleranceDays}
+          min={0}
+          max={30}
+          step={1}
+          disabled={loading}
+          onChange={(v) =>
+            setThresholds((t) => ({ ...t, dateToleranceDays: v }))
+          }
+        />
+        <NumberKnob
+          label="Amount window (%)"
+          description="Maximum percentage gap between amounts. Catches FX spread and rounding. 0 = exact."
+          value={thresholds.amountTolerancePct * 100}
+          min={0}
+          max={100}
+          step={0.5}
+          disabled={loading}
+          onChange={(v) =>
+            setThresholds((t) => ({
+              ...t,
+              amountTolerancePct: v / 100,
+            }))
+          }
+        />
+        <NumberKnob
+          label="Amount floor"
+          description="Minimum window in the transaction currency: max(amount × %, floor)."
+          value={thresholds.amountToleranceFloor}
+          min={0}
+          max={10000}
+          step={0.5}
+          disabled={loading}
+          onChange={(v) =>
+            setThresholds((t) => ({ ...t, amountToleranceFloor: v }))
+          }
+        />
+        <NumberKnob
+          label="Min score"
+          description="Pairs below this score are hidden. Higher = fewer, more precise matches. Default 0.6; 0.7+ is strict."
+          value={thresholds.scoreThreshold}
+          min={0}
+          max={1}
+          step={0.05}
+          disabled={loading}
+          onChange={(v) =>
+            setThresholds((t) => ({ ...t, scoreThreshold: v }))
+          }
+        />
 
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 pt-2">
-            <Button onClick={onSave} disabled={saving || loading}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
-            <Button variant="outline" onClick={onReset} disabled={saving || loading}>
-              Reset
-            </Button>
-            {isDefault && !loading && (
-              <span className="text-xs text-muted-foreground" data-keep="status">
-                Defaults
-              </span>
-            )}
-            {savedAt && (
-              <span className="text-xs text-pos">Saved.</span>
-            )}
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
           </div>
-        </CardContent>
+        )}
+
+        <div className="flex items-center gap-2 pt-2">
+          <Button onClick={onSave} disabled={saving || loading}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+          <Button variant="outline" onClick={onReset} disabled={saving || loading}>
+            Reset
+          </Button>
+          {isDefault && !loading && (
+            <span className="text-xs text-muted-foreground" data-keep="status">
+              Defaults
+            </span>
+          )}
+          {savedAt && (
+            <span className="text-xs text-pos">Saved.</span>
+          )}
+        </div>
       </Card>
 
       <ImportSettingsCard />
 
-      <Card id="rules" className="scroll-mt-6">
-        <CardHeader>
-          <CardTitle icon={Zap} tone="amber">
-            Rules
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RulesSection />
-        </CardContent>
+      <Card id="rules" frameClassName="scroll-mt-6" title="Rules" icon={Zap} tone="amber">
+        <RulesSection />
       </Card>
 
       <div className="col-span-full">

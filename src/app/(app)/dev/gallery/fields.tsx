@@ -10,7 +10,7 @@ import React, { useState } from "react";
 import { Banknote, Calendar, Mail, Moon, Monitor, Sun, Tag, Wallet } from "lucide-react";
 
 import { Field, FieldGroup } from "@/components/ui/field";
-import { SectionCard } from "@/components/mobile/section-card";
+import { Card } from "@/components/ui/card";
 
 const CURRENCIES = [
   { value: "USD", label: "USD — US dollar" },
@@ -45,7 +45,7 @@ export function FieldsGallery() {
 
   return (
     <div className="space-y-6">
-      <SectionCard label="Control types" className="@container">
+      <Card title="Control types" className="@container">
         <div className="grid gap-4 @[40rem]:grid-cols-2">
           <Cell name="text">
             <Field label="Payee" value={text} onChange={(e) => setText(e.target.value)} placeholder="Payee" />
@@ -139,9 +139,9 @@ export function FieldsGallery() {
             </Field>
           </Cell>
         </div>
-      </SectionCard>
+      </Card>
 
-      <SectionCard label="Parts: show / hide" className="@container">
+      <Card title="Parts: show / hide" className="@container">
         <div className="grid gap-4 @[40rem]:grid-cols-2">
           <Cell name="label top (default)">
             <Field label="Name" value="Alex" onChange={() => {}} />
@@ -192,9 +192,9 @@ export function FieldsGallery() {
             <Field label="Date" control="date" invalid value="2026-10-15" onChange={() => {}} />
           </Cell>
         </div>
-      </SectionCard>
+      </Card>
 
-      <SectionCard label="FieldGroup (divider rows)" className="@container">
+      <Card title="FieldGroup (divider rows)" className="@container">
         <div className="grid gap-4 @[40rem]:grid-cols-2">
           <FieldGroup label="Account" icon={Wallet} tone="indigo">
             <Field label="Name" placeholder="e.g. TD Chequing" value="Everyday" onChange={() => { }} />
@@ -219,9 +219,9 @@ export function FieldsGallery() {
             ]} />
           </FieldGroup>
         </div>
-      </SectionCard>
+      </Card>
 
-      <SectionCard label="In the 25% pane (container width 360px)">
+      <Card title="In the 25% pane (container width 360px)">
         <div className="w-[360px] max-w-full">
           <FieldGroup>
             <Field label="Account Name" info="The account's display name." value="Everyday" onChange={() => { }} />
@@ -230,7 +230,7 @@ export function FieldsGallery() {
             <Field label="Investment account" control="switch" info="Every transaction must reference a holding." checked={false} onCheckedChange={() => { }} />
           </FieldGroup>
         </div>
-      </SectionCard>
+      </Card>
     </div>
   );
 }

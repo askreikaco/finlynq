@@ -15,15 +15,14 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ListRow } from "@/components/mobile/list-row";
 import { Overlay } from "@/components/ui/overlay";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
-import { Link2, Loader2, Plug } from "lucide-react";
+import { Link2, Loader2 } from "lucide-react";
 
 interface ConnectedApp {
   id: number;
@@ -119,81 +118,72 @@ export function ConnectedApps() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-            <Plug className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={Link2} tone="cyan">
-              Connected apps
-              <InfoTip label="About connected apps" text="AI assistants and apps you authorized over OAuth. Unused connections are removed after 60 days; revoke anytime." />
-            </CardTitle>
-          </div>
+    <Card
+      title="Connected apps"
+      icon={Link2}
+      tone="cyan"
+      info="AI assistants and apps you authorized over OAuth. Unused connections are removed after 60 days; revoke anytime."
+      infoLabel="About connected apps"
+      className="space-y-3"
+    >
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading…
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {loading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading…
-          </div>
-        ) : loadError ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-destructive">{loadError}</p>
-            <Button variant="outline" size="sm" onClick={load}>Retry</Button>
-          </div>
-        ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
-          <p className="text-sm text-muted-foreground" data-keep="empty">No connected apps.</p>
-        ) : (
-          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border">
-            {mcpApiKeyLastUsedAt && (
-              <li key="mcp-api-key">
-                <ListRow
-                  title="MCP client (API key)"
-                  subtitle={`Last used ${formatRelativeTime(mcpApiKeyLastUsedAt)}`}
-                  actions={
-                    <Link href="/settings/developer">
-                      <Button variant="outline" size="sm" className="shrink-0">
-                        API key
-                      </Button>
-                    </Link>
-                  }
-                />
-              </li>
-            )}
-            {apps.map((app) => (
-              <li key={app.id}>
-                <ListRow
-                  title={app.clientName}
-                  subtitle={
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="text-xs font-mono">{app.scope}</Badge>
-                      <span>Connected {formatDate(app.createdAt)}</span>
-                    </span>
-                  }
-                  actions={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => { setRevokeError(""); setRevokeId(app.id); }}
-                    >
-                      Revoke
+      ) : loadError ? (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-destructive">{loadError}</p>
+          <Button variant="outline" size="sm" onClick={load}>Retry</Button>
+        </div>
+      ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
+        <p className="text-sm text-muted-foreground" data-keep="empty">No connected apps.</p>
+      ) : (
+        <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border">
+          {mcpApiKeyLastUsedAt && (
+            <li key="mcp-api-key">
+              <ListRow
+                title="MCP client (API key)"
+                subtitle={`Last used ${formatRelativeTime(mcpApiKeyLastUsedAt)}`}
+                actions={
+                  <Link href="/settings/developer">
+                    <Button variant="outline" size="sm" className="shrink-0">
+                      API key
                     </Button>
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+                  </Link>
+                }
+              />
+            </li>
+          )}
+          {apps.map((app) => (
+            <li key={app.id}>
+              <ListRow
+                title={app.clientName}
+                subtitle={
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-mono">{app.scope}</Badge>
+                    <span>Connected {formatDate(app.createdAt)}</span>
+                  </span>
+                }
+                actions={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => { setRevokeError(""); setRevokeId(app.id); }}
+                  >
+                    Revoke
+                  </Button>
+                }
+              />
+            </li>
+          ))}
+        </ul>
+      )}
 
-        {revokeError && (
-          <p className="text-sm text-destructive">{revokeError}</p>
-        )}
-      </CardContent>
-
+      {revokeError && (
+        <p className="text-sm text-destructive">{revokeError}</p>
+      )}
       <Overlay
         variant="confirm"
         open={revokeId !== null}
