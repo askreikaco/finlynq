@@ -16,7 +16,7 @@ import { Copy, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import type { MoreItem } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { useTransactionForm } from "@/components/transactions/use-transaction-form";
 import { TransactionFormBody } from "@/components/transactions/transaction-form-body";
@@ -142,46 +142,32 @@ export function TransactionEditForm({
         />
       </div>
 
-      <Dialog
+      <Overlay
+        variant="confirm"
         open={confirmOpen}
-        onOpenChange={(open) => {
-          setConfirmOpen(open);
-          if (!open) setDeleteError(null);
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteError(null);
+        }}
+        title={isTransfer ? "Delete this transfer?" : "Delete this transaction?"}
+        message={
+          isTransfer
+            ? "Both legs of this transfer will be deleted. This cannot be undone."
+            : "This transaction will be deleted. This cannot be undone."
+        }
+        confirmLabel="Delete"
+        busy={deleting || f.transferDeleting}
+        onConfirm={() => {
+          if (isTransfer) {
+            setConfirmOpen(false);
+            void f.handleTransferDelete();
+          } else {
+            void deleteTransaction();
+          }
         }}
       >
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{isTransfer ? "Delete this transfer?" : "Delete this transaction?"}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {isTransfer
-              ? "Both legs of this transfer will be deleted. This cannot be undone."
-              : "This transaction will be deleted. This cannot be undone."}
-          </p>
-          {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="flex-1"
-              disabled={deleting || f.transferDeleting}
-              onClick={() => {
-                if (isTransfer) {
-                  setConfirmOpen(false);
-                  void f.handleTransferDelete();
-                } else {
-                  void deleteTransaction();
-                }
-              }}
-            >
-              {deleting || f.transferDeleting ? "Deleting…" : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+      </Overlay>
     </div>
   );
 }

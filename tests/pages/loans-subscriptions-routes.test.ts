@@ -88,7 +88,7 @@ describe("shared forms and new routes exist", () => {
     for (const rel of ["loans/_components/loan-form-panel.tsx", "subscriptions/_components/subscription-form-panel.tsx"]) {
       expect(read(`src/app/(app)/${rel}`)).toMatch(/delete=\{\{/);
     }
-    expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");
+    expect(read("src/components/templates/form-page.tsx")).toContain('variant="confirm"');
   });
   it("the old subscription dialog file is gone", () => {
     expect(existsSync(path.join(ROOT, "src/app/(app)/subscriptions/_components/subscription-dialog.tsx"))).toBe(false);

@@ -9,7 +9,7 @@ import { WifiOff } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { countUnsyncedWrites, useOfflineKey, useOfflineMode } from "@/lib/data/local-write-queue";
@@ -84,11 +84,12 @@ export function OfflineModeCard() {
           <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-mode-untrusted">Trusted devices only</p>
         </CardContent>
       )}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmCount !== null}
-        onOpenChange={(o) => !o && setConfirmCount(null)}
+        onClose={() => setConfirmCount(null)}
         title="Turn off offline mode"
-        description={`${confirmCount ?? 0} unsynced ${confirmCount === 1 ? "change" : "changes"} will be discarded.`}
+        message={`${confirmCount ?? 0} unsynced ${confirmCount === 1 ? "change" : "changes"} will be discarded.`}
         confirmLabel="Turn off"
         onConfirm={() => {
           setEnabled(false);

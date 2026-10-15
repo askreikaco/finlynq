@@ -11,13 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import { Paperclip, X } from "lucide-react";
 import { FeedbackDialog } from "@/components/feedback-dialog";
@@ -198,17 +192,12 @@ function ThreadDialog({
   };
 
   return (
-    <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="capitalize">
-            {thread ? `${thread.type} feedback` : "Feedback"}
-          </DialogTitle>
-          <DialogDescription>
-            Team replies appear here. No sensitive details, please.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={feedbackId != null}
+      onClose={onClose}
+      title={<span className="capitalize">{thread ? `${thread.type} feedback` : "Feedback"}</span>}
+      info="Team replies appear here. No sensitive details, please."
+    >
         {error && !thread && <p className="text-sm text-destructive">{error}</p>}
 
         {thread && (
@@ -319,8 +308,7 @@ function ThreadDialog({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
 

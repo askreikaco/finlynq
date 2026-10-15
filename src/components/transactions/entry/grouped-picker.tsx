@@ -4,7 +4,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Search, Settings } from "lucide-react";
-import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import { ListRow } from "@/components/mobile/list-row";
 import { Field } from "@/components/ui/field";
@@ -18,10 +18,6 @@ import { filterRecent } from "@/lib/transactions/recent-picks";
 
 /** Recent rows shown above the groups. */
 export const PICKER_RECENT_LIMIT = 5;
-
-/** Bottom sheet on mobile (keyboard-aware); floating panel from sm up. */
-export const PICKER_SHEET_CLASS =
-  "flex flex-col p-0 pt-0 pb-[var(--sab)] regular:pb-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] regular:inset-x-auto! regular:left-1/2! regular:bottom-6! regular:h-auto! regular:max-h-[70dvh]! regular:w-[28rem]! regular:max-w-[calc(100vw-2rem)]! regular:-translate-x-1/2! regular:rounded-2xl! regular:border!";
 
 /** Three-column tile grid shared by every picker body. */
 const TILE_GRID = "grid grid-cols-3 gap-2";
@@ -47,6 +43,8 @@ export interface PickerEntry {
 }
 
 export interface GroupedPickerPanelProps {
+  open: boolean;
+  onClose: () => void;
   title: string;
   placeholder: string;
   emptyText: string;
@@ -72,10 +70,12 @@ function isPlainGroup(name: string, rows: PickerEntry[]): boolean {
 }
 
 /**
- * Header (title + search) and scrolling body. Mounted inside SheetContent, so it
- * unmounts when the sheet closes and every open starts from the seeded state.
+ * A picker Overlay: header (title + settings link), search toolbar and a scrolling tile body.
+ * Search and the open group reset while it is closed, so every open starts from the seeded state.
  */
 export function GroupedPickerPanel({
+  open,
+  onClose,
   title,
   placeholder,
   emptyText,
@@ -109,6 +109,13 @@ export function GroupedPickerPanel({
 
   // Expand layout: one open group at a time. The group holding the selection starts open.
   const [openGroup, setOpenGroup] = useState<string | null>(() => selectedGroup);
+
+  // Reset while closed (invisible), so the next open starts from the seeded state.
+  useEffect(() => {
+    if (open) return;
+    setSearch("");
+    setOpenGroup(selectedGroup);
+  }, [open, selectedGroup]);
 
   const groups = useMemo(() => {
     const map = new Map<string, PickerEntry[]>();
@@ -210,35 +217,36 @@ export function GroupedPickerPanel({
   );
 
   return (
-    <>
-      <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
-        {settingsLink ? (
-          <div className="flex items-center justify-between gap-3 pr-18">
-            <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
-            <Link
-              href={settingsLink}
-              aria-label={settingsLabel}
-              title={settingsLabel}
-              data-slot="picker-settings"
-              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full glass-capsule text-foreground transition-colors hover:bg-accent"
-            >
-              <Settings className="size-[18px]" aria-hidden />
-            </Link>
-          </div>
-        ) : (
-          <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
-        )}
+    <Overlay
+      variant="picker"
+      open={open}
+      onClose={onClose}
+      title={title}
+      headerAction={
+        settingsLink ? (
+          <Link
+            href={settingsLink}
+            aria-label={settingsLabel}
+            title={settingsLabel}
+            data-slot="picker-settings"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full glass-capsule text-foreground transition-colors hover:bg-accent"
+          >
+            <Settings className="size-[18px]" aria-hidden />
+          </Link>
+        ) : undefined
+      }
+      toolbar={
         <Field
-          className="mt-3"
           aria-label={placeholder}
           placeholder={placeholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           prefix={<Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
         />
-      </SheetHeader>
-
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-5 p-4">
+      }
+      bodyClassName="gap-5 py-4"
+    >
+      <>
         {hits !== null ? (
           hits.length === 0 ? (
             empty
@@ -296,8 +304,8 @@ export function GroupedPickerPanel({
             )}
           </>
         )}
-      </div>
-    </>
+      </>
+    </Overlay>
   );
 }
 

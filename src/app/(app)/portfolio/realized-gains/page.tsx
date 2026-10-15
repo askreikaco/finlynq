@@ -25,14 +25,8 @@ import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Re
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
-import {
-  Amount,
-  ListRow,
-  DetailSheet,
-  MetricGrid,
-  SectionCard,
-  type DetailItem,
-} from "@/components/mobile";
+import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -477,11 +471,12 @@ export default function RealizedGainsPage() {
       </section>
 
       {openLot && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => !o && setOpenLot(null)}
+          onClose={() => setOpenLot(null)}
           title={holdingLabelOf(openLot)}
-          description={CLOSE_KIND_META[openLot.closeKind]?.tooltip}
+          info={CLOSE_KIND_META[openLot.closeKind]?.tooltip}
           items={lotDetailItems(openLot)}
         />
       )}

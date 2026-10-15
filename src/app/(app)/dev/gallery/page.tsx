@@ -17,7 +17,6 @@ import { Amount } from "@/components/mobile/amount";
 import { InsetRow } from "@/components/mobile/inset-row";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
-import { DetailSheet } from "@/components/mobile/detail-sheet";
 import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
 import { Sparkline } from "@/components/sparkline";
 import { EmptyState } from "@/components/empty-state";
@@ -34,12 +33,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Bell, CalendarClock, DollarSign, Inbox, LogOut, Pencil, PiggyBank, Plus, Repeat, Settings, ShoppingCart, TrendingUp, Trash2, Wallet } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 import { COLOR_TOKENS, GALLERY_SECTIONS } from "./sections";
 import { FieldsGallery } from "./fields";
 import { Field } from "@/components/ui/field";
@@ -149,10 +144,8 @@ function GalleryContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sizeClass = useSizeClass(containerRef as React.RefObject<HTMLElement>);
   const [width, setWidth] = useState(0);
-  const [dialog, setDialog] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const [sheet, setSheet] = useState(false);
-  const [detail, setDetail] = useState(false);
+  const [overlay, setOverlay] = useState<"confirm" | "confirm-neutral" | "form" | "form-dialog" | "form-sheet" | "detail" | "picker" | null>(null);
+  const closeOverlay = () => setOverlay(null);
   const [on, setOn] = useState(true);
   const [acc, setAcc] = useState<string | null>("one");
 
@@ -283,7 +276,7 @@ function GalleryContent() {
               <SectionCard label="Accounts" list icon={Wallet} tone="indigo">
                 <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
                 <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
-                <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
+                <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setOverlay("detail")} />
               </SectionCard>
             </Item>
             <div className={TW.grid3}>
@@ -344,7 +337,7 @@ function GalleryContent() {
               </SectionCard>
               <SectionCard label="Behaviour" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 <ListRow icon={Wallet} title="Link row (href)" subtitle="chevron by default" href="/dev/gallery" />
-                <ListRow icon={PiggyBank} title="Button row (onPress)" subtitle="opens the sheet" onPress={() => setDetail(true)} />
+                <ListRow icon={PiggyBank} title="Button row (onPress)" subtitle="opens the sheet" onPress={() => setOverlay("detail")} />
                 <ListRow icon={Wallet} title="Selected (split view)" subtitle="selected" selected onPress={() => {}} />
                 <ListRow icon={Wallet} title="Disabled" disabled onPress={() => {}} />
                 <ListRow icon={Wallet} title="Dimmed (archived)" dimmed href="/dev/gallery" chevron={false} />
@@ -404,7 +397,7 @@ function GalleryContent() {
               <SectionCard label="Domain wrappers" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 <AccountRow accountId={1} accountName="Checking" alias="TCB" currency="EUR" balance={2500} displayCurrency="EUR" type="asset" />
                 <AccountRow accountId={2} accountName="Credit card" currency="GBP" balance={-420.5} convertedBalance={-495} displayCurrency="EUR" type="liability" />
-                <HoldingRow name="AAPL" marketValue={5000} unrealizedPct={5.5} currency="EUR" onPress={() => setDetail(true)} />
+                <HoldingRow name="AAPL" marketValue={5000} unrealizedPct={5.5} currency="EUR" onPress={() => setOverlay("detail")} />
                 <TxRow icon={ShoppingCart} tile="muted" title="Groceries" subtitle="Food · Checking" amount={-54.3} currency="EUR" />
                 <TxRow icon={Repeat} tile="warn" title="Netflix" subtitle="monthly · next Nov 1" amount={-15.99} currency="EUR" meta="per month" onPress={() => {}} />
                 <TxRow icon={CalendarClock} tile="pos" title="Salary" subtitle="Income" amount={3200} currency="EUR" amountTone="pos" showSign />
@@ -456,37 +449,74 @@ function GalleryContent() {
             <FieldsGallery />
           </Group>
 
-          <Group id="overlays" title="Dialogs / Sheets" file="ui/dialog.tsx · sheet.tsx · confirm-dialog.tsx · mobile/detail-sheet.tsx">
+          <Group id="overlays" title="Overlay" file="ui/overlay.tsx (variant: confirm | form | detail | picker; presentation: auto | dialog | sheet-right)">
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setDialog(true)}>Dialog</Button>
-              <Button variant="outline" onClick={() => setConfirm(true)}>ConfirmDialog</Button>
-              <Button variant="outline" onClick={() => setSheet(true)}>Sheet</Button>
-              <Button variant="outline" onClick={() => setDetail(true)}>DetailSheet</Button>
+              <Button variant="outline" onClick={() => setOverlay("confirm")}>Confirm (destructive)</Button>
+              <Button variant="outline" onClick={() => setOverlay("confirm-neutral")}>Confirm (neutral)</Button>
+              <Button variant="outline" onClick={() => setOverlay("form")}>Form (auto)</Button>
+              <Button variant="outline" onClick={() => setOverlay("form-dialog")}>Form (dialog)</Button>
+              <Button variant="outline" onClick={() => setOverlay("form-sheet")}>Form (sheet-right)</Button>
+              <Button variant="outline" onClick={() => setOverlay("detail")}>Detail</Button>
+              <Button variant="outline" onClick={() => setOverlay("picker")}>Picker</Button>
             </div>
-            <Dialog open={dialog} onOpenChange={setDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Dialog title</DialogTitle>
-                  <DialogDescription>Dialog description text.</DialogDescription>
-                </DialogHeader>
-                <DialogFooter><Button onClick={() => setDialog(false)}>Close</Button></DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Delete item" description="This cannot be undone." onConfirm={() => setConfirm(false)} />
-            <Sheet open={sheet} onOpenChange={setSheet}>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Sheet title</SheetTitle>
-                  <SheetDescription>Sheet description.</SheetDescription>
-                </SheetHeader>
-              </SheetContent>
-            </Sheet>
-            <DetailSheet
-              open={detail}
-              onOpenChange={setDetail}
-              title="Detail sheet"
-              items={[{ label: "Account", value: "Checking" }, { label: "Balance", value: <Amount value={2500} /> }]}
+            <Overlay
+              variant="confirm"
+              open={overlay === "confirm"}
+              onClose={closeOverlay}
+              title="Delete item"
+              message="This cannot be undone."
+              onConfirm={closeOverlay}
             />
+            <Overlay
+              variant="confirm"
+              destructive={false}
+              open={overlay === "confirm-neutral"}
+              onClose={closeOverlay}
+              title="Switch display currency?"
+              message="Reports are recalculated in the background."
+              confirmLabel="Switch"
+              onConfirm={closeOverlay}
+            />
+            <Overlay
+              open={overlay === "form" || overlay === "form-dialog" || overlay === "form-sheet"}
+              onClose={closeOverlay}
+              presentation={overlay === "form-dialog" ? "dialog" : overlay === "form-sheet" ? "sheet-right" : "auto"}
+              title="Edit rule"
+              info="The info tip is the only place explanatory text goes."
+              actions={[
+                { label: "Cancel" },
+                { label: "Save", kind: "primary", onClick: closeOverlay },
+              ]}
+            >
+              <div className="space-y-1.5">
+                <Field label="Name" placeholder="Rule name" />
+              </div>
+            </Overlay>
+            <Overlay
+              variant="detail"
+              open={overlay === "detail"}
+              onClose={closeOverlay}
+              title="Checking"
+              subtitle="Account"
+              items={[{ label: "Account", value: "Checking" }, { label: "Balance", value: <Amount value={2500} /> }]}
+            >
+              <Button variant="outline">Edit</Button>
+              <Button variant="outline" className="text-destructive">Delete</Button>
+            </Overlay>
+            <Overlay
+              variant="picker"
+              open={overlay === "picker"}
+              onClose={closeOverlay}
+              title="Select currency"
+              toolbar={<Field aria-label="Search currency" placeholder="Search currency..." />}
+              bodyClassName="py-4"
+            >
+              {["USD", "EUR", "VND"].map((c) => (
+                <Button key={c} variant="ghost" className="w-full justify-start" onClick={closeOverlay}>
+                  {c}
+                </Button>
+              ))}
+            </Overlay>
           </Group>
 
           <Group id="topbar" title="Top bar" file="mobile/page-header.tsx (PageHeader) · .glass-bar · .page-header-bleed" span>

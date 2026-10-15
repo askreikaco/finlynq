@@ -10,16 +10,10 @@
  * import/pending/page.tsx; all state + callbacks owned by the page.
  */
 
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ArrowLeft, Check, Sparkles, ArrowRight, X } from "lucide-react";
+import Link from "next/link";
+import { Overlay } from "@/components/ui/overlay";
 import type { StagedDetail } from "../_types";
 import { PageHeader, MoreActionsMenu, type MoreItem } from "@/components/mobile";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -82,12 +76,12 @@ export function ReconcileHeader({
 
   // FINLYNQ-88 — Re-apply rules confirmation modal.
   const reapplyDialog = (
-          <Dialog open={reapplyModalOpen} onOpenChange={setReapplyModalOpen}>
-            <DialogContent className="regular:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Re-apply rules?</DialogTitle>
-                <DialogDescription className="space-y-3 pt-2">
-                  <span className="block">
+          <Overlay
+            open={reapplyModalOpen}
+            onClose={() => setReapplyModalOpen(false)}
+            size="md"
+            title="Re-apply rules?"
+            info={<><span className="block">
                     This re-applies all active rules to every row in this batch. It
                     may overwrite manual edits to payee, category, tags, type, or
                     account on matched rows.
@@ -95,24 +89,13 @@ export function ReconcileHeader({
                   <span className="block">
                     Rows you&apos;ve already linked to existing transactions and
                     rows marked as duplicates are skipped.
-                  </span>
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => setReapplyModalOpen(false)}
-                  disabled={reapplying}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={reapplyRules} disabled={reapplying}>
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                  {reapplying ? "Re-applying…" : "Re-apply"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  </span></>}
+            actions={[
+              { label: "Cancel", kind: "ghost", onClick: () => setReapplyModalOpen(false), disabled: reapplying },
+              { label: <><Sparkles className="h-4 w-4 mr-1.5" />
+                  {reapplying ? "Re-applying…" : "Re-apply"}</>, kind: "primary", onClick: reapplyRules, disabled: reapplying },
+            ]}
+          />
   );
 
   if (embedded) {

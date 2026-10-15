@@ -20,6 +20,7 @@ import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Overlay } from "@/components/ui/overlay";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
@@ -41,7 +42,7 @@ import { withMode, withSel } from "@/lib/list-detail/selection";
 import { sizeClassFor } from "@/components/ui/size-class";
 import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
+  CardLayoutEditor, ListDetailLayout, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
   type ListDetailPaneApi, type MoreItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -678,11 +679,11 @@ function CategoriesOverview() {
         ))}
       </ListDetailLayout>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize"
-        description="Show, hide, reorder cards."
+        info="Show, hide, reorder cards."
         cards={CATEGORY_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

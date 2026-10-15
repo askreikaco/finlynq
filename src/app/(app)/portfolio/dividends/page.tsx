@@ -22,14 +22,8 @@ import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
 import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  Amount,
-  DetailSheet,
-  ListRow,
-  MetricGrid,
-  SectionCard,
-  type DetailItem,
-} from "@/components/mobile";
+import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -259,11 +253,12 @@ export default function DividendsPage() {
       </section>
 
       {openGroup && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => !o && setOpenGroup(null)}
+          onClose={() => setOpenGroup(null)}
           title={openGroup.label}
-          description={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
+          subtitle={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
           items={groupDetailItems(openGroup, reporting, reportingCcy, currencyColumns)}
         />
       )}

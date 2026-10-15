@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/currency";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import LotPicker from "./LotPicker";
 import { todayISO } from "@/lib/utils/date";
 import { isOversell, shortAmount } from "@/lib/portfolio/oversell";
@@ -464,11 +464,12 @@ export default function SellForm() {
       </OpPage>
 
       {/* Oversell confirmation (FINLYNQ-162): a confirm step inside the form, not an operation dialog. */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={oversellConfirmOpen}
-        onOpenChange={setOversellConfirmOpen}
+        onClose={() => setOversellConfirmOpen(false)}
         title="Sell more than you hold?"
-        description={
+        message={
           <>
             This will open a short position of{" "}
             <span className="font-medium text-foreground">

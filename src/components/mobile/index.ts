@@ -7,13 +7,13 @@ export { ListRow, ProgressBar, type ListRowProps, type SecondaryTone, type TileT
 export { TxRow, type TxRowProps } from "./tx-row";
 export { Amount, amountToneClass, type AmountSize, type AmountTone } from "./amount";
 export { PillButton } from "./pill-button";
-export { DetailSheet, DetailList, type DetailItem } from "./detail-sheet";
+export { DetailList } from "./detail-list";
+export type { DetailItem } from "@/components/ui/overlay";
 export { NetWorthHero } from "./net-worth-hero";
 export { AccountRow } from "./account-row";
 export { HoldingRow } from "./holding-row";
 export { MetricGrid, METRIC_GRID_CLASS, metricGridClass } from "./metric-grid";
-export { CustomizeDashboardSheet, type DashboardCard } from "./customize-dashboard-sheet";
-export { CustomizeCardsSheet } from "./customize-cards-sheet";
+export { CardLayoutEditor } from "./card-layout-editor";
 export { useCardLayout } from "./use-card-layout";
 export { usePageCustomize, usePageCustomizeRegistration, type PageCustomizeRegistration } from "./page-customize";
 export { ListDetailLayout, ListDetailEmptyPane, useListDetail, usePaneTitle, type ListDetailApi, type ListDetailPaneApi, type ListDetailLayoutProps } from "./list-detail-layout";

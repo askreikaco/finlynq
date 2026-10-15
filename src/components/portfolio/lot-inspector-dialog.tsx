@@ -18,15 +18,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matrix";
 import { formatCurrency } from "@/lib/currency";
 import { Field } from "@/components/ui/field";
@@ -312,15 +306,18 @@ export function LotInspectorDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={showMatrix ? "regular:max-w-[97vw] w-[97vw] h-[95dvh] max-h-[95dvh] flex flex-col overflow-hidden overflow-y-hidden" : "regular:max-w-2xl"}>
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            Lot inspector
-            {holdingName ? <span className="text-muted-foreground font-normal"> — {holdingName}</span> : null}
-            {accountName ? <span className="text-muted-foreground font-normal text-sm"> ({accountName})</span> : null}
-          </DialogTitle>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size={showMatrix ? "full" : "xl"}
+      title={
+        <span>
+          Lot inspector
+          {holdingName ? <span className="text-muted-foreground font-normal"> — {holdingName}</span> : null}
+          {accountName ? <span className="text-muted-foreground font-normal text-sm"> ({accountName})</span> : null}
+        </span>
+      }
+    >
 
         {loading && <p data-keep="status" className="text-sm text-muted-foreground">Loading lots…</p>}
         {error && !loading && (
@@ -600,14 +597,14 @@ export function LotInspectorDialog({
             })}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
 
-    <ConfirmDialog
+    <Overlay
+      variant="confirm"
       open={rebuildConfirmOpen}
-      onOpenChange={setRebuildConfirmOpen}
+      onClose={() => setRebuildConfirmOpen(false)}
       title="Rebuild lots for this ticker?"
-      description={
+      message={
         `This wipes and recreates the lot history for ${holdingName ?? "this holding"}` +
         `${accountName ? ` in ${accountName}` : ""} by replaying its transactions in date ` +
         `order. It changes lot allocation and realized-gain figures, but never ` +

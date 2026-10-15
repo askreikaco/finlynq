@@ -71,13 +71,6 @@ describe("system type scale, palette tokens, units, adaptive helpers", () => {
     expect(read(f)).not.toMatch(/md:hidden|hidden\s+md:|isMobile|window\.innerWidth/);
   });
 
-  it("filter sheet is a bottom sheet with overscroll-contain and dvh max height", () => {
-    const src = read(CONTROLS);
-    expect(src).toMatch(/side="bottom"/);
-    expect(src).toContain("overscroll-contain");
-    expect(src).toContain("max-h-[85dvh]");
-  });
-
   it("filter chips use Button size sm (44pt below md via the Button touch sizes)", () => {
     expect(read(CONTROLS)).toMatch(/size="sm"/);
   });

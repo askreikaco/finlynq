@@ -15,7 +15,7 @@ import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { Field } from "@/components/ui/field";
 
@@ -310,13 +310,12 @@ export default function AdminDiagnosticsPage() {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={clearOpen}
-        onOpenChange={(o) => {
-          if (!o) setClearOpen(false);
-        }}
+        onClose={() => setClearOpen(false)}
         title="Clear diagnostics log"
-        description="Delete all diagnostics rows? This only clears the diagnostic history — it doesn't affect any user data."
+        message="Delete all diagnostics rows? This only clears the diagnostic history — it doesn't affect any user data."
         confirmLabel="Clear log"
         busyLabel="Clearing…"
         busy={clearing}

@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
 import { TW } from "@/lib/design/tokens";
 import { Field, type FieldComboboxOption, FieldGroup } from "@/components/ui/field";
@@ -292,11 +292,12 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
 
       {/* Re-denomination is not a conversion: the stored numbers stay put and
           only their currency label changes. Confirmed, never silent. */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={pendingRedenominate !== null}
-        onOpenChange={(open) => { if (!open) setPendingRedenominate(null); }}
+        onClose={() => { setPendingRedenominate(null); }}
         title="Change loan currency?"
-        description={
+        message={
           <>
             This re-labels the loan from <strong>{pendingRedenominate?.from}</strong> to{" "}
             <strong>{pendingRedenominate?.to}</strong>. The amounts are <strong>not</strong> converted —

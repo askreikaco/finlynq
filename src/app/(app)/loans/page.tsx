@@ -11,9 +11,9 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CalendarClock, CheckCircle2, Landmark, ListChecks, Table2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, SectionCard, ListRow, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
+import { MetricGrid, SectionCard, ListRow, ListDetailLayout, useListDetail, TxRow } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { LoanDetail, LoanProgress, FREQUENCY_LABELS, loanDetailItems } from "./_components/loan-detail";
 import { LoanAmortization } from "./_components/loan-amortization";
@@ -295,25 +295,27 @@ function LoansPageContent() {
       </ListDetailLayout>
 
       {detailLoan && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          onClose={() => setDetailId(null)}
           title={detailLoan.name}
-          description={`${detailLoan.currency} loan`}
+          subtitle={`${detailLoan.currency} loan`}
           items={loanDetailItems(detailLoan, displayCurrency, detailNextDue, detailPaidOff)}
         >
           <LoanProgress loan={detailLoan} />
           <Button variant="outline" onClick={() => viewAmortization(detailLoan)}>View schedule</Button>
           <Button variant="outline" onClick={() => { setDetailId(null); editLoan(detailLoan); }}>Edit</Button>
           <Button variant="outline" className="text-destructive" onClick={() => { setDetailId(null); setDeleteId(detailLoan.id); }}>Delete</Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        onClose={() => { setDeleteId(null); }}
         title="Delete loan"
-        description={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
+        message={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
         confirmLabel="Delete loan"
         busy={deleting}
         onConfirm={handleDelete}

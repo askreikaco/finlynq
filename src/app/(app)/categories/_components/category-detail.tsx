@@ -45,7 +45,7 @@ import { todayISO } from "@/lib/utils/date";
 import { type CategoryDetail } from "@/lib/reports/category-detail";
 import { ArrowLeftRight, BarChart3, CalendarClock, Percent, Receipt, Scale, Store, Tags, Users, Wallet } from "lucide-react";
 import {
-  Amount, CustomizeCardsSheet, ListRow, MetricGrid, PageHeader, SectionCard,
+  Amount, CardLayoutEditor, ListRow, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, usePaneTitle,
 } from "@/components/mobile";
 import { isGroupSelId, resolveGroupSelId, type GroupLike } from "@/lib/categories/group-key";
@@ -419,11 +419,11 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
         </p>
       )}
 
-      {!embedded && <CustomizeCardsSheet
+      {!embedded && <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize category"
-        description="Show, hide and reorder the cards on this category."
+        info="Show, hide and reorder the cards on this category."
         cards={detailCards}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

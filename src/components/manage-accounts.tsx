@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { AccountAlert } from "@/components/account-switcher";
 import { initialsOf, useAccountActions, MAX_ACCOUNTS, CAP_MESSAGE, type Account } from "@/lib/client/use-account-actions";
 import { cn } from "@/lib/utils";
@@ -93,21 +93,23 @@ export function ManageAccounts() {
         Sign out of all accounts
       </Button>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={removing !== null}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title="Remove from this device"
-        description={`Sign out ${removing?.email ?? ""} and remove it from this device?`}
+        message={`Sign out ${removing?.email ?? ""} and remove it from this device?`}
         confirmLabel="Remove"
         busyLabel="Removing..."
         busy={a.busy?.startsWith("remove:") ?? false}
         onConfirm={() => removing && a.handleRemove(removing)}
       />
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmAll}
-        onOpenChange={setConfirmAll}
+        onClose={() => setConfirmAll(false)}
         title="Sign out of all accounts"
-        description="Every account on this device will be signed out. You will need to sign in again."
+        message="Every account on this device will be signed out. You will need to sign in again."
         confirmLabel="Sign out of all"
         busyLabel="Signing out..."
         busy={a.busy === "signout-all"}

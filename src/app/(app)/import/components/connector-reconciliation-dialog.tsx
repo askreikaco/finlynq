@@ -1,18 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface ReconciliationRow {
   externalAccountId: string;
@@ -99,13 +93,17 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-3xl max-h-[85dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogHeading help={<>Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
-            to missing opening balances before WP&rsquo;s oldest imported transaction.</>}>Balance reconciliation</DialogHeading>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="2xl"
+      title="Balance reconciliation"
+      info={<>Compare each mapped account&rsquo;s balance as of a date. Any mismatch is likely due
+            to missing opening balances before WP&rsquo;s oldest imported transaction.</>}
+      actions={[
+        { label: "Close", onClick: () => onOpenChange(false) },
+      ]}
+    >
         <div className="flex items-end gap-2">
           <Field
             label="Reconcile as of"
@@ -180,13 +178,6 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
             )}
           </div>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

@@ -17,7 +17,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -304,13 +304,12 @@ export function ManageGroupsPanel({
         </p>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={mergeTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setMergeTarget(null);
-        }}
+        onClose={() => setMergeTarget(null)}
         title="Merge into Other"
-        description={
+        message={
           mergeTarget
             ? `Move every account in "${mergeTarget.name}" into "Other"? This can't be undone automatically, but you can rename the accounts back later.`
             : ""

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -41,13 +41,13 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
   const shownError = localError ?? error;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && cancel()}>
-      <DialogContent className="regular:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{FAMILY_STRINGS.step_up_title}</DialogTitle>
-          <DialogDescription>{FAMILY_STRINGS.step_up_message}</DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={isOpen}
+      onClose={() => cancel()}
+      size="sm"
+      title={FAMILY_STRINGS.step_up_title}
+      info={FAMILY_STRINGS.step_up_message}
+    >
         <form onSubmit={submit} className="space-y-4" noValidate>
           <Field
             label={FAMILY_STRINGS.step_up_password_label}
@@ -82,7 +82,6 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

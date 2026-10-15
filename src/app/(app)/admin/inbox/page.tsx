@@ -31,7 +31,7 @@ import {
 import { SectionPage } from "@/components/templates/section-page";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui/overlay";
 
 interface InboxRow {
   id: string;
@@ -309,12 +309,14 @@ export default function AdminInboxPage() {
       </SectionCard>
 
       {/* ─── Conversation (tap a row) ─── */}
-      <Sheet open={selectedId !== null} onOpenChange={(open) => { if (!open) closeThread(); }}>
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-0 pb-[var(--sab)]">
-          <SheetHeader className="border-b px-4 py-3 pr-12">
-            <SheetTitle className="truncate text-base">{thread ? thread.subject || "(no subject)" : "Email"}</SheetTitle>
-            <SheetDescription className="truncate font-mono text-xs">{thread?.counterparty ?? ""}</SheetDescription>
-          </SheetHeader>
+      <Overlay
+        open={selectedId !== null}
+        onClose={closeThread}
+        size="xl"
+        title={thread ? thread.subject || "(no subject)" : "Email"}
+        subtitle={thread?.counterparty ? <span className="font-mono">{thread.counterparty}</span> : undefined}
+        bodyClassName="gap-0 p-0"
+      >
 
           {selectedId && threadLoading && !thread && (
             <p className="p-6 text-sm text-muted-foreground">Loading conversation…</p>
@@ -395,8 +397,7 @@ export default function AdminInboxPage() {
               )}
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+      </Overlay>
     </SectionPage>
   );
 }

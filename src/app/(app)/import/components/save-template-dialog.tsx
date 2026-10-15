@@ -1,18 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
-import { autoDetectColumnMapping } from "@/lib/import-templates";
+import { ColumnMapping, DateFormatOverride, autoDetectColumnMapping } from "@/lib/import-templates";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 import { Field, FieldGroup } from "@/components/ui/field";
+import { Overlay } from "@/components/ui/overlay";
 import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -134,12 +127,17 @@ export function SaveTemplateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogHeading help={<>Save this column mapping so future uploads from the same source are auto-matched.</>}>Save as Template</DialogHeading>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => handleOpenChange(false)}
+      size="xl"
+      title="Save as Template"
+      info={<>Save this column mapping so future uploads from the same source are auto-matched.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: saving },
+        { label: saving ? "Saving..." : "Save Template", kind: "primary", onClick: handleSave, disabled: saving },
+      ]}
+    >
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
           <div className="grid gap-3 regular:grid-cols-2">
             <Field
@@ -247,16 +245,6 @@ export function SaveTemplateDialog({
 
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Template"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

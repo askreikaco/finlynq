@@ -28,14 +28,14 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { DetailSheet, ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { DueActions, STATUS_BADGE, SubscriptionDetail, SubscriptionStatusActions, dueLabel, isDue, relativeDue, subDetailItems } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
@@ -456,11 +456,12 @@ function SubscriptionsPageContent() {
       </ListDetailLayout>
 
       {openSub && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) closeSheet(); }}
+          onClose={() => closeSheet()}
           title={openSub.name ?? "Subscription"}
-          description={STATUS_BADGE[openSub.status]?.label ?? "Active"}
+          subtitle={STATUS_BADGE[openSub.status]?.label ?? "Active"}
           items={subDetailItems(openSub, today, displayCurrency)}
         >
           <Button variant="outline" onClick={() => { closeSheet(); openEditById(openSub.id); }}>
@@ -470,14 +471,15 @@ function SubscriptionsPageContent() {
           <Button variant="outline" className="text-destructive" onClick={() => { closeSheet(); setDeleteId(openSub.id); }}>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId !== null}
-        onOpenChange={(open) => { if (!open && !deleting) setDeleteId(null); }}
+        onClose={() => { if (!deleting) setDeleteId(null); }}
         title="Delete subscription"
-        description={<>Delete <strong>{deletingSub?.name ?? "this subscription"}</strong>? Your transactions are not affected. This cannot be undone.</>}
+        message={<>Delete <strong>{deletingSub?.name ?? "this subscription"}</strong>? Your transactions are not affected. This cannot be undone.</>}
         confirmLabel="Delete subscription"
         busy={deleting}
         onConfirm={handleDelete}

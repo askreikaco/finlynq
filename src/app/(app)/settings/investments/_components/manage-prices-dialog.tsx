@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import { todayISO } from "@/lib/utils/date";
@@ -165,13 +165,12 @@ export function ManagePricesPanel({
         </Button>
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId != null}
-        onOpenChange={(o) => {
-          if (!o) setDeleteId(null);
-        }}
+        onClose={() => setDeleteId(null)}
         title="Delete price"
-        description="Remove this price mark? The holding will fall back to the next most recent price (or 0)."
+        message="Remove this price mark? The holding will fall back to the next most recent price (or 0)."
         confirmLabel="Delete"
         busyLabel="Deleting…"
         busy={deleting}

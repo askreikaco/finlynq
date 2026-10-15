@@ -1,18 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface SheetInfo {
   name: string;
@@ -102,15 +95,17 @@ export function ExcelMapperDialog({
   if (!sheet) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogHeading className="flex items-center gap-2" help={<>Map your spreadsheet columns to transaction fields.</>}>
-            <FileSpreadsheet className="h-5 w-5 text-pos" />
-            Map Excel Columns
-          </DialogHeading>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="Map Excel Columns"
+      info={<>Map your spreadsheet columns to transaction fields.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },
+        { label: isMapping ? "Processing..." : "Preview Import", kind: "primary", onClick: handleSubmit, disabled: !isValid || isMapping },
+      ]}
+    >
         {/* Sheet selector */}
         {sheets.length > 1 && (
           <div className="flex items-center gap-2">
@@ -177,16 +172,6 @@ export function ExcelMapperDialog({
             {!hasAmount && "Amount mapping is required."}
           </p>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isMapping}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isMapping}>
-            {isMapping ? "Processing..." : "Preview Import"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

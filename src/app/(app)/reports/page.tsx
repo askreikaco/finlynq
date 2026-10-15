@@ -36,7 +36,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CustomizeCardsSheet, MetricGrid, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { MetricGrid, useCardLayout, usePageCustomize, CardLayoutEditor } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   GroupedStatementRows,
@@ -427,11 +427,11 @@ export default function ReportsPage() {
           <Fragment key={id}>{cardNodes[id]}</Fragment>
         ))}
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize reports"
-        description="Show, hide and reorder the summary and trend cards."
+        info="Show, hide and reorder the summary and trend cards."
         cards={REPORT_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

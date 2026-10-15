@@ -15,7 +15,8 @@ import {
 } from "recharts";
 import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
@@ -54,11 +55,12 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
         ))}
       </SectionCard>
       {open && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          onClose={() => setOpen(null)}
           title={open.stock.name}
-          description={`#${open.index + 1}${open.stock.ticker !== "OTHER" ? ` · ${open.stock.ticker}` : ""}`}
+          subtitle={`#${open.index + 1}${open.stock.ticker !== "OTHER" ? ` · ${open.stock.ticker}` : ""}`}
           items={[
             { label: "Sector", value: open.stock.sector },
             { label: "Country", value: open.stock.country || "—" },

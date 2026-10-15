@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
@@ -16,7 +11,6 @@ import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 import { parseAmount } from "@/lib/parse-amount";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
 import { Field, FieldGroup } from "@/components/ui/field";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 import { InfoTip } from "@/components/ui/info-tip";
 
 type DateFormatUi = "auto" | DateFormatOverride;
@@ -313,10 +307,12 @@ export function ColumnMappingDialog({
   const noColumns = localHeaders.length === 0 && !redetecting;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogHeading help={<>{confirmMode ? (
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="3xl"
+      title={confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}
+      info={<>{confirmMode ? (
               <>
                 We detected a column mapping for{" "}
                 <span className="font-mono text-xs">{fileName}</span>. Review it
@@ -328,11 +324,18 @@ export function ColumnMappingDialog({
                 <span className="font-mono text-xs">{fileName}</span>.
                 Tell us which column is which — we&apos;ll remember the mapping for next time.
               </>
-            )}</>}>
-            {confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}
-          </DialogHeading>
-        </DialogHeader>
-
+            )}</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: submitting },
+        { label: submitting
+              ? "Preparing preview..."
+              : redetecting
+                ? "Re-reading…"
+                : confirmMode
+                  ? "Import with this mapping"
+                  : "Continue", kind: "primary", onClick: handleConfirm, disabled: submitting || redetecting || noColumns },
+      ]}
+    >
         <div className="overflow-auto flex-1 space-y-4 pr-1">
           {localSuggested && (
             <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info/10 p-2.5">
@@ -552,22 +555,6 @@ export function ColumnMappingDialog({
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={submitting || redetecting || noColumns}>
-            {submitting
-              ? "Preparing preview..."
-              : redetecting
-                ? "Re-reading…"
-                : confirmMode
-                  ? "Import with this mapping"
-                  : "Continue"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

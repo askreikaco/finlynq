@@ -12,10 +12,8 @@ import { localDateISO } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
-import {
-  MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ListRow, type ProgressTone,
-  useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, type DetailItem,
-} from "@/components/mobile";
+import { MetricGrid, SectionCard, ListRow, type ProgressTone, useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, CardLayoutEditor } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
 import { GOAL_FILTER_KEYS, GOAL_SORTS } from "@/lib/toolbar/list-configs";
@@ -233,11 +231,11 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
       </ListDetailLayout>
 
-      <DetailSheet
+      <Overlay
         open={detail !== null}
-        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+        onClose={() => setDetailId(null)}
         title={detail?.name ?? "Goal"}
-        description={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
+        subtitle={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
         items={detail ? goalDetailItems(detail, displayCurrency) : []}
       >
         {detail && (
@@ -269,13 +267,13 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
             </Button>
           </>
         )}
-      </DetailSheet>
+      </Overlay>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize goals"
-        description="Show, hide and reorder the cards on your goals page."
+        info="Show, hide and reorder the cards on your goals page."
         cards={GOAL_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

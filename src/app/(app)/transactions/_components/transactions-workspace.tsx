@@ -6,11 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ErrorState } from "@/components/error-state";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine, Plus, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
@@ -1024,113 +1025,88 @@ export function TransactionsWorkspace({
       </ListDetailLayout>
 
       {/* Single delete confirmation dialog */}
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => {
-        if (!open && !deleting) {
+      <Overlay
+        variant="confirm"
+        open={deleteConfirmId !== null}
+        onClose={() => {
           setDeleteConfirmId(null);
           setDeleteBlockedError(null);
           setReallocPreview(null);
+        }}
+        title="Delete Transaction"
+        message={
+          deleteBlockedError ? undefined : (
+            <>Are you sure you want to delete <strong>{deleteConfirmPayee}</strong>? This cannot be undone.</>
+          )
         }
-      }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete Transaction
-            </DialogTitle>
-          </DialogHeader>
-          {deleteError && (
-            <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
-          )}
-          {deleteBlockedError ? (
-            <div className="space-y-3">
-              <p className="text-sm text-warning">
-                This transaction opened a lot that has since been sold or
-                transferred out. You can still delete it — the dependent
-                transactions below will be re-matched to your other lots.
-              </p>
-              {/* FINLYNQ-176 — reallocation preview (affected years + shorts). */}
-              <LotReallocationNotice preview={reallocPreview} loading={reallocLoading} />
-              {deleteBlockedError.blockingIds.length > 0 && (
-                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
-                  <p className="font-medium mb-1.5">Dependent rows:</p>
-                  <ul className="space-y-1">
-                    {deleteBlockedError.blockingIds.map((id) => (
-                      <li key={id}>
-                        <Link
-                          href={buildTxDrillUrl({ id: String(id) })}
-                          className="text-primary underline hover:no-underline"
-                          onClick={() => {
-                            setDeleteConfirmId(null);
-                            setDeleteBlockedError(null);
-                            setReallocPreview(null);
-                          }}
-                        >
-                          Transaction #{id}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={deleting}
-                  onClick={() => {
-                    setDeleteConfirmId(null);
-                    setDeleteBlockedError(null);
-                    setReallocPreview(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  disabled={deleting || reallocLoading}
-                  onClick={handleReallocateDelete}
-                >
-                  {deleting ? "Deleting…" : "Reallocate & delete"}
-                </Button>
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={handleDelete}
+        actions={
+          deleteBlockedError
+            ? [
+                { label: "Cancel", disabled: deleting },
+                {
+                  label: "Reallocate & delete",
+                  kind: "destructive",
+                  busy: deleting,
+                  busyLabel: "Deleting…",
+                  disabled: reallocLoading,
+                  onClick: handleReallocateDelete,
+                },
+              ]
+            : undefined
+        }
+      >
+        {deleteError && (
+          <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
+        )}
+        {deleteBlockedError && (
+          <div className="space-y-3">
+            <p className="text-sm text-warning">
+              This transaction opened a lot that has since been sold or
+              transferred out. You can still delete it — the dependent
+              transactions below will be re-matched to your other lots.
+            </p>
+            {/* FINLYNQ-176 — reallocation preview (affected years + shorts). */}
+            <LotReallocationNotice preview={reallocPreview} loading={reallocLoading} />
+            {deleteBlockedError.blockingIds.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
+                <p className="font-medium mb-1.5">Dependent rows:</p>
+                <ul className="space-y-1">
+                  {deleteBlockedError.blockingIds.map((id) => (
+                    <li key={id}>
+                      <Link
+                        href={buildTxDrillUrl({ id: String(id) })}
+                        className="text-primary underline hover:no-underline"
+                        onClick={() => {
+                          setDeleteConfirmId(null);
+                          setDeleteBlockedError(null);
+                          setReallocPreview(null);
+                        }}
+                      >
+                        Transaction #{id}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete <strong>{deleteConfirmPayee}</strong>? This cannot be undone.
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-                <Button variant="destructive" className="flex-1" disabled={deleting} onClick={handleDelete}>
-                  {deleting ? "Deleting…" : "Delete"}
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </div>
+        )}
+      </Overlay>
 
       {/* Bulk delete confirmation dialog */}
-      <Dialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open) setBulkDeleteConfirm(false); }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete {selected.size} Transactions
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.
-          </p>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setBulkDeleteConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1" disabled={bulkProcessing} onClick={confirmBulkDelete}>
-              {bulkProcessing ? "Deleting…" : `Delete ${selected.size}`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        open={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        title={`Delete ${selected.size} Transactions`}
+        message={<>This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.</>}
+        confirmLabel={`Delete ${selected.size}`}
+        busy={bulkProcessing}
+        onConfirm={confirmBulkDelete}
+      />
 
     </div>
   );

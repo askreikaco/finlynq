@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -61,15 +61,13 @@ export function ChangeSectionsDialog({ share, lockedSections = [], onClose, onSa
 
   return (
     <>
-      <Dialog open={!stepUp.open} onOpenChange={(open) => !open && !busy && onClose()}>
-        <DialogContent className="regular:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{FAMILY_STRINGS.update_sections_dialog_title}</DialogTitle>
-            <DialogDescription>
-              {fill(FAMILY_STRINGS.update_sections_dialog_description, { name: counterpartyLabel(share) })}
-            </DialogDescription>
-          </DialogHeader>
-
+      <Overlay
+        open={!stepUp.open}
+        onClose={() => !busy && onClose()}
+        size="md"
+        title={FAMILY_STRINGS.update_sections_dialog_title}
+        info={<>{fill(FAMILY_STRINGS.update_sections_dialog_description, { name: counterpartyLabel(share) })}</>}
+      >
           <form onSubmit={save} className="space-y-5" noValidate>
             <SectionChecklist
               legend={FAMILY_STRINGS.invite_dialog_sections_label}
@@ -109,8 +107,7 @@ export function ChangeSectionsDialog({ share, lockedSections = [], onClose, onSa
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </Overlay>
       {stepUp.dialog}
     </>
   );

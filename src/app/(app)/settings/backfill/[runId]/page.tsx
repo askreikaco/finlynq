@@ -22,7 +22,7 @@ import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Field } from "@/components/ui/field";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui/overlay";
 
 // MUST stay in sync with the CHECK constraint on
 // backfill_proposals.chosen_kind (migration 20260609), with OverrideKind
@@ -371,14 +371,16 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
         </SectionCard>
       )}
 
-      {/* Proposal detail: a bottom sheet at every width (the list above is the one column). */}
-      <Sheet open={detailOpen && selected != null} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle className="sr-only">Proposal detail</SheetTitle>
-          </SheetHeader>
+      {/* Proposal detail (the list above is the one column). */}
+      <Overlay
+        variant="detail"
+        open={detailOpen && selected != null}
+        onClose={() => setDetailOpen(false)}
+        size="xl"
+        title="Proposal detail"
+      >
           {selected && (
-            <div className="px-4 pb-6">
+            <div className="pb-2">
               <ProposalDetail
                 runId={runId}
                 proposal={selected}
@@ -405,8 +407,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               />
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+      </Overlay>
     </SectionPage>
   );
 }

@@ -25,7 +25,7 @@ import {
   Wallet,
   FolderCog,
 } from "lucide-react";
-import { CustomizeCardsSheet, AccountRow, ListDetailLayout, useListDetail, metricGridClass, useCardLayout, usePageCustomize, type TopBarPrimary } from "@/components/mobile";
+import { AccountRow, ListDetailLayout, useListDetail, metricGridClass, useCardLayout, usePageCustomize, type TopBarPrimary, CardLayoutEditor, Amount, ListRow } from "@/components/mobile";
 import { AccountFormPanel } from "./_components/account-form-panel";
 import { AccountDetail } from "./_components/account-detail";
 import { SectionPage } from "@/components/templates/section-page";
@@ -457,11 +457,11 @@ function AccountsPage() {
       })()}
       </ListDetailLayout>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize accounts"
-        description="Show, hide and reorder the cards on your accounts page."
+        info="Show, hide and reorder the cards on your accounts page."
         cards={ACCOUNT_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

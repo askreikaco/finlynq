@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { getMonthLabel } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
@@ -234,11 +234,12 @@ export function CategoryBudgetForm({
         </div>
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmDelete}
-        onOpenChange={setConfirmDelete}
+        onClose={() => setConfirmDelete(false)}
         title="Delete category"
-        description={<>Delete <strong>{category?.name}</strong>? Categories in use can&apos;t be deleted.</>}
+        message={<>Delete <strong>{category?.name}</strong>? Categories in use can&apos;t be deleted.</>}
         confirmLabel="Delete"
         busy={submitting}
         onConfirm={handleDelete}

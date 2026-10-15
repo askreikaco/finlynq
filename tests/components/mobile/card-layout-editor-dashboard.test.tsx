@@ -4,24 +4,36 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
-import { CustomizeDashboardSheet } from "@/components/mobile";
+import { CardLayoutEditor } from "@/components/mobile";
 import { DASHBOARD_CARDS, DEFAULT_CARD_ORDER, defaultLayout } from "@/lib/dashboard-layout";
 
 afterEach(cleanup);
 
 const titles = (el: HTMLElement) => within(el).getAllByRole("listitem").map((li) => li.getAttribute("data-card-id"));
 
-function setup(over: Partial<React.ComponentProps<typeof CustomizeDashboardSheet>> = {}) {
+/** The dashboard passes its cards (dev-only ones filtered out) straight to the shared editor. */
+type SetupProps = Partial<React.ComponentProps<typeof CardLayoutEditor>> & { availableIds?: readonly string[] };
+
+function setup({ availableIds, ...over }: SetupProps = {}) {
   const onSave = vi.fn(async () => {});
   const onReset = vi.fn(async () => {});
   const onOpenChange = vi.fn();
   render(
-    <CustomizeDashboardSheet open onOpenChange={onOpenChange} layout={defaultLayout()} onSave={onSave} onReset={onReset} {...over} />,
+    <CardLayoutEditor
+      open
+      onClose={() => onOpenChange(false)}
+      title="Customize home"
+      cards={DASHBOARD_CARDS.filter((c) => !availableIds || availableIds.includes(c.id))}
+      layout={defaultLayout()}
+      onSave={onSave}
+      onReset={onReset}
+      {...over}
+    />,
   );
   return { onSave, onReset, onOpenChange, list: () => screen.getByRole("dialog").querySelector("[data-slot=customize-list]") as HTMLElement };
 }
 
-describe("CustomizeDashboardSheet", () => {
+describe("CardLayoutEditor with the dashboard cards", () => {
   it("lists every card (switch on = visible) with 44px up/down buttons", () => {
     const { list } = setup({ layout: { order: [...DEFAULT_CARD_ORDER], hidden: ["insights"] } });
     expect(titles(list())).toEqual([...DEFAULT_CARD_ORDER]);

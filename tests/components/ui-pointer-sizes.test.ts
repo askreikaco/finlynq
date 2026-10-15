@@ -82,16 +82,16 @@ describe("ui primitives: no width-based token anywhere in src/components/ui", ()
     expect(offenders).toEqual([]);
   });
 
-  it("consumer regular:max-w-2xl replaces the DialogContent base regular:max-w-lg under cn()", () => {
-    const base = read("src/components/ui/dialog.tsx").match(/"([^"]*regular:max-w-lg[^"]*)"/)?.[1] ?? "";
+  it("a larger Overlay size replaces the base regular:max-w-lg under cn()", () => {
+    const base = read("src/components/ui/overlay.tsx").match(/"([^"]*regular:max-w-lg[^"]*)"/)?.[1] ?? "";
     expect(base).not.toBe("");
     const merged = cls(cn(base, "regular:max-w-2xl"));
     expect(merged).toContain("regular:max-w-2xl");
     expect(merged).not.toContain("regular:max-w-lg");
   });
 
-  it("consumer regular:justify-between replaces the DialogFooter base regular:justify-end under cn()", () => {
-    const base = read("src/components/ui/dialog.tsx").match(/"([^"]*regular:justify-end[^"]*)"/)?.[1] ?? "";
+  it("Overlay footerClassName regular:justify-between replaces the base regular:justify-end under cn()", () => {
+    const base = read("src/components/ui/overlay.tsx").match(/"([^"]*regular:justify-end[^"]*)"/)?.[1] ?? "";
     expect(base).not.toBe("");
     const merged = cls(cn(base, "regular:justify-between"));
     expect(merged).toContain("regular:justify-between");

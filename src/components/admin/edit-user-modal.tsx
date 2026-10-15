@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 
 interface AdminUser {
   id: string;
@@ -116,12 +110,17 @@ export function EditUserModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogHeading help={<>Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.</>}>Edit User</DialogHeading>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="md"
+      title="Edit User"
+      info={<>Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.</>}
+      actions={[
+        { label: "Cancel", type: "button", onClick: () => onOpenChange(false), disabled: loading },
+        { label: loading ? "Saving..." : "Save Changes", kind: "primary", type: "button", onClick: () => handleSubmit(), disabled: loading },
+      ]}
+    >
         <div className="space-y-4">
           {error && (
             <div
@@ -235,21 +234,6 @@ export function EditUserModal({
             />
           )}
         </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => handleSubmit()} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

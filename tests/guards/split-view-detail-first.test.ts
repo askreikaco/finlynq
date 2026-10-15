@@ -44,9 +44,9 @@ describe.each(ENTITIES)("split view detail first: $name", (e) => {
     expect(src).toContain("<DetailList");
   });
 
-  it("only the list page opens the phone DetailSheet (phones keep the sheet; the pane never does)", () => {
-    expect(code(read(detailFile))).not.toMatch(/<DetailSheet\b/);
-    expect(code(read(`${APP}/${e.dir}/page.tsx`))).toMatch(/<DetailSheet\b/);
+  it("only the list page opens the phone detail Overlay (phones keep the sheet; the pane never does)", () => {
+    expect(code(read(detailFile))).not.toMatch(/<Overlay\b/);
+    expect(code(read(`${APP}/${e.dir}/page.tsx`))).toMatch(/<Overlay\b/);
   });
 });
 

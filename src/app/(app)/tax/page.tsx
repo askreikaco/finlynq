@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
-import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
@@ -174,11 +175,12 @@ function TaxPageContent() {
       </div>
 
       {advice && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setOpenAdvice(null); }}
+          onClose={() => setOpenAdvice(null)}
           title={advice.holding}
-          description={`${advice.symbol} · asset location`}
+          subtitle={`${advice.symbol} · asset location`}
           items={[
             { label: "Currently in", value: advice.currentAccount },
             { label: "Recommended account", value: advice.recommendedAccountType },

@@ -1,15 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { DialogHeading } from "@/components/ui/dialog-heading";
+import { Overlay } from "@/components/ui/overlay";
 
 export interface MappingDialogState {
   accountAutoCreateByDefault: boolean;
@@ -59,13 +53,18 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-3xl max-h-[85dvh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogHeading help={<>Every WealthPosition account and category needs a Finlynq counterpart. By default,
-            missing ones will be auto-created for you — you can override any mapping below.</>}>Map WealthPosition to Finlynq</DialogHeading>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="2xl"
+      title="Map WealthPosition to Finlynq"
+      info={<>Every WealthPosition account and category needs a Finlynq counterpart. By default,
+            missing ones will be auto-created for you — you can override any mapping below.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false) },
+        { label: "Preview sync", kind: "primary", onClick: () => onConfirm(s) },
+      ]}
+    >
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Defaults */}
           <div className="space-y-3 rounded-md border p-3 bg-muted/30">
@@ -223,14 +222,6 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => onConfirm(s)}>Preview sync</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

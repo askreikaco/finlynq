@@ -5,8 +5,6 @@ import { describe, it, expect, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Field } from "@/components/ui/field";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DialogHeading } from "@/components/ui/dialog-heading";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 afterEach(() => cleanup());
@@ -36,23 +34,6 @@ describe("Field info", () => {
     expect(screen.queryByText(/Total payments/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "About times" }));
     expect(await screen.findByText("Total payments, including this one")).toBeTruthy();
-  });
-});
-
-describe("DialogHeading", () => {
-  it("titles the dialog, tips the help and keeps an sr-only description", async () => {
-    render(
-      <Dialog open>
-        <DialogContent>
-          <DialogHeading help="Map your columns to transaction fields.">Map columns</DialogHeading>
-        </DialogContent>
-      </Dialog>,
-    );
-    expect(screen.getByText("Map columns")).toBeTruthy();
-    const sr = document.querySelector('[data-slot="dialog-description"]');
-    expect(sr?.className).toContain("sr-only");
-    fireEvent.click(screen.getByRole("button", { name: "About this dialog" }));
-    expect((await screen.findAllByText("Map your columns to transaction fields.")).length).toBeGreaterThan(0);
   });
 });
 

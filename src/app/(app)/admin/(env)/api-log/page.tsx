@@ -15,9 +15,9 @@ import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AlertTriangle, Database, RefreshCw, Trash2 } from "lucide-react";
 import { MetricGrid } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 
 interface OutboundCall {
   id: number;
@@ -260,11 +260,12 @@ export default function AdminApiLogPage() {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={clearOpen}
-        onOpenChange={(o) => { if (!o) setClearOpen(false); }}
+        onClose={() => { setClearOpen(false); }}
         title="Clear API log"
-        description="Clear the in-memory outbound-API log? This just resets the diagnostic buffer — it doesn't affect any cache or data."
+        message="Clear the in-memory outbound-API log? This just resets the diagnostic buffer — it doesn't affect any cache or data."
         confirmLabel="Clear log"
         busyLabel="Clearing…"
         busy={clearing}

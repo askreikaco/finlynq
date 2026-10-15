@@ -2,13 +2,11 @@
 
 /**
  * Shared controls for the portfolio report pages (realized gains, dividend income).
- * Chip groups are the filter UI on both breakpoints: inline on md+, inside a bottom
- * ReportFilterSheet below md (opened from the header Filters button).
+ * Chip groups are the filter UI on both breakpoints.
  */
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
@@ -53,30 +51,6 @@ export function ChipGroup<T extends string>({
         ))}
       </div>
     </div>
-  );
-}
-
-/** Bottom sheet holding the report's filter fields below md. */
-export function ReportFilterSheet({
-  open,
-  onOpenChange,
-  title,
-  children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl">
-        <SheetHeader>
-          <SheetTitle className="text-lg font-bold">{title}</SheetTitle>
-        </SheetHeader>
-        <div className="flex flex-col gap-5 px-4 pb-6">{children}</div>
-      </SheetContent>
-    </Sheet>
   );
 }
 

@@ -245,7 +245,7 @@ describe("Transactions: static guards for the one-layout rule", () => {
   it("the old table file is gone; the list and the sheet are the only row components", () => {
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
     expect(read(LIST)).toContain("<SectionCard");
-    expect(read(SHEET)).toContain("<DetailSheet");
+    expect(read(SHEET)).toContain('variant="detail"');
   });
 
   it("the list, the sheet and the workspace carry no breakpoint tokens", () => {

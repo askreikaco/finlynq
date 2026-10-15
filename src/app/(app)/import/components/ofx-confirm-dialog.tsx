@@ -19,15 +19,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -113,18 +105,21 @@ export function OfxConfirmDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Confirm import — {format.toUpperCase()} statement</DialogTitle>
-          <DialogDescription>
-            Here&apos;s how{" "}
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="3xl"
+      title={<>Confirm import — {format.toUpperCase()} statement</>}
+      info={<>Here&apos;s how{" "}
             <span className="font-mono text-xs">{fileName}</span> will be added to{" "}
             <span className="font-medium text-foreground">{account}</span>. Pick
-            which field becomes the Payee, then import.
-          </DialogDescription>
-        </DialogHeader>
-
+            which field becomes the Payee, then import.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: submitting },
+        { label: submitting ? "Importing…" : "Import statement", kind: "primary", onClick: () =>
+              onConfirm({ payeeSource, dontAskAgain: futureMode === "auto" }), disabled: submitting },
+      ]}
+    >
         <div className="overflow-auto flex-1 space-y-4 pr-1">
           {/* Statement snapshot */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
@@ -196,21 +191,6 @@ export function OfxConfirmDialog({
             ]}
           />
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() =>
-              onConfirm({ payeeSource, dontAskAgain: futureMode === "auto" })
-            }
-            disabled={submitting}
-          >
-            {submitting ? "Importing…" : "Import statement"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { getSessionInfo } from "@/lib/data/session-info";
 import { countUnsyncedWrites } from "@/lib/data/local-write-queue";
 import {
@@ -165,11 +165,12 @@ export function PasskeyUnlockCard() {
           </p>
         )}
       </CardContent>
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmCount !== null}
-        onOpenChange={(o) => !o && setConfirmCount(null)}
+        onClose={() => setConfirmCount(null)}
         title="Turn off passkey unlock"
-        description={`${confirmCount ?? 0} unsynced ${confirmCount === 1 ? "change is" : "changes are"} waiting on this device. Turning off passkey unlock needs your confirmation; it does not delete them.`}
+        message={`${confirmCount ?? 0} unsynced ${confirmCount === 1 ? "change is" : "changes are"} waiting on this device. Turning off passkey unlock needs your confirmation; it does not delete them.`}
         confirmLabel="Turn off"
         onConfirm={() => {
           const n = confirmCount ?? 0;
@@ -177,11 +178,12 @@ export function PasskeyUnlockCard() {
           void run(() => disablePasskeyUnlock(userId, { unsyncedCount: n, confirmed: true }));
         }}
       />
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={forgetCount !== null}
-        onOpenChange={(o) => !o && setForgetCount(null)}
+        onClose={() => setForgetCount(null)}
         title="Forget passkey and discard offline copies"
-        description={`${forgetCount ?? 0} unsynced ${forgetCount === 1 ? "change" : "changes"} on this device will be discarded, and the offline copy is deleted. Use this only if you have lost the passkey. Everything already synced stays on the server.`}
+        message={`${forgetCount ?? 0} unsynced ${forgetCount === 1 ? "change" : "changes"} on this device will be discarded, and the offline copy is deleted. Use this only if you have lost the passkey. Everything already synced stays on the server.`}
         confirmLabel="Discard"
         onConfirm={() => {
           setForgetCount(null);

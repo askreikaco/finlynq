@@ -6,7 +6,7 @@ import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { PageHeader } from "@/components/mobile/page-header";
-import { CustomizeCardsSheet } from "@/components/mobile/customize-cards-sheet";
+import { CardLayoutEditor } from "@/components/mobile/card-layout-editor";
 import { useCardLayout } from "@/components/mobile/use-card-layout";
 import { usePageCustomize } from "@/components/mobile/page-customize";
 import type { PageCard } from "@/lib/card-layout";
@@ -60,14 +60,14 @@ function CardsPage() {
       {shown.map((id) => (
         <section key={id} data-testid={`card-${id}`}>{id}</section>
       ))}
-      <CustomizeCardsSheet open={open} onOpenChange={setOpen} cards={CARDS} layout={layout} onSave={save} onReset={reset} />
+      <CardLayoutEditor open={open} onClose={() => setOpen(false)} cards={CARDS} layout={layout} onSave={save} onReset={reset} />
     </div>
   );
 }
 
 const renderedIds = () => Array.from(document.querySelectorAll("[data-testid^='card-']")).map((el) => el.getAttribute("data-testid")!.slice(5));
 
-describe("useCardLayout + CustomizeCardsSheet + header Customize", () => {
+describe("useCardLayout + CardLayoutEditor + header Customize", () => {
   it("renders the default layout (defaultVisible:false cards hidden) and the Customize button", async () => {
     render(<CardsPage />);
     await waitFor(() => expect(renderedIds()).toEqual(["hero", "list"]));

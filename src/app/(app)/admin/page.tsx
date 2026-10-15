@@ -16,7 +16,8 @@ import {
 import { formatDateTimeLocal } from "@/lib/currency";
 import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { Pagination } from "@/components/ui/pagination";
-import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { MetricRangeSelect } from "@/components/metric-range-select";
@@ -780,11 +781,12 @@ export default function AdminPage() {
       </motion.div>
 
       {detailUser && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailUserId(null); }}
+          onClose={() => setDetailUserId(null)}
           title={detailUser.displayName || detailUser.username || detailUser.email || "User"}
-          description={detailUser.username ?? detailUser.email ?? undefined}
+          subtitle={detailUser.username ?? detailUser.email ?? undefined}
           items={[
             { label: "Role", value: detailUser.role === "admin" ? "Admin" : "User" },
             { label: "Plan", value: (detailUser.plan ?? "free").charAt(0).toUpperCase() + (detailUser.plan ?? "free").slice(1) },
@@ -816,15 +818,16 @@ export default function AdminPage() {
               { value: "premium", label: "Premium" },
             ]}
           />
-        </DetailSheet>
+        </Overlay>
       )}
 
       {detailGrant && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailGrantId(null); }}
+          onClose={() => setDetailGrantId(null)}
           title={detailGrant.clientName}
-          description={<span className="font-mono text-xs">{detailGrant.clientId}</span>}
+          subtitle={<span className="font-mono text-xs">{detailGrant.clientId}</span>}
           items={[
             { label: "User", value: detailGrant.userLabel },
             { label: "Scope", value: <span className="font-mono text-xs">{detailGrant.scope}</span> },
@@ -845,7 +848,7 @@ export default function AdminPage() {
           >
             {revokingGrant === detailGrant.id ? "Revoking…" : "Revoke grant"}
           </Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
       {editingUser && editModalOpen && (

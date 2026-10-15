@@ -8,15 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { X, Paperclip } from "lucide-react";
@@ -146,21 +138,23 @@ export function FeedbackDialog({
   };
 
   return (
-    <Dialog
+    <Overlay
       open={open}
-      onOpenChange={(v) => {
-        onOpenChange(v);
-        if (!v) reset();
+      onClose={() => {
+        onOpenChange(false);
+        reset();
       }}
+      title="Send feedback"
+      info="No sensitive financial details, please."
+      actions={
+        done
+          ? [{ label: "Close" }]
+          : [
+              { label: "Cancel" },
+              { label: submitting ? "Sending…" : "Send feedback", kind: "primary", onClick: submit, disabled: submitting || !message.trim() },
+            ]
+      }
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Send feedback</DialogTitle>
-          <DialogDescription>
-            No sensitive financial details, please.
-          </DialogDescription>
-        </DialogHeader>
-
         {done ? (
           <div className="py-4 text-sm text-muted-foreground">
             Thanks! Your feedback has been sent.
@@ -288,20 +282,6 @@ export function FeedbackDialog({
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
         )}
-
-        <DialogFooter>
-          {done ? (
-            <DialogClose render={<Button variant="outline" />}>Close</DialogClose>
-          ) : (
-            <>
-              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-              <Button onClick={submit} disabled={submitting || !message.trim()}>
-                {submitting ? "Sending…" : "Send feedback"}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

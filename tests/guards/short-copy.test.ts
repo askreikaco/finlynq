@@ -5,7 +5,7 @@ import { join, resolve, relative } from "path";
 /**
  * Short-copy guard: visible copy is a label, a value/input and at most a very short hint. Explanations, field
  * descriptions and helper paragraphs live in the shared (i) InfoTip (src/components/ui/info-tip.tsx), reached through
- * `Field info` (field help), `DialogHeading` (dialog help), `CardTitle info` (card help),
+ * `Field info` (field help), `Overlay info` (dialog / sheet help), `CardTitle info` (card help),
  * `SectionPage info` / `PageHeader info` (page help) or a bare `<InfoTip>`.
  *
  * Source-level and pragmatic (same approach as tests/settings-no-descriptions.test.ts, which covers settings).
@@ -65,30 +65,12 @@ const FORM_FILES = [
 ].map((f) => join(ROOT, f));
 
 /**
- * Files that may still render a visible Dialog/Sheet/Card description. Each entry says why.
+ * Files that may still render a visible Card description (Overlay has no description element: its `info` is an (i) tip). Each entry says why.
  * New entries need a reason a reviewer would accept (destructive confirm, record data, short warning).
  */
 const DESCRIPTION_ALLOWLIST: Record<string, string> = {
-  "src/components/ui/dialog-heading.tsx": "the sr-only description behind the (i) tip",
-  "src/components/mobile/customize-cards-sheet.tsx": "sr-only; the text is in the (i) tip",
-  "src/components/mobile/detail-sheet.tsx": "record data (type / date / account), not help text",
-  "src/components/feedback-dialog.tsx": "one-line privacy warning",
-  "src/app/(app)/feedback/page.tsx": "one-line privacy warning",
-  "src/app/(app)/admin/feedback/page.tsx": "record data (who sent it)",
-  "src/app/(app)/admin/inbox/page.tsx": "record data (counterparty)",
   "src/app/(app)/transactions/audit/page.tsx": "record data (recorded amount and account currency)",
   "src/app/(app)/reports/page.tsx": "data lines (group counts and totals)",
-  "src/app/(app)/dev/gallery/page.tsx": "component gallery showing the primitives",
-  "src/app/(app)/settings/general/page.tsx": "confirmation of a long-running change",
-  "src/app/(app)/family/_components/invite-dialog.tsx": "one short line",
-  "src/app/(app)/family/_components/step-up-dialog.tsx": "re-authentication prompt that must be read",
-  "src/app/(app)/family/_components/revoke-dialog.tsx": "destructive confirmation",
-  "src/app/(app)/family/_components/change-sections-dialog.tsx": "names the member whose access changes",
-  "src/app/(app)/import/components/investment-statement-preview.tsx": "row / account counts (data)",
-  "src/app/(app)/import/components/ofx-confirm-dialog.tsx": "names the file and account (data)",
-  "src/app/(app)/import/components/csv-mapper-dialog.tsx": "names the file (data)",
-  "src/app/(app)/import/components/pdf-preview.tsx": "row count (data)",
-  "src/app/(app)/import/pending/_components/reconcile-header.tsx": "reconciliation outcome that must be read",
 };
 
 describe("short copy: help text lives in (i) tips", () => {
@@ -98,7 +80,7 @@ describe("short copy: help text lives in (i) tips", () => {
     expect(missing).toEqual([]);
   });
 
-  it("has no unmarked muted <p> in form / panel files (use Field info, DialogHeading, CardTitle info)", () => {
+  it("has no unmarked muted <p> in form / panel files (use Field info, Overlay info, CardTitle info)", () => {
     const bad: string[] = [];
     for (const f of FORM_FILES) {
       const src = read(f);
@@ -125,6 +107,13 @@ describe("short copy: help text lives in (i) tips", () => {
       }
     }
     expect(bad).toEqual([]);
+  });
+
+  it("the Overlay has no visible description: explanations go through its info tip, with an sr-only copy", () => {
+    const src = read(join(ROOT, "src/components/ui/overlay.tsx"));
+    expect(src).toContain("InfoTip");
+    for (const m of src.matchAll(/<DialogPrimitive\.Description\b[^>]*>/g)) expect(m[0]).toContain("sr-only");
+    expect(src).not.toMatch(/<(DialogDescription|SheetDescription)\b/);
   });
 
   it("keeps the allow-list honest (every entry still renders a description)", () => {
