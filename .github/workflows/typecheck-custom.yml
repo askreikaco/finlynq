@@ -1,6 +1,7 @@
 name: Typecheck (custom)
 
-# Required check for PRs into custom. The Docker build skips the Next.js type
+# Required check for PRs into custom. Runs on every PR (no paths-ignore): a required check
+# that is skipped by a path filter never reports and would block docs-only PRs. The Docker build skips the Next.js type
 # check (SKIP_NEXT_TYPECHECK=1) so deploys take seconds less; this is the gate.
 # Runner: set repo variable TYPECHECK_RUNNER (e.g. the owner PC runner label)
 # to move it off GitHub-hosted runners.
@@ -8,10 +9,6 @@ name: Typecheck (custom)
 on:
   pull_request:
     branches: [custom]
-    paths-ignore:
-      - 'mobile/**'
-      - 'docs/**'
-      - '**/*.md'
   workflow_dispatch:
 
 concurrency:
