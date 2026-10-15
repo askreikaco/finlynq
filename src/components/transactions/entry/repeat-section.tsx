@@ -176,7 +176,7 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
             <Field
               control="segmented"
               fill
-              aria-label="Series type"
+              label="Series type"
               data-testid="repeat-tabs"
               value={tab}
               onValueChange={(v) => setTab(v as Tab)}
@@ -210,7 +210,7 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
                 <Field
                   control="segmented"
                   fill
-                  aria-label="Repeat end"
+                  label="Repeat end"
                   value={endType}
                   onValueChange={(v) => pickEndType(v as EndType)}
                   options={END_OPTIONS}
@@ -256,7 +256,7 @@ export function RepeatSection({ startDate, amount, currency, disabled, disabledT
                 <Field
                   control="segmented"
                   fill
-                  aria-label="Amount mode"
+                  label="Amount mode"
                   data-testid="installment-mode"
                   value={mode}
                   onValueChange={(v) => setMode(v as InstallmentMode)}

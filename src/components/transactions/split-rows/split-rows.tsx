@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Split, StickyNote } from "lucide-react";
+import { Split } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { currencyDecimals, formatCurrency } from "@/lib/currency";
@@ -479,8 +479,6 @@ export function SplitRows({
           <Field
             id={noteId}
             label={entry ? `Split ${num} note` : "Note"}
-            hideLabel={entry}
-            icon={entry ? StickyNote : undefined}
             aria-label={`Split ${num} note`}
             data-testid={`split-note-${num}`}
             placeholder="Note (optional)"
