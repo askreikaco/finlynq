@@ -94,12 +94,6 @@ export interface PageHeaderProps {
 export const PHONE_BAR =
   "glass-bar sticky top-[var(--sat,0px)] z-30 page-header-bleed grid min-h-[var(--phone-header-h)] shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] gap-x-2 items-center";
 
-/**
- * Legacy marker class, kept only because list-detail-layout.tsx (ListDetailNewButton, no remaining caller) still imports it.
- * The bar's primary is the typed `primary` prop; nothing styles this class any more. Delete with ListDetailNewButton.
- */
-export const PHONE_PRIMARY_CLASS = "phone-icon-action";
-
 function PrimaryAction({ primary }: { primary: TopBarPrimary }) {
   const Icon = primary.kind === "save" ? Check : primary.kind === "edit" ? Pencil : Plus;
   const busy = primary.kind === "save" && primary.busy === true;

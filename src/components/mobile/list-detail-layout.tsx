@@ -11,7 +11,7 @@
  * Below wide (phones, portrait tablets): no pane, `list` only; a row tap keeps opening the sheet / edit route as before and ?sel is ignored.
  *
  * DETAIL FIRST (opt-in per page): pass `renderDetail(id, api)`. Then `?sel=<id>` shows the item's DETAIL page content in the pane
- * (the same embeddable component its /x/[id] route renders, `embedded`), under a pane header: title, Edit, close (X).
+ * (the same embeddable component its /x/[id] route renders, `embedded`), under a pane header: title, Open page, Close, Edit (round icon buttons, Edit yellow and rightmost like the top bar).
  * Edit sets `?mode=edit` and the pane shows the form (`renderForm`, or the older `pane`); Save / Cancel go back to the detail view.
  * `?sel=new` always shows the form. Without `renderDetail` the pane shows the form for `?sel=<id>` as before (fallback).
  *
@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { RoundIconButton } from "@/components/ui/round-icon-button";
 import { cn } from "@/lib/utils";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
-import { PHONE_PRIMARY_CLASS } from "./page-header";
 import { PANE_CLASS, SPLIT_GRID_CLASS, parseMode, parseSel, withMode, withSel, type ListSelection, type PaneMode } from "@/lib/list-detail/selection";
 
 export interface ListDetailApi {
@@ -91,51 +90,6 @@ export function useListDetail(): ListDetailApi {
     clear: () => go(null, true),
     replaceWith: (id) => go(id, true),
   };
-}
-
-/** The page's primary New action: sets ?sel=new in the split view, still navigates to `href` on phones. */
-export function ListDetailNewButton({
-  href,
-  label,
-  className,
-  size,
-  variant,
-  children,
-  primary = true,
-}: {
-  /** The page header's primary action (icon-only cell on phones). false: an ordinary in-page button. */
-  primary?: boolean;
-  href: string;
-  label: string;
-  /** Replaces the default "+ label" content (e.g. a label with a screen-reader-only tail). */
-  children?: React.ReactNode;
-  className?: string;
-  size?: React.ComponentProps<typeof Button>["size"];
-  variant?: React.ComponentProps<typeof Button>["variant"];
-}) {
-  const { split, selectNew } = useListDetail();
-  return (
-    <Button
-      className={cn(primary && PHONE_PRIMARY_CLASS, className)}
-      size={size}
-      variant={variant}
-      aria-label={label}
-      data-slot="list-detail-new"
-      render={<Link href={href} />}
-      onClick={(e: React.MouseEvent) => {
-        if (!split) return;
-        e.preventDefault();
-        selectNew();
-      }}
-    >
-      {children ?? (
-        <>
-          <Plus className="mr-1 h-4 w-4" />
-          {label}
-        </>
-      )}
-    </Button>
-  );
 }
 
 export function ListDetailEmptyPane({ newLabel, entity }: { newLabel: string; entity?: string }) {
@@ -246,21 +200,32 @@ export function ListDetailLayout({
         ) : showDetail && api.sel.kind === "item" ? (
           <PaneChromeContext.Provider value={chrome}>
             <div data-slot="list-detail-pane-header" className="flex items-center justify-between gap-2 pb-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold text-foreground">{title ?? detailTitle}</h2>
+              <h2 className="min-w-0 truncate text-base font-semibold text-foreground">{title ?? detailTitle}</h2>
+              <div className="flex shrink-0 items-center gap-2">
                 {detailHref ? (
-                  <Link href={detailHref(api.sel.id)} className="inline-flex items-center gap-1 text-xs text-primary underline">
-                    Open page <ExternalLink className="size-3" aria-hidden />
-                  </Link>
+                  <RoundIconButton
+                    aria-label="Open page"
+                    title="Open page"
+                    data-slot="list-detail-open"
+                    render={<Link href={detailHref(api.sel.id)} />}
+                  >
+                    <ExternalLink className="size-4" aria-hidden />
+                  </RoundIconButton>
                 ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <RoundIconButton aria-label="Edit" title="Edit" data-slot="list-detail-edit" onClick={() => api.edit()}>
-                  <Pencil className="size-4" />
-                </RoundIconButton>
                 <RoundIconButton aria-label="Close" title="Close" data-slot="list-detail-close" onClick={api.clear}>
                   <X className="size-4" />
                 </RoundIconButton>
+                {/* Same anatomy as the top bar: the yellow round primary (Edit on a detail) is rightmost. */}
+                <Button
+                  type="button"
+                  aria-label="Edit"
+                  title="Edit"
+                  data-slot="list-detail-edit"
+                  className="size-11 shrink-0 rounded-full p-0"
+                  onClick={() => api.edit()}
+                >
+                  <Pencil className="size-5" aria-hidden />
+                </Button>
               </div>
             </div>
             <React.Fragment key={`${api.sel.id}:${rev}`}>{renderDetail!(api.sel.id, paneApi)}</React.Fragment>

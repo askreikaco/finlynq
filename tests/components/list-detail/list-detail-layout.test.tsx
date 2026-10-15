@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/adaptive/size-class-context", () => ({ useAppSizeClass: () => H.size }));
 
 import * as fs from "node:fs";
-import { ListDetailLayout, ListDetailNewButton, usePaneTitle } from "@/components/mobile/list-detail-layout";
+import { ListDetailLayout, usePaneTitle } from "@/components/mobile/list-detail-layout";
 import { PANE_CLASS, SPLIT_GRID_CLASS, parseMode, parseSel, withMode, withSel } from "@/lib/list-detail/selection";
 
 beforeEach(() => {
@@ -171,23 +171,6 @@ describe("ListDetailLayout", () => {
   });
 });
 
-describe("ListDetailNewButton", () => {
-  it("wide: sets ?sel=new instead of navigating", () => {
-    render(<ListDetailNewButton href="/goals/new" label="Add Goal" />);
-    const ev = fireEvent.click(screen.getByRole("link", { name: "Add Goal" }));
-    expect(ev).toBe(false); // default prevented
-    expect(H.push).toHaveBeenCalledWith("/goals?sel=new", { scroll: false });
-  });
-  it("below wide: a plain link to the create route", () => {
-    H.size = "regular";
-    render(<ListDetailNewButton href="/goals/new" label="Add Goal" />);
-    const a = screen.getByRole("link", { name: "Add Goal" });
-    expect(a.getAttribute("href")).toBe("/goals/new");
-    expect(fireEvent.click(a)).toBe(true);
-    expect(H.push).not.toHaveBeenCalled();
-  });
-});
-
 describe("ListRow selected", () => {
   it("marks the open row (style + aria-current + data-selected) and leaves others alone", async () => {
     const { ListRow } = await import("@/components/mobile/list-row");
@@ -260,7 +243,7 @@ describe("ListDetailLayout detail-first pane", () => {
       </ListDetailLayout>,
     );
 
-  it("?sel=<id> shows the DETAIL (not the form), with the pane header: title, Open page link, Edit, Close", () => {
+  it("?sel=<id> shows the DETAIL (not the form), with the pane header: title, Open page link, Close, Edit", () => {
     H.search = "sel=7";
     renderDetailLayout();
     expect(screen.getByTestId("the-detail").getAttribute("data-id")).toBe("7");
