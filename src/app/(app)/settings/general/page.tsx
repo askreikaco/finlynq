@@ -13,16 +13,8 @@ import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Loader2, Monitor, Moon, Palette, Settings2, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -242,26 +234,16 @@ export default function GeneralSettingsPage() {
       </Card>
 
       {/* Confirm currency switch — re-derives every stored reporting amount. */}
-      <Dialog open={pendingCurrency != null} onOpenChange={(o) => { if (!o) setPendingCurrency(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Switch display currency to {pendingCurrency}?</DialogTitle>
-            <DialogDescription>
-              {/* The explicit {" "} is required: JSX DROPS whitespace that
-                  contains a newline when it sits between an expression and the
-                  next line's text, so this rendered as "into AEDusing each". */}
-              Recalculates all reports, gains and tax figures into {pendingCurrency}{" "}
-              at historical rates. Runs in the background.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingCurrency(null)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmCurrencyChange}>Switch to {pendingCurrency}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        destructive={false}
+        open={pendingCurrency != null}
+        onClose={() => setPendingCurrency(null)}
+        title={`Switch display currency to ${pendingCurrency}?`}
+        message={`Recalculates all reports, gains and tax figures into ${pendingCurrency} at historical rates. Runs in the background.`}
+        confirmLabel={`Switch to ${pendingCurrency}`}
+        onConfirm={confirmCurrencyChange}
+      />
 
       <LanguageCard />
 

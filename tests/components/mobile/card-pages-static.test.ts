@@ -17,11 +17,11 @@ describe("pages with cards: generic Customize wiring", () => {
     ["reports", `${APP}/reports/page.tsx`],
     ["portfolio", `${APP}/portfolio/page.tsx`],
     ["dashboard", `${APP}/dashboard/page.tsx`],
-  ])("%s uses useCardLayout + usePageCustomize + CustomizeCardsSheet", (page, file) => {
+  ])("%s uses useCardLayout + usePageCustomize + CardLayoutEditor", (page, file) => {
     const src = read(file);
     expect(src).toContain(`useCardLayout("${page}"`);
     expect(src).toContain("usePageCustomize(");
-    expect(src).toMatch(/<CustomizeCardsSheet|<CustomizeDashboardSheet/);
+    expect(src).toContain("<CardLayoutEditor");
   });
 
   it("the dashboard keeps its legacy storage endpoint and no longer has the insights accordion", () => {

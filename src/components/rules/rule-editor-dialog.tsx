@@ -9,9 +9,7 @@
  */
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { RuleEditorForm, type RuleEditorFormProps } from "./rule-editor-form";
 
 export * from "./rule-editor-form";
@@ -40,11 +38,7 @@ export function RuleEditorDialog({
   const computedSubmitLabel = submitLabel ?? (rule ? "Update rule" : "Create rule");
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
-      <DialogContent className="regular:max-w-3xl max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{computedTitle}</DialogTitle>
-        </DialogHeader>
+    <Overlay open onClose={() => onClose(false)} size="2xl" title={computedTitle}>
         <RuleEditorForm
           rule={rule}
           initialName={initialName}
@@ -58,16 +52,15 @@ export function RuleEditorDialog({
           onSubmit={onSubmit}
           onSaved={() => onClose(true)}
           renderActions={({ submitting, save }) => (
-            <DialogFooter>
+            <div className="flex flex-col-reverse gap-2 regular:flex-row regular:justify-end">
               <Button variant="ghost" onClick={() => onClose(false)} disabled={submitting}>Cancel</Button>
               <Button onClick={save} disabled={submitting}>
                 {submitting ? "Saving…" : computedSubmitLabel}
               </Button>
-            </DialogFooter>
+            </div>
           )}
         />
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
 

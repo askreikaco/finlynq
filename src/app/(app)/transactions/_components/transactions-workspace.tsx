@@ -2,32 +2,26 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ErrorState } from "@/components/error-state";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, ChevronDown, Receipt, Search, X, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
+import { portfolioEditHref, transactionEditHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
-import { buildPrefill, writePrefill, canDuplicate } from "@/lib/transactions/prefill";
 import { COLUMN_LABELS as SHARED_COLUMN_LABELS } from "@/lib/transactions/columns";
 import type {
   Transaction,
 } from "../_types";
 import { useLookups, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
 import { useTransactions } from "../_hooks/use-transactions";
-import { TransactionSheet } from "./transaction-sheet";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
-import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -35,17 +29,15 @@ import { useTransactionsToolbar, type TransactionsToolbarState } from "../_hooks
 import { TRANSACTION_FILTER_KEYS } from "@/lib/toolbar/list-configs";
 import type { RangeSelection } from "@/lib/metrics/period";
 import type { SortPref } from "../_types";
-import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
-import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { TransactionFormScreen } from "./transaction-form-screen";
 import { withSel } from "@/lib/list-detail/selection";
 import { EmptyState } from "@/components/empty-state";
+import { Overlay } from "@/components/ui/overlay";
 import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
-import { canQueueOfflineDelete, isNetworkFailure } from "@/lib/transactions/entry-mode";
-import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineDelete, usePendingTransactions } from "@/lib/data/local-write-queue";
+import { usePendingTransactions } from "@/lib/data/local-write-queue";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -287,26 +279,6 @@ export function TransactionsWorkspace({
     onDataChange?.();
   }, [loadTxns, onDataChange]);
 
-  // Delete confirmation
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  // Phase 2 portfolio-ops refactor: server returns 409 with this shape when
-  // the row being deleted is the open-tx of a lot that's already been sold
-  // or transferred out. UI surfaces the blocking tx ids so the user knows
-  // exactly which rows to delete first.
-  const [deleteBlockedError, setDeleteBlockedError] = useState<{
-    message: string;
-    blockingIds: number[];
-  } | null>(null);
-  const [deleteConfirmPayee, setDeleteConfirmPayee] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  useEffect(() => { setDeleteError(null); }, [deleteConfirmId]);
-  // FINLYNQ-176 — warn-and-reallocate. When a delete is lot-locked, fetch the
-  // dry-run preview so the user can see the proposed reallocation (affected
-  // calendar years + any short lot that will open) and choose to proceed.
-  const [reallocPreview, setReallocPreview] = useState<LotReallocationPreview | null>(null);
-  const [reallocLoading, setReallocLoading] = useState(false);
-
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
   // Split view (list 2/3 | the entry form 1/3) from regular up, selection in ?sel. Off in the account-scoped embed.
@@ -317,7 +289,6 @@ export function TransactionsWorkspace({
   // Bulk select is a mode of the one list: "Select" shows row checkboxes; leaving it drops the selection.
   const [selectMode, setSelectMode] = useState(false);
   // Row detail sheet (a row tap on a narrow or regular screen, or split view off).
-  const [sheetTx, setSheetTx] = useState<Transaction | null>(null);
   function toggleSelectMode() {
     if (selectMode) setSelected(new Set());
     setSelectMode(!selectMode);
@@ -405,7 +376,7 @@ export function TransactionsWorkspace({
     openEditPage(t);
   }
 
-  /** Row tap: split view selects the row into the detail pane; otherwise the row's detail sheet opens (queued rows too). */
+  /** Row tap: split view selects the row into the detail pane; otherwise the row opens its edit page (queued rows follow startEdit). */
   function handleOpenRow(t: Transaction) {
     if (splitView) {
       // Queued rows and investment rows keep their own editors; every other row opens in the pane.
@@ -416,140 +387,13 @@ export function TransactionsWorkspace({
       listDetail.select(t.id);
       return;
     }
-    setSheetTx(t);
+    startEdit(t);
   }
 
   /** Full edit page: portfolio rows go to their op page, everything else to /transactions/[id]/edit. */
   function openEditPage(t: Transaction) {
     const portfolioHref = portfolioEditHref(t.kind, t.id);
     router.push(portfolioHref ?? transactionEditHref(t.id, currentReturnTo()));
-  }
-
-  // Offline delete: whether the row being confirmed has splits, read while the request still works (queue active only).
-  const splitsCheckRef = useRef<{ id: number; result: Promise<boolean | null> } | null>(null);
-
-  function confirmDelete(t: Transaction) {
-    if (t.id > 0 && isLocalWriteQueueActive()) {
-      splitsCheckRef.current = {
-        id: t.id,
-        result: fetch(`/api/transactions/splits?transactionId=${t.id}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d: unknown) => (Array.isArray(d) ? d.length > 0 : null))
-          .catch(() => null),
-      };
-    }
-    setDeleteConfirmId(t.id);
-    setDeleteConfirmPayee(t.payee || `Transaction #${t.id}`);
-  }
-
-  /** Network failure on a simple row: keep the delete on this device (hidden from the list, synced later). */
-  async function queueDeleteOffline(err: unknown, id: number): Promise<boolean> {
-    if (!isLocalWriteQueueActive() || !isNetworkFailure(err)) return false;
-    const row = txns.find((x) => x.id === id);
-    const chk = splitsCheckRef.current;
-    if (!row || row.pendingSync || !chk || chk.id !== id) return false;
-    if (!canQueueOfflineDelete({ queueActive: true, error: err, row, hasSplits: await chk.result })) return false;
-    if (!(await queueOfflineDelete(id, row as unknown as Record<string, unknown>))) return false;
-    setDeleting(false);
-    setDeleteConfirmId(null);
-    return true;
-  }
-
-  async function handleDelete() {
-    if (!deleteConfirmId) return;
-    setDeleting(true);
-    setDeleteError(null);
-    setDeleteBlockedError(null);
-    if (deleteConfirmId < 0) {
-      // A queued create deleted before it synced: drop the outbox entry, nothing goes to the server.
-      const opId = txns.find((x) => x.id === deleteConfirmId)?.pendingSync?.opId;
-      const dropped = opId ? await discardQueuedCreate(opId) : false;
-      setDeleting(false);
-      if (!dropped) {
-        setDeleteError("This entry is being sent right now. Try again in a moment.");
-        return;
-      }
-      setDeleteConfirmId(null);
-      return;
-    }
-    let res: Response;
-    try {
-      res = await fetch(`/api/transactions?id=${deleteConfirmId}`, { method: "DELETE" });
-    } catch (netErr) {
-      // Flag off / not eligible / online: nothing is queued and the error path is exactly what it was.
-      if (await queueDeleteOffline(netErr, deleteConfirmId)) return;
-      throw netErr;
-    }
-    setDeleting(false);
-    if (!res.ok) {
-      // Portfolio edit-guard refusal. The server returns 409 + the list of
-      // dependent closure tx ids when the row being deleted opens a lot that's
-      // been sold or transferred out. FINLYNQ-176 — instead of dead-ending,
-      // fetch the reallocation preview so the user can proceed.
-      const data = await res.json().catch(() => ({}));
-      if (data?.code === "portfolio_edit_blocked") {
-        const blockingIds: number[] = Array.isArray(data.blockingClosureTxIds)
-          ? (data.blockingClosureTxIds as number[])
-          : [];
-        setDeleteBlockedError({
-          message: data.error ?? "Delete blocked by portfolio dependencies",
-          blockingIds,
-        });
-        // Fetch the dry-run reallocation preview (best-effort).
-        setReallocPreview(null);
-        setReallocLoading(true);
-        try {
-          const pRes = await fetch("/api/transactions/lot-replan-preview", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ op: "delete", id: deleteConfirmId }),
-          });
-          if (pRes.ok) {
-            const pData = await pRes.json().catch(() => null);
-            if (pData?.preview) setReallocPreview(pData.preview as LotReallocationPreview);
-          }
-        } finally {
-          setReallocLoading(false);
-        }
-        return;
-      }
-      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
-      return;
-    }
-    setDeleteConfirmId(null);
-    setReallocPreview(null);
-    afterMutate();
-  }
-
-  // FINLYNQ-176 — proceed with the lot-locked delete, reallocating dependents.
-  async function handleReallocateDelete() {
-    if (!deleteConfirmId) return;
-    setDeleting(true);
-    setDeleteError(null);
-    const res = await fetch(
-      `/api/transactions?id=${deleteConfirmId}&confirmReallocation=1`,
-      { method: "DELETE" },
-    );
-    setDeleting(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
-      return;
-    }
-    setDeleteConfirmId(null);
-    setDeleteBlockedError(null);
-    setReallocPreview(null);
-    afterMutate();
-  }
-
-  function startDuplicate(t: Transaction) {
-    if (!canDuplicate(t, t.currency)) return;
-    writePrefill(buildPrefill(t));
-    router.push("/transactions/new?prefill=1");
-  }
-
-  function openSplitDialog(t: Transaction) {
-    router.push(transactionSplitHref(t.id, currentReturnTo()));
   }
 
   // Bulk selection helpers
@@ -1034,18 +878,6 @@ export function TransactionsWorkspace({
           />
         </div>
 
-      {sheetTx && (
-        <TransactionSheet
-          tx={sheetTx}
-          peer={transferPeers.get(sheetTx.id) ?? null}
-          onClose={() => setSheetTx(null)}
-          onEdit={startEdit}
-          onDuplicate={startDuplicate}
-          onSplit={openSplitDialog}
-          onDelete={confirmDelete}
-        />
-      )}
-
       {/* Infinite scroll trigger sentinel at the bottom of the table */}
       <div
         ref={observerTargetRef}
@@ -1076,114 +908,17 @@ export function TransactionsWorkspace({
 
       </ListDetailLayout>
 
-      {/* Single delete confirmation dialog */}
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => {
-        if (!open && !deleting) {
-          setDeleteConfirmId(null);
-          setDeleteBlockedError(null);
-          setReallocPreview(null);
-        }
-      }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete Transaction
-            </DialogTitle>
-          </DialogHeader>
-          {deleteError && (
-            <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
-          )}
-          {deleteBlockedError ? (
-            <div className="space-y-3">
-              <p className="text-sm text-warning">
-                This transaction opened a lot that has since been sold or
-                transferred out. You can still delete it — the dependent
-                transactions below will be re-matched to your other lots.
-              </p>
-              {/* FINLYNQ-176 — reallocation preview (affected years + shorts). */}
-              <LotReallocationNotice preview={reallocPreview} loading={reallocLoading} />
-              {deleteBlockedError.blockingIds.length > 0 && (
-                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
-                  <p className="font-medium mb-1.5">Dependent rows:</p>
-                  <ul className="space-y-1">
-                    {deleteBlockedError.blockingIds.map((id) => (
-                      <li key={id}>
-                        <Link
-                          href={buildTxDrillUrl({ id: String(id) })}
-                          className="text-primary underline hover:no-underline"
-                          onClick={() => {
-                            setDeleteConfirmId(null);
-                            setDeleteBlockedError(null);
-                            setReallocPreview(null);
-                          }}
-                        >
-                          Transaction #{id}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={deleting}
-                  onClick={() => {
-                    setDeleteConfirmId(null);
-                    setDeleteBlockedError(null);
-                    setReallocPreview(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  disabled={deleting || reallocLoading}
-                  onClick={handleReallocateDelete}
-                >
-                  {deleting ? "Deleting…" : "Reallocate & delete"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete <strong>{deleteConfirmPayee}</strong>? This cannot be undone.
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-                <Button variant="destructive" className="flex-1" disabled={deleting} onClick={handleDelete}>
-                  {deleting ? "Deleting…" : "Delete"}
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Bulk delete confirmation dialog */}
-      <Dialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open) setBulkDeleteConfirm(false); }}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Delete {selected.size} Transactions
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.
-          </p>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setBulkDeleteConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1" disabled={bulkProcessing} onClick={confirmBulkDelete}>
-              {bulkProcessing ? "Deleting…" : `Delete ${selected.size}`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        open={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        title={`Delete ${selected.size} Transactions`}
+        message={<>This will permanently delete <strong>{selected.size} transaction{selected.size !== 1 ? "s" : ""}</strong>. This cannot be undone.</>}
+        confirmLabel={`Delete ${selected.size}`}
+        busy={bulkProcessing}
+        onConfirm={confirmBulkDelete}
+      />
 
     </div>
   );

@@ -5,18 +5,18 @@
  * (PKG1 tx-edit). Logic: useTransactionForm (moved out of TransactionDialog).
  * Fields: TransactionFormBody with variant "page". Chrome: glass PageHeader
  * with one phone primary (Save, icon-only check, submits the form by id),
- * Duplicate/Delete in the overflow menu. Delete asks first in a confirm dialog.
+ * Duplicate/Split/Delete in the overflow menu. Delete asks first in a confirm dialog.
  * Back, save and delete all navigate to returnTo (validated) or /transactions.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check, Copy, Trash2 } from "lucide-react";
+import { Check, Copy, Split, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { useTransactionForm } from "@/components/transactions/use-transaction-form";
 import { TransactionFormBody } from "@/components/transactions/transaction-form-body";
@@ -27,7 +27,7 @@ import type {
 } from "@/components/transactions/transaction-dialog";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { buildPrefill, canDuplicate, writePrefill } from "@/lib/transactions/prefill";
-import { transactionEditHref } from "@/lib/transactions/edit-flow";
+import { transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import type { EditInitialState } from "./use-edit-source";
 
 const FORM_ID = "transaction-edit-form";
@@ -115,6 +115,12 @@ export function TransactionEditForm({
           disabled: !editingTx || !canDuplicate(editingTx, editingTx.currency),
           onSelect: onDuplicate,
         },
+        {
+          label: "Split",
+          icon: Split,
+          disabled: !editingTx,
+          onSelect: () => editingTx && router.push(transactionSplitHref(editingTx.id, returnTo)),
+        },
         { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
       ];
 
@@ -147,46 +153,32 @@ export function TransactionEditForm({
         />
       </div>
 
-      <Dialog
+      <Overlay
+        variant="confirm"
         open={confirmOpen}
-        onOpenChange={(open) => {
-          setConfirmOpen(open);
-          if (!open) setDeleteError(null);
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteError(null);
+        }}
+        title={isTransfer ? "Delete this transfer?" : "Delete this transaction?"}
+        message={
+          isTransfer
+            ? "Both legs of this transfer will be deleted. This cannot be undone."
+            : "This transaction will be deleted. This cannot be undone."
+        }
+        confirmLabel="Delete"
+        busy={deleting || f.transferDeleting}
+        onConfirm={() => {
+          if (isTransfer) {
+            setConfirmOpen(false);
+            void f.handleTransferDelete();
+          } else {
+            void deleteTransaction();
+          }
         }}
       >
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{isTransfer ? "Delete this transfer?" : "Delete this transaction?"}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {isTransfer
-              ? "Both legs of this transfer will be deleted. This cannot be undone."
-              : "This transaction will be deleted. This cannot be undone."}
-          </p>
-          {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="flex-1"
-              disabled={deleting || f.transferDeleting}
-              onClick={() => {
-                if (isTransfer) {
-                  setConfirmOpen(false);
-                  void f.handleTransferDelete();
-                } else {
-                  void deleteTransaction();
-                }
-              }}
-            >
-              {deleting || f.transferDeleting ? "Deleting…" : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+      </Overlay>
     </div>
   );
 }

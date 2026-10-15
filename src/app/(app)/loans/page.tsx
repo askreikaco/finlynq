@@ -12,9 +12,9 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -447,25 +447,27 @@ function LoansPageContent() {
       </ListDetailLayout>
 
       {detailLoan && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          onClose={() => setDetailId(null)}
           title={detailLoan.name}
-          description={`${detailLoan.currency} loan`}
+          subtitle={`${detailLoan.currency} loan`}
           items={loanDetailItems(detailLoan, displayCurrency, detailNextDue, detailPaidOff)}
         >
           <LoanProgress loan={detailLoan} />
           <Button variant="outline" onClick={() => viewAmortization(detailLoan)}>View schedule</Button>
           <Button variant="outline" onClick={() => { setDetailId(null); editLoan(detailLoan); }}>Edit</Button>
           <Button variant="outline" className="text-destructive" onClick={() => { setDetailId(null); setDeleteId(detailLoan.id); }}>Delete</Button>
-        </DetailSheet>
+        </Overlay>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        onClose={() => { setDeleteId(null); }}
         title="Delete loan"
-        description={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
+        message={<>Are you sure you want to delete <strong>{deletingLoan?.name ?? "this loan"}</strong>? This cannot be undone.</>}
         confirmLabel="Delete loan"
         busy={deleting}
         onConfirm={handleDelete}

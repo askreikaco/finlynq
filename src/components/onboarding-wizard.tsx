@@ -6,13 +6,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import {
   Check,
   Coins,
@@ -683,34 +677,21 @@ export function OnboardingWizard({
       </motion.div>
 
       {/* Skip setup confirmation dialog */}
-      <Dialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
-        <DialogContent className="regular:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Skip setup?</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            You can add accounts, import data and set budgets anytime from the menu.
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowSkipConfirm(false)}
-              disabled={loading}
-            >
-              Keep going
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSkip}
-              disabled={loading}
-            >
-              {loading ? "Skipping..." : "Skip"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Overlay
+        variant="confirm"
+        destructive={false}
+        open={showSkipConfirm}
+        onClose={() => setShowSkipConfirm(false)}
+        title="Skip setup?"
+        message="You can add accounts, import data and set budgets anytime from the menu."
+        cancelLabel="Keep going"
+        confirmLabel="Skip"
+        busyLabel="Skipping..."
+        busy={loading}
+        onConfirm={handleSkip}
+      >
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </Overlay>
     </div>
   );
 }

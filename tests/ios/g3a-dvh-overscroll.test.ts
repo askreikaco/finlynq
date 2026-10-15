@@ -33,35 +33,24 @@ describe("dialog/sheet heights use dvh (iOS toolbar-safe)", () => {
     expect(read(f)).not.toMatch(RAW_VH);
   });
 
-  it.each(DIALOG_FILES)("%s uses dvh heights", (f) => {
-    expect(read(f)).toMatch(/\d+dvh\]/);
+  it("the Overlay owns the heights, all in dvh", () => {
+    const s = read("src/components/ui/overlay.tsx");
+    expect(s).toMatch(/max-h-\[calc\(100dvh-2rem-var\(--sat\)-var\(--sab\)/);
+    expect(s).toMatch(/max-h-\[calc\(100dvh-var\(--kb-inset,0px\)-var\(--sat\)\)\]/);
+    expect(s).not.toMatch(RAW_VH);
   });
 
-  it("lot inspector keeps its 95% height as dvh", () => {
-    expect(read("src/components/portfolio/lot-inspector-dialog.tsx")).toContain(
-      "h-[95dvh] max-h-[95dvh]",
-    );
-  });
-
-  it("base dialog guard is still dvh-based", () => {
-    expect(read("src/components/ui/dialog.tsx")).toMatch(/max-h-\[calc\(100dvh-2rem-var\(--sat\)-var\(--sab\)/);
+  it("the full size (lot inspector matrix) keeps its 95% height as dvh", () => {
+    expect(read("src/components/ui/overlay.tsx")).toContain("h-[95dvh] max-h-[95dvh]");
+    expect(read("src/components/portfolio/lot-inspector-dialog.tsx")).toContain('"full"');
   });
 });
 
 describe("scroll containment (overscroll-contain) on overlays", () => {
-  it("ui/dialog.tsx scroll content contains overscroll", () => {
-    const s = read("src/components/ui/dialog.tsx");
-    expect(s).toContain("overflow-y-auto overscroll-contain rounded-xl");
-  });
-
-  it("ui/sheet.tsx popup contains overscroll", () => {
-    const s = read("src/components/ui/sheet.tsx");
-    expect(s).toContain("gap-4 overscroll-contain bg-background");
-  });
-
-  it("mobile detail-sheet scroll content contains overscroll", () => {
-    const s = read("src/components/mobile/detail-sheet.tsx");
-    expect(s).toContain("max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl");
+  it("the Overlay popup and its scrolling body contain overscroll", () => {
+    const s = read("src/components/ui/overlay.tsx");
+    expect(s).toContain("overflow-hidden overscroll-contain bg-background");
+    expect(s).toContain("overflow-y-auto overscroll-contain px-4");
   });
 });
 
@@ -85,5 +74,5 @@ describe("analytics consent banner: safe area and phone tab-bar clearance", () =
 });
 
 // Mutation checks (run by hand, see report): each restored line must turn one of these red.
-// 1) lot-inspector h-[95dvh] -> h-[95vh]   2) dialog.tsx overscroll-contain removed
+// 1) overlay full size h-[95dvh] -> h-[95vh]   2) overlay.tsx overscroll-contain removed
 // 3) consent max-regular:bottom-[calc(...)] removed

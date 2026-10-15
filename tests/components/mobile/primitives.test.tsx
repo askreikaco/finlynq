@@ -12,7 +12,8 @@ vi.mock("next/link", () => ({
 
 import { MetricCard } from "@/components/metric-card";
 import { Hash } from "lucide-react";
-import { Amount, ListRow, SectionCard, SectionLabel, PillButton, DetailSheet } from "@/components/mobile";
+import { Amount, ListRow, SectionCard, SectionLabel, PillButton } from "@/components/mobile";
+import { Overlay } from "@/components/ui/overlay";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 
@@ -174,12 +175,12 @@ describe("PillButton", () => {
   });
 });
 
-describe("DetailSheet", () => {
+describe("Overlay detail variant", () => {
   it("lists label/value pairs in a dialog and renders actions", async () => {
     render(
-      <DetailSheet open onOpenChange={() => {}} title="PVS.VN" items={[{ label: "Quantity", value: "300" }, { label: "Avg cost", value: "33,333" }]}>
+      <Overlay variant="detail" open onClose={() => {}} title="PVS.VN" items={[{ label: "Quantity", value: "300" }, { label: "Avg cost", value: "33,333" }]}>
         <button>Edit</button>
-      </DetailSheet>,
+      </Overlay>,
     );
     const dlg = await screen.findByRole("dialog");
     expect(within(dlg).getByText("PVS.VN")).toBeTruthy();
@@ -189,7 +190,7 @@ describe("DetailSheet", () => {
   });
 
   it("renders nothing when closed", () => {
-    render(<DetailSheet open={false} onOpenChange={() => {}} title="x" items={[]} />);
+    render(<Overlay variant="detail" open={false} onClose={() => {}} title="x" items={[]} />);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

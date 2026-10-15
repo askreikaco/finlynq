@@ -42,7 +42,7 @@ import { type CategoryDetail } from "@/lib/reports/category-detail";
 import { ArrowLeftRight, BarChart3, CalendarClock, Pencil, Percent, Receipt, Scale, Store, Users, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
+  Amount, CardLayoutEditor, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
@@ -400,11 +400,11 @@ function CategoryPageContent() {
         </p>
       )}
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize category"
-        description="Show, hide and reorder the cards on this category."
+        info="Show, hide and reorder the cards on this category."
         cards={CATEGORY_DETAIL_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}

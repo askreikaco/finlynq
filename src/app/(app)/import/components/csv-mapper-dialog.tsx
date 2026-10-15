@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const FIELD_OPTIONS = [
   { value: "", label: "Skip" },
@@ -100,18 +92,17 @@ export function CsvMapperDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Map CSV Columns
-          </DialogTitle>
-          <DialogDescription>
-            Map the columns in <span className="font-medium">{file.name}</span> to transaction fields.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="Map CSV Columns"
+      info={<>Map the columns in <span className="font-medium">{file.name}</span> to transaction fields.</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: isMapping },
+        { label: isMapping ? "Processing…" : "Preview Import", kind: "primary", onClick: handleSubmit, disabled: !isValid || isMapping },
+      ]}
+    >
         <div className="overflow-auto flex-1 space-y-3 pr-1">
           <p className="text-xs text-muted-foreground font-medium">Column Mapping</p>
           {headers.map((header) => (
@@ -175,16 +166,6 @@ export function CsvMapperDialog({
             Select a default account or map an Account column.
           </p>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isMapping}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isMapping}>
-            {isMapping ? "Processing…" : "Preview Import"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

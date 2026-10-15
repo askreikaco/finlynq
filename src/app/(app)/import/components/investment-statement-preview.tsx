@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -18,12 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Landmark,
-  ArrowRight,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowRight, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -117,20 +104,21 @@ export function InvestmentStatementPreview({
       : format.toUpperCase();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-3xl max-h-[80dvh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-primary" />
-            {formatLabel} Investment Statement Preview
-          </DialogTitle>
-          <DialogDescription>
-            {rows.length} rows across {externalAccounts.length} account
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="2xl"
+      title={`${formatLabel} Investment Statement Preview`}
+      info={<>{rows.length} rows across {externalAccounts.length} account
             {externalAccounts.length === 1 ? "" : "s"}.
-            {dateRange && ` ${dateRange.start} → ${dateRange.end}.`}
-          </DialogDescription>
-        </DialogHeader>
-
+            {dateRange && ` ${dateRange.start} → ${dateRange.end}.`}</>}
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false) },
+        { label: !allBound
+              ? "Bind every account first"
+              : `Import ${rows.length} rows`, kind: "primary", onClick: handleConfirm, disabled: !allBound || rows.length === 0 },
+      ]}
+    >
         {/* Account bindings */}
         <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
           <div className="text-xs font-medium text-muted-foreground">
@@ -224,21 +212,6 @@ export function InvestmentStatementPreview({
             )}
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!allBound || rows.length === 0}
-          >
-            {!allBound
-              ? "Bind every account first"
-              : `Import ${rows.length} rows`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

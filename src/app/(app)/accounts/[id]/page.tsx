@@ -9,7 +9,6 @@ import { InvisibleMark } from "@/components/invisible-mark";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ChevronDown, Inbox, Info, MoreHorizontal, Pencil, Receipt, Trash2, TrendingUp, Wallet } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -18,16 +17,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
@@ -41,7 +34,7 @@ import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { useTransactionsToolbar } from "../../transactions/_hooks/use-transactions-toolbar";
 import {
-  PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
+  PageHeader, HEADER_DESKTOP_ONLY, CardLayoutEditor, ListRow, SectionCard, useCardLayout, usePageCustomize,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
@@ -453,11 +446,12 @@ export default function AccountDetailPage() {
           {accountActionError}
         </p>
       )}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteAccountOpen}
-        onOpenChange={setDeleteAccountOpen}
+        onClose={() => setDeleteAccountOpen(false)}
         title="Delete this account?"
-        description="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
+        message="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
         confirmLabel="Delete account"
         onConfirm={() => void deleteThisAccount()}
         busy={deletingAccount}
@@ -617,11 +611,11 @@ export default function AccountDetailPage() {
         return shown.map((id) => <Fragment key={id}>{nodes[id]}</Fragment>);
       })()}
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize account"
-        description="Show, hide and reorder the cards on this account."
+        info="Show, hide and reorder the cards on this account."
         cards={ACCOUNT_DETAIL_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
@@ -629,11 +623,11 @@ export default function AccountDetailPage() {
       />
 
       {/* Create cash sleeve dialog */}
-      <Dialog open={newSleeveOpen} onOpenChange={setNewSleeveOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add cash sleeve</DialogTitle>
-          </DialogHeader>
+      <Overlay
+        open={newSleeveOpen}
+        onClose={() => setNewSleeveOpen(false)}
+        title="Add cash sleeve"
+      >
           <form onSubmit={handleCreateSleeve} className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Creates a per-currency cash position inside <b>{account.name}</b>.
@@ -674,15 +668,16 @@ export default function AccountDetailPage() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </Overlay>
 
       {/* Actions sheet: opened by More at every size (owner D8). */}
-      <Sheet open={actionsSheetOpen} onOpenChange={setActionsSheetOpen}>
-        <SheetContent side="bottom" className="px-0">
-          <SheetHeader className="px-4 mb-4">
-            <SheetTitle>Actions</SheetTitle>
-          </SheetHeader>
+      <Overlay
+        variant="picker"
+        open={actionsSheetOpen}
+        onClose={() => setActionsSheetOpen(false)}
+        title="Actions"
+        bodyClassName="px-0 pb-2"
+      >
           <div className="space-y-0">
             <button
               onClick={() => {
@@ -761,8 +756,7 @@ export default function AccountDetailPage() {
               <span className="text-sm font-medium">Delete account</span>
             </button>
           </div>
-        </SheetContent>
-      </Sheet>
+      </Overlay>
 
     </div>
   );

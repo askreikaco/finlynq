@@ -9,7 +9,7 @@
  * Form state and save logic: use-transaction-form.ts. Fields: transaction-form-body.tsx.
  */
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { ArrowRightLeft } from "lucide-react";
 import { type TransactionSource } from "@/lib/tx-source";
 import { RuleEditorDialog } from "@/components/rules/rule-editor-dialog";
@@ -174,26 +174,20 @@ export function TransactionDialog(props: TransactionDialogProps) {
   const { editId, dialogMode, setDialogMode, setSubmitError, ruleEditorOpen, ruleSeed, ruleSeedName, ruleSeedConditions, ruleSeedActions, ruleEditorCategories, ruleEditorAccounts, ruleEditorHoldings, setRuleEditorOpen, setRuleSeed } = f;
   return (
     <>
-    <Dialog
+    <Overlay
       open={open}
-      onOpenChange={(o) => {
-        onOpenChange(o);
-        if (!o) f.resetOnClose();
+      onClose={() => {
+        onOpenChange(false);
+        f.resetOnClose();
       }}
-    >
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {dialogMode === "transfer"
+      title={dialogMode === "transfer"
               ? editId
                 ? "Edit Transfer"
                 : "New Transfer"
               : editId
                 ? "Edit Transaction"
                 : "New Transaction"}
-          </DialogTitle>
-        </DialogHeader>
-
+    >
         {!editId && (
           <div className="inline-flex rounded-md border bg-muted/40 p-0.5 self-start">
             <button
@@ -222,8 +216,7 @@ export function TransactionDialog(props: TransactionDialogProps) {
           f={f}
           variant="dialog"
         />
-      </DialogContent>
-    </Dialog>
+    </Overlay>
 
     {/* Rule editor: TODO(PKG1 tx-edit) — package 5 owns the rule routes; once /settings/rules/new exists,
         route "Customize…" there instead of this sibling dialog. */}

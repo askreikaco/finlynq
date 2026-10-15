@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -40,15 +40,13 @@ export function RevokeDialog({ shareId, role, onClose, onSuccess }: RevokeDialog
 
   const isOwner = role === "owner";
   return (
-    <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className="regular:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{isOwner ? FAMILY_STRINGS.revoke_dialog_title : FAMILY_STRINGS.leave_dialog_title}</DialogTitle>
-          <DialogDescription>
-            {isOwner ? FAMILY_STRINGS.revoke_dialog_message : FAMILY_STRINGS.leave_dialog_message}
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open
+      onClose={() => !busy && onClose()}
+      size="sm"
+      title={isOwner ? FAMILY_STRINGS.revoke_dialog_title : FAMILY_STRINGS.leave_dialog_title}
+      info={isOwner ? FAMILY_STRINGS.revoke_dialog_message : FAMILY_STRINGS.leave_dialog_message}
+    >
         <div className="space-y-4">
           <div aria-live="polite">
             {error && (
@@ -67,7 +65,6 @@ export function RevokeDialog({ shareId, role, onClose, onSuccess }: RevokeDialog
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

@@ -17,13 +17,7 @@
  */
 
 import { useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -426,17 +420,21 @@ export function EmailRuleDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="regular:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === "fromEmail"
-              ? "Create rule from this email"
-              : isEdit
-                ? "Edit email rule"
-                : "New email rule"}
-          </DialogTitle>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title={mode === "fromEmail" ? "Create rule from this email" : isEdit ? "Edit email rule" : "New email rule"}
+      actions={[
+        { label: "Cancel", disabled: saving },
+        {
+          label: mode === "fromEmail" ? "Create rule & record" : isEdit ? "Save changes" : "Add rule",
+          kind: "primary",
+          onClick: () => void save(),
+          disabled: saving,
+        },
+      ]}
+    >
 
         <div className="space-y-3">
           {error && (
@@ -646,16 +644,6 @@ export function EmailRuleDialog({
             the account and waits for a click.
           </p>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={() => void save()} disabled={saving}>
-            {mode === "fromEmail" ? "Create rule & record" : isEdit ? "Save changes" : "Add rule"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

@@ -41,7 +41,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Check, Trash2, X } from "lucide-react";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader, HEADER_SECONDARY, type OverflowAction } from "@/components/mobile";
@@ -655,13 +655,12 @@ function FormPageBody<T, R, V, X>({
       {headerNode}
       {body}
       {deleteCfg ? (
-        <ConfirmDialog
+        <Overlay
+          variant="confirm"
           open={del.target !== null}
-          onOpenChange={(open) => {
-            if (!open) del.close();
-          }}
+          onClose={() => del.close()}
           title={deleteCfg.confirmTitle}
-          description={del.target !== null ? deleteCfg.describe(del.target) : null}
+          message={del.target !== null ? deleteCfg.describe(del.target) : null}
           confirmLabel={deleteCfg.confirmLabel ?? "Delete"}
           busy={del.deleting}
           onConfirm={() => void del.confirm()}

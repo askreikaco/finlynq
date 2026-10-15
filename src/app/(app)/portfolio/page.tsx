@@ -2,7 +2,7 @@
 
 import { Fragment, useState, useMemo, type ReactNode } from "react";
 import Link from "next/link";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import {
   TrendingUp, Plus, Coins,
 } from "lucide-react";
@@ -35,7 +35,7 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingAccountGroups, accountHoldingTitle, type AccountHoldingGroup } from "./_components/holding-account-groups";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CardLayoutEditor, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -369,11 +369,11 @@ export default function PortfolioPage() {
           <Fragment key={id}>{cardNodes[id]}</Fragment>
         ))}
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize investments"
-        description="Show, hide and reorder the sections of your investments page."
+        info="Show, hide and reorder the sections of your investments page."
         cards={PORTFOLIO_CARDS.filter((c) => devMode || !c.devOnly)}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
@@ -386,16 +386,12 @@ export default function PortfolioPage() {
           here was extracted so /settings/investments can mount the SAME
           form. Edits never silently diverge between the two surfaces
           because there's only one component. */}
-      <Dialog
+      <Overlay
         open={editingHolding !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditingHolding(null);
-        }}
+        onClose={() => setEditingHolding(null)}
+        size="md"
+        title="Edit Holding"
       >
-        <DialogContent className="regular:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Holding</DialogTitle>
-          </DialogHeader>
           {editingHolding !== null && (
             <HoldingEditForm
               holdingId={editingHolding.id}
@@ -407,8 +403,7 @@ export default function PortfolioPage() {
               }}
             />
           )}
-        </DialogContent>
-      </Dialog>
+      </Overlay>
     </SectionPage>
   );
 }

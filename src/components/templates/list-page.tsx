@@ -32,7 +32,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile/page-header";
@@ -298,13 +298,12 @@ export function ListPage<T, D = T[], X = unknown>({
         {bodyNode}
 
         {deleteFlow && (
-          <ConfirmDialog
+          <Overlay
+            variant="confirm"
             open={del.target !== null}
-            onOpenChange={(open) => {
-              if (!open) del.close();
-            }}
+            onClose={() => del.close()}
             title={deleteFlow.confirmTitle}
-            description={
+            message={
               <>
                 {del.target !== null && deleteFlow.describe(del.target)}
                 {del.error &&

@@ -16,7 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Overlay } from "@/components/ui/overlay";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
@@ -33,7 +33,7 @@ import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, 
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
+  CardLayoutEditor, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -692,22 +692,23 @@ function CategoriesOverview() {
         ))}
       </ListDetailLayout>
 
-      <CustomizeCardsSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
         title="Customize"
-        description="Show, hide, reorder cards."
+        info="Show, hide, reorder cards."
         cards={CATEGORY_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
 
-      <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
-        <SheetContent side="right" className="w-full overflow-y-auto regular:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
-          </SheetHeader>
+      <Overlay
+        open={formOpen}
+        onClose={() => setEdit(null)}
+        presentation="sheet-right"
+        title={editId != null ? "Edit" : "Add"}
+      >
           {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
             <CategoryBudgetForm
               key={`${editParam}-${budgetsKnown}-${allCategories.length}`}
@@ -723,8 +724,7 @@ function CategoriesOverview() {
               onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
             />
           )}
-        </SheetContent>
-      </Sheet>
+      </Overlay>
 
       {partial && (
         <p className="text-xs text-muted-foreground">

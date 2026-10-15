@@ -25,7 +25,7 @@ import { METRIC_GRID_CLASS } from "@/components/mobile";
 import { cn } from "@/lib/utils";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 type Tab = "price" | "fx";
@@ -477,11 +477,12 @@ export default function AdminPriceCachePage() {
       </Card>
 
       {/* Delete a single cache row */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={rowToDelete != null}
-        onOpenChange={(o) => { if (!o) setRowToDelete(null); }}
+        onClose={() => { setRowToDelete(null); }}
         title="Delete cache row"
-        description={
+        message={
           rowToDelete
             ? `Delete the ${"symbol" in rowToDelete ? rowToDelete.symbol : rowToDelete.currency} row for ${rowToDelete.date}? A real price re-fetches on next read; a garbage row stays gone.`
             : ""
@@ -493,11 +494,12 @@ export default function AdminPriceCachePage() {
       />
 
       {/* Bulk delete every row matching the active filter */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={bulkOpen}
-        onOpenChange={(o) => { if (!o) setBulkOpen(false); }}
+        onClose={() => { setBulkOpen(false); }}
         title="Delete matching rows"
-        description={`Delete all ${total.toLocaleString()} ${tab === "fx" ? "fx_rates" : "price_cache"} rows matching the current filter? Real prices re-fetch on next read; garbage rows stay gone. This can't be undone.`}
+        message={`Delete all ${total.toLocaleString()} ${tab === "fx" ? "fx_rates" : "price_cache"} rows matching the current filter? Real prices re-fetch on next read; garbage rows stay gone. This can't be undone.`}
         confirmLabel={`Delete ${total.toLocaleString()} rows`}
         busyLabel="Deleting…"
         busy={bulkDeleting}

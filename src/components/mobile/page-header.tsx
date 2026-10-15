@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { BackButton } from "./back-button";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
 import { usePageCustomizeRegistration } from "./page-customize";
@@ -163,7 +163,7 @@ function flattenActions(node: React.ReactNode): React.ReactNode[] {
 
 /** Non-visual roots render no element; their triggers are the real actions. Never the primary themselves. */
 function isPhoneInvisible(c: React.ReactElement): boolean {
-  return c.type === Dialog || c.type === DropdownMenu;
+  return c.type === Overlay || c.type === DropdownMenu;
 }
 
 /** The primary action is the last child that is not a secondary action (HEADER_SECONDARY) and not a header cell

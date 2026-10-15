@@ -10,7 +10,7 @@ import type { LoadState } from "@/lib/forms/load-state";
 import { Inbox, FileCog, Coins, Plus, Trash2, Wallet, ExternalLink } from "lucide-react";
 import { PageHeader, OverflowMenu, ListRow, type OverflowAction } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModePicker } from "@/components/inbox/mode-picker";
@@ -408,13 +408,12 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
         )}
       </div>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={removeOpen}
-        onOpenChange={(o) => {
-          if (!o) setRemoveOpen(false);
-        }}
+        onClose={() => setRemoveOpen(false)}
         title="Remove account"
-        description={
+        message={
           <>
             Remove <b>{account.name}</b>? If it still has any transactions or linked records it will be
             <b> archived</b> (hidden from lists and pickers, but its history is kept). If it is completely empty
@@ -426,16 +425,15 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
         onConfirm={() => void handleArchiveOrDelete()}
       />
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteSleeveId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteSleeveId(null);
-            setDeleteSleeveError("");
-          }
+        onClose={() => {
+          setDeleteSleeveId(null);
+          setDeleteSleeveError("");
         }}
         title="Delete cash sleeve"
-        description={
+        message={
           <>
             Delete the {sleeveToDelete?.currency} cash sleeve? This is only allowed when no transactions
             reference it.

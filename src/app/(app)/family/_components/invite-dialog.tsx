@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -68,13 +68,13 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
   return (
     <>
-      <Dialog open={!stepUp.open} onOpenChange={(open) => !open && !busy && onClose()}>
-        <DialogContent className="regular:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{FAMILY_STRINGS.invite_dialog_title}</DialogTitle>
-            <DialogDescription>{FAMILY_STRINGS.page_description}</DialogDescription>
-          </DialogHeader>
-
+      <Overlay
+        open={!stepUp.open}
+        onClose={() => !busy && onClose()}
+        size="md"
+        title={FAMILY_STRINGS.invite_dialog_title}
+        info={FAMILY_STRINGS.page_description}
+      >
           <form onSubmit={submit} className="space-y-5" noValidate>
             <div>
               <Label htmlFor="family-invite-email">{FAMILY_STRINGS.invite_dialog_email_label}</Label>
@@ -167,8 +167,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </Overlay>
       {stepUp.dialog}
     </>
   );

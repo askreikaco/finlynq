@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { Link2, Loader2, Plug } from "lucide-react";
@@ -197,11 +197,12 @@ export function ConnectedApps() {
         )}
       </CardContent>
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={revokeId !== null}
-        onOpenChange={(open) => { if (!open) { setRevokeId(null); setRevokeError(""); } }}
+        onClose={() => { { setRevokeId(null); setRevokeError(""); }; }}
         title="Revoke access"
-        description={
+        message={
           <>
             Revoke <span className="font-medium text-foreground">{revokeTarget?.clientName ?? "this app"}</span>?
             It loses access to your data immediately and must be re-authorized to reconnect.

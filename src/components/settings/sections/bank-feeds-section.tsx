@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { parseSaveError } from "@/lib/save-error";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
@@ -602,11 +602,12 @@ export function BankFeedsSection() {
         </Card>
       )}
 
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={confirmDisconnect}
-        onOpenChange={setConfirmDisconnect}
+        onClose={() => setConfirmDisconnect(false)}
         title="Disconnect SimpleFIN"
-        description={
+        message={
           <>
             Removes stored access and stops syncing. Imported transactions are kept; reconnect later with a new token.
           </>

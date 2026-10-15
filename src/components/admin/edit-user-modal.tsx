@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,14 +119,17 @@ export function EditUserModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.
-          </DialogDescription>
-        </DialogHeader>
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="md"
+      title="Edit User"
+      info="Change this account's profile, role, plan or 2FA. Only the fields you change are saved."
+      actions={[
+        { label: "Cancel", disabled: loading },
+        { label: loading ? "Saving..." : "Save Changes", kind: "primary", onClick: () => handleSubmit(), disabled: loading },
+      ]}
+    >
 
         <div className="space-y-4">
           {error && (
@@ -258,21 +254,6 @@ export function EditUserModal({
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => handleSubmit()} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }

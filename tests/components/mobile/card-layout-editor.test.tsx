@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
-import { CustomizeCardsSheet } from "@/components/mobile/customize-cards-sheet";
+import { CardLayoutEditor } from "@/components/mobile/card-layout-editor";
 import type { PageCard } from "@/lib/card-layout";
 
 afterEach(cleanup);
@@ -14,14 +14,14 @@ const CARDS: PageCard[] = [
   { id: "c", title: "Gamma", defaultVisible: false },
 ];
 
-function setup(over: Partial<React.ComponentProps<typeof CustomizeCardsSheet>> = {}) {
+function setup(over: Partial<React.ComponentProps<typeof CardLayoutEditor>> = {}) {
   const onSave = vi.fn(async () => {});
   const onReset = vi.fn(async () => {});
   const onOpenChange = vi.fn();
   render(
-    <CustomizeCardsSheet
+    <CardLayoutEditor
       open
-      onOpenChange={onOpenChange}
+      onClose={() => onOpenChange(false)}
       title="Customize accounts"
       cards={CARDS}
       layout={{ order: ["a", "b", "c"], hidden: ["c"] }}
@@ -33,7 +33,7 @@ function setup(over: Partial<React.ComponentProps<typeof CustomizeCardsSheet>> =
   return { onSave, onReset, onOpenChange };
 }
 
-describe("CustomizeCardsSheet", () => {
+describe("CardLayoutEditor", () => {
   it("shows the page title and one row per card, switch on = visible", () => {
     setup();
     expect(screen.getByText("Customize accounts")).toBeTruthy();

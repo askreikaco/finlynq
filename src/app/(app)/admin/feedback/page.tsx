@@ -11,13 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import { Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
@@ -225,17 +219,12 @@ function AdminThreadDialog({
   const who = thread ? thread.username || thread.email || "user" : "";
 
   return (
-    <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="regular:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="capitalize">
-            {thread ? `${thread.type} feedback` : "Feedback"}
-          </DialogTitle>
-          <DialogDescription>
-            {thread ? `From ${who}. ` : ""}Your reply is visible to the user.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={feedbackId != null}
+      onClose={onClose}
+      title={<span className="capitalize">{thread ? `${thread.type} feedback` : "Feedback"}</span>}
+      info={<>{thread ? `From ${who}. ` : ""}Your reply is visible to the user.</>}
+    >
         {error && !thread && <p className="text-sm text-destructive">{error}</p>}
 
         {thread && (
@@ -342,8 +331,7 @@ function AdminThreadDialog({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
 

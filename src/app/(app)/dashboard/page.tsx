@@ -33,7 +33,7 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
+import { PageHeader, CardLayoutEditor, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS, EMPTY_CELL_CLASS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
@@ -632,11 +632,13 @@ export default function DashboardPage() {
       {rows}
     </motion.div>
 
-      <CustomizeDashboardSheet
+      <CardLayoutEditor
         open={customizeOpen}
-        onOpenChange={setCustomizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+        title="Customize home"
+        info="Show, hide and reorder the cards on your dashboard."
+        cards={DASHBOARD_CARDS.filter((c) => availableIds.includes(c.id))}
         layout={layout}
-        availableIds={availableIds}
         onSave={saveLayout}
         onReset={resetLayout}
       />

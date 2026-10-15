@@ -9,7 +9,7 @@
  *  - no phone-visible `lead`: a lead must carry HEADER_DESKTOP_ONLY (or be a hidden spacer).
  *
  * Hidden on phones: className containing max-regular:hidden, HEADER_SECONDARY or HEADER_DESKTOP_ONLY (alias), className="hidden",
- * or a FromMd element. Non-visual roots (Dialog, DropdownMenu) render no element of their own:
+ * or a FromMd element. Non-visual roots (Overlay, DropdownMenu) render no element of their own:
  * their *Trigger children (rendered via `render={...}` or the trigger itself) are the actions.
  */
 import { describe, it, expect } from "vitest";
@@ -18,7 +18,7 @@ import { join, relative } from "path";
 import * as ts from "typescript";
 
 const SRC = join(process.cwd(), "src");
-const NON_VISUAL_ROOTS = new Set(["Dialog", "DropdownMenu", "AlertDialog"]);
+const NON_VISUAL_ROOTS = new Set(["Dialog", "Overlay", "DropdownMenu", "AlertDialog"]);
 
 interface Site {
   file: string;

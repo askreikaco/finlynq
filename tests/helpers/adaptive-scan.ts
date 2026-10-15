@@ -40,16 +40,14 @@ export const BANNED_EXEMPT: readonly string[] = [
 // migration (plan section 3): mobile/ is now scanned; the overlay ui files remain.
 // Keep it the only place these paths are listed.
 // - src/components/adaptive/: the size-class primitives themselves (G2-01).
-// - overlay ui files: dialog/sheet/popover/dropdown-menu/confirm-dialog are
+// - overlay ui files: overlay/popover/dropdown-menu are
 //   viewport-agnostic overlays and keep breakpoint classes by design.
 //   (popover.tsx does not exist yet; listed so the exemption is ready.)
 export const BREAKPOINT_EXEMPT: readonly string[] = [
   "src/components/adaptive/",
-  "src/components/ui/dialog.tsx",
-  "src/components/ui/sheet.tsx",
+  "src/components/ui/overlay.tsx",
   "src/components/ui/popover.tsx",
   "src/components/ui/dropdown-menu.tsx",
-  "src/components/ui/confirm-dialog.tsx",
 ];
 
 function freshGlobal(pattern: RegExp): RegExp {

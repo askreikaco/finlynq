@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InfoTip } from "@/components/ui/info-tip";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Overlay } from "@/components/ui/overlay";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -58,7 +58,7 @@ import {
   type InvestmentsTab,
   type Security,
 } from "./_components/shared";
-import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { cn } from "@/lib/utils";
 
@@ -685,11 +685,12 @@ function InvestmentsSettingsPage() {
       </Tabs>
 
       {/* ── Delete confirm (unused securities only) ────────────────────── */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={deleteTarget != null}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onClose={() => { setDeleteTarget(null); }}
         title="Delete security"
-        description={
+        message={
           deleteTarget
             ? `Remove ${symbolLabel(deleteTarget)} from your catalog? It isn't held in any account. This can't be undone.`
             : ""
@@ -701,11 +702,12 @@ function InvestmentsSettingsPage() {
       />
 
       {/* ── Ticker change confirm (re-cluster) ─────────────────────────── */}
-      <ConfirmDialog
+      <Overlay
+        variant="confirm"
         open={tickerTarget != null}
-        onOpenChange={(o) => { if (!o) setTickerTarget(null); }}
+        onClose={() => { setTickerTarget(null); }}
         title="Change ticker"
-        description={
+        message={
           tickerTarget
             ? `Change ${symbolLabel(tickerTarget.security)} to ${tickerTarget.toSymbol}? This re-points the holding (and its full history) to the new ticker — prices will use ${tickerTarget.toSymbol} going forward. Positions, lots, and transactions are unchanged.`
             : ""
@@ -716,11 +718,12 @@ function InvestmentsSettingsPage() {
         onConfirm={confirmTickerChange}
       />
       {detailRow && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          onClose={() => setDetailId(null)}
           title={<span className="font-mono">{detailRow.symbol}</span>}
-          description={detailRow.description || undefined}
+          subtitle={detailRow.description || undefined}
           items={[
             { label: "Type", value: detailRow.type },
             { label: "Currency", value: detailRow.currency },
@@ -753,7 +756,7 @@ function InvestmentsSettingsPage() {
               <Trash2 className="h-4 w-4 mr-1.5" /> Delete
             </Button>
           )}
-        </DetailSheet>
+        </Overlay>
       )}
     </SectionPage>
   );

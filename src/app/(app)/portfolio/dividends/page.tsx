@@ -22,16 +22,8 @@ import { useEffect, useMemo, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
-  HEADER_DESKTOP_ONLY,
-  Amount,
-  DetailSheet,
-  ListRow,
-  MetricGrid,
-  SectionCard,
-  type DetailItem,
-  type MetricItem,
-} from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, Amount, ListRow, MetricGrid, SectionCard, type MetricItem } from "@/components/mobile";
+import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -272,11 +264,12 @@ export default function DividendsPage() {
       </section>
 
       {openGroup && (
-        <DetailSheet
+        <Overlay
+          variant="detail"
           open
-          onOpenChange={(o) => !o && setOpenGroup(null)}
+          onClose={() => setOpenGroup(null)}
           title={openGroup.label}
-          description={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
+          subtitle={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
           items={groupDetailItems(openGroup, reporting, reportingCcy, currencyColumns)}
         />
       )}

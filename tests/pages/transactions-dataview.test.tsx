@@ -57,7 +57,6 @@ import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/tran
 const SRC_DIR = path.resolve(__dirname, "../../src");
 const read = (rel: string) => fs.readFileSync(path.join(SRC_DIR, rel), "utf-8");
 const WORKSPACE = "app/(app)/transactions/_components/transactions-workspace.tsx";
-const SHEET = "app/(app)/transactions/_components/transaction-sheet.tsx";
 const LIST = "components/transactions/mobile-tx-list.tsx";
 
 class FakeIntersectionObserver {
@@ -90,7 +89,7 @@ afterEach(() => {
   try { localStorage.clear(); } catch { /* storage may be unavailable */ }
 });
 
-/** The mobile list rows (ListRow buttons or checkbox rows), not the sheet or other buttons. */
+/** The mobile list rows (ListRow buttons or checkbox rows), not other buttons. */
 function listRows(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]'));
 }
@@ -125,25 +124,16 @@ describe("Transactions: one list at every width", () => {
   });
 });
 
-describe("Transactions: row tap opens the detail sheet", () => {
-  it("compact: a row tap opens the sheet with the row's actions, and Edit opens the edit page with returnTo", () => {
+describe("Transactions: row tap opens the row's own page or pane", () => {
+  it("compact: a row tap opens the edit page with returnTo (no overlay)", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
     fireEvent.click(listRows()[0]);
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
   });
 
-  it("compact: the sheet's Delete is wired to the confirm flow (no direct navigation)", () => {
-    size.current = "compact";
-    render(<TransactionsWorkspace />);
-    fireEvent.click(listRows()[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    expect(H.push).not.toHaveBeenCalled();
-  });
-
-  it("wide: a row tap opens the row in the pane (?sel), not the sheet", () => {
+  it("wide: a row tap opens the row in the pane (?sel), not an overlay", () => {
     size.current = "wide";
     render(<TransactionsWorkspace />);
     fireEvent.click(listRows()[0]);
@@ -216,7 +206,7 @@ describe("Transactions: paging and split view", () => {
     expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
   });
 
-  it("a row tap selects it into the pane (?sel) instead of opening the sheet when split, and opens the sheet below wide", () => {
+  it("a row tap selects it into the pane (?sel) when split, and opens the edit page below wide", () => {
     size.current = "wide";
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByText("pp")[0]);
@@ -226,7 +216,7 @@ describe("Transactions: paging and split view", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByText("pp")[0]);
-    expect(H.push).not.toHaveBeenCalled();
+    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
   });
 });
 
@@ -242,14 +232,14 @@ describe("Transactions: static guards for the one-layout rule", () => {
     expect(src).not.toContain("transaction-table");
   });
 
-  it("the old table file is gone; the list and the sheet are the only row components", () => {
+  it("the old table and the row sheet are gone; the list is the only row component", () => {
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
+    expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-sheet.tsx"))).toBe(false);
     expect(read(LIST)).toContain("<SectionCard");
-    expect(read(SHEET)).toContain("<DetailSheet");
   });
 
-  it("the list, the sheet and the workspace carry no breakpoint tokens", () => {
-    for (const rel of [WORKSPACE, SHEET, LIST]) {
+  it("the list and the workspace carry no breakpoint tokens", () => {
+    for (const rel of [WORKSPACE, LIST]) {
       expect(read(rel).match(new RegExp(TOKEN.source, "g")) ?? [], rel).toEqual([]);
     }
   });

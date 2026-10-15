@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Overlay } from "@/components/ui/overlay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -154,18 +146,17 @@ export function EditTemplateDialog({
   const csvHeaders = template?.fileHeaders ?? [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* `flex flex-col` overrides DialogContent's default `grid` via tailwind-merge;
-          `max-h-[90dvh]` + the inner scroll region keeps the footer reachable when
-          the import-options panel is expanded. */}
-      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Edit Template</DialogTitle>
-          <DialogDescription>
-            Update this template&apos;s name, default account, column mapping, and parser options.
-          </DialogDescription>
-        </DialogHeader>
-
+    <Overlay
+      open={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title="Edit Template"
+      info="Update this template's name, default account, column mapping, and parser options."
+      actions={[
+        { label: "Cancel", onClick: () => onOpenChange(false), disabled: saving },
+        { label: saving ? "Saving..." : "Save Changes", kind: "primary", onClick: handleSave, disabled: saving },
+      ]}
+    >
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
           <div className="grid gap-3 regular:grid-cols-2">
             <div className="space-y-1.5">
@@ -382,16 +373,6 @@ export function EditTemplateDialog({
 
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Overlay>
   );
 }
