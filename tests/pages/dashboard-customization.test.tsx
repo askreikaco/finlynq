@@ -45,7 +45,7 @@ vi.mock("@/components/metric-card", async (orig) => {
     ...m,
     MetricCard: (p: React.ComponentProps<typeof m.MetricCard>) =>
       ["Monthly Income", "Monthly Expenses", "Budgets"].includes(String(p.label)) ? (
-        <div data-testid={`stat-${String(p.label)}`} data-badge={p.badgePct ?? ""} data-invert={p.invertTone ? "1" : ""}>{p.label}</div>
+        <div data-testid={`stat-${String(p.label)}`} data-badge={p.delta?.pct ?? ""} data-invert={p.delta?.invert ? "1" : ""}>{p.label}</div>
       ) : (
         <m.MetricCard {...p} />
       ),

@@ -28,6 +28,23 @@ const BAR_TONE: Record<ProgressTone, string> = {
   pos: "bg-pos",
 };
 
+/** The ONE thin progress bar (ProgressRow's mini bar, MetricCard's progress part). `value` 0..100, clamped; null = empty track. */
+export function ProgressBar({ value, tone = "primary", ariaLabel, className }: { value: number | null; tone?: ProgressTone; ariaLabel: string; className?: string }) {
+  const fill = value == null ? null : Math.min(100, Math.max(0, value));
+  return (
+    <span
+      role="progressbar"
+      aria-label={ariaLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={fill ?? 0}
+      className={cn("block h-1.5 shrink-0 overflow-hidden rounded-full bg-muted", className)}
+    >
+      {fill != null && <span className={cn("block h-full rounded-full", BAR_TONE[tone])} style={{ width: `${fill}%` }} />}
+    </span>
+  );
+}
+
 export interface ProgressRowProps {
   label: string;
   /** Colour dot (and chart tint). */
@@ -68,7 +85,6 @@ export function ProgressRow({
   label, dot, chartColor, value, meta, delta, deltaTone = "text-muted-foreground", deltaTitle, trend, sparkLabels, cur, pct, barTone = "primary",
   progressLabel, progressLabelClassName, progressAria, count, badge, indent, strike, slot = "progress",
 }: ProgressRowProps) {
-  const fill = pct == null ? null : Math.min(100, Math.max(0, pct));
   return (
     <span data-slot={`${slot}-row`} className="@container block w-full min-w-0 font-sans">
       <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @3xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
@@ -93,16 +109,7 @@ export function ProgressRow({
             ) : null}
           </span>
           <span data-slot={`${slot}-budget`} className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span
-              role="progressbar"
-              aria-label={progressAria}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={fill ?? 0}
-              className="block h-1.5 w-[10cqw] min-w-10 max-w-24 @3xl:min-w-14 shrink-0 overflow-hidden rounded-full bg-muted"
-            >
-              {fill != null && <span className={cn("block h-full rounded-full", BAR_TONE[barTone])} style={{ width: `${fill}%` }} />}
-            </span>
+            <ProgressBar value={pct} tone={barTone} ariaLabel={progressAria} className="w-[10cqw] min-w-10 max-w-24 @3xl:min-w-14" />
             <span className={cn("whitespace-nowrap", progressLabelClassName)}>{progressLabel}</span>
           </span>
         </span>

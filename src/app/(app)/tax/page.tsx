@@ -78,7 +78,7 @@ function TaxPageContent() {
     >
       <MetricGrid
         metrics={[
-          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, tone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
+          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, valueTone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
           { icon: Coins, label: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
           { icon: Percent, label: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
         ]}

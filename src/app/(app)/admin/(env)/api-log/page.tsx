@@ -18,8 +18,8 @@ import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { RefreshCw, Trash2 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { AlertTriangle, Database, RefreshCw, Trash2 } from "lucide-react";
+import { HEADER_DESKTOP_ONLY, MetricGrid } from "@/components/mobile";
 
 interface OutboundCall {
   id: number;
@@ -242,20 +242,18 @@ export default function AdminApiLogPage() {
 
       {/* Summary */}
       {data && (
-        <Card>
-          <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 text-sm">
-            <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Buffered</span>
-              <span className="font-semibold tabular-nums">
-                {data.meta.count.toLocaleString()} / {data.meta.cap.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Errors</span>
-              <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-destructive" : ""}`}>
-                {summary.errors.toLocaleString()}
-              </span>
-            </div>
+        <>
+          <MetricGrid
+            columns={2}
+            metrics={[
+              { id: "buffered", label: "Buffered", icon: Database, value: `${data.meta.count.toLocaleString()} / ${data.meta.cap.toLocaleString()}` },
+              {
+                id: "errors", label: "Errors", icon: AlertTriangle, value: summary.errors.toLocaleString(),
+                tone: summary.errors > 0 ? "rose" : "muted", valueClassName: summary.errors > 0 ? "text-destructive" : undefined,
+              },
+            ]}
+          />
+          {summary.byProvider.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               {summary.byProvider.map(([prov, n]) => (
                 <Badge key={prov} variant="outline" className="text-xs">
@@ -263,8 +261,8 @@ export default function AdminApiLogPage() {
                 </Badge>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </>
       )}
 
       {/* Calls */}

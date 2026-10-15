@@ -352,9 +352,8 @@ export default function DashboardPage() {
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
       value: shownIncome,
       // Signed difference vs the previous period (like Net Worth); the covered month moves to the note.
-      sub: incomeCard.delta ?? undefined,
+      delta: { pct: incomeCard.badgePct, text: incomeCard.delta ?? undefined },
       note: periodLabel,
-      badgePct: incomeCard.badgePct,
       icon: TrendingUp,
       tone: "bg-pos/10 text-pos",
       sparkColor: "#10b981",
@@ -365,10 +364,8 @@ export default function DashboardPage() {
     {
       label: "Monthly Expenses",
       value: shownExpenses,
-      sub: expenseCard.delta ?? undefined,
       note: [periodLabel, shownIncome > 0 ? `${Math.round((shownExpenses / shownIncome) * 100)}% of income` : ""].filter(Boolean).join(" · "),
-      badgePct: expenseCard.badgePct,
-      invertTone: true,
+      delta: { pct: expenseCard.badgePct, text: expenseCard.delta ?? undefined, invert: true },
       icon: CreditCard,
       tone: "bg-destructive/10 text-destructive",
       sparkColor: "#f43f5e",
@@ -381,12 +378,14 @@ export default function DashboardPage() {
       // Percent of the budget spent; the amounts and the covered month go in the note.
       value: <span>{budgetPct != null ? `${Math.round(budgetPct)}%` : "—"}</span>,
       valueClassName: budgetPct == null ? "text-muted-foreground" : budgetPct > 100 ? "text-destructive" : budgetPct > 85 ? "text-warning" : "text-pos",
-      sub: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : NO_HISTORY_CAPTION),
       note: budgetNow
         ? `${formatCurrency(budgetNow.spent, apiDisplayCurrency)} of ${formatCurrency(budgetNow.budget, apiDisplayCurrency)} · ${budgetsPeriodLabel}`
         : undefined,
-      badgePct: pctChange(budgetPct, budgetPrevPct),
-      invertTone: true,
+      delta: {
+        pct: pctChange(budgetPct, budgetPrevPct),
+        text: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : NO_HISTORY_CAPTION),
+        invert: true,
+      },
       icon: Target,
       tone: "bg-warning/10 text-warning",
       sparkColor: "#f59e0b",

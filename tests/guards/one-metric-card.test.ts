@@ -32,17 +32,29 @@ describe("one metric card", () => {
     }
   });
 
-  it("MetricCard is the only component with a badgePct prop (MetricItem is just its config for MetricGrid)", () => {
-    const declares = FILES.filter((f) => /\bbadgePct\??\s*:\s*(number|null)/.test(f.src) || /\bbadgePct\?:/.test(f.src)).map((f) => f.rel).sort();
-    // Data shapes (not components) that carry the same number to a MetricCard: ResolvedCard, SavingsTrend.
-    expect(declares).toEqual([
-      "src/app/(app)/dashboard/_components/key-metrics.tsx",
-      "src/components/metric-card.tsx",
-      "src/components/mobile/metric-grid.tsx",
-      "src/lib/metrics/delta.ts",
-    ]);
+  it("MetricItem / MetricItemCard are gone: MetricGrid takes MetricCard's own props", () => {
+    const hits = FILES.filter((f) => /\b(MetricItem|MetricItemCard)\b/.test(f.src)).map((f) => f.rel);
+    expect(hits).toEqual([]);
+    const grid = FILES.find((f) => f.rel === "src/components/mobile/metric-grid.tsx")!;
+    expect(grid.src).toMatch(/metrics: MetricCardProps\[\]/);
+  });
+
+  it("MetricCard owns the delta / progress / info parts (badgePct, invertTone, iconTone props are gone)", () => {
     const card = FILES.find((f) => f.rel === "src/components/metric-card.tsx")!;
     expect(card.src).toMatch(/export function MetricCard\(/);
+    expect(card.src).toMatch(/delta\?: MetricDelta/);
+    expect(card.src).toMatch(/progress\?: MetricProgress/);
+    expect(card.src).toMatch(/info\?: ReactNode/);
+    expect(card.src).not.toMatch(/\b(badgePct|invertTone|iconTone)\b/);
+    // `badgePct` survives only as DATA (a ResolvedCard / trend shape a page maps into `delta`), never as a card prop.
+    const declares = FILES.filter((f) => /\bbadgePct\??\s*:\s*(number|null)/.test(f.src)).map((f) => f.rel).sort();
+    expect(declares).toEqual(["src/app/(app)/dashboard/_components/key-metrics.tsx", "src/lib/metrics/delta.ts"]);
+  });
+
+  it("no hand-rolled progress bar inside a metric card (use the `progress` part)", () => {
+    const avail = FILES.find((f) => f.rel === "src/app/(app)/dashboard/_components/available-to-spend.tsx")!;
+    expect(avail.src).toContain("progress={");
+    expect(avail.src).not.toMatch(/bg-muted\/50 rounded-full/);
   });
 
   it("MetricGrid renders MetricCards (no other tile markup)", () => {

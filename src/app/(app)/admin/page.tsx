@@ -430,7 +430,7 @@ export default function AdminPage() {
               metrics={[
                 { icon: Users,
                   label: "Total Users",
-                  value: stats.totalUsers,
+                  value: <span>{stats.totalUsers}</span>,
                   // Running total of signups by month (users that still exist), this month vs last month by default.
                   ...(() => {
                     const rows = Object.entries(stats.registrationsByMonth ?? {}).map(([month, cumulative]) => ({ month, cumulative }));
@@ -441,12 +441,14 @@ export default function AdminPage() {
                 { icon: Receipt, label: "Transactions", value: stats.totalTransactions.toLocaleString() },
                 { icon: UserPlus,
                   label: "New (7d)",
-                  value: stats.registrationsLast7Days,
+                  value: <span>{stats.registrationsLast7Days}</span>,
                   // Fixed 7-day window: the 7 days before it.
-                  badgePct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
-                  sub: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                  delta: {
+                    pct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
+                    text: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                  },
                 },
-                { icon: ShieldCheck, label: "MFA Enabled", value: stats.mfaEnabledUsers },
+                { icon: ShieldCheck, label: "MFA Enabled", value: <span>{stats.mfaEnabledUsers}</span> },
               ]}
             />
           </div>
@@ -480,9 +482,9 @@ export default function AdminPage() {
             </div>
             <MetricGrid
               metrics={[
-                { icon: Activity, label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
-                { icon: Activity, label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
-                { icon: Activity, label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
+                { icon: Activity, label: "Active now (15 min)", value: <span>{stats.activeUsersLast15Min ?? 0}</span> },
+                { icon: Activity, label: "Active (last hour)", value: <span>{stats.activeUsersLast60Min ?? 0}</span> },
+                { icon: Activity, label: "Active (last 24h)", value: <span>{stats.activeUsersLast24Hours ?? 0}</span> },
               ]}
             />
           </motion.div>

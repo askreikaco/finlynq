@@ -17,6 +17,7 @@
  * a row opens a DetailSheet with the fields and the actions.
  */
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,7 +28,7 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { DetailSheet, ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail, type DetailItem, type MetricItem } from "@/components/mobile";
+import { DetailSheet, ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -140,7 +141,7 @@ function SubscriptionsPageContent() {
     const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
     return Array.isArray(rows) ? rows : null;
   }, [seriesRes.data]);
-  const summaryMetrics = useMemo<MetricItem[]>(() => {
+  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
     const caption = compareCaption(selection);
     const pts = (pick: (r: SeriesRow) => number): MonthPoint[] | null => (seriesRows ? seriesRows.map((r) => ({ month: r.month, value: pick(r) })) : null);
     const card = (pick: (r: SeriesRow) => number, pageValue: number, kind: "money" | "count") =>
@@ -149,18 +150,18 @@ function SubscriptionsPageContent() {
     const annual = card((r) => r.annual, totals.annual, "money");
     const due = card((r) => r.dueSoon, totals.dueSoonAmount, "money");
     const active = card((r) => r.active, totals.activeCount, "count");
-    const shared = (c: ReturnType<typeof card>) => ({
-      sub: c.delta ?? NO_HISTORY_CAPTION, badgePct: c.badgePct,
+    const shared = (c: ReturnType<typeof card>, invert = false) => ({
+      delta: { pct: c.badgePct, text: c.delta ?? NO_HISTORY_CAPTION, ...(invert ? { invert } : {}) },
       sparkData: c.sparkData, sparkLabels: c.sparkLabels,
     });
     return [
-      { id: "monthly", icon: CalendarClock, iconTone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, invertTone: true, ...shared(monthly),
+      { id: "monthly", icon: CalendarClock, tone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
         note: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
-      { id: "yearly", icon: CalendarRange, iconTone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, invertTone: true, sparkColor: "#8b5cf6", ...shared(annual),
+      { id: "yearly", icon: CalendarRange, tone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, sparkColor: "#8b5cf6", ...shared(annual, true),
         note: "Annualised" },
-      { id: "due-soon", icon: CalendarClock, iconTone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, invertTone: true, sparkColor: "#f59e0b", ...shared(due),
+      { id: "due-soon", icon: CalendarClock, tone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, sparkColor: "#f59e0b", ...shared(due, true),
         note: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}` },
-      { id: "active", icon: CheckCircle2, iconTone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
+      { id: "active", icon: CheckCircle2, tone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
         note: `of ${subs.length} tracked` },
     ];
   }, [seriesRows, period, explicit, selection, totals, displayCurrency, subs.length]);

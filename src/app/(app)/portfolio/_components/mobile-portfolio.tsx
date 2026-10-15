@@ -8,12 +8,11 @@
  * Holdings themselves render per account in holding-account-groups.tsx (HoldingRow lists + DetailSheet).
  */
 
+import { MetricCard, type MetricCardProps } from "@/components/metric-card";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { formatPercent } from "@/lib/locale";
-import { MetricItemCard, type MetricItem } from "@/components/mobile";
-import { MetricCard } from "@/components/metric-card";
 import { Coins, Landmark, Layers, Percent, PiggyBank, TrendingUp, Wallet } from "lucide-react";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
@@ -33,11 +32,6 @@ export function holdingRowTitle(r: ByHoldingRow): string {
   const base = r.symbol ?? r.name;
   return r.assetType === "cash" ? `Cash · ${base}` : base;
 }
-
-type SummaryMetric = MetricItem & {
-  /** Shown from the regular size class up only. */
-  regularOnly?: boolean;
-};
 
 export function PortfolioSummary({ summary, currency, range }: { summary: OverviewData["summary"]; currency: string; range?: ReturnType<typeof useMetricRange> }) {
   const sources = usePortfolioMetricSources(currency);
@@ -61,26 +55,26 @@ export function PortfolioSummary({ summary, currency, range }: { summary: Overvi
   const dividendsCard = card(series.dividends, "last", summary.totalDividendsDisplay);
   const returnCard = card(series.totalReturn, "last", summary.totalReturnDisplay);
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-  const rawMetrics: SummaryMetric[] = [
-    { icon: Layers, label: "Holdings", value: summary.totalHoldings, sub: `Across ${plural(summary.totalAccounts, "account", "accounts")}` },
-    { icon: Landmark, label: "Accounts", value: summary.totalAccounts, sub: `${summary.totalAccounts} with holdings` },
+  const rawMetrics: MetricCardProps[] = [
+    { icon: Layers, label: "Holdings", value: <span>{summary.totalHoldings}</span>, sub: `Across ${plural(summary.totalAccounts, "account", "accounts")}` },
+    { icon: Landmark, label: "Accounts", value: <span>{summary.totalAccounts}</span>, sub: `${summary.totalAccounts} with holdings` },
     ...(hasBasis
       ? ([
           { icon: Wallet, label: "Cost basis", value: costCard.value ?? summary.totalCostBasisDisplay, currency, ...cardProps(costCard) },
-          { icon: TrendingUp, label: "Unrealized G/L", value: unrealizedCard.value ?? summary.totalUnrealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(unrealizedCard) },
-          { icon: Coins, label: "Realized G/L", value: realizedCard.value ?? summary.totalRealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(realizedCard) },
-          { icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) },
-          { icon: Percent, label: "Total return", value: returnCard.value ?? summary.totalReturnDisplay, currency, tone: "auto", showSign: true, regularOnly: true, ...cardProps(returnCard) },
-        ] as SummaryMetric[])
-      : [{ icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) } as SummaryMetric]),
+          { icon: TrendingUp, label: "Unrealized G/L", value: unrealizedCard.value ?? summary.totalUnrealizedGainDisplay, currency, valueTone: "auto", showSign: true, ...cardProps(unrealizedCard) },
+          { icon: Coins, label: "Realized G/L", value: realizedCard.value ?? summary.totalRealizedGainDisplay, currency, valueTone: "auto", showSign: true, ...cardProps(realizedCard) },
+          { icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, valueTone: "pos", showSign: true, ...cardProps(dividendsCard) },
+          { icon: Percent, label: "Total return", value: returnCard.value ?? summary.totalReturnDisplay, currency, valueTone: "auto", showSign: true, cellClassName: "max-regular:hidden", ...cardProps(returnCard) },
+        ] as MetricCardProps[])
+      : [{ icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, valueTone: "pos", showSign: true, ...cardProps(dividendsCard) } as MetricCardProps]),
   ];
   // Every tile carries a sub-line: its delta when there is history, a muted caption otherwise (never an invented number).
-  const metrics = rawMetrics.map((m) => (m.sub ? m : { ...m, sub: NO_HISTORY_CAPTION }));
+  const metrics = rawMetrics.map((m) => (m.sub || m.delta?.text ? m : { ...m, sub: NO_HISTORY_CAPTION }));
   return (
     <div data-slot="portfolio-summary" className="space-y-3">
       {!range && <PageToolbar refresh range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />}
-      <div data-testid="metric-total-value" className="min-w-0">
-        <MetricCard
+      <MetricCard
+          id="total-value"
           label="Total value"
           icon={Landmark}
           tone="indigo"
@@ -110,10 +104,9 @@ export function PortfolioSummary({ summary, currency, range }: { summary: Overvi
             </span>
           }
         />
-      </div>
       <div data-slot="metric-grid" className={metricGridClass(metrics.length)}>
         {metrics.map((m) => (
-          <MetricItemCard key={m.label} m={{ ...m, className: m.regularOnly ? "max-regular:hidden" : m.className }} />
+          <MetricCard key={String(m.label)} {...m} />
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MetricCardProps } from "@/components/metric-card";
 import { useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
@@ -14,7 +15,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
   MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ProgressRow, ProgressRowButton,
-  useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem,
+  useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type DetailItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
@@ -169,14 +170,14 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
     points: progressPoints, period, mode: "last", isDefault: !explicit, pageValue: totalCurrent,
     kind: "money", currency: displayCurrency, caption: compareCaption(selection),
   });
-  const summaryMetrics: MetricItem[] = [
-    { id: "total-target", label: "Total Target", icon: Target, iconTone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
+  const summaryMetrics: MetricCardProps[] = [
+    { id: "total-target", label: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
     {
-      id: "current-progress", label: "Current Progress", icon: PiggyBank, iconTone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
-      valueClassName: "text-pos", sub: progressCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: progressCard.badgePct,
+      id: "current-progress", label: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
+      valueClassName: "text-pos", delta: { pct: progressCard.badgePct, text: progressCard.delta ?? NO_HISTORY_CAPTION }, note: caveat,
       sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
     },
-    { id: "completed", label: "Completed", icon: CheckCircle2, iconTone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
+    { id: "completed", label: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
   ];
 
   const nodes: Record<string, ReactNode> = {
