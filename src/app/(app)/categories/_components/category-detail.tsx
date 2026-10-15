@@ -50,7 +50,7 @@ import { ArrowLeftRight, BarChart3, CalendarClock, Pencil, Percent, Receipt, Sca
 import { Button } from "@/components/ui/button";
 import {
   Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
-  useCardLayout, usePageCustomize, usePaneTitle, type MetricItem,
+  useCardLayout, usePageCustomize, usePaneTitle,
 } from "@/components/mobile";
 import { isGroupSelId, resolveGroupSelId, type GroupLike } from "@/lib/categories/group-key";
 import type { PageCard } from "@/lib/card-layout";
@@ -60,6 +60,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, periodLabel, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
 import { subLabel } from "@/lib/categories/group-overview";
 import { resolveCard } from "@/lib/metrics/delta";
+import type { MetricCardProps } from "@/components/metric-card";
 import { cardProps } from "@/lib/metrics/series";
 
 /** Cards of the category page, default order (Customize). The period selector and the header are not cards. */
@@ -225,13 +226,12 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
     ? (sel.range === "custom" ? periodName : sel.month ? periodName : RANGE_LABELS[sel.range])
     : "This month so far";
   const countCard = resolveCard({ points: countPts, period: metricRange.period, mode: "sum", isDefault: false, kind: "count", caption });
-  const summaryMetrics: MetricItem[] = [
+  const summaryMetrics: MetricCardProps[] = [
     { icon: Wallet,
       label: rangeTitle,
       value: metricRange.explicit || sel.month ? (thisCard.value ?? 0) : stats.thisMonth,
       currency: cur,
-      ...cardProps(thisCard),
-      invertTone: !isIncome,
+      ...cardProps(thisCard, !isIncome),
       note: currentMonth?.budget != null && !metricRange.explicit && !sel.month
         ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
         : `${countCard.value ?? currentMonth?.count ?? 0} transaction${(countCard.value ?? currentMonth?.count) === 1 ? "" : "s"}`,
@@ -240,8 +240,7 @@ export function CategoryDetail({ id: idProp, embedded }: { id: string | number; 
       label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
       value: stats.lastMonth,
       currency: cur,
-      ...cardProps(lastCard),
-      invertTone: !isIncome,
+      ...cardProps(lastCard, !isIncome),
       note: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
     { icon: Scale,
