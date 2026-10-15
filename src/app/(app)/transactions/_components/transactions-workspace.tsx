@@ -1026,7 +1026,7 @@ export function TransactionsWorkspace({
               <EmptyState
                 icon={Receipt}
                 title="No transactions yet"
-                description="Add your first transaction or import bank statements to get started."
+                description="Add or import your first transactions."
                 action={{ label: "Import data", href: "/import" }}
               />
             }

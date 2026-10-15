@@ -337,7 +337,7 @@ function LoansPageContent() {
                 <EmptyState
                   icon={Landmark}
                   title="No loans tracked yet"
-                  description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
+                  description="Add a mortgage, car loan or other debt."
                   action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
                 />
               )}

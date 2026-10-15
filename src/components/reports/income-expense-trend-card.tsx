@@ -15,7 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { CHART_COLORS } from "@/lib/chart-colors";
@@ -56,8 +56,7 @@ export function IncomeExpenseTrendCard({
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={ArrowLeftRight} tone="emerald">{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
+              <CardTitle icon={ArrowLeftRight} tone="emerald" info={description} infoLabel="About this chart">{title}</CardTitle>
             </div>
           </div>
         </div>

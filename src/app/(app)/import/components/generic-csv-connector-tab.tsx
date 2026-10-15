@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -34,6 +33,7 @@ import {
 import { exportCsv } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
 import { getDisplayLocale } from "@/lib/locale";
+import { InfoTip } from "@/components/ui/info-tip";
 
 // Logical fields the importer understands. Required ones can't be unmapped.
 const FIELDS = [
@@ -347,11 +347,7 @@ export function GenericCsvConnectorTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle icon={FileSpreadsheet} tone="emerald">
-            Generic CSV (full ledger)
-          </CardTitle>
-          <CardDescription>
-            Migrate a whole-portfolio export from any app — one CSV with{" "}
+          <CardTitle icon={FileSpreadsheet} tone="emerald" infoLabel="About generic csv (full ledger)" info={<>Migrate a whole-portfolio export from any app — one CSV with{" "}
             <span className="font-mono">date</span>,{" "}
             <span className="font-mono">amount</span>,{" "}
             <span className="font-mono">account</span> columns (plus optional
@@ -362,8 +358,7 @@ export function GenericCsvConnectorTab() {
             transfer</span>, also map the{" "}
             <span className="font-mono">amount received</span> and{" "}
             <span className="font-mono">currency received</span> columns so each
-            side is recorded in its own currency.
-          </CardDescription>
+            side is recorded in its own currency.</>}>Generic CSV (full ledger)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
@@ -408,11 +403,13 @@ export function GenericCsvConnectorTab() {
             <div className="space-y-4">
               {/* Column mapping */}
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Match columns</h3>
-                <p className="text-xs text-muted-foreground">
-                  Tell Finlynq which column holds each field. Required fields are
-                  marked with <span className="text-destructive">*</span>.
-                </p>
+                <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                  Match columns
+                  <InfoTip
+                    label="About matching columns"
+                    text="Tell Finlynq which column holds each field. Required fields are marked with *."
+                  />
+                </h3>
                 <div className="grid gap-2 regular:grid-cols-2">
                   {FIELDS.map((f) => (
                     <div key={f.key} className="flex items-center gap-2">
@@ -520,11 +517,13 @@ export function GenericCsvConnectorTab() {
                   />
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Map accounts</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Each source account becomes a Finlynq account. Matched names
-                      are linked automatically; the rest are created new.
-                    </p>
+                    <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                      Map accounts
+                      <InfoTip
+                        label="About mapping accounts"
+                        text="Each source account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
+                      />
+                    </h3>
                     <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {summary.accounts.map((p) => {
                         const sel = target[p.sourceName] ?? "new";

@@ -5,7 +5,6 @@ import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/loca
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
@@ -22,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { GroupField } from "./group-field";
 import { AmountInput } from "@/components/amount-input";
+import { FieldLabel, FormField } from "@/components/forms";
 
 const ACCOUNT_TYPES = [
   { value: "A", label: "Asset" },
@@ -112,52 +112,57 @@ export interface AccountFormProps {
   onComplete?: () => void;
 }
 
-const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
-const ROW_LABEL = `${TW.rowLabelNarrow} shrink-0 text-sm text-muted-foreground`;
-const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
-const OB_HELP =
-  "A single starting-balance entry for this account. Set the date to when the account opened so " +
-  "Balance Over Time and Net Worth history start from the right point. Clearing the amount zeroes " +
-  "the entry — it is not deleted.";
+const INFO = {
+  name: "The account's display name.",
+  alias:
+    "Optional. Short nickname used when matching transactions, e.g. the last 4 digits of a card or a receipt label. " +
+    "It must be unique: a name or alias shared with another account makes matches ambiguous.",
+  type: "Credit cards should be Liability accounts; the balance is the amount owed.",
+  group: "Free text. Pick a suggestion or type any group name, e.g. Checking or Emergency Fund.",
+  currency: "The currency this account is kept in.",
+  note: "Optional free-text note, e.g. Joint account.",
+  openingBalance:
+    "Optional. A single starting-balance entry for this account. Set the date to when the account opened so " +
+    "Balance Over Time and Net Worth history start from the right point. Clearing the amount zeroes " +
+    "the entry; it is not deleted.",
+  isInvestment:
+    'When enabled, every transaction in this account must reference a portfolio holding (a security or the auto-created "Cash" sleeve). ' +
+    "Turning this on now will reassign any unattributed transactions to this account's Cash holding.",
+  invisible: "Hidden from net worth, totals, reports and metrics. The account and its transactions stay here.",
+} as const;
 
+/**
+ * One field. Label + (i) tip on top, control below, then at most a short error / warning. Same layout in the 25% pane,
+ * the page and the stacked variant ("rows" = padded rows inside one divided card).
+ */
 function Field({
   variant,
   label,
   htmlFor,
+  info,
   error,
-  hint,
   warning,
   children,
 }: {
   variant: AccountFormVariant;
-  label: ReactNode;
+  label: string;
   htmlFor?: string;
+  info?: ReactNode;
   error?: string;
-  hint?: ReactNode;
   warning?: string;
   children: ReactNode;
 }) {
-  if (variant === "stack") {
-    return (
-      <div className="space-y-1.5">
-        <Label htmlFor={htmlFor}>{label}</Label>
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {hint}
-        {warning && <p className="text-xs text-warning">{warning}</p>}
-      </div>
-    );
-  }
   return (
-    <div className={ROW}>
-      <Label htmlFor={htmlFor} className={ROW_LABEL}>{label}</Label>
-      <div className="min-w-0 flex-1 space-y-1">
-        {children}
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {hint}
-        {warning && <p className="text-xs text-warning">{warning}</p>}
-      </div>
-    </div>
+    <FormField
+      label={label}
+      htmlFor={htmlFor}
+      info={info}
+      error={error}
+      warning={warning}
+      className={variant === "rows" ? "px-4 py-3" : undefined}
+    >
+      {children}
+    </FormField>
   );
 }
 
@@ -167,33 +172,19 @@ function CheckField({
   label,
   checked,
   onChange,
-  hint,
+  info,
 }: {
   variant: AccountFormVariant;
   id: string;
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-  hint: string;
+  info: ReactNode;
 }) {
-  const box = (
-    <div className={cn("flex items-center justify-between gap-3", variant === "rows" && TW.row)}>
-      <Label htmlFor={id} className="flex-1 cursor-pointer">{label}</Label>
-      <Switch id={id} checked={checked} onCheckedChange={(v) => onChange(v)} className="shrink-0" />
-    </div>
-  );
-  if (variant === "stack") {
-    return (
-      <div className="space-y-1.5">
-        {box}
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-    );
-  }
   return (
-    <div className="px-4 py-2">
-      {box}
-      <p className="text-xs text-muted-foreground">{hint}</p>
+    <div className={cn("flex items-center justify-between gap-2", variant === "rows" && `px-4 py-2 ${TW.row}`)}>
+      <FieldLabel label={label} htmlFor={id} info={info} className="flex-1" />
+      <Switch id={id} checked={checked} onCheckedChange={(v) => onChange(v)} className="shrink-0" />
     </div>
   );
 }
@@ -390,10 +381,9 @@ export function AccountForm({
   const aliasMsg = aliasWarning?.(form.alias, account?.id ?? null) ?? "";
   const v = variant;
 
-  // Type + Group share a line in the stacked dialog; separate rows on the page.
+  // Type + Group share a line in the stacked dialog; separate rows on the page / pane.
   const pair = (node: ReactNode) =>
     v === "stack" ? <div className="grid grid-cols-2 gap-3">{node}</div> : <>{node}</>;
-  const control = (extra?: string) => (v === "rows" ? cn(ROW_CONTROL, extra) : extra);
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
@@ -403,10 +393,9 @@ export function AccountForm({
           v === "stack" && "space-y-4",
         )}
       >
-        <Field variant={v} label="Account Name" htmlFor="account-form-name" error={errors.name}>
+        <Field variant={v} label="Account Name" htmlFor="account-form-name" info={INFO.name} error={errors.name}>
           <Input
             id="account-form-name"
-            className={control()}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="e.g. TD Chequing"
@@ -414,35 +403,19 @@ export function AccountForm({
           />
         </Field>
 
-        <Field
-          variant={v}
-          label={<>Alias <span className="text-muted-foreground text-xs">(optional)</span></>}
-          htmlFor="account-form-alias"
-          hint={
-            <p className="text-xs text-muted-foreground">
-              Short nickname used when matching transactions — e.g. last 4 digits of a card, or a receipt label.
-            </p>
-          }
-          warning={aliasMsg}
-        >
+        <Field variant={v} label="Alias" htmlFor="account-form-alias" info={INFO.alias} warning={aliasMsg}>
           <Input
             id="account-form-alias"
-            className={control()}
             value={form.alias}
             onChange={(e) => setForm({ ...form, alias: e.target.value })}
-            placeholder="e.g. 1234 or Visa4242"
+            placeholder="e.g. 1234"
             maxLength={64}
           />
         </Field>
 
         {pair(
           <>
-            <Field
-              variant={v}
-              label="Type"
-              error={errors.type}
-              hint={<p className="text-xs text-muted-foreground">Credit cards should be Liability accounts; balance = amount owed.</p>}
-            >
+            <Field variant={v} label="Type" info={INFO.type} error={errors.type}>
               <Select items={ACCOUNT_TYPE_LABELS} value={form.type} onValueChange={(t) => setType(t ?? "A")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -450,7 +423,7 @@ export function AccountForm({
                 </SelectContent>
               </Select>
             </Field>
-            <Field variant={v} label="Group" htmlFor="account-dialog-group" error={errors.group}>
+            <Field variant={v} label="Group" htmlFor="account-dialog-group" info={INFO.group} error={errors.group}>
               <GroupField
                 inputId="account-dialog-group"
                 type={form.type}
@@ -462,7 +435,7 @@ export function AccountForm({
           </>,
         )}
 
-        <Field variant={v} label="Currency">
+        <Field variant={v} label="Currency" info={INFO.currency}>
           <Combobox
             value={form.currency}
             onValueChange={(c) => setForm({ ...form, currency: c || defaultCurrency })}
@@ -478,13 +451,11 @@ export function AccountForm({
           />
         </Field>
 
-        <Field variant={v} label={<>Note <span className="text-muted-foreground text-xs">(optional)</span></>} htmlFor="account-form-note">
+        <Field variant={v} label="Note" htmlFor="account-form-note" info={INFO.note}>
           <Input
             id="account-form-note"
-            className={control()}
             value={form.note}
             onChange={(e) => setForm({ ...form, note: e.target.value })}
-            placeholder="e.g. Joint account"
           />
         </Field>
 
@@ -494,8 +465,7 @@ export function AccountForm({
         {!form.isInvestment &&
           (v === "stack" ? (
             <div className="space-y-2 rounded-lg border border-border/60 p-3">
-              <Label>Opening balance <span className="text-muted-foreground text-xs">(optional)</span></Label>
-              <p className="text-xs text-muted-foreground">{OB_HELP}</p>
+              <FieldLabel label="Opening balance" info={INFO.openingBalance} />
               <div className="grid grid-cols-2 gap-3">
                 <Field variant={v} label="Amount" htmlFor="account-dialog-ob-amount">
                   <AmountInput
@@ -518,12 +488,7 @@ export function AccountForm({
             </div>
           ) : (
             <>
-              <Field
-                variant={v}
-                label="Opening balance"
-                htmlFor="account-dialog-ob-amount"
-                hint={<p className="text-xs text-muted-foreground">{OB_HELP}</p>}
-              >
+              <Field variant={v} label="Opening balance" htmlFor="account-dialog-ob-amount" info={INFO.openingBalance}>
                 <AmountInput
                   id="account-dialog-ob-amount"
                   step="0.01"
@@ -536,7 +501,6 @@ export function AccountForm({
                 <Input
                   id="account-dialog-ob-date"
                   type="date"
-                  className={ROW_CONTROL}
                   value={form.obDate}
                   onChange={(e) => setForm({ ...form, obDate: e.target.value })}
                 />
@@ -550,7 +514,7 @@ export function AccountForm({
           label="Investment account"
           checked={form.isInvestment}
           onChange={(checked) => setForm({ ...form, isInvestment: checked })}
-          hint={'When enabled, every transaction in this account must reference a portfolio holding (a security or the auto-created "Cash" sleeve). Turning this on now will reassign any unattributed transactions to this account\'s Cash holding.'}
+          info={INFO.isInvestment}
         />
 
         <CheckField
@@ -559,7 +523,7 @@ export function AccountForm({
           label="Invisible"
           checked={form.invisible}
           onChange={(checked) => setForm({ ...form, invisible: checked })}
-          hint="Hidden from net worth, totals, reports and metrics. The account and its transactions stay here."
+          info={INFO.invisible}
         />
       </div>
 

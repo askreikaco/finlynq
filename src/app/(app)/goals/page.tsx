@@ -114,7 +114,7 @@ const emptyGoals = (
       </div>
       <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-6">
-        Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
+        Start with an emergency fund, debt payoff or savings goal.
       </p>
       <div className="flex flex-wrap gap-2 justify-center">
         {EMPTY_STATE_CHIPS.map(({ label, type }) => (
@@ -228,7 +228,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
         <CardContent className="py-10 flex flex-col items-center text-center">
           <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
           <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
-          <p className="text-sm text-muted-foreground">Add a new goal to keep building momentum.</p>
+          <p className="text-sm text-muted-foreground">Add a new goal.</p>
         </CardContent>
       </Card>
     ),
@@ -334,7 +334,7 @@ export default function GoalsPage() {
         useLoad={useGoalsLoad}
         empty={{
           title: "Set your first financial goal",
-          body: "Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.",
+          body: "Start with an emergency fund, debt payoff or savings goal.",
         }}
         toolbarPlacement="none"
         cards={goalsBody}

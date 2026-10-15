@@ -31,6 +31,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { InfoTip } from "@/components/ui/info-tip";
 import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
 import { NumpadDock, buildCurrencyChips } from "./numpad-dock";
@@ -1620,9 +1621,9 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
         )}
 
         {isInstallmentRow && (
-          <p data-testid="txnew-series-hint" className="shrink-0 px-1 text-xs text-muted-foreground">
-            Edits can apply to this payment or the following ones
-          </p>
+          <div data-testid="txnew-series-hint" className="shrink-0 px-1">
+            <InfoTip label="About payment series" text="Edits can apply to this payment or the following ones" />
+          </div>
         )}
 
         {editRow && <EditMetaLine tx={editRow} />}

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AmountInput } from "@/components/amount-input";
+import { InfoTip } from "@/components/ui/info-tip";
 
 interface OnboardingWizardProps {
   userEmail: string;
@@ -325,8 +326,7 @@ export function OnboardingWizard({
                   </motion.div>
                   <h2 className="text-2xl font-bold mb-2">Welcome to Finlynq</h2>
                   <p className="text-muted-foreground max-w-sm mb-4">
-                    Let&apos;s get you set up in 6 steps. You&apos;ll be tracking your finances and
-                    querying them with your AI in under 10 minutes.
+                    Set up in 6 steps, about 10 minutes.
                   </p>
                   <p className="text-xs text-muted-foreground">Signed in as {userEmail}</p>
 
@@ -362,12 +362,11 @@ export function OnboardingWizard({
                     <h2 className="text-lg font-semibold">
                       Which currency should we show your money in?
                     </h2>
+                    <InfoTip
+                      label="About reporting currency"
+                      text="We report every total in one currency. Individual accounts and transactions keep their own. You can change this anytime in Settings."
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    We report every total in one currency. Individual accounts and
-                    transactions keep their own — you can change this anytime in
-                    Settings.
-                  </p>
 
                   <div>
                     <label className="text-sm font-medium" htmlFor="currency">
@@ -385,10 +384,6 @@ export function OnboardingWizard({
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Totals like net worth and monthly spending are converted to{" "}
-                    {currency}. The accounts you add next start in this currency.
-                  </p>
                 </div>
               )}
 
@@ -398,10 +393,8 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Wallet className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Add accounts</h2>
+                    <InfoTip label="About accounts" text="Pick the accounts you use. You can add more later." />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Pick the accounts you use. You can add more later.
-                  </p>
 
                   {/* The currency lives on its own step now — echo it here so
                       the choice stays visible (and changeable) instead of
@@ -453,9 +446,6 @@ export function OnboardingWizard({
                     <Database className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Import your data</h2>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    How would you like to start?
-                  </p>
                   <div className="space-y-3 mt-2">
                     {[
                       {
@@ -506,10 +496,12 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Target className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Set a starter budget</h2>
+                    <InfoTip
+                      label="About the starter budget"
+                      text="Adjust these monthly amounts to match your spending. You can fine-tune anytime. These budgets will be created for the current month."
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Adjust these monthly amounts to match your spending. You can fine-tune anytime.
-                  </p>
+
                   <div className="space-y-3 mt-1">
                     {BUDGET_PRESETS.map(({ category }) => (
                       <div key={category} className="flex items-center gap-3">
@@ -534,9 +526,6 @@ export function OnboardingWizard({
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    These budgets will be created for the current month.
-                  </p>
                 </div>
               )}
 
@@ -546,11 +535,11 @@ export function OnboardingWizard({
                   <div className="flex items-center gap-3 mb-1">
                     <Bot className="h-6 w-6 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Connect your AI assistant</h2>
+                    <InfoTip
+                      label="About the MCP server"
+                      text="The MCP server lets Claude, Cursor, or any AI client query your financial data using natural language. No manual exports needed."
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    The MCP server lets Claude, Cursor, or any AI client query your financial data
-                    using natural language — no manual exports needed.
-                  </p>
 
                   <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">

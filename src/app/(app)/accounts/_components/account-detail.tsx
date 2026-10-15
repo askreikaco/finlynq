@@ -25,7 +25,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
@@ -45,6 +44,8 @@ import {
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
+import { InfoTip } from "@/components/ui/info-tip";
+import { FieldLabel } from "@/components/forms";
 
 type Account = {
   id: number;
@@ -615,8 +616,12 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
             {account.mode && <ListRow title="Import mode" value={<span className="capitalize">{account.mode}</span>} />}
             {account.note && <ListRow title="Note" subtitle={undefined} value={<span className="whitespace-normal text-muted-foreground">{account.note}</span>} />}
             <ListRow
-              title="Invisible"
-              subtitle="Hidden from net worth, totals, reports and metrics"
+              title={
+                <span className="inline-flex items-center gap-0.5">
+                  Invisible
+                  <InfoTip label="About Invisible" text="Hidden from net worth, totals, reports and metrics" />
+                </span>
+              }
               value={
                 <Switch
                   checked={invisible}
@@ -670,12 +675,11 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
             <DialogTitle>Add cash sleeve</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateSleeve} className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Creates a per-currency cash position inside <b>{account.name}</b>.
-              Only one sleeve per currency is allowed.
-            </p>
             <div className="space-y-1.5">
-              <Label>Currency</Label>
+              <FieldLabel
+                label="Currency"
+                info={<>Creates a per-currency cash position inside <b>{account.name}</b>. Only one sleeve per currency is allowed.</>}
+              />
               <Combobox
                 value={newSleeveCurrency}
                 onValueChange={(v) => setNewSleeveCurrency(v || "")}

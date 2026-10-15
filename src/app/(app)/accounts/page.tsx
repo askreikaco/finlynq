@@ -355,7 +355,7 @@ function AccountsPage() {
         <EmptyState
           icon={Wallet}
           title="No accounts yet"
-          description="Create your first account or import bank data to start tracking your net worth."
+          description="Add your first account to track net worth."
           action={{ label: "Import data", href: "/import" }}
         />
       </SectionPage>
