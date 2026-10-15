@@ -127,6 +127,7 @@ function EditPanel({ mode, id, returnTo, embedded }: TransactionFormScreenProps 
       categories={source.categories}
       holdings={source.holdings}
       returnTo={returnTo}
+      splitCount={source.splits?.length ?? null}
     />
   );
 }

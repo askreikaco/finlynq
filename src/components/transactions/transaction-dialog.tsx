@@ -68,6 +68,8 @@ export interface DialogTransaction {
   createdAt?: string | null;
   updatedAt?: string | null;
   source?: TransactionSource | null;
+  /** Portfolio operation kind (buy, sell, ...) when the row has one. */
+  kind?: string | null;
   /** Repeat + Installment membership (GET /api/transactions): plan id / position / total, or the repeat subscription. */
   installmentGroupId?: string | null;
   installmentSeq?: number | null;

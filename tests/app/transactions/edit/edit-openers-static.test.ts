@@ -18,6 +18,12 @@ describe("edit openers navigate instead of opening a dialog", () => {
     expect(src).toMatch(/transactionEditHref\(/);
   });
 
+  it("the list has no row sheet: transaction-sheet.tsx is gone and nothing imports it", () => {
+    expect(existsSync(join(root, "src/app/(app)/transactions/_components/transaction-sheet.tsx"))).toBe(false);
+    const src = read("src/app/(app)/transactions/_components/transactions-workspace.tsx");
+    expect(src).not.toMatch(/TransactionSheet|sheetTx|variant="detail"/);
+  });
+
   it("the shared edit form and both edit pages never render the dialog component", () => {
     for (const p of [
       "src/app/(app)/transactions/_components/transaction-edit-form.tsx",
@@ -42,7 +48,9 @@ describe("edit openers navigate instead of opening a dialog", () => {
     const src = read("src/app/(app)/transactions/_components/transaction-edit-form.tsx");
     expect(src).toMatch(/form: FORM_ID/);
     expect(src).toMatch(/<PageHeader/);
-    expect(src).toMatch(/Delete this transaction\?|Delete this transfer\?/);
+    // Delete asks first in the one shared confirm (also used by the entry screen).
+    expect(src).toMatch(/<EditDeleteDialog\b/);
+    expect(read("src/components/transactions/entry/edit-delete-dialog.tsx")).toMatch(/Delete this transaction\?/);
   });
 
   it("returnTo is validated on both edit pages", () => {

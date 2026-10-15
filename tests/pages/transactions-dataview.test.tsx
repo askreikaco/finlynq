@@ -2,13 +2,13 @@
  * @vitest-environment jsdom
  */
 // Transactions: one list at every width (batch 3). The list is date-grouped mobile ListRows, never a
-// <table>. Row tap opens the row's detail sheet (Edit / Duplicate / Split / Delete). Select mode adds
+// <table>. A phone row is a link to the edit page (no bottom sheet; Duplicate / Split / Delete live in its overflow). Select mode adds
 // bulk checkboxes. Sort is a compact control, not column headers. The split view (list 2/3 | the shared entry form 1/3, ?sel) is on by default from regular up.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
-import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import type { SizeClass } from "@/components/ui/size-class";
 
 const H = vi.hoisted(() => {
@@ -57,7 +57,6 @@ import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/tran
 const SRC_DIR = path.resolve(__dirname, "../../src");
 const read = (rel: string) => fs.readFileSync(path.join(SRC_DIR, rel), "utf-8");
 const WORKSPACE = "app/(app)/transactions/_components/transactions-workspace.tsx";
-const SHEET = "app/(app)/transactions/_components/transaction-sheet.tsx";
 const LIST = "components/transactions/mobile-tx-list.tsx";
 
 class FakeIntersectionObserver {
@@ -90,7 +89,7 @@ afterEach(() => {
   try { localStorage.clear(); } catch { /* storage may be unavailable */ }
 });
 
-/** The mobile list rows (ListRow buttons or checkbox rows), not the sheet or other buttons. */
+/** The mobile list rows (ListRow links, buttons or checkbox rows), not other buttons. */
 function listRows(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]'));
 }
@@ -125,21 +124,22 @@ describe("Transactions: one list at every width", () => {
   });
 });
 
-describe("Transactions: row tap opens the detail sheet", () => {
-  it("compact: a row tap opens the sheet with the row's actions, and Edit opens the edit page with returnTo", () => {
+describe("Transactions: a phone row opens the edit page", () => {
+  it("compact: a row is a link to /transactions/<id>/edit with the list as returnTo; no sheet opens", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    fireEvent.click(listRows()[0]);
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
+    const row = listRows()[0];
+    expect(row.tagName).toBe("A");
+    expect(row.getAttribute("href")).toMatch(/^\/transactions\/\d+\/edit\?returnTo=/);
+    fireEvent.click(row);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("compact: the sheet's Delete is wired to the confirm flow (no direct navigation)", () => {
+  it("compact: the list has no row actions (Edit / Duplicate / Split / Delete are on the edit page)", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
     fireEvent.click(listRows()[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    for (const name of ["Edit", "Duplicate", "Split", "Delete"]) expect(screen.queryByRole("button", { name })).toBeNull();
     expect(H.push).not.toHaveBeenCalled();
   });
 
@@ -216,7 +216,7 @@ describe("Transactions: paging and split view", () => {
     expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
   });
 
-  it("a row tap selects it into the pane (?sel) instead of opening the sheet when split, and opens the sheet below wide", () => {
+  it("a row tap selects it into the pane (?sel) instead of navigating when split, and below wide the row is a link (no handler)", () => {
     size.current = "wide";
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByText("pp")[0]);
@@ -242,14 +242,15 @@ describe("Transactions: static guards for the one-layout rule", () => {
     expect(src).not.toContain("transaction-table");
   });
 
-  it("the old table file is gone; the list and the sheet are the only row components", () => {
+  it("the old table file is gone; the list is the only row component and the row sheet is gone", () => {
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
     expect(read(LIST)).toContain("<SectionCard");
-    expect(read(SHEET)).toContain('variant="detail"');
+    expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-sheet.tsx"))).toBe(false);
+    expect(read(WORKSPACE)).not.toContain('variant="detail"');
   });
 
-  it("the list, the sheet and the workspace carry no breakpoint tokens", () => {
-    for (const rel of [WORKSPACE, SHEET, LIST]) {
+  it("the list and the workspace carry no breakpoint tokens", () => {
+    for (const rel of [WORKSPACE, LIST]) {
       expect(read(rel).match(new RegExp(TOKEN.source, "g")) ?? [], rel).toEqual([]);
     }
   });
