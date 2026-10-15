@@ -308,15 +308,13 @@ export default function AdminPriceCachePage() {
       {/* Tabs */}
       <div className="flex items-center gap-1.5">
         {(["price", "fx"] as const).map((t) => (
-          <button
+          <Button
             key={t}
             onClick={() => switchTab(t)}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              tab === t ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"
-            }`}
+            variant="outline" pressed={tab === t}
           >
             {t === "price" ? "Price cache" : "FX rates"}
-          </button>
+          </Button>
         ))}
       </div>
 

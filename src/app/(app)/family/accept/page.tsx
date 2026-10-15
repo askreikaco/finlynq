@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { InviteLinkHandler } from "../_components/invite-link-handler";
 import { SectionPage } from "@/components/templates/section-page";
@@ -18,9 +17,9 @@ export default function FamilyAcceptPage() {
       suspense={false}
     >
       <InviteLinkHandler requireToken />
-      <Link href="/family" className={buttonVariants()}>
+      <Button href="/family">
         {FAMILY_STRINGS.accept_go_to_page}
-      </Link>
+      </Button>
     </SectionPage>
   );
 }

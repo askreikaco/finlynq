@@ -60,11 +60,11 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
             }
             actions={
               <>
-                <Button aria-label="Edit template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
+                <Button aria-label="Edit template" iconOnly variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
                 <Button aria-label="Delete template"
-                  size="icon"
+                  iconOnly
                   variant="ghost"
                   className="h-7 w-7"
                   onClick={() => deleteTemplate(t.id)}

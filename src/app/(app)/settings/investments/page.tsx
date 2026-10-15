@@ -323,19 +323,15 @@ function InvestmentsSettingsPage() {
   const sortPill = (k: SortKey, label: string) => {
     const active = sort.key === k;
     return (
-      <button
+      <Button
         key={k}
         type="button"
-        aria-pressed={active}
         onClick={() => toggleSort(k)}
-        className={cn(
-          "inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-medium",
-          active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
-        )}
+        variant="outline" size="sm" shape="round" pressed={active} className="shrink-0"
       >
         {label}
         {active ? (sort.dir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null}
-      </button>
+      </Button>
     );
   };
 

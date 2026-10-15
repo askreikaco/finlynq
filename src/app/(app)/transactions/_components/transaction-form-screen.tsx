@@ -7,6 +7,7 @@
  * the offline queue and the delete confirm are one code path. Rows the entry screen cannot represent faithfully keep
  * the old TransactionEditForm on the pages; the pane offers a link to that full editor instead.
  */
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -94,9 +95,9 @@ function EditPanel({ mode, id, returnTo, embedded }: TransactionFormScreenProps 
     return (
       <div data-testid="tx-edit-redirect" className="space-y-2 text-sm">
         <p>This is an investment transaction. It is edited on its own page.</p>
-        <button type="button" className="text-primary underline" onClick={() => router.push(source.href)}>
+        <Button type="button" variant="link" size="sm" onClick={() => router.push(source.href)}>
           Open the investment editor
-        </button>
+        </Button>
       </div>
     );
   }

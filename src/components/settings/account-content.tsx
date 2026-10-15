@@ -414,7 +414,7 @@ export function AccountContent({
           />
           <Button aria-label={apiKeyVisible ? "Hide key" : "Show key"}
             variant="outline"
-            size="icon"
+            iconOnly
             onClick={() => setApiKeyVisible(!apiKeyVisible)}
             title={apiKeyVisible ? "Hide key" : "Show key"}
             disabled={!apiKey}
@@ -423,7 +423,7 @@ export function AccountContent({
           </Button>
           <Button aria-label="Copy key"
             variant="outline"
-            size="icon"
+            iconOnly
             onClick={handleCopyApiKey}
             title="Copy key"
             disabled={!apiKey}

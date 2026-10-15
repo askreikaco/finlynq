@@ -67,7 +67,7 @@ export function AccountFilter({
       <DropdownMenuTrigger
         render={
           <Button
-            variant={isFiltered ? "default" : "outline"}
+            variant={isFiltered ? "primary" : "outline"}
             size="sm"
             className="h-8 text-xs gap-1.5"
           >

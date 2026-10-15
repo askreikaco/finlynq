@@ -77,7 +77,7 @@ describe("1. the primary action is an icon-only 44pt filled circle (every width)
     const primary = screen.getByRole("button", { name: "Add" });
     expect(primary.getAttribute("data-slot")).toBe("topbar-primary");
     expect(primary.getAttribute("aria-label")).toBe("Add");
-    expect(primary.getAttribute("data-variant")).toBe("default");
+    expect(primary.getAttribute("data-variant")).toBe("primary");
     expect(primary.textContent).toBe("");
   });
 

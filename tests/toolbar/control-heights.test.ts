@@ -21,7 +21,7 @@ describe("toolbar controls share one height", () => {
     expect(tb).toContain('data-slot="month-switcher" className={cn("flex h-11');
     expect(tb).toContain("pill"); // the search is a pill Field: the 44px control surface
     expect(tb).toContain("[&_[data-slot=field-surface]]:dense:pointer-fine:h-11"); // 44px in dense too
-    expect(read("src/components/ui/round-icon-button.tsx")).toContain('"size-11 pointer-coarse:size-11 dense:pointer-fine:size-11 rounded-full p-0"');
+    expect(read("src/components/ui/button.tsx")).toContain('"size-11 pointer-coarse:size-11 dense:pointer-fine:size-11"'); // round iconOnly Button
   });
   it("the subscriptions List/Calendar switch beside the toolbar uses the segmented 44px tabs", () => {
     expect(read("src/app/(app)/subscriptions/page.tsx")).toContain('<TabsList variant="segmented">');

@@ -614,7 +614,6 @@ export function InboxToApproveTab({
           </p>
           <Button
             size="sm"
-            variant="default"
             disabled={suggestedUnlinked.length === 0 || bulkBusy}
             onClick={() => void onAcceptAllSuggested()}
             className="gap-1.5"

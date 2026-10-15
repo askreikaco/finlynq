@@ -554,18 +554,15 @@ export default function AdminPage() {
                 {USER_SORT_OPTIONS.map((o) => {
                   const active = sort?.key === o.key;
                   return (
-                    <button
+                    <Button
                       key={o.key}
                       type="button"
-                      aria-pressed={active}
                       onClick={() => toggleUserSort(o.key)}
-                      className={`inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium ${
-                        active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-                      }`}
+                      variant="outline" size="sm" shape="round" pressed={active}
                     >
                       {o.label}
                       {active ? (sort?.dir === "asc" ? "↑" : "↓") : null}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

@@ -180,7 +180,7 @@ export function NoticeDemos() {
     <div className="space-y-4" data-testid="gallery-notice">
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Tone">
         {TONES.map((t) => (
-          <Button key={t} size="sm" variant={tone === t ? "default" : "outline"} onClick={() => setTone(t)}>{t}</Button>
+          <Button key={t} size="sm" variant={tone === t ? "primary" : "outline"} onClick={() => setTone(t)}>{t}</Button>
         ))}
         <Button size="sm" variant="ghost" onClick={() => setRound((r) => r + 1)}>Reset dismissed</Button>
       </div>

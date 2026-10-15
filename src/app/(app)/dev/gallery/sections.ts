@@ -3,7 +3,7 @@ export const GALLERY_SECTIONS = [
   { id: "card", label: "Card" },
   { id: "list-row", label: "ListRow" },
   { id: "shadow", label: "Card shadow" },
-  { id: "buttons", label: "Buttons / Badges" },
+  { id: "buttons", label: "Button" },
   { id: "forms", label: "Field" },
   { id: "overlays", label: "Overlay" },
   { id: "topbar", label: "Top bar" },

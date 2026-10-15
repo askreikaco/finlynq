@@ -448,7 +448,7 @@ function FormPageBody<T, R, V, X>({
           </Button>
         ) : null}
         {embedded?.onCancel ? (
-          <Button type="button" variant="ghost" size="icon" aria-label="Close" data-slot="form-pane-close" onClick={embedded.onCancel}>
+          <Button type="button" variant="ghost" iconOnly aria-label="Close" data-slot="form-pane-close" onClick={embedded.onCancel}>
             <X className="h-4 w-4" aria-hidden />
           </Button>
         ) : null}

@@ -26,6 +26,18 @@ function setNavDepth(n: number): void {
   }
 }
 
+/**
+ * Click handler of a Back link: the real browser back when the user navigated inside the app (depth > 0); the link's
+ * `href` is the fallback for a fresh entry or a deep link, and what a modified click (new tab) still opens.
+ */
+export function onBackLinkClick(e: { defaultPrevented: boolean; button: number; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; preventDefault: () => void }): void {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  if (getNavDepth() > 0) {
+    e.preventDefault();
+    window.history.back();
+  }
+}
+
 export function incrementNavDepth(): void {
   setNavDepth(getNavDepth() + 1);
 }

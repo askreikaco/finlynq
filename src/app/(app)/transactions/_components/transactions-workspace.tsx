@@ -787,7 +787,7 @@ export function TransactionsWorkspace({
                         className="h-7 text-xs"
                         onClick={executeBulkAction}
                         disabled={isBulkApplyDisabled}
-                        variant={bulkAction === "delete" ? "destructive" : "default"}
+                        variant={bulkAction === "delete" ? "destructive" : "primary"}
                       >
                         {bulkProcessing ? "Processing…" : "Apply"}
                       </Button>

@@ -336,7 +336,7 @@ export function TransactionFormBody({
                     <Button aria-label="Remove split row"
                       type="button"
                       variant="ghost"
-                      size="icon"
+                      iconOnly
                       className="h-7 w-7 shrink-0 text-muted-foreground"
                       onClick={() => setSplitRows(splitRows.filter((_, j) => j !== i))}
                       disabled={splitRows.length <= 2}

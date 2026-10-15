@@ -192,7 +192,7 @@ export function ManageGroupsPanel({
           />
           <Button
             type="button"
-            size="icon"
+            iconOnly
             variant="ghost"
             className="size-11 regular:pointer-fine:size-8"
             disabled={busy}
@@ -204,7 +204,7 @@ export function ManageGroupsPanel({
           </Button>
           <Button
             type="button"
-            size="icon"
+            iconOnly
             variant="ghost"
             className="size-11 regular:pointer-fine:size-8"
             title="Cancel"
@@ -229,7 +229,7 @@ export function ManageGroupsPanel({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
+                    iconOnly
                     className="size-11 text-muted-foreground regular:pointer-fine:size-8"
                     disabled={busy}
                     aria-label={`Actions for ${g}`}

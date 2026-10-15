@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -21,8 +21,7 @@ import {
 const OVERLAY_SELECTOR =
   '[data-slot="dialog-content"],[data-slot="sheet-content"],[role="alertdialog"]';
 
-const FAB_CLASS =
-  "regular:hidden print:hidden fixed z-40 inline-flex size-14 min-h-row min-w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/15 transition-transform duration-150 motion-safe:active:scale-95 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [-webkit-tap-highlight-color:transparent]";
+const FAB_CLASS = "regular:hidden print:hidden fixed z-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [-webkit-tap-highlight-color:transparent]";
 
 const FAB_STYLE = {
   bottom: "calc(var(--mobile-bar-clearance, calc(60px + var(--sab))) + 12px)",
@@ -190,41 +189,23 @@ export function PageFab() {
   if (!resolved) return null;
   if (hideCount > 0 || overlayOpen || textFocused) return null;
 
-  const Icon = resolved.icon;
+  const fab = { size: "fab", shape: "round", iconOnly: true, leading: resolved.icon, "aria-label": resolved.label, tooltip: resolved.label, "data-testid": "page-fab", className: FAB_CLASS, style: FAB_STYLE } as const;
 
   if (resolved.type === "link") {
-    return (
-      <Link
-        href={resolved.href}
-        aria-label={resolved.label}
-        title={resolved.label}
-        data-testid="page-fab"
-        data-fab-route={resolved.pattern ?? undefined}
-        data-fab-kind="link"
-        className={FAB_CLASS}
-        style={FAB_STYLE}
-      >
-        <Icon className="size-6" aria-hidden />
-      </Link>
-    );
+    return <Button {...fab} href={resolved.href} data-fab-route={resolved.pattern ?? undefined} data-fab-kind="link" />;
   }
 
   return (
-    <button
+    <Button
+      {...fab}
       type="button"
-      aria-label={resolved.label}
-      title={resolved.label}
       aria-disabled={resolved.disabled ? "true" : undefined}
-      data-testid="page-fab"
       data-fab-route={resolved.pattern}
       data-fab-kind="button"
       className={resolved.disabled ? `${FAB_CLASS} opacity-50` : FAB_CLASS}
-      style={FAB_STYLE}
       onClick={() => {
         if (!resolved.disabled) resolved.onClick();
       }}
-    >
-      <Icon className="size-6" aria-hidden />
-    </button>
+    />
   );
 }

@@ -10,6 +10,7 @@
  * load drops all in-memory state of whichever account was open before).
  */
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { hardReload } from "@/lib/client/hard-reload";
 import { passkeyRecovery } from "@/lib/client/passkey-prf";
@@ -35,8 +36,6 @@ interface DeviceCheck {
 }
 
 const GENERIC_RECOVERY_FAIL = "Recovery failed. Check your details and try again.";
-const PRIMARY_BTN =
-  "w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50";
 
 /** Upper-case, keep letters/digits/dashes: the server normalises separators. */
 export function formatRecoveryInput(v: string): string {
@@ -120,23 +119,23 @@ export function ForgotPasswordChooser() {
           None of these work? Resetting by email <strong>erases all data in your account</strong> and starts it empty.
           Your data is encrypted with your password and there is no way to restore it afterwards.
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => setView("email")}
-          className="mt-3 w-full rounded-lg border border-destructive/40 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+          variant="destructive" fullWidth className="mt-3"
         >
           Reset by email (erases your data)
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-function BackButton({ onBack }: { onBack: () => void }) {
+function ChooseAnotherWay({ onBack }: { onBack: () => void }) {
   return (
-    <button type="button" onClick={onBack} className="mb-4 text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
+    <Button type="button" variant="link" onClick={onBack} className="mb-4 text-sm text-muted-foreground hover:text-foreground">
       Choose another way
-    </button>
+    </Button>
   );
 }
 
@@ -192,15 +191,15 @@ function PasskeyRecovery({ onBack }: { onBack: () => void }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <BackButton onBack={onBack} />
+      <ChooseAnotherWay onBack={onBack} />
       <h2 className="text-base font-semibold text-foreground">Reset with a passkey</h2>
       <p className="text-sm text-muted-foreground">Pick a new password, then confirm with your passkey. Your data stays intact.</p>
       <NewPasswordFields idPrefix="pk" password={password} confirm={confirm} onPasswordChange={setPassword} onConfirmChange={setConfirm} />
       <SharedComputer checked={shared} onChange={setShared} />
       <ErrorLine error={error} />
-      <button type="submit" className={PRIMARY_BTN} disabled={loading || !isNewPasswordValid(password, confirm)}>
+      <Button type="submit" size="lg" fullWidth disabled={loading || !isNewPasswordValid(password, confirm)}>
         {loading ? "Waiting for passkey…" : "Continue with passkey"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -260,7 +259,7 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
   if (!firstUsable) {
     return (
       <div className="space-y-4">
-        <BackButton onBack={onBack} />
+        <ChooseAnotherWay onBack={onBack} />
         <p className="text-sm text-muted-foreground">This browser can&apos;t be used to reset a password.</p>
       </div>
     );
@@ -268,7 +267,7 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <BackButton onBack={onBack} />
+      <ChooseAnotherWay onBack={onBack} />
       <h2 className="text-base font-semibold text-foreground">Reset from this device</h2>
       <p className="text-sm text-muted-foreground">
         This browser is trusted. Prove it&apos;s you with a code, then pick a new password. Your data stays intact.
@@ -332,9 +331,9 @@ function DeviceRecovery({ check, onBack }: { check: DeviceCheck | null; onBack: 
 
       <NewPasswordFields idPrefix="dev" password={password} confirm={confirm} onPasswordChange={setPassword} onConfirmChange={setConfirm} />
       <ErrorLine error={error} />
-      <button type="submit" className={PRIMARY_BTN} disabled={loading || !selected || !proofReady || !isNewPasswordValid(password, confirm)}>
+      <Button type="submit" size="lg" fullWidth disabled={loading || !selected || !proofReady || !isNewPasswordValid(password, confirm)}>
         {loading ? "Resetting…" : "Reset password"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -383,7 +382,7 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <BackButton onBack={onBack} />
+      <ChooseAnotherWay onBack={onBack} />
       <h2 className="text-base font-semibold text-foreground">Reset with a recovery code</h2>
       <p className="text-sm text-muted-foreground">Each code works once. Your data stays intact.</p>
       <div>
@@ -413,9 +412,9 @@ function CodeRecovery({ onBack }: { onBack: () => void }) {
       <NewPasswordFields idPrefix="rc" password={password} confirm={confirm} onPasswordChange={setPassword} onConfirmChange={setConfirm} />
       <SharedComputer checked={shared} onChange={setShared} />
       <ErrorLine error={error} />
-      <button type="submit" className={PRIMARY_BTN} disabled={loading || !ready}>
+      <Button type="submit" size="lg" fullWidth disabled={loading || !ready}>
         {loading ? "Resetting…" : "Reset password"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -454,7 +453,7 @@ function EmailReset({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="space-y-4">
-      <BackButton onBack={onBack} />
+      <ChooseAnotherWay onBack={onBack} />
       <h2 className="text-base font-semibold text-foreground">Reset by email</h2>
       <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs text-warning/90" role="note">
         Your data is encrypted with your password and there is no recovery key. Resetting the password by email{" "}
@@ -478,9 +477,9 @@ function EmailReset({ onBack }: { onBack: () => void }) {
             />
           </div>
           <ErrorLine error={error} />
-          <button type="submit" disabled={loading || email.trim().length === 0} className={PRIMARY_BTN}>
+          <Button type="submit" disabled={loading || email.trim().length === 0} size="lg" fullWidth>
             {loading ? "Sending..." : "Send reset link"}
-          </button>
+          </Button>
         </form>
       )}
     </div>

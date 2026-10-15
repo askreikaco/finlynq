@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 afterEach(cleanup);
 
 describe("Button nativeButton", () => {
-  it("render={<a>} does not trigger the Base UI native-button warning", () => {
+  it("href renders a link and does not trigger the Base UI native-button warning", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
-    render(<Button render={<a href="/x" />}>Go</Button>);
+    render(<Button href="/x">Go</Button>);
     // Stays a real link (no role="button" override) and carries the button styling.
     const link = screen.getByRole("link", { name: "Go" });
     expect(link.getAttribute("role")).toBeNull();

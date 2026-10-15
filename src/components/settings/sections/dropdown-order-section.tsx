@@ -328,13 +328,13 @@ export function DropdownOrderSection() {
                   )}
                 </div>
                 <div className="flex gap-0.5 shrink-0">
-                  <Button aria-label="Move up" variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up">
+                  <Button aria-label="Move up" variant="ghost" iconOnly className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up">
                     <ArrowUp className="h-3.5 w-3.5" />
                   </Button>
-                  <Button aria-label="Move down" variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, 1)} disabled={idx === pinnedItems.length - 1} title="Move down">
+                  <Button aria-label="Move down" variant="ghost" iconOnly className="h-7 w-7" onClick={() => move(idx, 1)} disabled={idx === pinnedItems.length - 1} title="Move down">
                     <ArrowDown className="h-3.5 w-3.5" />
                   </Button>
-                  <Button aria-label="Unpin" variant="ghost" size="icon" className="h-7 w-7" onClick={() => unpin(item.key)} title="Unpin">
+                  <Button aria-label="Unpin" variant="ghost" iconOnly className="h-7 w-7" onClick={() => unpin(item.key)} title="Unpin">
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>

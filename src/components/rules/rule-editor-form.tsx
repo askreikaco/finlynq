@@ -635,7 +635,7 @@ function ConditionRow({
         </>
       )}
 
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove condition">
+      <Button variant="ghost" iconOnly className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove condition">
         <Trash2 className="h-3 w-3" />
       </Button>
     </div>
@@ -774,17 +774,17 @@ function ActionRow({
 
       <div className="flex">
         {onMoveUp && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveUp} aria-label="Move up">
+          <Button variant="ghost" iconOnly className="h-8 w-8" onClick={onMoveUp} aria-label="Move up">
             <ChevronUp className="h-3 w-3" />
           </Button>
         )}
         {onMoveDown && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveDown} aria-label="Move down">
+          <Button variant="ghost" iconOnly className="h-8 w-8" onClick={onMoveDown} aria-label="Move down">
             <ChevronDown className="h-3 w-3" />
           </Button>
         )}
       </div>
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove action">
+      <Button variant="ghost" iconOnly className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove action">
         <Trash2 className="h-3 w-3" />
       </Button>
       </div>

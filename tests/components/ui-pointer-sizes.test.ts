@@ -28,7 +28,7 @@ const PRIMITIVES = [
 
 // Touch controls: each must carry these pointer-coarse 44px rules in its source.
 const TOUCH_RULES: Record<string, string[]> = {
-  button: ["pointer-coarse:h-11", "pointer-coarse:size-11", "pointer-coarse:before:-inset-2.5"],
+  button: ["pointer-coarse:h-11", "pointer-coarse:size-11"],
   "control-surface": ["h-11", "pointer-coarse:h-11"],
   "field/select-base": ["pointer-coarse:min-h-11"],
   "field/combobox-base": ["pointer-coarse:min-h-11"],
@@ -58,15 +58,16 @@ describe("ui primitives: pointer-coarse touch sizes", () => {
     }
   });
 
-  it.each(["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"] as const)(
-    "Button size=%s is 44px on coarse pointers",
+  it.each(["sm", "md", "lg"] as const)(
+    "Button size=%s (text and iconOnly) is 44px on coarse pointers",
     (size) => {
       expect(coarse44(cls(buttonVariants({ size })))).toBe(true);
+      expect(coarse44(cls(cn(buttonVariants({ size, iconOnly: true }))))).toBe(true);
     },
   );
 
-  it("Button default: desktop h-8, coarse h-11, compact fine h-7", () => {
-    const c = cls(buttonVariants({ size: "default" }));
+  it("Button md: desktop h-8, coarse h-11, compact fine h-7", () => {
+    const c = cls(buttonVariants({ size: "md" }));
     expect(c).toContain("h-8");
     expect(c).toContain("pointer-coarse:h-11");
     expect(c).toContain("dense:pointer-fine:h-7");
@@ -105,7 +106,7 @@ describe("ui primitives: no width-based touch or size token", () => {
     expect(hits, `${name}.tsx width tokens`).toEqual([]);
   });
 
-  it.each(["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"] as const)(
+  it.each(["sm", "md", "lg", "fab"] as const)(
     "Button size=%s strings carry no width token",
     (size) => {
       const c = cls(buttonVariants({ size }));

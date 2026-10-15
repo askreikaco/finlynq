@@ -166,11 +166,11 @@ describe("FilterButton", () => {
     expect(b.textContent).toBe("");
     expect(b.getAttribute("aria-label")).toBe("Filter");
     expect(b.querySelector("svg")).toBeTruthy();
-    expect(screen.queryByTestId("filter-badge")).toBeNull();
+    expect(document.querySelector("[data-slot=button-badge]")).toBeNull();
   });
   it("links to the filter page and shows the active count", () => {
     render(<FilterButton href="/filter/goals?returnTo=%2Fgoals" activeCount={3} />);
-    expect(screen.getByTestId("filter-badge").textContent).toBe("3");
+    expect(screen.getByText("3").closest("[data-slot=button-badge]")!.textContent).toBe("3");
     expect(screen.getByRole("link", { name: "Filter" }).getAttribute("href")).toBe("/filter/goals?returnTo=%2Fgoals");
   });
   it("a function href is re-read after each render (current address)", () => {

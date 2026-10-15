@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
@@ -56,18 +57,18 @@ export function WeeklyRecap() {
               {recap.weekStart} — {recap.weekEnd}
             </p>
           </div>
-            <button
+            <Button
               onClick={() => setExpanded(!expanded)}
               aria-label={expanded ? "Collapse weekly recap" : "Expand weekly recap"}
               aria-expanded={expanded}
-              className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+              variant="ghost" iconOnly size="sm"
             >
               {expanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
-            </button>
+            </Button>
           </div>
         <div>
           {/* Summary: Spent / Income / Cash Flow */}

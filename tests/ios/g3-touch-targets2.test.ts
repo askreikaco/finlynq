@@ -93,7 +93,7 @@ describe("page-level targets", () => {
     expect(portfolio).toContain("inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2");
   });
   it("family overview Refresh button is 44x44 on coarse pointers, 36x36 otherwise", () => {
-    expect(family).toContain("w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11");
+    expect(family).toContain("iconOnly"); // a round iconOnly Button: 44px circle
   });
   it("account shell Info/Security tabs are 44px tall and wide on coarse pointers", () => {
     expect(shell).toContain("pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-end");

@@ -972,7 +972,7 @@ export function InboxReconcileTab({
               <Button
                 key={opt.label}
                 size="sm"
-                variant={active ? "default" : "outline"}
+                variant={active ? "primary" : "outline"}
                 onClick={() => {
                   if (opt.value === null) {
                     setDateFrom(null);

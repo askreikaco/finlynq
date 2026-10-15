@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -603,13 +604,13 @@ function CloudAuthPageInner() {
               <p className="text-sm text-destructive text-center" role="alert" aria-live="assertive">{error}</p>
             )}
             <div className="space-y-3">
-              <button
+              <Button
                 type="submit"
                 disabled={!unlockPassword || loading}
-                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                size="lg" fullWidth
               >
                 {loading ? "Verifying..." : "Confirm"}
-              </button>
+              </Button>
               <Link
                 href="/cloud"
                 className="block text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
@@ -667,13 +668,13 @@ function CloudAuthPageInner() {
             {error && (
               <p className="text-sm text-destructive text-center" role="alert" aria-live="assertive">{error}</p>
             )}
-            <button
+            <Button
               type="submit"
               disabled={loading || (mfaMode === "totp" ? mfaCode.length !== 6 : recoveryCode.replace(/[^A-Z0-9]/g, "").length < 20)}
-              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              size="lg" fullWidth
             >
               {loading ? "Verifying..." : "Verify"}
-            </button>
+            </Button>
             <Field
               label="This is a shared computer"
               control="switch"
@@ -719,14 +720,17 @@ function CloudAuthPageInner() {
             )}
 
             {passkeySupported && (
-              <button
+              <Button
                 type="button"
+                variant={passkeyPrimary ? "primary" : "outline"}
+                size="lg"
+                fullWidth
                 onClick={handlePasskeyLogin}
                 disabled={loading}
-                className={`mb-4 flex w-full items-center justify-center gap-2 rounded-xl ${passkeyPrimary ? "bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90" : "border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"} disabled:opacity-50`}
+                className="mb-4"
               >
                 {loading ? "Signing in..." : "Sign in with a passkey"}
-              </button>
+              </Button>
             )}
 
             <Field
@@ -782,13 +786,13 @@ function CloudAuthPageInner() {
                 {error && (
                   <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
                 )}
-                <button
+                <Button
                   type="submit"
                   disabled={loading || !identifier.trim()}
-                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  size="lg" fullWidth
                 >
                   {loading ? "Checking..." : "Continue"}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={backToOptions}
@@ -846,13 +850,13 @@ function CloudAuthPageInner() {
                 {error && (
                   <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
                 )}
-                <button
+                <Button
                   type="submit"
                   disabled={loading || !password}
-                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  size="lg" fullWidth
                 >
                   {loading ? "Signing in..." : "Sign in"}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={backToOptions}
@@ -938,13 +942,13 @@ function CloudAuthPageInner() {
                       <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
                     )}
 
-                    <button
+                    <Button
                       type="submit"
                       disabled={loading || signupPassword !== signupConfirmPassword || !signupPassword || (googleSignup && !signupUsername.trim())}
-                      className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                      size="lg" fullWidth
                     >
                       {loading ? "Creating account..." : "Create account"}
-                    </button>
+                    </Button>
                     <button
                       type="button"
                       onClick={backToOptions}

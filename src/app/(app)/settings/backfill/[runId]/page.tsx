@@ -1087,13 +1087,13 @@ function KindOverridePicker({
   if (!open) {
     return (
       <div>
-        <button
+        <Button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-xs text-primary hover:underline"
+          variant="link" size="sm"
         >
           Convert to a different kind…
-        </button>
+        </Button>
       </div>
     );
   }

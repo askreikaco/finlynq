@@ -19,15 +19,15 @@ describe("pressed feedback (button.tsx)", () => {
   });
 
   it("default, outline, ghost, secondary and destructive variants define an active: background", () => {
-    expect(button).toMatch(/default:\s*"[^"]*active:bg-primary\/80/);
+    expect(button).toMatch(/primary:\s*"[^"]*active:bg-primary\/80/);
     expect(button).toMatch(/"surface-card border-border hover:bg-muted hover:text-foreground active:bg-muted/);
     expect(button).toMatch(/ghost:\s*\n\s*"hover:bg-muted hover:text-foreground active:bg-muted/);
     expect(button).toMatch(/"bg-destructive\/10 text-destructive hover:bg-destructive\/20 active:bg-destructive\/25/);
   });
 
   it("does not change data-variant or data-size attributes", () => {
-    expect(button).toContain("data-variant={variant}");
-    expect(button).toContain("data-size={size}");
+    expect(button).toContain('"data-variant": variant');
+    expect(button).toContain('"data-size": size');
   });
 });
 

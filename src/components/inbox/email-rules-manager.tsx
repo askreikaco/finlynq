@@ -186,7 +186,7 @@ export function EmailRulesManager() {
                   {r.isActive ? "Disable" : "Enable"}
                 </Button>
                 <Button aria-label="Edit"
-                  size="icon"
+                  iconOnly
                   variant="ghost"
                   className="h-7 w-7"
                   onClick={() =>
@@ -209,7 +209,7 @@ export function EmailRulesManager() {
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button aria-label="Delete"
-                  size="icon"
+                  iconOnly
                   variant="ghost"
                   className="h-7 w-7 text-muted-foreground hover:text-destructive"
                   onClick={() => void remove(r.id)}

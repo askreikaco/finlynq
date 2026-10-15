@@ -18,7 +18,6 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Receipt, RefreshCw, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -421,7 +420,7 @@ export default function RealizedGainsPage() {
             <p className="text-sm text-muted-foreground">
               No rows match the current filters. Every closure in this range has a zero realized gain.
             </p>
-            <Button variant="outline" size="sm" render={<Link href={tb.filterHref()} />}>
+            <Button variant="outline" size="sm" href={tb.filterHref()}>
               Show zero-gain rows
             </Button>
           </div>

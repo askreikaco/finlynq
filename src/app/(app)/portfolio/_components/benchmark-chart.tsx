@@ -69,7 +69,7 @@ export function BenchmarkChart({
             {(["ytd", "1y", "3y", "5y"] as const).map(p => (
               <Button
                 key={p}
-                variant={benchmarkPeriod === p ? "default" : "outline"}
+                variant={benchmarkPeriod === p ? "primary" : "outline"}
                 size="sm"
                 className="text-xs h-7 px-2"
                 onClick={() => setBenchmarkPeriod(p)}

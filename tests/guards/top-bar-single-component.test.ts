@@ -69,7 +69,7 @@ describe("PageHeader is the only top bar", () => {
 
   it("the bar's controls exist once: no other file defines a back button, a More menu or a primary action cell", () => {
     const defs = SRC.filter((f) => /export (function|const) (BackButton|MoreActionsMenu|OverflowMenu|HeaderStatus)\b/.test(f.text)).map((f) => f.path).sort();
-    expect(defs).toEqual(["src/components/mobile/back-button.tsx", HEADER]);
+    expect(defs).toEqual([HEADER]);
   });
 
   it("removed header APIs are gone from src (no shims, no dead exports)", () => {

@@ -173,7 +173,7 @@ export function NetWorthHistoryChart({
             {stackable && (
               <Button
                 size="sm"
-                variant={stacked ? "default" : "outline"}
+                variant={stacked ? "primary" : "outline"}
                 onClick={() => setStacked((s) => !s)}
                 title="Break the total into a stacked top-10 view by account"
               >
@@ -184,7 +184,7 @@ export function NetWorthHistoryChart({
               <>
                 <Button
                   size="sm"
-                  variant={basis === "native" ? "default" : "outline"}
+                  variant={basis === "native" ? "primary" : "outline"}
                   onClick={() => setBasis("native")}
                   title={`Show this balance in the account's own currency (${accountCurrency})`}
                 >
@@ -192,7 +192,7 @@ export function NetWorthHistoryChart({
                 </Button>
                 <Button
                   size="sm"
-                  variant={basis === "reporting" ? "default" : "outline"}
+                  variant={basis === "reporting" ? "primary" : "outline"}
                   onClick={() => setBasis("reporting")}
                   title={`Show this balance converted to your display currency (${data?.displayCurrency})`}
                 >
@@ -204,7 +204,7 @@ export function NetWorthHistoryChart({
               <Button
                 key={p.key}
                 size="sm"
-                variant={period === p.key ? "default" : "outline"}
+                variant={period === p.key ? "primary" : "outline"}
                 onClick={() => setPeriod(p.key)}
               >
                 {p.label}

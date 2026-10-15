@@ -109,7 +109,7 @@ export function SubscriptionsCalendar({
     <div className="space-y-4">
       <Card className="pt-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+          <Button variant="outline" iconOnly onClick={() => shiftMonth(-1)} aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export function SubscriptionsCalendar({
               <Button variant="ghost" size="sm" onClick={goToday}>Today</Button>
             )}
           </div>
-          <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="Next month">
+          <Button variant="outline" iconOnly onClick={() => shiftMonth(1)} aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
