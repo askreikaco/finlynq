@@ -40,6 +40,7 @@ vi.mock("@/lib/utils/date", async (orig) => ({
 
 import GoalsPage from "@/app/(app)/goals/page";
 import LoansPage from "@/app/(app)/loans/page";
+import { LoanDetail } from "@/app/(app)/loans/_components/loan-detail";
 import SubscriptionsPage from "@/app/(app)/subscriptions/page";
 import { loanNextDue } from "@/app/(app)/loans/_components/loan-next-due";
 
@@ -123,12 +124,10 @@ describe("goals: one ListRow layout at every size", () => {
     expect(container.querySelector("table")).toBeNull();
   });
 
-  it("a goal row opens the detail sheet with Edit, Mark complete and Delete", async () => {
+  it("a goal row links to the goal detail page (no sheet)", async () => {
     render(<GoalsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Emergency fund/ }));
-    expect((await screen.findByRole("link", { name: "Edit goal Emergency fund" })).getAttribute("href")).toBe("/goals/3/edit");
-    expect(screen.getByRole("button", { name: "Mark goal Emergency fund complete" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Delete goal Emergency fund" })).toBeTruthy();
+    const row = (await screen.findByRole("link", { name: /Emergency fund/ })) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/goals/3");
   });
 });
 
@@ -151,10 +150,9 @@ describe("loans and subscriptions: one ListRow layout at every size", () => {
   });
 });
 
-describe("G2-13: loans detail sheet shows the estimated next due date", () => {
-  it("the Car loan sheet shows 2026-10-15 (start 2026-01-15, monthly, today 2026-10-09)", async () => {
-    render(<LoansPage />);
-    fireEvent.click(await screen.findByText("Car loan"));
+describe("G2-13: loan detail shows the estimated next due date", () => {
+  it("the Car loan detail shows 2026-10-15 (start 2026-01-15, monthly, today 2026-10-09)", async () => {
+    render(<LoanDetail id={(DATA.loans as Array<{ id: number }>)[0].id} />);
     expect(await screen.findByText("2026-10-15")).toBeTruthy();
   });
 });
