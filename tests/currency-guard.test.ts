@@ -26,9 +26,9 @@ const SCAN_ROOTS = [
 // Format: { file: "path/to/file.tsx", line: "exact trimmed line", count: 1, reason: "..." }
 const ALLOW_LIST = [
   // Dev gallery: labelled specimens with fixed sample currencies (dev-mode page, not user data).
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, sparkData: SPARK, sparkColor: "#6366f1" },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
-  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g1", title: "Net worth", icon: Wallet, value: 125000, currency: "USD", tone: "indigo" as const, sub: "+$1,200 vs last month", delta: { pct: 1.9 }, spark: { data: SPARK, color: "#6366f1" } },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g2", title: "Income", icon: TrendingUp, value: 5200, currency: "USD", tone: "emerald" as const, valueTone: "pos" as const },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g3", title: "Spent", icon: DollarSign, value: 3100, currency: "USD", tone: "rose" as const, delta: { pct: 4.2, invert: true } },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
   // OUT OF SCOPE: Mobile, portfolio, chat, and other advanced features
   {
     file: "src/components/fx-overrides-section.tsx",

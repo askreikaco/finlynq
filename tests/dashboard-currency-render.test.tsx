@@ -81,12 +81,6 @@ afterEach(() => {
 });
 
 // Mock UI components
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardHeader: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardTitle: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}));
 
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
@@ -196,7 +190,7 @@ vi.mock("@/components/health-info-dialog", () => ({
 
 // Import components AFTER mocks
 import { AnimatedNumber } from "@/components/animated-number";
-import { MetricCard } from "@/components/metric-card";
+import { Card } from "@/components/ui/card";
 import { AvailableToSpend } from "@/app/(app)/dashboard/_components/available-to-spend";
 import { SpendingCategoryChart } from "@/app/(app)/dashboard/_components/spending-category-chart";
 import { InsightsSection } from "@/app/(app)/dashboard/_components/insights-section";
@@ -270,12 +264,12 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("MetricCard without currency prop displays VND", async () => {
+  it("Card without currency prop displays VND", async () => {
     
     const { container } = render(
       <TestWrapper>
-        <MetricCard
-          label="Test Metric"
+        <Card
+          title="Test Metric"
           icon={MockIcon}
           value={5000000}
         />
@@ -289,12 +283,12 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("MetricCard with empty string currency prop displays VND (not bare number)", async () => {
+  it("Card with empty string currency prop displays VND (not bare number)", async () => {
     
     const { container } = render(
       <TestWrapper>
-        <MetricCard
-          label="Test Metric"
+        <Card
+          title="Test Metric"
           icon={MockIcon}
           value={5000000}
           currency=""
@@ -310,12 +304,12 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("MetricCard with EUR currency prop displays EUR symbol", async () => {
+  it("Card with EUR currency prop displays EUR symbol", async () => {
     
     const { container } = render(
       <TestWrapper>
-        <MetricCard
-          label="Test Metric"
+        <Card
+          title="Test Metric"
           icon={MockIcon}
           value={5000000}
           currency="EUR"
@@ -702,11 +696,11 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
       });
     });
 
-    it("MetricCard with animations enabled and explicit EUR currency displays exact EUR string in both paths", async () => {
+    it("Card with animations enabled and explicit EUR currency displays exact EUR string in both paths", async () => {
       const { container } = render(
         <TestWrapper>
-          <MetricCard
-            label="Test Metric"
+          <Card
+            title="Test Metric"
             icon={MockIcon}
             value={5000000}
             currency="EUR"
@@ -723,16 +717,15 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
       });
     });
 
-    it("MetricCard with sparkData and EUR currency displays EUR in sparkline tooltip", async () => {
+    it("Card with sparkData and EUR currency displays EUR in sparkline tooltip", async () => {
       const { container } = render(
         <TestWrapper>
-          <MetricCard
-            label="Test Metric"
+          <Card
+            title="Test Metric"
             icon={MockIcon}
             value={5000000}
             currency="EUR"
-            sparkData={[100000, 200000, 150000]}
-            sparkLabels={["2024-01", "2024-02", "2024-03"]}
+            spark={{ data: [100000, 200000, 150000], labels: ["2024-01", "2024-02", "2024-03"] }}
           />
         </TestWrapper>
       );

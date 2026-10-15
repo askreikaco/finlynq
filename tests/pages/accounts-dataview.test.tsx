@@ -77,7 +77,7 @@ describe("Accounts page: a single list layout, no view toggle", () => {
 });
 
 describe("Accounts page: summary tiles reuse the Home components", () => {
-  it("one NetWorthHeroCard above exactly two MetricCards in a 2-column grid", async () => {
+  it("one NetWorthHeroCard above exactly two Cards in a 2-column grid", async () => {
     await mountPage();
     expect(screen.getAllByText("Total Net Worth")).toHaveLength(1);
     expect(screen.getAllByText("Total Assets")).toHaveLength(1);
@@ -92,7 +92,7 @@ describe("Accounts page: summary tiles reuse the Home components", () => {
     expect(grid.querySelectorAll("[data-slot=card]").length).toBe(2);
     expect(SRC).not.toMatch(/regular:hidden|hidden regular:grid/);
     expect(SRC).toMatch(/<NetWorthHeroCard\b/);
-    expect(SRC.match(/<MetricCard\b/g)).toHaveLength(2);
+    expect(SRC.match(/<Card\b[^>]*\bvalue=/g)).toHaveLength(2);
   });
 });
 

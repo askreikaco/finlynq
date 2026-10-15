@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
@@ -129,18 +129,15 @@ export default function CurrencyAuditPage() {
       </p>
 
       {error ? (
-        <Card className="border-destructive/40 bg-destructive/5">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/40 bg-destructive/5" className="py-3 text-sm text-destructive">{error}
         </Card>
       ) : null}
 
       {!loading && unresolved.length === 0 && !includeResolved ? (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            <Check className="h-8 w-8 mx-auto mb-3 text-pos" />
-            <p className="text-sm font-medium text-foreground">No flagged transactions</p>
-            <p className="text-xs mt-1">All transactions match their account currency or have been reviewed.</p>
-          </CardContent>
+        <Card className="py-10 text-center text-muted-foreground">
+          <Check className="h-8 w-8 mx-auto mb-3 text-pos" />
+          <p className="text-sm font-medium text-foreground">No flagged transactions</p>
+          <p className="text-xs mt-1">All transactions match their account currency or have been reviewed.</p>
         </Card>
       ) : null}
 
@@ -148,28 +145,34 @@ export default function CurrencyAuditPage() {
         const p = preview[row.id];
         const isResolved = row.resolvedAt != null;
         return (
-          <Card key={row.id} onMouseEnter={() => loadPreview(row)}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <CardTitle icon={AlertTriangle} tone="amber">
-                    Transaction #{row.transactionId}
-                    {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Recorded as <strong className="text-foreground">{formatCurrency(row.recordedAmount, row.recordedCurrency)}</strong>
-                    {" "}in an account whose currency is <strong className="text-foreground">{row.accountCurrency}</strong>.
-                  </CardDescription>
-                </div>
-                {isResolved ? (
-                  <Badge variant="secondary" className="text-xs">
-                    {row.resolution}
-                  </Badge>
-                ) : null}
-              </div>
-            </CardHeader>
+          <Card
+            key={row.id}
+            onMouseEnter={() => loadPreview(row)}
+            title={
+              <>
+                Transaction #{row.transactionId}
+                {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}
+              </>
+            }
+            icon={AlertTriangle}
+            tone="amber"
+            description={
+              <span className="text-xs">
+                Recorded as <strong className="text-foreground">{formatCurrency(row.recordedAmount, row.recordedCurrency)}</strong>
+                {" "}in an account whose currency is <strong className="text-foreground">{row.accountCurrency}</strong>.
+              </span>
+            }
+            action={
+              isResolved ? (
+                <Badge variant="secondary" className="text-xs">
+                  {row.resolution}
+                </Badge>
+              ) : undefined
+            }
+            className="space-y-3"
+          >
             {!isResolved ? (
-              <CardContent className="pt-0 space-y-3">
+              <>
                 {p ? (
                   <div className="rounded-md bg-muted/30 px-3 py-2 text-xs space-y-1">
                     <div className="flex items-center gap-2">
@@ -211,7 +214,7 @@ export default function CurrencyAuditPage() {
                     </Button>
                   </Link>
                 </div>
-              </CardContent>
+              </>
             ) : null}
           </Card>
         );

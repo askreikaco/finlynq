@@ -364,7 +364,7 @@ export default function FeedbackPage() {
           <Card
             key={t.id}
             onClick={() => setOpenId(t.id)}
-            className="cursor-pointer p-4 transition-colors hover:bg-muted/40"
+            frameClassName="cursor-pointer transition-colors hover:bg-muted/40"
           >
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={typeColor[t.type] ?? typeColor.other}>{t.type}</Badge>

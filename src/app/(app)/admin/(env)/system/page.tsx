@@ -35,7 +35,8 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { MetricGrid, SectionCard } from "@/components/mobile";
+import { MetricGrid } from "@/components/mobile";
+import { Card } from "@/components/ui/card";
 
 interface SysSample {
   at: number;
@@ -397,16 +398,16 @@ export default function AdminSystemPage() {
       )}
 
       {error && (
-        <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
+        <Card className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</Card>
       )}
 
       {sys && (
         <div data-slot="system-cards" className={TW.grid3}>
           {/* System health */}
-          <SectionCard
+          <Card
             icon={Cpu}
             tone="indigo"
-            label={
+            title={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 System
                 <Badge variant="outline" className="text-xs font-normal">
@@ -423,13 +424,13 @@ export default function AdminSystemPage() {
               columns={2}
               metrics={[
                 { icon: Activity,
-                  label: "Load avg (1 / 5 / 15m)",
+                  title: "Load avg (1 / 5 / 15m)",
                   value: `${sys.loadavg[0].toFixed(2)} / ${sys.loadavg[1].toFixed(2)} / ${sys.loadavg[2].toFixed(2)}`,
                   sub: `${((sys.loadavg[0] / sys.cores) * 100).toFixed(0)}% of ${sys.cores} cores`,
                 },
-                { icon: Cpu, label: "System CPU", value: `${sys.cpuPct.toFixed(0)}%` },
+                { icon: Cpu, title: "System CPU", value: `${sys.cpuPct.toFixed(0)}%` },
                 { icon: Cpu,
-                  label: "App process CPU",
+                  title: "App process CPU",
                   value: `${sys.procCpuPct.toFixed(0)}%`,
                   sub: `RSS ${(sys.rssMb / 1024).toFixed(2)} GB · % of one core`,
                 },
@@ -473,15 +474,15 @@ export default function AdminSystemPage() {
               </div>
               <History24Chart points={data?.history24h ?? []} />
             </div>
-          </SectionCard>
+          </Card>
 
           <div className="col-span-full">
           {/* Top operations (24h) — where time goes / where to focus */}
-          <SectionCard
+          <Card
             icon={Gauge}
             tone="amber"
             padded={false}
-            label={
+            title={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 Top operations · last 24h
                 <Badge variant="outline" className="text-xs font-normal">
@@ -507,16 +508,16 @@ export default function AdminSystemPage() {
                 }
               />
             </div>
-          </SectionCard>
+          </Card>
           </div>
 
           <div className="col-span-full">
           {/* Active DB queries */}
-          <SectionCard
+          <Card
             icon={Database}
             tone="cyan"
             padded={false}
-            label={
+            title={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 Active database queries
                 <Badge variant="outline" className="text-xs font-normal">
@@ -543,15 +544,15 @@ export default function AdminSystemPage() {
                 }
               />
             </div>
-          </SectionCard>
+          </Card>
           </div>
 
           {/* Snapshot rebuild activity */}
-          <SectionCard
+          <Card
             icon={History}
             tone="violet"
             className="space-y-4 text-sm"
-            label={
+            title={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 Snapshot rebuild activity
                 <Badge variant="outline" className="text-xs font-normal">
@@ -654,10 +655,10 @@ export default function AdminSystemPage() {
                 </div>
               </div>
             )}
-          </SectionCard>
+          </Card>
 
           {/* Outbound API summary */}
-          <SectionCard className="flex flex-col gap-4 py-4 text-sm">
+          <Card className="flex flex-col gap-4 py-4 text-sm">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
               <span className="font-medium">Outbound market-data API</span>
@@ -686,7 +687,7 @@ export default function AdminSystemPage() {
             >
               Full API log <ExternalLink className="h-3.5 w-3.5" />
             </Link>
-          </SectionCard>
+          </Card>
         </div>
       )}
     </SectionPage>

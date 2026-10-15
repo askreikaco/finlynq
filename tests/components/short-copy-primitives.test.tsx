@@ -5,7 +5,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Field } from "@/components/ui/field";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 afterEach(() => cleanup());
 
@@ -37,16 +37,10 @@ describe("Field info", () => {
   });
 });
 
-describe("CardTitle info", () => {
+describe("Card info", () => {
   it("adds an (i) tip after the title", async () => {
     render(
-      <Card>
-        <CardHeader>
-          <CardTitle info="Stacked income and expenses per month" infoLabel="About breakdown">
-            Breakdown
-          </CardTitle>
-        </CardHeader>
-      </Card>,
+      <Card title="Breakdown" info="Stacked income and expenses per month" infoLabel="About breakdown" />,
     );
     expect(screen.queryByText(/Stacked income/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "About breakdown" }));

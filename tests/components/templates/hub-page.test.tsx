@@ -45,14 +45,14 @@ describe("HubPage", () => {
     expect(within(root).getByRole("heading", { name: "More" })).toBeInTheDocument();
   });
 
-  it("renders one SectionCard list per group, with a section header only when titled", () => {
+  it("renders one Card list per group, with a section header only when titled", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
     expect(within(main).getByRole("heading", { name: "Main" })).toBeInTheDocument();
-    expect(main.querySelector('[data-slot="section-card-body"]')).not.toBeNull();
+    expect(main.querySelector('[data-slot="card-body"]')).not.toBeNull();
     const tools = screen.getByTestId("more-group-tools");
     expect(within(tools).queryByRole("heading")).toBeNull();
-    expect(tools.querySelector('[data-slot="section-card-body"]')).not.toBeNull();
+    expect(tools.querySelector('[data-slot="card-body"]')).not.toBeNull();
   });
 
   it("renders link rows with href, value and testid, and keeps group order", () => {

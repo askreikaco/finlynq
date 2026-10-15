@@ -14,12 +14,12 @@
 
 import { useState, useEffect, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Database, History, Landmark, Layers, Loader2, PlusCircle, Receipt, RefreshCw, ShieldCheck, Undo2, Wallet } from "lucide-react";
-import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Field } from "@/components/ui/field";
 import { Overlay } from "@/components/ui/overlay";
@@ -328,15 +328,15 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       {loading && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</div>}
 
       {!loading && proposals.length === 0 && (
-        <SectionCard>
+        <Card>
           <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
             No proposals. Ledger is already canonical.
           </p>
-        </SectionCard>
+        </Card>
       )}
 
       {!loading && proposals.length > 0 && (
-        <SectionCard padded={false}>
+        <Card padded={false}>
           <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2 text-xs">
             <span className="text-muted-foreground" data-keep="status">{sortedProposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</span>
             <div className="flex items-center gap-1">
@@ -368,7 +368,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               />
             ))}
           </div>
-        </SectionCard>
+        </Card>
       )}
 
       {/* Proposal detail (the list above is the one column). */}
@@ -519,11 +519,11 @@ function ProposalDetail({
   const isApplied = proposal.status === "applied";
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle icon={History} tone="amber" className=" leading-snug">{proposal.summary}</CardTitle>
-          <div className="flex gap-2 shrink-0">
+    <Card
+      title={proposal.summary}
+      icon={History}
+      tone="amber"
+      action={<div className="flex gap-2 shrink-0">
             {!isApplied && !isRefused && !isOrphan && (
               <>
                 <Button size="sm" variant="outline" onClick={onReject}>Reject</Button>
@@ -533,117 +533,115 @@ function ProposalDetail({
             {isApplied && (
               <Button size="sm" variant="outline" onClick={onUndo}><Undo2 className="size-4 mr-1" /> Undo</Button>
             )}
+          </div>}
+      className="space-y-4 text-sm"
+    >
+      {(isRefused || isOrphan) && (
+        <div className="border border-warning/40 bg-warning/10 text-warning rounded p-3 flex items-start gap-2">
+          <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">
+              {proposal.refusalReason === "non_investment_in_investment_account"
+                ? "Not an investment transaction"
+                : isOrphan
+                  ? "Manual fix needed"
+                  : `Refused: ${proposal.refusalReason ?? "no reason"}`}
+            </div>
+            <div className="text-xs mt-1 opacity-90">
+              {(proposal.refusalReason && REFUSAL_EXPLANATIONS[proposal.refusalReason]) ?? (
+                isOrphan
+                  ? "This proposal can&apos;t be auto-applied because the planner couldn&apos;t propose a canonical reshape."
+                  : "Resolve the underlying issue in /transactions, then re-run the backfill."
+              )}
+            </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        {(isRefused || isOrphan) && (
-          <div className="border border-warning/40 bg-warning/10 text-warning rounded p-3 flex items-start gap-2">
-            <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-            <div>
-              <div className="font-medium">
-                {proposal.refusalReason === "non_investment_in_investment_account"
-                  ? "Not an investment transaction"
-                  : isOrphan
-                    ? "Manual fix needed"
-                    : `Refused: ${proposal.refusalReason ?? "no reason"}`}
-              </div>
-              <div className="text-xs mt-1 opacity-90">
-                {(proposal.refusalReason && REFUSAL_EXPLANATIONS[proposal.refusalReason]) ?? (
-                  isOrphan
-                    ? "This proposal can&apos;t be auto-applied because the planner couldn&apos;t propose a canonical reshape."
-                    : "Resolve the underlying issue in /transactions, then re-run the backfill."
-                )}
-              </div>
+      )}
+
+      {isOpeningBalance && (
+        <div className="border border-info/40 bg-info/10 text-info rounded p-3 flex items-start gap-2">
+          <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">Opening balance</div>
+            <div className="text-xs mt-1 opacity-90">
+              This is the earliest transaction for this holding in this account — almost certainly an opening balance carried in from another platform. Approving records it as a lot at the entered cost basis with NO cash-side impact (no synthesized cash leg, no trade_link_id). Reject if it&apos;s actually a normal buy with a forgotten cash row.
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {isOpeningBalance && (
-          <div className="border border-info/40 bg-info/10 text-info rounded p-3 flex items-start gap-2">
-            <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-            <div>
-              <div className="font-medium">Opening balance</div>
-              <div className="text-xs mt-1 opacity-90">
-                This is the earliest transaction for this holding in this account — almost certainly an opening balance carried in from another platform. Approving records it as a lot at the entered cost basis with NO cash-side impact (no synthesized cash leg, no trade_link_id). Reject if it&apos;s actually a normal buy with a forgotten cash row.
-              </div>
-            </div>
-          </div>
-        )}
+      {proposal.dependsOnProposalIds.length > 0 && (
+        <div className="border border-info/40 bg-info/10 text-info rounded p-3 text-xs">
+          Depends on proposal(s): #{proposal.dependsOnProposalIds.join(", #")}. Apply those first.
+        </div>
+      )}
 
-        {proposal.dependsOnProposalIds.length > 0 && (
-          <div className="border border-info/40 bg-info/10 text-info rounded p-3 text-xs">
-            Depends on proposal(s): #{proposal.dependsOnProposalIds.join(", #")}. Apply those first.
-          </div>
-        )}
+      <DisplacedRowsTable
+        ids={proposal.existingRowIds}
+        displacedRows={displacedRows}
+        holdingMap={holdingMap}
+        accountMap={accountMap}
+        categoryMap={categoryMap}
+      />
 
-        <DisplacedRowsTable
-          ids={proposal.existingRowIds}
+      {isOrphan && !isApplied && (
+        <KindOverridePicker
+          runId={runId}
+          proposal={proposal}
           displacedRows={displacedRows}
           holdingMap={holdingMap}
           accountMap={accountMap}
           categoryMap={categoryMap}
+          onApproveOverride={onApproveOverride}
+          onReject={onReject}
         />
+      )}
 
-        {isOrphan && !isApplied && (
-          <KindOverridePicker
-            runId={runId}
+      {isDrift && (
+        <div className="space-y-2">
+          <div className="font-medium">Pick fee handling</div>
+          <DriftVariantPicker proposal={proposal} onChange={onVariantChange} />
+        </div>
+      )}
+
+      {isDripReinvest && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-1 font-medium">
+            How is this dividend recorded?
+            <InfoTip
+              label="About dividend variants"
+              text="Qty equals the dollar amount: either a cash dividend on the underlying (typical for stocks like VUN.TO) or a reinvestment at $1/share (typical for crypto and sub-dollar units). Pick the one that matches reality, then confirm the holding."
+            />
+          </div>
+          <DividendVariantPicker
+            proposal={proposal}
+            onChange={onDividendVariantChange}
+          />
+          <div className="font-medium pt-2">Pick the underlying stock</div>
+          <HoldingPicker
+            proposal={proposal}
+            holdingMap={holdingMap}
+            onChange={onHoldingChange}
+          />
+          <DividendReinvestmentPreview
             proposal={proposal}
             displacedRows={displacedRows}
             holdingMap={holdingMap}
             accountMap={accountMap}
             categoryMap={categoryMap}
-            onApproveOverride={onApproveOverride}
-            onReject={onReject}
           />
-        )}
+        </div>
+      )}
 
-        {isDrift && (
-          <div className="space-y-2">
-            <div className="font-medium">Pick fee handling</div>
-            <DriftVariantPicker proposal={proposal} onChange={onVariantChange} />
-          </div>
-        )}
+      {!isDrift && !isOrphan && !isDripReinvest && (
+        <ReplacementPreviewTable
+          proposal={proposal}
+          holdingMap={holdingMap}
+          accountMap={accountMap}
+        />
+      )}
 
-        {isDripReinvest && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-1 font-medium">
-              How is this dividend recorded?
-              <InfoTip
-                label="About dividend variants"
-                text="Qty equals the dollar amount: either a cash dividend on the underlying (typical for stocks like VUN.TO) or a reinvestment at $1/share (typical for crypto and sub-dollar units). Pick the one that matches reality, then confirm the holding."
-              />
-            </div>
-            <DividendVariantPicker
-              proposal={proposal}
-              onChange={onDividendVariantChange}
-            />
-            <div className="font-medium pt-2">Pick the underlying stock</div>
-            <HoldingPicker
-              proposal={proposal}
-              holdingMap={holdingMap}
-              onChange={onHoldingChange}
-            />
-            <DividendReinvestmentPreview
-              proposal={proposal}
-              displacedRows={displacedRows}
-              holdingMap={holdingMap}
-              accountMap={accountMap}
-              categoryMap={categoryMap}
-            />
-          </div>
-        )}
-
-        {!isDrift && !isOrphan && !isDripReinvest && (
-          <ReplacementPreviewTable
-            proposal={proposal}
-            holdingMap={holdingMap}
-            accountMap={accountMap}
-          />
-        )}
-
-        <DeltasPanel deltas={proposal.deltasJson} holdingMap={holdingMap} />
-      </CardContent>
+      <DeltasPanel deltas={proposal.deltasJson} holdingMap={holdingMap} />
     </Card>
   );
 }
@@ -678,7 +676,7 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" list>
+      <Card title="Existing rows being displaced" icon={Database} tone="rose" frame="list">
         {ids.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
@@ -695,7 +693,7 @@ function DisplacedRowsTable({
             </div>
           );
         })}
-      </SectionCard>
+      </Card>
     </div>
   );
 }
@@ -780,7 +778,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" list>
+          <Card title="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" frame="list">
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -790,12 +788,12 @@ function ReplacementPreviewTable({
                 secondary={`kind: ${r.kind ?? "(unchanged)"}`}
               />
             ))}
-          </SectionCard>
+          </Card>
         </div>
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" list cardClassName="border-warning/40 bg-warning/5">
+          <Card title="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" frame="list" frameClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -805,7 +803,7 @@ function ReplacementPreviewTable({
                 secondary={r.kind}
               />
             ))}
-          </SectionCard>
+          </Card>
           {synth[0]?.synthReason && (
             <p className="px-1 text-xs text-muted-foreground italic" data-keep="data">{synth[0].synthReason}</p>
           )}
@@ -1628,7 +1626,7 @@ function WillBecomeTable({
   if (changedKeys.has("related")) secondaryHi.add("related");
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Will become" icon={PlusCircle} tone="emerald" padded={false} cardClassName="border-pos/40 bg-pos/5">
+      <Card title="Will become" icon={PlusCircle} tone="emerald" padded={false} frameClassName="border-pos/40 bg-pos/5">
         <ListRow
           title={`#${willBecome.id} · ${willBecome.date}`}
           subtitle={
@@ -1642,7 +1640,7 @@ function WillBecomeTable({
           secondary={<span className={`font-mono ${hi("kind")}`}>{willBecome.kind ?? "—"}</span>}
         />
         <RowDetailsLine row={willBecome} holdingMap={holdingMap} categoryMap={categoryMap} highlight={secondaryHi} />
-      </SectionCard>
+      </Card>
       {existing.kind !== willBecome.kind && (
         <p className="mt-1 text-xs text-muted-foreground" data-keep="data">
           Existing kind: <span className="font-mono">{existing.kind ?? "—"}</span> → new: <span className="font-mono font-semibold">{willBecome.kind}</span>
@@ -1804,23 +1802,23 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
   const projectedPct = coverage.totalTxs === 0 ? 0 : Math.round((projectedCanonical / coverage.totalTxs) * 100);
 
   return (
-    <SectionCard label="Canonicalization coverage" icon={ShieldCheck} tone="cyan">
+    <Card title="Canonicalization coverage" icon={ShieldCheck} tone="cyan">
       <MetricGrid
         metrics={[
-          { icon: Landmark, label: "Investment accounts", value: String(coverage.accountCount) },
-          { icon: Receipt, label: "Total transactions", value: String(coverage.totalTxs) },
+          { icon: Landmark, title: "Investment accounts", value: String(coverage.accountCount) },
+          { icon: Receipt, title: "Total transactions", value: String(coverage.totalTxs) },
           { icon: CheckCircle2,
-            label: "Canonical (kind set + paired)",
+            title: "Canonical (kind set + paired)",
             value: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
             sub: `${coverage.canonicalPct}%`,
           },
           { icon: CalendarClock,
-            label: "Pending (needs backfill)",
+            title: "Pending (needs backfill)",
             value: String(coverage.nonCanonicalTxs),
             sub: coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined,
           },
           { icon: Layers,
-            label: "Not investment txs (no holding)",
+            title: "Not investment txs (no holding)",
             value: String(coverage.nonInvestmentRows ?? 0),
             sub: (coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined,
           },
@@ -1852,7 +1850,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" list>
+          <Card title="Per-account breakdown" icon={Landmark} tone="indigo" frame="list">
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}
@@ -1863,10 +1861,10 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
                 secondaryTone={a.pending > 0 ? "neg" : "pos"}
               />
             ))}
-          </SectionCard>
+          </Card>
         </div>
       )}
-    </SectionCard>
+    </Card>
   );
 }
 

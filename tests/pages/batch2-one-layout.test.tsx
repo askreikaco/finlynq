@@ -163,7 +163,7 @@ describe("Accounts: one layout at every size", () => {
 });
 
 describe("Account detail: one layout at every size", () => {
-  it("shared header, the card sections as SectionCards / ListRows, no table, Customize registered", async () => {
+  it("shared header, the card sections as Cards / ListRows, no table, Customize registered", async () => {
     const { container } = render(<><AccountDetailPage /><CustomizeProbe /></>);
     await screen.findByText("Account number");
     expectOneLayout(container, "Techcombank");
@@ -202,7 +202,7 @@ describe("Category detail: one layout at every size", () => {
 });
 
 describe("Account hub: one layout at every size", () => {
-  it("the account sections are SectionCards of ListRows, no table", () => {
+  it("the account sections are Cards of ListRows, no table", () => {
     const { container } = render(<AccountHubPage />);
     expect(container.querySelector("table")).toBeNull();
     expect(container.querySelectorAll(`[data-slot="list-row"]`).length).toBeGreaterThan(0);

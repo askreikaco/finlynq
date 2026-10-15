@@ -15,12 +15,13 @@
 
 import { Server } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import { TW } from "@/lib/design/tokens";
 import { Badge } from "@/components/ui/badge";
 import type { EffectiveConfig } from "@/lib/admin/effective-config";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 
 const SECTIONS = [
   {
@@ -92,8 +93,8 @@ interface SectionProps {
 
 function ConfigSection({ title, description, children }: SectionProps) {
   return (
-    <SectionCard
-      label={
+    <Card
+      title={
         <>
           {title}
           <InfoTip label={`About ${title}`} text={description} />
@@ -104,7 +105,7 @@ function ConfigSection({ title, description, children }: SectionProps) {
       padded={false}
     >
       <ul className="flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</ul>
-    </SectionCard>
+    </Card>
   );
 }
 

@@ -4,7 +4,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { MetricCard } from "@/components/metric-card";
+import { Card } from "@/components/ui/card";
+
+vi.mock("next/link", () => ({ default: ({ children, ...p }: any) => <a {...p}>{children}</a> }));
 import { DollarSign } from "lucide-react";
 
 // Mock recharts to avoid canvas/DOM issues in jsdom
@@ -41,17 +43,16 @@ vi.mock("@/components/ui/lazy-view", () => ({
 
 afterEach(cleanup);
 
-describe("MetricCard layout and sizing", () => {
+describe("Card metric layout and sizing", () => {
   it("renders metric card with hero size and sparkline", () => {
     const sparkData = [100, 120, 110, 130, 125];
     const { container } = render(
-      <MetricCard
-        label="Net Worth"
+      <Card
+        title="Net Worth"
         icon={DollarSign}
         value={14116.68}
         size="hero"
-        sparkData={sparkData}
-        sparkColor="#6366f1"
+        spark={{ data: sparkData, color: "#6366f1" }}
       />
     );
     expect(container).toBeTruthy();
@@ -59,7 +60,7 @@ describe("MetricCard layout and sizing", () => {
 
   const wideColumnOf = (size: "hero" | "default") => {
     const { container } = render(
-      <MetricCard label="Net Worth" icon={DollarSign} value={14116.68} size={size} sparkData={[100, 120, 110, 130, 125]} sparkColor="#6366f1" />,
+      <Card title="Net Worth" icon={DollarSign} value={14116.68} size={size} spark={{ data: [100, 120, 110, 130, 125], color: "#6366f1" }} />,
     );
     return Array.from(container.querySelectorAll("div")).find(
       (d) => d.className.includes("hidden @[36rem]:block") && d.className.includes("@[36rem]:self-center"),
@@ -83,13 +84,12 @@ describe("MetricCard layout and sizing", () => {
   it("sets narrow strip to 44px height on non-wide screens", () => {
     const sparkData = [100, 120, 110, 130, 125];
     const { container } = render(
-      <MetricCard
-        label="Net Worth"
+      <Card
+        title="Net Worth"
         icon={DollarSign}
         value={14116.68}
         size="hero"
-        sparkData={sparkData}
-        sparkColor="#6366f1"
+        spark={{ data: sparkData, color: "#6366f1" }}
       />
     );
 
@@ -104,13 +104,12 @@ describe("MetricCard layout and sizing", () => {
   it("sets wide column LazyView to 96px minHeight", () => {
     const sparkData = [100, 120, 110, 130, 125];
     const { container } = render(
-      <MetricCard
-        label="Net Worth"
+      <Card
+        title="Net Worth"
         icon={DollarSign}
         value={14116.68}
         size="hero"
-        sparkData={sparkData}
-        sparkColor="#6366f1"
+        spark={{ data: sparkData, color: "#6366f1" }}
       />
     );
 
@@ -125,13 +124,12 @@ describe("MetricCard layout and sizing", () => {
   it("applies sparkline-fade class to wide sparkline", () => {
     const sparkData = [100, 120, 110, 130, 125];
     const { container } = render(
-      <MetricCard
-        label="Net Worth"
+      <Card
+        title="Net Worth"
         icon={DollarSign}
         value={14116.68}
         size="hero"
-        sparkData={sparkData}
-        sparkColor="#6366f1"
+        spark={{ data: sparkData, color: "#6366f1" }}
       />
     );
 
@@ -139,10 +137,10 @@ describe("MetricCard layout and sizing", () => {
     expect(sparklineWithFade).toBeTruthy();
   });
 
-  it("renders without sparkline when sparkData is missing or empty", () => {
+  it("renders without sparkline when spark data is missing or empty", () => {
     const { container } = render(
-      <MetricCard
-        label="Empty Card"
+      <Card
+        title="Empty Card"
         icon={DollarSign}
         value={1000}
         size="default"
@@ -153,9 +151,9 @@ describe("MetricCard layout and sizing", () => {
   });
 });
 
-describe("MetricCard badge tone", () => {
+describe("Card badge tone", () => {
   const html = (invert: boolean, pct: number) => {
-    const { container } = render(<MetricCard label="x" icon={DollarSign} value={1} delta={{ pct, invert }} />);
+    const { container } = render(<Card title="x" icon={DollarSign} value={1} delta={{ pct, invert }} />);
     const b = container.querySelector(".rounded-full.font-semibold")!;
     cleanup();
     return b.className;
@@ -164,27 +162,27 @@ describe("MetricCard badge tone", () => {
     expect(html(false, 5)).toContain("text-pos");
     expect(html(false, -5)).toContain("text-destructive");
   });
-  it("invertTone: up is red, down is green (expenses)", () => {
+  it("invert: up is red, down is green (expenses)", () => {
     expect(html(true, 5)).toContain("text-destructive");
     expect(html(true, -5)).toContain("text-pos");
   });
 });
 
-describe("MetricCard label wraps instead of truncating", () => {
+describe("Card label wraps instead of truncating", () => {
   afterEach(cleanup);
   it("label wraps words and never ellipsizes", () => {
-    const { getByText } = render(<MetricCard label="Financial Health" icon={DollarSign} value={73} />);
+    const { getByText } = render(<Card title="Financial Health" icon={DollarSign} value={73} />);
     const cls = getByText("Financial Health").className;
     expect(cls).toMatch(/\bbreak-words\b/);
     expect(cls).not.toMatch(/\btruncate\b/);
   });
 });
 
-describe("MetricCard optional parts show only when their prop is given", () => {
+describe("Card optional parts show only when their prop is given", () => {
   afterEach(cleanup);
 
   it("a bare card has no progress, info tip, delta badge or link", () => {
-    const { container } = render(<MetricCard label="Net worth" icon={DollarSign} value={5} />);
+    const { container } = render(<Card title="Net worth" icon={DollarSign} value={5} />);
     expect(container.querySelector('[data-slot="metric-progress"]')).toBeNull();
     expect(container.querySelector('[data-slot="info-tip"]')).toBeNull();
     expect(container.querySelector(".rounded-full.font-semibold")).toBeNull();
@@ -193,7 +191,7 @@ describe("MetricCard optional parts show only when their prop is given", () => {
 
   it("progress: a clamped bar plus a caption (default caption = the rounded percent)", () => {
     const { container, getByRole, getByText } = render(
-      <MetricCard label="Budget" icon={DollarSign} value={1} progress={{ value: 140, tone: "destructive" }} />,
+      <Card title="Budget" icon={DollarSign} value={1} progress={{ value: 140, tone: "destructive" }} />,
     );
     const bar = getByRole("progressbar");
     expect(bar.getAttribute("aria-valuenow")).toBe("100");
@@ -204,46 +202,66 @@ describe("MetricCard optional parts show only when their prop is given", () => {
   });
 
   it("progress caption overrides the percent", () => {
-    const { getByText } = render(<MetricCard label="x" icon={DollarSign} value={1} progress={{ value: 40, caption: "40% of income spent" }} />);
+    const { getByText } = render(<Card title="x" icon={DollarSign} value={1} progress={{ value: 40, caption: "40% of income spent" }} />);
     getByText("40% of income spent");
   });
 
   it("delta: pct badge plus text; sub wins over delta.text", () => {
-    const a = render(<MetricCard label="x" icon={DollarSign} value={1} delta={{ pct: 2, text: "+$2 vs last month" }} />);
+    const a = render(<Card title="x" icon={DollarSign} value={1} delta={{ pct: 2, text: "+$2 vs last month" }} />);
     a.getByText("+$2 vs last month");
     expect(a.container.querySelector(".rounded-full.font-semibold")).not.toBeNull();
     cleanup();
-    const b = render(<MetricCard label="x" icon={DollarSign} value={1} sub="Caption" delta={{ pct: null, text: "hidden" }} />);
+    const b = render(<Card title="x" icon={DollarSign} value={1} sub="Caption" delta={{ pct: null, text: "hidden" }} />);
     b.getByText("Caption");
     expect(b.queryByText("hidden")).toBeNull();
     expect(b.container.querySelector(".rounded-full.font-semibold")).toBeNull();
   });
 
   it("info: an InfoTip in the label row", () => {
-    const { container } = render(<MetricCard label="Net worth" icon={DollarSign} value={1} info="Assets minus debts." />);
+    const { container } = render(<Card title="Net worth" icon={DollarSign} value={1} info="Assets minus debts." />);
     const row = container.querySelector('[data-slot="card-label"]')!;
     expect(row.querySelector('[data-slot="info-tip"]')).not.toBeNull();
   });
 
   it("action: rendered at the right of the label row", () => {
-    const { getByLabelText } = render(<MetricCard label="x" icon={DollarSign} value={1} action={<button aria-label="Edit">e</button>} />);
+    const { getByLabelText } = render(<Card title="x" icon={DollarSign} value={1} action={<button aria-label="Edit">e</button>} />);
     expect(getByLabelText("Edit").closest('[data-slot="card-label"]')).not.toBeNull();
   });
 
   it("number = money; a node renders as-is; valueTone / showSign colour and prefix", () => {
-    const money = render(<MetricCard label="x" icon={DollarSign} value={12} currency="USD" showSign valueTone="auto" />);
+    const money = render(<Card title="x" icon={DollarSign} value={12} currency="USD" showSign valueTone="auto" />);
     expect(money.container.textContent).toContain("+$12");
     expect(money.container.querySelector(".hero-number")!.className).toContain("text-pos");
     cleanup();
-    const count = render(<MetricCard label="x" icon={DollarSign} value={<span>{7}</span>} />);
+    const count = render(<Card title="x" icon={DollarSign} value={<span>{7}</span>} />);
     expect(count.container.querySelector(".hero-number")!.textContent).toBe("7");
   });
 
-  it("id: a labelled group with data-testid; cellClassName lands on the cell", () => {
-    const { getByTestId } = render(<MetricCard id="total" label="Total" icon={DollarSign} value={1} cellClassName="max-regular:hidden" />);
-    const cell = getByTestId("metric-total");
-    expect(cell.getAttribute("role")).toBe("group");
-    expect(cell.getAttribute("aria-label")).toBe("Total");
-    expect(cell.className).toContain("max-regular:hidden");
+  it("id: also the metric test id (`metric-<id>`); frameClassName lands on the card", () => {
+    const { getByTestId } = render(<Card id="total" title="Total" icon={DollarSign} value={1} frameClassName="max-regular:hidden" />);
+    const card = getByTestId("metric-total");
+    expect(card.id).toBe("total");
+    expect(card.className).toContain("max-regular:hidden");
+  });
+
+  it("a metric card has no mount animation: no framer-motion wrapper, hover animation classes only", () => {
+    const { getByTestId } = render(<Card id="x" title="x" icon={DollarSign} value={1} />);
+    const card = getByTestId("metric-x");
+    expect(card.className).toContain("card-hover");
+    expect(card.getAttribute("style") ?? "").not.toContain("opacity");
+  });
+
+  it("href: the whole card is a link and a tip / action click does not navigate", () => {
+    const { container, getByLabelText } = render(
+      <Card title="Net worth" icon={DollarSign} value={1} href="/dashboard" action={<button aria-label="Edit">e</button>} />,
+    );
+    expect(container.querySelector("a")?.getAttribute("href")).toBe("/dashboard");
+    expect(getByLabelText("Edit")).toBeTruthy();
+  });
+
+  it("loading: shimmer instead of the number", () => {
+    const { container } = render(<Card title="x" icon={DollarSign} value={5} loading />);
+    expect(container.querySelector(".animate-shimmer")).not.toBeNull();
+    expect(container.querySelector(".hero-number")).toBeNull();
   });
 });

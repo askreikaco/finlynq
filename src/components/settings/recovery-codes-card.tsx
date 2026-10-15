@@ -11,10 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Check, LifeBuoy, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, ShieldCheck } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { formatDateTimeLocal } from "@/lib/currency";
 
@@ -172,116 +171,108 @@ export function RecoveryCodesCard() {
   const low = hasCodes && status!.unused <= 2;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-            <LifeBuoy className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={ShieldCheck} tone="amber">
-              {STRINGS.title}
-              <InfoTip label="About recovery codes" text={STRINGS.description} />
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {loadFailed && <p className="text-sm text-destructive">{STRINGS.loadError}</p>}
+    <Card
+      title={STRINGS.title}
+      icon={ShieldCheck}
+      tone="amber"
+      info={STRINGS.description}
+      infoLabel="About recovery codes"
+      className="space-y-4"
+    >
+      {loadFailed && <p className="text-sm text-destructive">{STRINGS.loadError}</p>}
 
-        {notice && !codes && (
-          <p className="flex items-center gap-2 text-sm text-pos" role="status">
-            <Check className="h-4 w-4" aria-hidden="true" />
-            {notice}
+      {notice && !codes && (
+        <p className="flex items-center gap-2 text-sm text-pos" role="status">
+          <Check className="h-4 w-4" aria-hidden="true" />
+          {notice}
+        </p>
+      )}
+
+      {codes ? (
+        <div className="space-y-3" role="group" aria-label={STRINGS.codesTitle}>
+          <p className="flex items-start gap-2 text-sm font-medium text-warning">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            {STRINGS.codesWarning}
           </p>
-        )}
-
-        {codes ? (
-          <div className="space-y-3" role="group" aria-label={STRINGS.codesTitle}>
-            <p className="flex items-start gap-2 text-sm font-medium text-warning">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              {STRINGS.codesWarning}
-            </p>
-            <ul className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-muted/30 p-3 font-mono text-sm regular:grid-cols-2" data-testid="recovery-codes-list">
-              {codes.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
-            </ul>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopy}>
-                {STRINGS.copyAll}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
-                {STRINGS.download}
-              </Button>
-              {copyMsg && (
-                <span className="text-xs text-muted-foreground" role="status">
-                  {copyMsg}
-                </span>
+          <ul className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-muted/30 p-3 font-mono text-sm regular:grid-cols-2" data-testid="recovery-codes-list">
+            {codes.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleCopy}>
+              {STRINGS.copyAll}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              {STRINGS.download}
+            </Button>
+            {copyMsg && (
+              <span className="text-xs text-muted-foreground" role="status">
+                {copyMsg}
+              </span>
+            )}
+          </div>
+          <Field label={STRINGS.savedLabel} control="switch" checked={saved} onCheckedChange={(v) => setSaved(v)} />
+          <Button size="sm" disabled={!saved} onClick={handleDone}>
+            {STRINGS.done}
+          </Button>
+        </div>
+      ) : (
+        <>
+          {status && (
+            <div className="space-y-1 text-sm">
+              {hasCodes ? (
+                <p className="text-foreground" data-testid="recovery-codes-status">
+                  {status.unused} of {status.total} codes unused
+                  {status.createdAt ? (
+                    <span className="text-muted-foreground"> · {STRINGS.generated} {formatDateTimeLocal(status.createdAt)}</span>
+                  ) : null}
+                </p>
+              ) : (
+                <p className="text-muted-foreground" data-keep="status">{STRINGS.statusNone}</p>
+              )}
+              {low && (
+                <p className="flex items-start gap-2 text-warning" role="alert">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  {status.unused === 0 ? STRINGS.noneLeftWarning : STRINGS.lowWarning(status.unused)}
+                </p>
               )}
             </div>
-            <Field label={STRINGS.savedLabel} control="switch" checked={saved} onCheckedChange={(v) => setSaved(v)} />
-            <Button size="sm" disabled={!saved} onClick={handleDone}>
-              {STRINGS.done}
-            </Button>
-          </div>
-        ) : (
-          <>
-            {status && (
-              <div className="space-y-1 text-sm">
-                {hasCodes ? (
-                  <p className="text-foreground" data-testid="recovery-codes-status">
-                    {status.unused} of {status.total} codes unused
-                    {status.createdAt ? (
-                      <span className="text-muted-foreground"> · {STRINGS.generated} {formatDateTimeLocal(status.createdAt)}</span>
-                    ) : null}
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground" data-keep="status">{STRINGS.statusNone}</p>
-                )}
-                {low && (
-                  <p className="flex items-start gap-2 text-warning" role="alert">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                    {status.unused === 0 ? STRINGS.noneLeftWarning : STRINGS.lowWarning(status.unused)}
-                  </p>
-                )}
-              </div>
-            )}
+          )}
 
-            {confirming ? (
-              <form onSubmit={handleGenerate} className="space-y-3 rounded-lg border border-border p-3" aria-label="Generate recovery codes">
-                {hasCodes && <p className="text-xs text-warning" data-keep="warning">{STRINGS.regenerateWarning}</p>}
-                <Field
-                  label={STRINGS.passwordLabel}
-                  id="recovery-codes-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoFocus
-                />
-                {error && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {error}
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <Button type="submit" size="sm" disabled={busy || !password}>
-                    {busy ? STRINGS.working : hasCodes ? STRINGS.confirmRegenerate : STRINGS.confirmGenerate}
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => { setConfirming(false); setPassword(""); setError(""); }}>
-                    {STRINGS.cancel}
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <Button variant="outline" size="sm" disabled={!status} onClick={() => { setConfirming(true); setNotice(""); }}>
-                {hasCodes ? STRINGS.regenerate : STRINGS.generate}
-              </Button>
-            )}
-          </>
-        )}
-      </CardContent>
+          {confirming ? (
+            <form onSubmit={handleGenerate} className="space-y-3 rounded-lg border border-border p-3" aria-label="Generate recovery codes">
+              {hasCodes && <p className="text-xs text-warning" data-keep="warning">{STRINGS.regenerateWarning}</p>}
+              <Field
+                label={STRINGS.passwordLabel}
+                id="recovery-codes-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={busy || !password}>
+                  {busy ? STRINGS.working : hasCodes ? STRINGS.confirmRegenerate : STRINGS.confirmGenerate}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => { setConfirming(false); setPassword(""); setError(""); }}>
+                  {STRINGS.cancel}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Button variant="outline" size="sm" disabled={!status} onClick={() => { setConfirming(true); setNotice(""); }}>
+              {hasCodes ? STRINGS.regenerate : STRINGS.generate}
+            </Button>
+          )}
+        </>
+      )}
     </Card>
   );
 }

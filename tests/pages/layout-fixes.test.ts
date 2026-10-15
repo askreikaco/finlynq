@@ -81,10 +81,10 @@ describe("categories (with budgets) at 390", () => {
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
   });
 
-  it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
+  it("the category list is one inset Card of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toMatch(/label="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
-    expect(src).toMatch(/label="Categories"[\s\S]*?\blist\b/);
+    expect(src).toMatch(/title="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
+    expect(src).toMatch(/title="Categories"[\s\S]*?frame="list"/);
     expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");
   });
@@ -138,10 +138,10 @@ describe("accounts/[id] at 390", () => {
 });
 
 describe("holdings rows at every width (one layout)", () => {
-  it("each holding is a HoldingRow inside its account's SectionCard; no table at any width", () => {
+  it("each holding is a HoldingRow inside its account's Card; no table at any width", () => {
     const src = read(HOLDINGS_TABLE);
     expect(src).toContain("<HoldingRow");
-    expect(src).toContain("<SectionCard");
+    expect(src).toContain("<Card");
     expect(src).not.toMatch(/<Table\b/);
   });
 

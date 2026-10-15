@@ -5,13 +5,13 @@ import { readFileSync } from "fs";
 
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|ring-offset|shadow|decoration|accent|caret|placeholder|border-[trblxy]|border-[se])-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/g;
 const FILES: string[] = [
-  "src/components/metric-card.tsx",
+  "src/components/ui/card.tsx",
   "src/app/(app)/dashboard/_components/health-score-card.tsx",
 ];
 const ARIA: [string, string, number][] = [
 ];
 const SKELETON: [string, string, number][] = [
-  ["src/components/metric-card.tsx", "bg-muted/60 animate-pulse", 4],
+  ["src/components/ui/card.tsx", "bg-muted/60 animate-pulse", 4],
 ];
 
 describe("W6-08 design-system sweep", () => {

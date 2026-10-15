@@ -403,7 +403,7 @@ export default function AdminFeedbackPage() {
 
       <div data-slot="feedback-cards" className={TW.grid3}>
         {rows?.map((r) => (
-          <Card key={r.id} className="p-4">
+          <Card key={r.id}>
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={typeColor[r.type] ?? typeColor.other}>{r.type}</Badge>
               <Badge variant="outline" className="capitalize">

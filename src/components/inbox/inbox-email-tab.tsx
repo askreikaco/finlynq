@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
@@ -296,13 +296,11 @@ export function InboxEmailTab() {
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-            <Mail className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No emails yet.
-            </p>
-          </CardContent>
+        <Card className="flex flex-col items-center gap-2 py-10 text-center">
+          <Mail className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            No emails yet.
+          </p>
         </Card>
       ) : (
         <div className="space-y-2">
@@ -312,262 +310,260 @@ export function InboxEmailTab() {
             const canRecord =
               it.action === "needs_review" && it.sourceKind === "body";
             return (
-              <Card key={it.id} className={isOpen ? "ring-1 ring-primary/30" : ""}>
-                <CardContent className="py-3 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 text-left"
-                      onClick={() => void openRow(it.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge className={`${badge.cls} border-transparent`}>
-                          {badge.label}
-                        </Badge>
-                        <span className="text-sm font-medium truncate">
-                          {it.subject || "(no subject)"}
-                        </span>
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="truncate">{it.fromAddress || "(unknown sender)"}</span>
-                        <span>·</span>
-                        <span>{formatDateTimeLocal(it.receivedAt)}</span>
-                        {it.nextPurgeAt && (
-                          <>
-                            <span>·</span>
-                            <span title="When this email is automatically deleted, based on your retention setting">
-                              purges {formatDateTimeLocal(it.nextPurgeAt)}
-                            </span>
-                          </>
-                        )}
-                        {it.candidate && (
-                          <>
-                            <span>·</span>
-                            <span className="font-medium text-foreground">
-                              {formatCurrency(it.candidate.amount, it.candidate.currency)}
-                            </span>
-                            <span className="truncate">{it.candidate.payee}</span>
-                          </>
-                        )}
-                      </div>
-                    </button>
-                    <Button aria-label="Delete email"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => void remove(it.id)}
-                      disabled={acting}
-                      title="Delete email"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <Card key={it.id} frameClassName={isOpen ? "ring-1 ring-primary/30" : ""} className="py-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => void openRow(it.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${badge.cls} border-transparent`}>
+                        {badge.label}
+                      </Badge>
+                      <span className="text-sm font-medium truncate">
+                        {it.subject || "(no subject)"}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{it.fromAddress || "(unknown sender)"}</span>
+                      <span>·</span>
+                      <span>{formatDateTimeLocal(it.receivedAt)}</span>
+                      {it.nextPurgeAt && (
+                        <>
+                          <span>·</span>
+                          <span title="When this email is automatically deleted, based on your retention setting">
+                            purges {formatDateTimeLocal(it.nextPurgeAt)}
+                          </span>
+                        </>
+                      )}
+                      {it.candidate && (
+                        <>
+                          <span>·</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(it.candidate.amount, it.candidate.currency)}
+                          </span>
+                          <span className="truncate">{it.candidate.payee}</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  <Button aria-label="Delete email"
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => void remove(it.id)}
+                    disabled={acting}
+                    title="Delete email"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
 
-                  {isOpen && (
-                    <div className="space-y-3 border-t pt-3">
-                      {it.sourceKind === "attachment" && (
-                        <p className="text-xs text-muted-foreground">
-                          This email carried an attachment. Its rows are staged —
-                          review them in the Staging tab for the relevant account.
+                {isOpen && (
+                  <div className="space-y-3 border-t pt-3">
+                    {it.sourceKind === "attachment" && (
+                      <p className="text-xs text-muted-foreground">
+                        This email carried an attachment. Its rows are staged —
+                        review them in the Staging tab for the relevant account.
+                      </p>
+                    )}
+
+                    <div className="border rounded-lg overflow-hidden bg-background">
+                      {srcDoc ? (
+                        <iframe
+                          title="Email body"
+                          sandbox="allow-same-origin"
+                          srcDoc={srcDoc}
+                          className="w-full h-[320px] bg-white"
+                        />
+                      ) : detail?.bodyText ? (
+                        <pre className="p-3 text-xs whitespace-pre-wrap max-h-[320px] overflow-auto font-mono">
+                          {detail.bodyText}
+                        </pre>
+                      ) : (
+                        <p className="p-6 text-sm text-muted-foreground text-center">
+                          {detail ? "(no body content)" : "Loading…"}
                         </p>
                       )}
+                    </div>
 
-                      <div className="border rounded-lg overflow-hidden bg-background">
-                        {srcDoc ? (
-                          <iframe
-                            title="Email body"
-                            sandbox="allow-same-origin"
-                            srcDoc={srcDoc}
-                            className="w-full h-[320px] bg-white"
-                          />
-                        ) : detail?.bodyText ? (
-                          <pre className="p-3 text-xs whitespace-pre-wrap max-h-[320px] overflow-auto font-mono">
-                            {detail.bodyText}
-                          </pre>
-                        ) : (
-                          <p className="p-6 text-sm text-muted-foreground text-center">
-                            {detail ? "(no body content)" : "Loading…"}
-                          </p>
+                    {it.sourceKind === "body" && detail?.candidate && (
+                      <div className="rounded-lg border p-3 space-y-1.5 text-sm">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          What we identified
+                        </p>
+                        <div className="grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-1">
+                          <span className="text-xs text-muted-foreground">Amount</span>
+                          <span>
+                            <span className="font-medium">
+                              {formatCurrency(detail.candidate.amount, detail.candidate.currency)}
+                            </span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {detail.candidate.amount < 0 ? "outflow" : "inflow"}
+                              {detail.signals && !detail.signals.signExplicit ? " · sign assumed" : ""}
+                              {detail.candidate.last4 ? ` · card ending ${detail.candidate.last4}` : ""}
+                            </span>
+                          </span>
+                          <span className="text-xs text-muted-foreground">Payee</span>
+                          <span className="truncate">{detail.candidate.payee}</span>
+                          <span className="text-xs text-muted-foreground">Date</span>
+                          <span>
+                            {detail.candidate.date}
+                            {detail.signals?.usedFallbackDate && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                · from received date (none in body)
+                              </span>
+                            )}
+                            {detail.signals?.dateAmbiguous && (
+                              <span className="ml-2 text-xs text-muted-foreground">· ambiguous DD/MM</span>
+                            )}
+                          </span>
+                        </div>
+                        {(() => {
+                          const s = detail.signals;
+                          if (!s) return null;
+                          const reasons: string[] = [];
+                          if (s.multipleAmounts)
+                            reasons.push(
+                              `multiple amounts found (${s.detectedAmounts
+                                .map((a) => formatCurrency(a.value, a.currency))
+                                .join(", ")})`,
+                            );
+                          if (s.usedFallbackDate) reasons.push("no date in the email — used the received date");
+                          if (s.dateAmbiguous) reasons.push("ambiguous date format (DD/MM vs MM/DD)");
+                          if (!s.signExplicit) reasons.push("spend/deposit not stated — assumed an expense");
+                          if (detail.candidate?.payee === "Unknown") reasons.push("couldn't identify a payee");
+                          if (reasons.length === 0) return null;
+                          return (
+                            <div className="mt-1.5 border-t pt-1.5 text-xs text-warning">
+                              <span className="font-medium">Why this needs review:</span>
+                              <ul className="ml-4 list-disc">
+                                {reasons.map((r) => (
+                                  <li key={r}>{r}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })()}
+                        {canRecord && (
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5"
+                              onClick={() => setRuleEmail(it)}
+                            >
+                              <Wand2 className="h-3.5 w-3.5" /> Create rule from this email
+                            </Button>
+                          </div>
                         )}
                       </div>
+                    )}
 
-                      {it.sourceKind === "body" && detail?.candidate && (
-                        <div className="rounded-lg border p-3 space-y-1.5 text-sm">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            What we identified
-                          </p>
-                          <div className="grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-1">
-                            <span className="text-xs text-muted-foreground">Amount</span>
-                            <span>
-                              <span className="font-medium">
-                                {formatCurrency(detail.candidate.amount, detail.candidate.currency)}
-                              </span>
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                {detail.candidate.amount < 0 ? "outflow" : "inflow"}
-                                {detail.signals && !detail.signals.signExplicit ? " · sign assumed" : ""}
-                                {detail.candidate.last4 ? ` · card ending ${detail.candidate.last4}` : ""}
-                              </span>
-                            </span>
-                            <span className="text-xs text-muted-foreground">Payee</span>
-                            <span className="truncate">{detail.candidate.payee}</span>
-                            <span className="text-xs text-muted-foreground">Date</span>
-                            <span>
-                              {detail.candidate.date}
-                              {detail.signals?.usedFallbackDate && (
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  · from received date (none in body)
-                                </span>
-                              )}
-                              {detail.signals?.dateAmbiguous && (
-                                <span className="ml-2 text-xs text-muted-foreground">· ambiguous DD/MM</span>
-                              )}
-                            </span>
-                          </div>
-                          {(() => {
-                            const s = detail.signals;
-                            if (!s) return null;
-                            const reasons: string[] = [];
-                            if (s.multipleAmounts)
-                              reasons.push(
-                                `multiple amounts found (${s.detectedAmounts
-                                  .map((a) => formatCurrency(a.value, a.currency))
-                                  .join(", ")})`,
-                              );
-                            if (s.usedFallbackDate) reasons.push("no date in the email — used the received date");
-                            if (s.dateAmbiguous) reasons.push("ambiguous date format (DD/MM vs MM/DD)");
-                            if (!s.signExplicit) reasons.push("spend/deposit not stated — assumed an expense");
-                            if (detail.candidate?.payee === "Unknown") reasons.push("couldn't identify a payee");
-                            if (reasons.length === 0) return null;
-                            return (
-                              <div className="mt-1.5 border-t pt-1.5 text-xs text-warning">
-                                <span className="font-medium">Why this needs review:</span>
-                                <ul className="ml-4 list-disc">
-                                  {reasons.map((r) => (
-                                    <li key={r}>{r}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            );
-                          })()}
-                          {canRecord && (
-                            <div className="pt-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5"
-                                onClick={() => setRuleEmail(it)}
-                              >
-                                <Wand2 className="h-3.5 w-3.5" /> Create rule from this email
-                              </Button>
-                            </div>
-                          )}
+                    {canRecord && (
+                      <div className="flex flex-wrap items-end gap-2">
+                        <Field
+                          label="Account"
+                          control="select"
+                          value={pickAccount != null ? String(pickAccount) : ""}
+                          onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
+                          placeholder="Pick account"
+                          compact
+                          options={recordableAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency}</> }))}
+                          className="w-[200px]"
+                        />
+                        <Field
+                          label="Category"
+                          control="select"
+                          value={pickCategory != null ? String(pickCategory) : ""}
+                          onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
+                          placeholder="Pick category"
+                          compact
+                          options={categories.map((c) => ({ value: String(c.id), label: safeName(c.name, "category", c.id) }))}
+                          className="w-[200px]"
+                        />
+                        <Field
+                          label="Amount"
+                          control="amount"
+                          step="0.01"
+                          value={editAmount}
+                          onValueChange={(nv) => setEditAmount(nv)}
+                          compact
+                          className="w-[110px]"
+                        />
+                        <div className="space-y-1">
+                          <Field
+                            label="Date"
+                            control="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            compact
+                            className="w-[150px]"
+                          />
                         </div>
-                      )}
+                        <div className="space-y-1">
+                          <Field
+                            label="Payee"
+                            value={editPayee}
+                            onChange={(e) => setEditPayee(e.target.value)}
+                            compact
+                            className="w-[160px]"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => void record(it.id)}
+                          disabled={acting || pickAccount == null || pickCategory == null}
+                        >
+                          Record
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void discard(it.id)}
+                          disabled={acting}
+                        >
+                          Discard
+                        </Button>
+                      </div>
+                    )}
 
-                      {canRecord && (
-                        <div className="flex flex-wrap items-end gap-2">
-                          <Field
-                            label="Account"
-                            control="select"
-                            value={pickAccount != null ? String(pickAccount) : ""}
-                            onValueChange={(v) => setPickAccount(v ? parseInt(v, 10) : null)}
-                            placeholder="Pick account"
-                            compact
-                            options={recordableAccounts.map((a) => ({ value: String(a.id), label: <>{safeAccountName(a)} · {a.currency}</> }))}
-                            className="w-[200px]"
-                          />
-                          <Field
-                            label="Category"
-                            control="select"
-                            value={pickCategory != null ? String(pickCategory) : ""}
-                            onValueChange={(v) => setPickCategory(v ? parseInt(v, 10) : null)}
-                            placeholder="Pick category"
-                            compact
-                            options={categories.map((c) => ({ value: String(c.id), label: safeName(c.name, "category", c.id) }))}
-                            className="w-[200px]"
-                          />
-                          <Field
-                            label="Amount"
-                            control="amount"
-                            step="0.01"
-                            value={editAmount}
-                            onValueChange={(nv) => setEditAmount(nv)}
-                            compact
-                            className="w-[110px]"
-                          />
-                          <div className="space-y-1">
-                            <Field
-                              label="Date"
-                              control="date"
-                              value={editDate}
-                              onChange={(e) => setEditDate(e.target.value)}
-                              compact
-                              className="w-[150px]"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Field
-                              label="Payee"
-                              value={editPayee}
-                              onChange={(e) => setEditPayee(e.target.value)}
-                              compact
-                              className="w-[160px]"
-                            />
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => void record(it.id)}
-                            disabled={acting || pickAccount == null || pickCategory == null}
-                          >
-                            Record
-                          </Button>
+                    {canRecord && dupPrompt?.id === it.id && (
+                      <div className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
+                        <p>
+                          Possible duplicate of an existing transaction
+                          {dupPrompt.txId != null ? ` (#${dupPrompt.txId})` : ""} on this account
+                          (same amount, near date). Not recorded.
+                        </p>
+                        <div className="mt-2 flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => void record(it.id, { force: true })}
+                            disabled={acting}
+                          >
+                            Record anyway
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => void discard(it.id)}
                             disabled={acting}
                           >
                             Discard
                           </Button>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {canRecord && dupPrompt?.id === it.id && (
-                        <div className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
-                          <p>
-                            Possible duplicate of an existing transaction
-                            {dupPrompt.txId != null ? ` (#${dupPrompt.txId})` : ""} on this account
-                            (same amount, near date). Not recorded.
-                          </p>
-                          <div className="mt-2 flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => void record(it.id, { force: true })}
-                              disabled={acting}
-                            >
-                              Record anyway
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => void discard(it.id)}
-                              disabled={acting}
-                            >
-                              Discard
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {it.recordedTransactionId != null && (
-                        <p className="text-xs text-pos">
-                          Recorded as transaction #{it.recordedTransactionId}.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
+                    {it.recordedTransactionId != null && (
+                      <p className="text-xs text-pos">
+                        Recorded as transaction #{it.recordedTransactionId}.
+                      </p>
+                    )}
+                  </div>
+                )}
               </Card>
             );
           })}

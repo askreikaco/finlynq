@@ -206,7 +206,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
     render(
       <ListPage<Goal, Goal[], { tag: string }>
         {...baseProps()}
-        summary={[{ icon: Wallet, label: "Static", value: 7 }]}
+        summary={[{ icon: Wallet, title: "Static", value: 7 }]}
         summarySlot={(records) => <p>{`slot-${records.length}`}</p>}
       />,
     );

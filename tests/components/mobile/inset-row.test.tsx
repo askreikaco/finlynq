@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Inbox } from "lucide-react";
 import { InsetRow, AccountCard, ThemePicker } from "@/components/mobile/inset-row";
-import { SectionCard } from "@/components/mobile/section-card";
+import { Card } from "@/components/ui/card";
 
 const SRC = readFileSync(join(__dirname, "../../../src/components/mobile/inset-row.tsx"), "utf8");
 
@@ -82,16 +82,16 @@ describe("InsetRow", () => {
 
   it("rows carry the --list-divider shadow on every row but the last (no pseudo-element hairline)", () => {
     const { container } = render(
-      <SectionCard list>
+      <Card frame="list">
         <InsetRow href="/a" label="A" icon={Inbox} />
         <InsetRow href="/b" label="B" icon={Inbox} />
-      </SectionCard>,
+      </Card>,
     );
     const rows = container.querySelectorAll("[data-slot='inset-row']");
     expect(rows).toHaveLength(2);
     expect(rows[0].className).toContain("not-last:shadow-[var(--list-divider)]");
     expect(rows[0].className).not.toMatch(/before:/);
-    expect(container.querySelector("[data-slot='section-card-body']")!.className).toContain("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
+    expect(container.querySelector("[data-slot='card-body']")!.className).toContain("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
   });
 });
 

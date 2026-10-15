@@ -27,12 +27,11 @@
  * - `summarySlot`, `emptySlot`, `body` replace the summary grid, empty card, and toggle+DataView.
  * - `toolbarPlacement`, `header`, `stack`, `loadingNode`, `skeletonRows`, `suspenseRows`.
  */
-import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, type CardProps } from "@/components/ui/card";
 import { Overlay } from "@/components/ui/overlay";
 import { PageHeader, type MoreItem, type PageHeaderProps, type TopBarPrimary } from "@/components/mobile/page-header";
 import { MetricGrid } from "@/components/mobile/metric-grid";
@@ -67,7 +66,7 @@ export interface ListPageProps<T, D = T[], X = unknown> {
   /** Primary Add action in the top bar (yellow round, rightmost). */
   add?: { label: string; href: string };
   /** Summary stat cards. A function gets the loaded records; the grid is hidden while the list is empty. */
-  summary?: MetricCardProps[] | ((records: T[]) => MetricCardProps[]);
+  summary?: CardProps[] | ((records: T[]) => CardProps[]);
   viewKey: ViewKey;
   /** Cards view (phone default). Only the selected view is mounted. */
   cards: ListPageView<T, X>;
@@ -243,17 +242,15 @@ export function ListPage<T, D = T[], X = unknown>({
     bodyNode = emptySlot ? (
       emptySlot(ctx)
     ) : (
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center py-16 text-center">
-          <h3 className="mb-2 text-lg font-semibold">{empty.title}</h3>
-          <p className="mb-6 max-w-sm text-sm text-muted-foreground">{empty.body}</p>
-          {empty.cta && (
-            <Button aria-label={empty.cta.label} render={<Link href={empty.cta.href} />}>
-              <Plus className="mr-1 h-4 w-4" />
-              {empty.cta.label}
-            </Button>
-          )}
-        </CardContent>
+      <Card frameClassName="border-dashed" className="flex flex-col items-center py-16 text-center">
+        <h3 className="mb-2 text-lg font-semibold">{empty.title}</h3>
+        <p className="mb-6 max-w-sm text-sm text-muted-foreground">{empty.body}</p>
+        {empty.cta && (
+          <Button aria-label={empty.cta.label} render={<Link href={empty.cta.href} />}>
+            <Plus className="mr-1 h-4 w-4" />
+            {empty.cta.label}
+          </Button>
+        )}
       </Card>
     );
   } else {

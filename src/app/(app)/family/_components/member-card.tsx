@@ -2,7 +2,7 @@
 
 import { Landmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { formatPercent } from "@/lib/locale";
@@ -17,6 +17,7 @@ import {
   PerformanceCard,
   type Period,
 } from "./overview-cards";
+import { Card } from "@/components/ui/card";
 
 const NONE = FAMILY_STRINGS.overview_none;
 
@@ -190,7 +191,7 @@ export function MemberCard({
             )}
 
             {s.loans && (
-              <SectionCard label={FAMILY_STRINGS.overview_loans_title} icon={Landmark} tone="rose">
+              <Card title={FAMILY_STRINGS.overview_loans_title} icon={Landmark} tone="rose">
                 {s.loans.loans.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{NONE}</p>
                 ) : (
@@ -206,7 +207,7 @@ export function MemberCard({
                     ))}
                   </ul>
                 )}
-              </SectionCard>
+              </Card>
             )}
           </>
         )}

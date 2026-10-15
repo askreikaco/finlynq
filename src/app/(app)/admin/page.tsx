@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, KeyRound, Layers, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
@@ -16,7 +16,7 @@ import {
 import { formatDateTimeLocal } from "@/lib/currency";
 import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { Pagination } from "@/components/ui/pagination";
-import { ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, METRIC_GRID_CLASS, MetricGrid } from "@/components/mobile";
 import { Overlay } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
@@ -393,14 +393,12 @@ export default function AdminPage() {
     return (
       <SectionPage {...adminPageProps}>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium">{error}</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                You need admin privileges to access this page.
-              </p>
-            </CardContent>
+          <Card className="p-8 text-center">
+            <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium">{error}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              You need admin privileges to access this page.
+            </p>
           </Card>
         </div>
       </SectionPage>
@@ -430,7 +428,7 @@ export default function AdminPage() {
             <MetricGrid
               metrics={[
                 { icon: Users,
-                  label: "Total Users",
+                  title: "Total Users",
                   value: <span>{stats.totalUsers}</span>,
                   // Running total of signups by month (users that still exist), this month vs last month by default.
                   ...(() => {
@@ -439,9 +437,9 @@ export default function AdminPage() {
                     return cardProps(c);
                   })(),
                 },
-                { icon: Receipt, label: "Transactions", value: stats.totalTransactions.toLocaleString() },
+                { icon: Receipt, title: "Transactions", value: stats.totalTransactions.toLocaleString() },
                 { icon: UserPlus,
-                  label: "New (7d)",
+                  title: "New (7d)",
                   value: <span>{stats.registrationsLast7Days}</span>,
                   // Fixed 7-day window: the 7 days before it.
                   delta: {
@@ -449,7 +447,7 @@ export default function AdminPage() {
                     text: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
                   },
                 },
-                { icon: ShieldCheck, label: "MFA Enabled", value: <span>{stats.mfaEnabledUsers}</span> },
+                { icon: ShieldCheck, title: "MFA Enabled", value: <span>{stats.mfaEnabledUsers}</span> },
               ]}
             />
           </div>
@@ -483,9 +481,9 @@ export default function AdminPage() {
             </div>
             <MetricGrid
               metrics={[
-                { icon: Activity, label: "Active now (15 min)", value: <span>{stats.activeUsersLast15Min ?? 0}</span> },
-                { icon: Activity, label: "Active (last hour)", value: <span>{stats.activeUsersLast60Min ?? 0}</span> },
-                { icon: Activity, label: "Active (last 24h)", value: <span>{stats.activeUsersLast24Hours ?? 0}</span> },
+                { icon: Activity, title: "Active now (15 min)", value: <span>{stats.activeUsersLast15Min ?? 0}</span> },
+                { icon: Activity, title: "Active (last hour)", value: <span>{stats.activeUsersLast60Min ?? 0}</span> },
+                { icon: Activity, title: "Active (last 24h)", value: <span>{stats.activeUsersLast24Hours ?? 0}</span> },
               ]}
             />
           </motion.div>
@@ -494,8 +492,8 @@ export default function AdminPage() {
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard
-              label={
+            <Card
+              title={
                 <>
                   Decision prompts
                   <InfoTip
@@ -504,7 +502,7 @@ export default function AdminPage() {
                   />
                 </>
               }
-              icon={MessageSquare} tone="violet" list>
+              icon={MessageSquare} tone="violet" frame="list">
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -519,7 +517,7 @@ export default function AdminPage() {
                   secondary={`${p.deferred} deferred · ${p.dismissed} dismissed`}
                 />
               ))}
-            </SectionCard>
+            </Card>
           </motion.div>
         )}
 
@@ -528,7 +526,7 @@ export default function AdminPage() {
           <motion.div variants={itemVariants}>
             <MetricGrid
               metrics={Object.entries(stats.planBreakdown).map(([plan, count]) => ({
-                label: plan.charAt(0).toUpperCase() + plan.slice(1),
+                title: plan.charAt(0).toUpperCase() + plan.slice(1),
                 value: count,
                 icon: Layers,
               }))}
@@ -652,7 +650,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <SectionCard list>
+              <Card frame="list">
                 {users.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
                 ) : (
@@ -683,7 +681,7 @@ export default function AdminPage() {
                     );
                   })
                 )}
-              </SectionCard>
+              </Card>
 
               <Pagination
                 page={page}
@@ -695,85 +693,79 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="activity" className={`mt-4 ${TW.grid3}`}>
-              <Card>
-                <CardContent className="p-6">
-                  {stats && (
-                    <div className="-mx-6 -my-3 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                      <ListRow title="Registrations (last 30 days)" value={stats.registrationsLast30Days} />
-                      <ListRow title="Email-verified users" value={`${stats.verifiedUsers} / ${stats.totalUsers}`} />
-                      <ListRow title="Total logins" value={stats.totalLogins.toLocaleString()} />
-                      <ListRow title="Active users (last 7 days)" value={stats.activeUsersLast7Days} />
-                      <ListRow title="Active users (last 30 days)" value={stats.activeUsersLast30Days} />
-                      <ListRow title="Total accounts created" value={stats.totalAccounts} />
-                      <ListRow title="Total transactions" value={stats.totalTransactions.toLocaleString()} />
-                    </div>
-                  )}
-                </CardContent>
+              <Card className="p-6">
+                {stats && (
+                  <div className="-mx-6 -my-3 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    <ListRow title="Registrations (last 30 days)" value={stats.registrationsLast30Days} />
+                    <ListRow title="Email-verified users" value={`${stats.verifiedUsers} / ${stats.totalUsers}`} />
+                    <ListRow title="Total logins" value={stats.totalLogins.toLocaleString()} />
+                    <ListRow title="Active users (last 7 days)" value={stats.activeUsersLast7Days} />
+                    <ListRow title="Active users (last 30 days)" value={stats.activeUsersLast30Days} />
+                    <ListRow title="Total accounts created" value={stats.totalAccounts} />
+                    <ListRow title="Total transactions" value={stats.totalTransactions.toLocaleString()} />
+                  </div>
+                )}
               </Card>
 
-              <Card>
-                <CardContent className="p-4 space-y-2">
-                  <div className="px-1">
-                    <h2 className="flex items-center gap-0.5 font-semibold">
-                      Recent logins
-                      <InfoTip label="About recent logins" text="Last 15 users who signed in, most recent first." />
-                    </h2>
-                  </div>
-                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {(stats?.recentLogins ?? []).map((row) => (
-                      <ListRow
-                        key={row.id}
-                        title={row.displayName || row.username || "—"}
-                        subtitle={row.username ?? row.email ?? "—"}
-                        value={<span className="font-mono text-sm">{row.loginCount.toLocaleString()}</span>}
-                        secondary={row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleString() : "—"}
-                      />
-                    ))}
-                    {(!stats?.recentLogins || stats.recentLogins.length === 0) && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">No login activity yet.</p>
-                    )}
-                  </div>
-                </CardContent>
+              <Card className="p-4 space-y-2">
+                <div className="px-1">
+                  <h2 className="flex items-center gap-0.5 font-semibold">
+                    Recent logins
+                    <InfoTip label="About recent logins" text="Last 15 users who signed in, most recent first." />
+                  </h2>
+                </div>
+                <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  {(stats?.recentLogins ?? []).map((row) => (
+                    <ListRow
+                      key={row.id}
+                      title={row.displayName || row.username || "—"}
+                      subtitle={row.username ?? row.email ?? "—"}
+                      value={<span className="font-mono text-sm">{row.loginCount.toLocaleString()}</span>}
+                      secondary={row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleString() : "—"}
+                    />
+                  ))}
+                  {(!stats?.recentLogins || stats.recentLogins.length === 0) && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">No login activity yet.</p>
+                  )}
+                </div>
               </Card>
 
               {/* FINLYNQ-167 — OAuth grants across users */}
-              <Card>
-                <CardContent className="p-4 space-y-2">
-                  <div className="px-1">
-                    <h2 className="font-semibold flex items-center gap-2">
-                      <KeyRound className="h-4 w-4" />
-                      OAuth grants ({grants.length})
-                      <InfoTip
-                        label="About OAuth grants"
-                        text={`Live OAuth / MCP grants across all users. A grant is dormant when it has not been used in over ${DORMANT_DAYS} days.`}
+              <Card className="p-4 space-y-2">
+                <div className="px-1">
+                  <h2 className="font-semibold flex items-center gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    OAuth grants ({grants.length})
+                    <InfoTip
+                      label="About OAuth grants"
+                      text={`Live OAuth / MCP grants across all users. A grant is dormant when it has not been used in over ${DORMANT_DAYS} days.`}
+                    />
+                  </h2>
+                </div>
+                <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                  {grants.map((grant) => {
+                    // FINLYNQ-166's pure dormancy predicate — reused here for
+                    // last_used_at (null OR >DORMANT_DAYS ago = dormant).
+                    const dormant = isDormant(grant.lastUsedAt);
+                    return (
+                      <ListRow
+                        key={grant.id}
+                        title={grant.clientName}
+                        subtitle={`${grant.userLabel} · ${grant.scope}`}
+                        value={
+                          <span className={`text-xs ${dormant ? "text-muted-foreground" : "text-pos"}`}>
+                            {dormant ? "Dormant" : "Active"}
+                          </span>
+                        }
+                        secondary={grant.lastUsedAt === null ? "Never used" : formatDateTimeLocal(grant.lastUsedAt)}
+                        onPress={() => setDetailGrantId(grant.id)}
                       />
-                    </h2>
-                  </div>
-                  <div className="-mx-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                    {grants.map((grant) => {
-                      // FINLYNQ-166's pure dormancy predicate — reused here for
-                      // last_used_at (null OR >DORMANT_DAYS ago = dormant).
-                      const dormant = isDormant(grant.lastUsedAt);
-                      return (
-                        <ListRow
-                          key={grant.id}
-                          title={grant.clientName}
-                          subtitle={`${grant.userLabel} · ${grant.scope}`}
-                          value={
-                            <span className={`text-xs ${dormant ? "text-muted-foreground" : "text-pos"}`}>
-                              {dormant ? "Dormant" : "Active"}
-                            </span>
-                          }
-                          secondary={grant.lastUsedAt === null ? "Never used" : formatDateTimeLocal(grant.lastUsedAt)}
-                          onPress={() => setDetailGrantId(grant.id)}
-                        />
-                      );
-                    })}
-                    {grants.length === 0 && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">No active OAuth grants.</p>
-                    )}
-                  </div>
-                </CardContent>
+                    );
+                  })}
+                  {grants.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">No active OAuth grants.</p>
+                  )}
+                </div>
               </Card>
             </TabsContent>
           </Tabs>

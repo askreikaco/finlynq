@@ -1,10 +1,9 @@
 "use client";
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, type CardProps } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Chart } from "@/components/chart";
 import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
@@ -12,7 +11,7 @@ import { localDateISO } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
-import { MetricGrid, SectionCard, ListRow, type ProgressTone, useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, CardLayoutEditor } from "@/components/mobile";
+import { MetricGrid, ListRow, type ProgressTone, useCardLayout, usePageCustomize, ListDetailLayout, useListDetail, CardLayoutEditor } from "@/components/mobile";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
@@ -80,27 +79,25 @@ type GoalCtx = ListPageContext<Goal>;
 
 /** Empty state: no goals at all. */
 const emptyGoals = (
-  <Card className="border-dashed">
-    <CardContent className="py-16 flex flex-col items-center text-center">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-        <Target className="h-8 w-8 text-primary" />
-      </div>
-      <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
-      <p className="text-sm text-muted-foreground max-w-sm mb-6">
-        Start with an emergency fund, debt payoff or savings goal.
-      </p>
-      <div className="flex flex-wrap gap-2 justify-center">
-        {EMPTY_STATE_CHIPS.map(({ label, type }) => (
-          <Link
-            key={label}
-            href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
-          >
-            <Plus className="h-3 w-3" />{label}
-          </Link>
-        ))}
-      </div>
-    </CardContent>
+  <Card frameClassName="border-dashed" className="py-16 flex flex-col items-center text-center">
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+      <Target className="h-8 w-8 text-primary" />
+    </div>
+    <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
+    <p className="text-sm text-muted-foreground max-w-sm mb-6">
+      Start with an emergency fund, debt payoff or savings goal.
+    </p>
+    <div className="flex flex-wrap gap-2 justify-center">
+      {EMPTY_STATE_CHIPS.map(({ label, type }) => (
+        <Link
+          key={label}
+          href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
+        >
+          <Plus className="h-3 w-3" />{label}
+        </Link>
+      ))}
+    </div>
   </Card>
 );
 
@@ -159,41 +156,39 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
     points: progressPoints, period, mode: "last", isDefault: !explicit, pageValue: totalCurrent,
     kind: "money", currency: displayCurrency, caption: compareCaption(selection),
   });
-  const summaryMetrics: MetricCardProps[] = [
-    { id: "total-target", label: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
+  const summaryMetrics: CardProps[] = [
+    { id: "total-target", title: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
     {
-      id: "current-progress", label: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
+      id: "current-progress", title: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
       valueClassName: "text-pos", delta: { pct: progressCard.badgePct, text: progressCard.delta ?? NO_HISTORY_CAPTION }, note: caveat,
-      sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
+      spark: { data: progressCard.sparkData, color: "#10b981", labels: progressCard.sparkLabels }, 
     },
-    { id: "completed", label: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
+    { id: "completed", title: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
   ];
 
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: activeList.length > 0 ? (
-      <SectionCard label="Active" icon={Target} tone="indigo" list className="[&>*]:min-w-0">
+      <Card title="Active" icon={Target} tone="indigo" frame="list" className="[&>*]:min-w-0">
         {activeList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
-      </SectionCard>
+      </Card>
     ) : tb.activeCount > 0 || needle ? (
       <p className="py-6 text-center text-sm text-muted-foreground">No active goals match.</p>
     ) : (
-      <Card>
-        <CardContent className="py-10 flex flex-col items-center text-center">
-          <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
-          <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
-          <p className="text-sm text-muted-foreground">Add a new goal.</p>
-        </CardContent>
+      <Card className="py-10 flex flex-col items-center text-center">
+        <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
+        <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
+        <p className="text-sm text-muted-foreground">Add a new goal.</p>
       </Card>
     ),
     completed: completedList.length > 0 ? (
-      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" list className="[&>*]:min-w-0">
+      <Card title="Completed" icon={CheckCircle2} tone="emerald" frame="list" className="[&>*]:min-w-0">
         {completedList.map((g) => (
           <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
-      </SectionCard>
+      </Card>
     ) : null,
   };
 

@@ -10,10 +10,10 @@
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader } from "@/components/mobile";
-import { SectionCard } from "@/components/mobile/section-card";
 import { ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NEW_OP_HREF } from "./op-catalog";
+import { Card } from "@/components/ui/card";
 
 export const DEFAULT_OP_RETURN = "/portfolio";
 
@@ -68,9 +68,9 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <SectionCard list label={label} icon={ClipboardList} tone="indigo">
+    <Card frame="list" title={label} icon={ClipboardList} tone="indigo">
       {children}
-    </SectionCard>
+    </Card>
   );
 }
 

@@ -35,16 +35,16 @@ vi.mock("@/app/(app)/dashboard/_components/income-expense-chart", () => ({ Incom
 vi.mock("@/app/(app)/dashboard/_components/spending-category-chart", () => ({ SpendingCategoryChart: marker("spending-category-chart") }));
 vi.mock("@/app/(app)/dashboard/_components/available-to-spend", () => ({ AvailableToSpend: marker("available-to-spend") }));
 vi.mock("@/app/(app)/dashboard/_components/insights-section", () => ({ InsightsSection: marker("insights") }));
-vi.mock("@/components/metric-card", async (orig) => {
-  const m = await orig<typeof import("@/components/metric-card")>();
+vi.mock("@/components/ui/card", async (orig) => {
+  const m = await orig<typeof import("@/components/ui/card")>();
   // The three monthly summary cards become markers; every other card (net worth hero, tiles) stays real.
   return {
     ...m,
-    MetricCard: (p: React.ComponentProps<typeof m.MetricCard>) =>
-      ["Monthly Income", "Monthly Expenses", "Budgets"].includes(String(p.label)) ? (
-        <div data-testid={`stat-${String(p.label)}`} data-badge={p.delta?.pct ?? ""} data-invert={p.delta?.invert ? "1" : ""}>{p.label}</div>
+    Card: (p: React.ComponentProps<typeof m.Card>) =>
+      ["Monthly Income", "Monthly Expenses", "Budgets"].includes(String(p.title)) ? (
+        <div data-testid={`stat-${String(p.title)}`} data-badge={p.delta?.pct ?? ""} data-invert={p.delta?.invert ? "1" : ""}>{p.title}</div>
       ) : (
-        <m.MetricCard {...p} />
+        <m.Card {...p} />
       ),
   };
 });
@@ -76,7 +76,7 @@ afterEach(() => {
 const TARGET_FILES = [
   "src/app/(app)/dashboard/page.tsx",
   "src/components/notice/feeds.tsx",
-  "src/components/metric-card.tsx",
+  "src/components/ui/card.tsx",
 ];
 // Viewport tokens: md:/lg:/max-md:/max-lg:/sm:/xl:/2xl:. Container prefixes (@sm:) are not matched by this.
 const VIEWPORT_TOKEN = /(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/;

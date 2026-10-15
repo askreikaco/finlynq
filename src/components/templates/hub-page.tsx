@@ -3,7 +3,7 @@
 /**
  * HubPage template (C-09): an iOS grouped-list hub. Owns the root testid (`<id>-root`), the
  * global PageHeader, the width token (TW.section), the bottom pad (TW.formPad) and the
- * Suspense boundary. Each group is a SectionCard `list`; every row is the shared ListRow (mobile/list-row.tsx).
+ * Suspense boundary. Each group is a Card `list`; every row is the shared ListRow (mobile/list-row.tsx).
  *
  * Groups come from one of two sources (exactly one):
  *  - `groups`: an explicit list.
@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader, type PageHeaderProps } from "@/components/mobile/page-header";
 import { ListRow } from "@/components/mobile/list-row";
-import { SectionCard } from "@/components/mobile/section-card";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
+import { Card } from "@/components/ui/card";
 
 export interface HubRow {
   id: string;
@@ -74,7 +74,7 @@ export function groupsFromSurface(surface: Surface, order: HubGroupOrder[]): Hub
 
 /** Optional look and layout variants. Every field is optional; omitted = today's behaviour. */
 export interface HubPageVariants {
-  /** "inset" (default) or "card": both render the same ListRow rows in a SectionCard list. */
+  /** "inset" (default) or "card": both render the same ListRow rows in a Card list. */
   look?: "inset" | "card";
   /** 1 (default) = groups stacked. "wide-2" = two columns from the `wide` breakpoint. */
   columns?: 1 | "wide-2";
@@ -161,11 +161,11 @@ function HubPageBody(props: HubPageProps) {
       data-slot={groupSlot ?? "hub-group"}
       data-testid={`${id}-group-${group.id}`}
     >
-      <SectionCard list label={group.title} {...(group.title ? groupLabelIcon(group.title) : {})}>
+      <Card frame="list" title={group.title} {...(group.title ? groupLabelIcon(group.title) : {})}>
         {group.rows.map((row) => (
           <HubRowView key={row.id} row={row} id={id} />
         ))}
-      </SectionCard>
+      </Card>
     </section>
   ));
 

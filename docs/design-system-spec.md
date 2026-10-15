@@ -55,7 +55,7 @@ Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `wid
 | `ui/accordion.tsx` | `:97` | Accordion, AccordionItem |
 | `ui/badge.tsx` | `:52` | Badge, badgeVariants |
 | `ui/button.tsx` | `:61` (cva `:8-43`, sizes `:24-36`) | Button; touch sizes via `max-md:h-11` / `max-md:size-11` |
-| `ui/card.tsx` | `:95` | Card family |
+| `ui/card.tsx` | Card | THE card (metric tile, titled section, plain box, divided list). Every part optional by prop: title (+ icon, tone, info, action; inside or outside), description, frame (card / bare / list), padded, value (+ hero size, delta, sub, note, spark, progress, loading), href. Gallery: /dev/gallery#card |
 | `ui/checkbox.tsx` | `:6`, `:31` | Checkbox |
 | `ui/column-filter.tsx` | `:46`, `:55` | ColumnFilterPopover |
 | `ui/combobox.tsx` | `:51`, `:274`, `:399` | Combobox types and exports |
@@ -86,7 +86,6 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
 | `mobile/list-row.tsx` | ListRow, ListRowProps | THE row of every list. Optional parts by prop: leading (icon tile, initials, status dot), title, subtitle, value + secondary, chart, progress bar + label, delta, count, badge, unread, trailing, actions, chevron, href / onPress / select, selected, size (regular 56px / dense 44px), shape (square / rounded). Gallery: /dev/gallery#list-row |
-| `mobile/section-card.tsx` | `:6` SectionCard | Card with optional uppercase label (`:5` doc) |
 | `mobile/section-label.tsx` | `:5` SectionLabel | 12/700 uppercase muted label (`:4` doc) |
 | `mobile/stat-tile.tsx` | `:6` StatTile | Compact stat replacing tall icon cards below md (`:5` doc) |
 | `mobile/amount.tsx` | `:34` Amount, `:17` amountToneClass | Money amount, tabular, sign color (`:16`, `:25-26` doc) |

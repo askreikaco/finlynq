@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Smartphone, SmartphoneIcon } from "lucide-react";
+import { Check, Smartphone } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
@@ -153,90 +152,82 @@ export function TrustedDevices() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
-            <SmartphoneIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={Smartphone} tone="cyan">
-              {STRINGS.title}
-              <InfoTip label="About trusted devices" text={`${STRINGS.description}. ${STRINGS.deviceNote}`} />
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card
+      title={STRINGS.title}
+      icon={Smartphone}
+      tone="cyan"
+      info={`${STRINGS.description}. ${STRINGS.deviceNote}`}
+      infoLabel="About trusted devices"
+      className="space-y-4"
+    >
 
-        <div role="status" aria-live="polite">
-          {message && (
-            <p className="text-sm text-pos flex items-center gap-2">
-              <Check className="h-4 w-4" aria-hidden="true" />
-              {message}
-            </p>
-          )}
-        </div>
+      <div role="status" aria-live="polite">
+        {message && (
+          <p className="text-sm text-pos flex items-center gap-2">
+            <Check className="h-4 w-4" aria-hidden="true" />
+            {message}
+          </p>
+        )}
+      </div>
 
-        {devices.length > 0 ? (
-          <>
-            <div className="space-y-2">
-              {devices.map((device) => (
-                <div key={device.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
-                  <div className="text-sm flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground">{device.label}</p>
-                      {device.current && (
-                        <span className="inline-flex items-center rounded-full bg-pos/10 px-2 py-0.5 text-xs font-medium text-pos">
-                          {STRINGS.deviceCurrent}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
-                      {STRINGS.createdLabel} {formatDateTimeLocal(device.createdAt)}
-                    </p>
-                    {device.lastUsedAt && (
-                      <p className="text-xs text-muted-foreground" data-keep="data">
-                        {STRINGS.lastUsedLabel} {formatDateTimeLocal(device.lastUsedAt)}
-                      </p>
+      {devices.length > 0 ? (
+        <>
+          <div className="space-y-2">
+            {devices.map((device) => (
+              <div key={device.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+                <div className="text-sm flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground">{device.label}</p>
+                    {device.current && (
+                      <span className="inline-flex items-center rounded-full bg-pos/10 px-2 py-0.5 text-xs font-medium text-pos">
+                        {STRINGS.deviceCurrent}
+                      </span>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`${STRINGS.revokeButton} ${device.label}`}
-                    onClick={() => handleRevokeDevice(device.id)}
-                    disabled={device.current || revoking !== null}
-                    className={revoking === device.id ? "opacity-60" : ""}
-                  >
-                    {revoking === device.id ? STRINGS.revoking : STRINGS.revokeButton}
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
+                    {STRINGS.createdLabel} {formatDateTimeLocal(device.createdAt)}
+                  </p>
+                  {device.lastUsedAt && (
+                    <p className="text-xs text-muted-foreground" data-keep="data">
+                      {STRINGS.lastUsedLabel} {formatDateTimeLocal(device.lastUsedAt)}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {devices.some((d) => !d.current) && (
-                <Button variant="outline" size="sm" onClick={handleSignOutOthers} disabled={revoking !== null}>
-                  {revoking === "others" ? STRINGS.revoking : STRINGS.signOutOthersButton}
-                </Button>
-              )}
-              {devices.length > 1 && (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={handleRevokeAllDevices}
-                  disabled={revoking !== null}
+                  aria-label={`${STRINGS.revokeButton} ${device.label}`}
+                  onClick={() => handleRevokeDevice(device.id)}
+                  disabled={device.current || revoking !== null}
+                  className={revoking === device.id ? "opacity-60" : ""}
                 >
-                  {revoking === "all" ? STRINGS.revoking : STRINGS.revokeAllButton}
+                  {revoking === device.id ? STRINGS.revoking : STRINGS.revokeButton}
                 </Button>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground" data-keep="empty">{STRINGS.noDevices}</p>
-        )}
-      </CardContent>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {devices.some((d) => !d.current) && (
+              <Button variant="outline" size="sm" onClick={handleSignOutOthers} disabled={revoking !== null}>
+                {revoking === "others" ? STRINGS.revoking : STRINGS.signOutOthersButton}
+              </Button>
+            )}
+            {devices.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRevokeAllDevices}
+                disabled={revoking !== null}
+              >
+                {revoking === "all" ? STRINGS.revoking : STRINGS.revokeAllButton}
+              </Button>
+            )}
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground" data-keep="empty">{STRINGS.noDevices}</p>
+      )}
     </Card>
   );
 }

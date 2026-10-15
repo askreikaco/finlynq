@@ -3,9 +3,10 @@
 import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/currency";
-import { Amount, ListRow, SectionCard } from "@/components/mobile";
+import { Amount, ListRow } from "@/components/mobile";
 import { Overlay } from "@/components/ui/overlay";
 import type { Transaction } from "@/app/(app)/transactions/_types";
+import { Card } from "@/components/ui/card";
 
 const PAGE_SIZE = 50;
 
@@ -42,7 +43,7 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
 
   return (
     <section data-slot="investment-transactions" className="space-y-2">
-      <SectionCard label="Transactions" icon={ArrowLeftRight} tone="cyan" padded={false}>
+      <Card title="Transactions" icon={ArrowLeftRight} tone="cyan" padded={false}>
         {rows === null ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">Loading…</p>
         ) : error ? (
@@ -67,7 +68,7 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
             Showing {rows.length} of {total}.
           </p>
         )}
-      </SectionCard>
+      </Card>
       {open && (
         <Overlay
           variant="detail"

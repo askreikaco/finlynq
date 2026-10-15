@@ -10,7 +10,7 @@
 
 import { METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { formatPercent } from "@/lib/locale";
 import { cn } from "@/lib/utils";
@@ -59,29 +59,25 @@ export function PortfolioSkeleton() {
       </div>
       <div className={METRIC_GRID_CLASS}>
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="pt-5">
-              <div className="space-y-2">
-                <div className="h-3 w-20 bg-muted animate-shimmer rounded" />
-                <div className="h-8 w-28 bg-muted animate-shimmer rounded" />
-                <div className="h-3 w-16 bg-muted animate-shimmer rounded" />
-              </div>
-            </CardContent>
+          <Card key={i} className="pt-5">
+            <div className="space-y-2">
+              <div className="h-3 w-20 bg-muted animate-shimmer rounded" />
+              <div className="h-8 w-28 bg-muted animate-shimmer rounded" />
+              <div className="h-3 w-16 bg-muted animate-shimmer rounded" />
+            </div>
           </Card>
         ))}
       </div>
-      <Card>
-        <CardHeader><div className="h-5 w-36 bg-muted animate-shimmer rounded" /></CardHeader>
-        <CardContent className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 py-2">
-              <div className="h-8 w-8 rounded-full bg-muted animate-shimmer" />
-              <div className="h-4 w-24 bg-muted animate-shimmer rounded" />
-              <div className="h-4 w-16 bg-muted animate-shimmer rounded ml-auto" />
-              <div className="h-4 w-16 bg-muted animate-shimmer rounded" />
-            </div>
-          ))}
-        </CardContent>
+      <Card className="space-y-3">
+        <div className="h-5 w-36 bg-muted animate-shimmer rounded" />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 py-2">
+            <div className="h-8 w-8 rounded-full bg-muted animate-shimmer" />
+            <div className="h-4 w-24 bg-muted animate-shimmer rounded" />
+            <div className="h-4 w-16 bg-muted animate-shimmer rounded ml-auto" />
+            <div className="h-4 w-16 bg-muted animate-shimmer rounded" />
+          </div>
+        ))}
       </Card>
     </div>
   );

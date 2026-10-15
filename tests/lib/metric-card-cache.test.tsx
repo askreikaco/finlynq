@@ -12,7 +12,7 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/hooks/use-animations", () => ({ useAnimations: () => false }));
 vi.mock("@/components/ui/lazy-view", () => ({ LazyView: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 
-import { MetricCard } from "@/components/metric-card";
+import { Card } from "@/components/ui/card";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { createPersistentCache } from "@/lib/data/persistent-cache";
 import { loadPersisted, savePersisted, wipeUser } from "@/lib/data/persist";
@@ -24,17 +24,17 @@ import { jsonFetcher } from "@/lib/swr/fetcher";
 type Series = { series: Array<{ month: string; spent: number }> };
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as Response;
 
-function Card({ range }: { range: string }) {
+function SpentCard({ range }: { range: string }) {
   const res = useCacheFirstJson<Series>(`/api/budgets/series?range=${range}`);
   const last = res.data?.series.at(-1);
   return (
-    <MetricCard
-      label="Spent"
+    <Card
+      title="Spent"
       icon={Wallet}
       loading={res.loading}
       value={last ? last.spent : 0}
       currency="USD"
-      sparkData={res.data?.series.map((p) => p.spent)}
+      spark={{ data: res.data?.series.map((p) => p.spent) }}
     />
   );
 }
@@ -61,17 +61,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("MetricCard painted from the cache", () => {
+describe("Card painted from the cache", () => {
   it("cold: shows the shimmer until data arrives", async () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
-    render(wrap(new Map(), <Card range="m" />));
+    render(wrap(new Map(), <SpentCard range="m" />));
     expect(shimmer()).not.toBeNull();
   });
 
   it("cache hit: first render has the value, no shimmer", () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
     const cache = new Map<string, unknown>([["/api/budgets/series?range=m", entry({ series: [{ month: "2026-09", spent: 100 }, { month: "2026-10", spent: 250 }] })]]);
-    const { container } = render(wrap(cache, <Card range="m" />));
+    const { container } = render(wrap(cache, <SpentCard range="m" />));
     expect(shimmer()).toBeNull();
     expect(container.textContent).toContain("250");
   });
@@ -79,7 +79,7 @@ describe("MetricCard painted from the cache", () => {
   it("revalidates in the background and updates in place", async () => {
     fetchMock.mockResolvedValue(ok({ series: [{ month: "2026-10", spent: 999 }] }));
     const cache = new Map<string, unknown>([["/api/budgets/series?range=m", entry({ series: [{ month: "2026-10", spent: 250 }] })]]);
-    const { container } = render(wrap(cache, <Card range="m" />));
+    const { container } = render(wrap(cache, <SpentCard range="m" />));
     expect(container.textContent).toContain("250");
     expect(shimmer()).toBeNull();
     await waitFor(() => expect(container.textContent).toContain("999"));
@@ -90,9 +90,9 @@ describe("MetricCard painted from the cache", () => {
   it("the key includes the range: another range is a cold miss", async () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
     const cache = new Map<string, unknown>([["/api/budgets/series?range=m", entry({ series: [{ month: "2026-10", spent: 250 }] })]]);
-    const { rerender, container } = render(wrap(cache, <Card range="m" />));
+    const { rerender, container } = render(wrap(cache, <SpentCard range="m" />));
     expect(shimmer()).toBeNull();
-    rerender(wrap(cache, <Card range="y" />));
+    rerender(wrap(cache, <SpentCard range="y" />));
     expect(shimmer()).not.toBeNull();
     expect(container.textContent).not.toContain("250");
   });
@@ -139,7 +139,7 @@ describe("on-device persistence: per user, wiped on lock/logout", () => {
       userId: "u1", build: "b1", enabled: () => true,
       initial: new Map([["/api/budgets/series?range=m", { series: [{ month: "2026-10", spent: 77 }] }]]),
     });
-    const { container } = render(wrap(cache as unknown as Map<string, unknown>, <Card range="m" />));
+    const { container } = render(wrap(cache as unknown as Map<string, unknown>, <SpentCard range="m" />));
     expect(shimmer()).toBeNull();
     expect(container.textContent).toContain("77");
   });

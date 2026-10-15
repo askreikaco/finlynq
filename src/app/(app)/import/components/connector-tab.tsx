@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertCircle,
@@ -351,183 +351,184 @@ export function ConnectorTab() {
 
   return (
     <div className="space-y-4 mt-4">
-      <Card>
-        <CardHeader>
-          <CardTitle icon={LinkIcon} tone="indigo" infoLabel="About wealthposition" info={<>Migrate your WealthPosition data to Finlynq. Upload your export ZIP
+      <Card
+        title="WealthPosition"
+        icon={LinkIcon}
+        tone="indigo"
+        info={<>Migrate your WealthPosition data to Finlynq. Upload your export ZIP
             to import transactions, then (optionally) save an API key for
-            balance reconciliation.</>}>WealthPosition</CardTitle>
-        </CardHeader>
+            balance reconciliation.</>}
+        infoLabel="About wealthposition"
+        className="space-y-6"
+      >
+        {/* ---------------- Section 1: ZIP Upload ---------------- */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <FileArchive className="h-4 w-4" />
+            <h3 className="text-sm font-medium">1. Import your transactions</h3>
+            <InfoTip
+              label="About importing transactions"
+              text="Download your export from wealthposition.com → Profile → Export and upload the ZIP here. Every transaction is imported with its holding / quantity preserved — no rate limits, no API key needed."
+            />
+          </div>
 
-        <CardContent className="space-y-6">
-          {/* ---------------- Section 1: ZIP Upload ---------------- */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <FileArchive className="h-4 w-4" />
-              <h3 className="text-sm font-medium">1. Import your transactions</h3>
-              <InfoTip
-                label="About importing transactions"
-                text="Download your export from wealthposition.com → Profile → Export and upload the ZIP here. Every transaction is imported with its holding / quantity preserved — no rate limits, no API key needed."
-              />
+          {zipError && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+              <div className="flex-1">{zipError}</div>
             </div>
+          )}
 
-            {zipError && (
-              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
-                <div className="flex-1">{zipError}</div>
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip,application/zip"
+              className="hidden"
+              onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
+            />
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              {zipFile ? "Choose a different file" : "Choose ZIP file"}
+            </Button>
+            {zipFile && (
+              <>
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {zipFile.name} ({Math.round(zipFile.size / 1024)} KB)
+                </Badge>
+                <Button
+                  size="sm"
+                  onClick={runZipProbe}
+                  disabled={zipStage === "probing" || zipStage === "previewing" || zipStage === "executing"}
+                >
+                  {zipStage === "probing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {zipStage === "previewing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {zipStage === "executing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {zipStage === "executed" ? "Re-import" : "Preview import"}
+                </Button>
+              </>
             )}
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip,application/zip"
-                className="hidden"
-                onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
-              />
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5 mr-1.5" />
-                {zipFile ? "Choose a different file" : "Choose ZIP file"}
-              </Button>
-              {zipFile && (
-                <>
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {zipFile.name} ({Math.round(zipFile.size / 1024)} KB)
-                  </Badge>
-                  <Button
-                    size="sm"
-                    onClick={runZipProbe}
-                    disabled={zipStage === "probing" || zipStage === "previewing" || zipStage === "executing"}
-                  >
-                    {zipStage === "probing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                    {zipStage === "previewing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                    {zipStage === "executing" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                    {zipStage === "executed" ? "Re-import" : "Preview import"}
-                  </Button>
-                </>
-              )}
+          {zipProbe && (
+            <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1 font-mono">
+              <div>{zipProbe.external.accounts.length} accounts · {zipProbe.external.categories.length} categories · {zipProbe.external.portfolio.length} portfolio holdings</div>
+              <div>{zipProbe.external.transactionsTotal.toLocaleString(getDisplayLocale())} transactions</div>
             </div>
+          )}
 
-            {zipProbe && (
-              <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1 font-mono">
-                <div>{zipProbe.external.accounts.length} accounts · {zipProbe.external.categories.length} categories · {zipProbe.external.portfolio.length} portfolio holdings</div>
-                <div>{zipProbe.external.transactionsTotal.toLocaleString(getDisplayLocale())} transactions</div>
+          {zipSummary && (
+            <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-3">
+              <div>
+                <div className="font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-pos" />
+                  Import complete
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5 font-mono mt-1">
+                  <div>Imported: {zipSummary.imported}</div>
+                  <div>Skipped duplicates: {zipSummary.skipped}</div>
+                  <div>Splits inserted: {zipSummary.splitsInserted}</div>
+                  <div>Portfolio holdings added: {zipSummary.portfolioHoldingsInserted}</div>
+                  {zipSummary.splitInsertErrors.length > 0 && (
+                    <div className="text-destructive">Split insert errors: {zipSummary.splitInsertErrors.length}</div>
+                  )}
+                  {zipSummary.transformErrors.length > 0 && (
+                    <div className="text-warning">
+                      Transform warnings: {zipSummary.transformErrors.length}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
 
-            {zipSummary && (
-              <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-3">
-                <div>
-                  <div className="font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-pos" />
-                    Import complete
+              {zipSummary.reconciliation && (
+                <div className="pt-2 border-t border-pos/20 space-y-2">
+                  <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
+                  <div className="max-h-56 overflow-y-auto">
+                    <Card frame="list">
+                      {zipSummary.reconciliation.rows.map((r) => (
+                        <ListRow
+                          key={r.finlynqAccountId}
+                          title={<>{r.accountName} <span className="text-muted-foreground">{r.currency}</span></>}
+                          subtitle={`WP ${formatCurrency(r.wpBalance, r.currency)} · Finlynq ${formatCurrency(r.pfBalance, r.currency)}`}
+                          value={<span className={`font-mono text-sm ${r.matches ? "" : "text-warning"}`}>{r.matches ? "✓" : formatCurrency(r.diff, r.currency)}</span>}
+                        />
+                      ))}
+                    </Card>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-0.5 font-mono mt-1">
-                    <div>Imported: {zipSummary.imported}</div>
-                    <div>Skipped duplicates: {zipSummary.skipped}</div>
-                    <div>Splits inserted: {zipSummary.splitsInserted}</div>
-                    <div>Portfolio holdings added: {zipSummary.portfolioHoldingsInserted}</div>
-                    {zipSummary.splitInsertErrors.length > 0 && (
-                      <div className="text-destructive">Split insert errors: {zipSummary.splitInsertErrors.length}</div>
-                    )}
-                    {zipSummary.transformErrors.length > 0 && (
-                      <div className="text-warning">
-                        Transform warnings: {zipSummary.transformErrors.length}
-                      </div>
-                    )}
+                  <div className="pt-1">
+                    <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)}>
+                      Open reconciliation dialog (adjust opening balances)
+                    </Button>
                   </div>
                 </div>
-
-                {zipSummary.reconciliation && (
-                  <div className="pt-2 border-t border-pos/20 space-y-2">
-                    <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
-                    <div className="max-h-56 overflow-y-auto">
-                      <SectionCard list>
-                        {zipSummary.reconciliation.rows.map((r) => (
-                          <ListRow
-                            key={r.finlynqAccountId}
-                            title={<>{r.accountName} <span className="text-muted-foreground">{r.currency}</span></>}
-                            subtitle={`WP ${formatCurrency(r.wpBalance, r.currency)} · Finlynq ${formatCurrency(r.pfBalance, r.currency)}`}
-                            value={<span className={`font-mono text-sm ${r.matches ? "" : "text-warning"}`}>{r.matches ? "✓" : formatCurrency(r.diff, r.currency)}</span>}
-                          />
-                        ))}
-                      </SectionCard>
-                    </div>
-                    <div className="pt-1">
-                      <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)}>
-                        Open reconciliation dialog (adjust opening balances)
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {!zipSummary.reconciliation && !zipSummary.reconciliationError && (
-                  <div className="pt-2 border-t border-pos/20 text-xs text-muted-foreground">
-                    Save your API key below to reconcile balances against WealthPosition&rsquo;s live data.
-                  </div>
-                )}
-                {zipSummary.reconciliationError && (
-                  <div className="pt-2 border-t border-pos/20 text-xs text-warning">
-                    Reconciliation failed: {zipSummary.reconciliationError}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ---------------- Section 2: API key for reconciliation ---------------- */}
-          <div className="space-y-3 pt-2 border-t">
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4" />
-              <h3 className="text-sm font-medium">2. API key (optional)</h3>
-              <InfoTip
-                label="About the API key"
-                text="Balance reconciliation. The export ZIP doesn't include opening balances. After importing, save your WealthPosition API key to reconcile each account's Finlynq sum against WP's live balance."
-              />
+              )}
+              {!zipSummary.reconciliation && !zipSummary.reconciliationError && (
+                <div className="pt-2 border-t border-pos/20 text-xs text-muted-foreground">
+                  Save your API key below to reconcile balances against WealthPosition&rsquo;s live data.
+                </div>
+              )}
+              {zipSummary.reconciliationError && (
+                <div className="pt-2 border-t border-pos/20 text-xs text-warning">
+                  Reconciliation failed: {zipSummary.reconciliationError}
+                </div>
+              )}
             </div>
+          )}
+        </div>
 
-            {credsError && (
-              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
-                <div className="flex-1">{credsError}</div>
-              </div>
-            )}
-
-            {credsPresent ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  API key on file
-                </Badge>
-                <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)} disabled={!zipSummary}>
-                  Reconcile balances
-                </Button>
-                <Button size="sm" variant="ghost" onClick={deleteApiKey}>
-                  Remove key
-                </Button>
-                {!zipSummary && (
-                  <span className="text-xs text-muted-foreground">Import transactions first.</span>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Field
-                  label="API key"
-                  info="Paste your key from wealthposition.com → Profile → Security → Developer API."
-                  id="wp-api-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="API key"
-                  disabled={credsBusy}
-                />
-                <Button onClick={saveApiKey} disabled={credsBusy || !apiKey.trim()} size="sm">
-                  {credsBusy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                  Save key
-                </Button>
-              </div>
-            )}
+        {/* ---------------- Section 2: API key for reconciliation ---------------- */}
+        <div className="space-y-3 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4" />
+            <h3 className="text-sm font-medium">2. API key (optional)</h3>
+            <InfoTip
+              label="About the API key"
+              text="Balance reconciliation. The export ZIP doesn't include opening balances. After importing, save your WealthPosition API key to reconcile each account's Finlynq sum against WP's live balance."
+            />
           </div>
-        </CardContent>
+
+          {credsError && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+              <div className="flex-1">{credsError}</div>
+            </div>
+          )}
+
+          {credsPresent ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                API key on file
+              </Badge>
+              <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)} disabled={!zipSummary}>
+                Reconcile balances
+              </Button>
+              <Button size="sm" variant="ghost" onClick={deleteApiKey}>
+                Remove key
+              </Button>
+              {!zipSummary && (
+                <span className="text-xs text-muted-foreground">Import transactions first.</span>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Field
+                label="API key"
+                info="Paste your key from wealthposition.com → Profile → Security → Developer API."
+                id="wp-api-key"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="API key"
+                disabled={credsBusy}
+              />
+              <Button onClick={saveApiKey} disabled={credsBusy || !apiKey.trim()} size="sm">
+                {credsBusy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                Save key
+              </Button>
+            </div>
+          )}
+        </div>
       </Card>
 
       {zipProbe && zipMapping && (

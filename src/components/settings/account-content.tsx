@@ -6,10 +6,10 @@
  */
 
 import { Suspense, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, Key, KeyRound, Lock, Mail, RefreshCw, Shield, ShieldCheck, Upload } from "lucide-react";
+import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, KeyRound, Lock, Mail, RefreshCw, ShieldCheck, Upload } from "lucide-react";
 import { TW } from "@/lib/design/tokens";
 import { TwoFactor } from "@/app/(app)/settings/account/_components/two-factor";
 import { SignInMethods } from "@/app/(app)/settings/account/_components/sign-in-methods";
@@ -287,303 +287,272 @@ export function AccountContent({
 
       {/* Change Password — managed mode only. */}
       {meLoaded && me?.username && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-                <Lock className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle icon={Lock} tone="indigo">
-                  Password
-                  <InfoTip label="About password" text="Your data is re-encrypted under the new password. Nothing is lost." />
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pwStatus && !pwOpen && (
-              <p className="text-sm text-pos flex items-center gap-1" role="status">
-                <Check className="h-3.5 w-3.5" /> {pwStatus}
-              </p>
-            )}
-            <RevealForm open={pwOpen} onOpen={() => { setPwStatus(""); setPwOpen(true); }} buttonLabel="Change password">
-            <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+        <Card
+          title="Password"
+          icon={Lock}
+          tone="indigo"
+          info="Your data is re-encrypted under the new password. Nothing is lost."
+          infoLabel="About password"
+          className="space-y-3"
+        >
+          {pwStatus && !pwOpen && (
+            <p className="text-sm text-pos flex items-center gap-1" role="status">
+              <Check className="h-3.5 w-3.5" /> {pwStatus}
+            </p>
+          )}
+          <RevealForm open={pwOpen} onOpen={() => { setPwStatus(""); setPwOpen(true); }} buttonLabel="Change password">
+          <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+            <Field
+              label="Current"
+              type="password"
+              autoComplete="current-password"
+              value={curPw}
+              onChange={(e) => setCurPw(e.target.value)}
+            />
+            <div>
               <Field
-                label="Current"
-                type="password"
-                autoComplete="current-password"
-                value={curPw}
-                onChange={(e) => setCurPw(e.target.value)}
-              />
-              <div>
-                <Field
-                  label="New"
-                  info="At least 12 characters."
-                  infoLabel="Password rule"
-                  type="password"
-                  autoComplete="new-password"
-                  value={newPw}
-                  onChange={(e) => setNewPw(e.target.value)}
-                />
-              </div>
-              <Field
-                label="Confirm"
+                label="New"
+                info="At least 12 characters."
+                infoLabel="Password rule"
                 type="password"
                 autoComplete="new-password"
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
               />
-              {pwError && <p className="text-sm text-destructive">{pwError}</p>}
-              <div className="flex gap-2">
-                <Button type="submit" disabled={pwSaving || !curPw || !newPw || !confirmPw}>
-                  {pwSaving ? "Saving…" : "Update password"}
-                </Button>
-                <Button type="button" variant="ghost" disabled={pwSaving} onClick={() => closePw()}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-            </RevealForm>
-          </CardContent>
+            </div>
+            <Field
+              label="Confirm"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+            />
+            {pwError && <p className="text-sm text-destructive">{pwError}</p>}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={pwSaving || !curPw || !newPw || !confirmPw}>
+                {pwSaving ? "Saving…" : "Update password"}
+              </Button>
+              <Button type="button" variant="ghost" disabled={pwSaving} onClick={() => closePw()}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+          </RevealForm>
         </Card>
       )}
 
       {/* Change Email — managed mode only. */}
       {!hideEmail && meLoaded && me?.username && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-                <Mail className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle icon={Mail} tone="cyan">
-                  Email
-                  <InfoTip label="About email" text="Recovery email used to reset a forgotten password." />
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground" data-keep="status">
-              Current: <span className="font-medium text-foreground">{me?.email || "none set"}</span>
+        <Card
+          title="Email"
+          icon={Mail}
+          tone="cyan"
+          info="Recovery email used to reset a forgotten password."
+          infoLabel="About email"
+          className="space-y-3"
+        >
+          <p className="text-xs text-muted-foreground" data-keep="status">
+            Current: <span className="font-medium text-foreground">{me?.email || "none set"}</span>
+          </p>
+          {emailStatus && !emailOpen && (
+            <p className="text-sm text-pos flex items-center gap-1" role="status">
+              <Check className="h-3.5 w-3.5" /> {emailStatus}
             </p>
-            {emailStatus && !emailOpen && (
-              <p className="text-sm text-pos flex items-center gap-1" role="status">
-                <Check className="h-3.5 w-3.5" /> {emailStatus}
-              </p>
-            )}
-            <RevealForm open={emailOpen} onOpen={() => { setEmailStatus(""); setEmailOpen(true); }} buttonLabel="Change email">
-            <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
-              <Field
-                label="New email"
-                type="email"
-                autoComplete="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-              <Field
-                label="Current"
-                type="password"
-                autoComplete="current-password"
-                value={emailPw}
-                onChange={(e) => setEmailPw(e.target.value)}
-              />
-              {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-              <div className="flex gap-2">
-                <Button type="submit" disabled={emailSaving || !newEmail || !emailPw}>
-                  {emailSaving ? "Saving…" : "Update email"}
-                </Button>
-                <Button type="button" variant="ghost" disabled={emailSaving} onClick={() => closeEmail()}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-            </RevealForm>
-          </CardContent>
+          )}
+          <RevealForm open={emailOpen} onOpen={() => { setEmailStatus(""); setEmailOpen(true); }} buttonLabel="Change email">
+          <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
+            <Field
+              label="New email"
+              type="email"
+              autoComplete="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+            <Field
+              label="Current"
+              type="password"
+              autoComplete="current-password"
+              value={emailPw}
+              onChange={(e) => setEmailPw(e.target.value)}
+            />
+            {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={emailSaving || !newEmail || !emailPw}>
+                {emailSaving ? "Saving…" : "Update email"}
+              </Button>
+              <Button type="button" variant="ghost" disabled={emailSaving} onClick={() => closeEmail()}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+          </RevealForm>
         </Card>
       )}
 
       {/* API Key */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-              <Key className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={KeyRound} tone="violet">
-                API key
-                <InfoTip label="About api key" text="Connect AI assistants via MCP or call the REST API. The key is unscoped and never expires: full read/write until you regenerate it, which invalidates the old key." />
-              </CardTitle>
-            </div>
+      <Card
+        title="API key"
+        icon={KeyRound}
+        tone="violet"
+        info="Connect AI assistants via MCP or call the REST API. The key is unscoped and never expires: full read/write until you regenerate it, which invalidates the old key."
+        infoLabel="About api key"
+        className="space-y-3"
+      >
+        <div className="flex items-center gap-2">
+          <Field
+            readOnly
+            value={
+              !apiKeyLoaded
+                ? "Loading…"
+                : apiKey
+                  ? (apiKeyVisible ? apiKey : `${apiKey.slice(0, 6)}${"•".repeat(20)}${apiKey.slice(-4)}`)
+                  : "•".repeat(40)
+            }
+            className="flex-1"
+            controlClassName="font-mono"
+          />
+          <Button aria-label={apiKeyVisible ? "Hide key" : "Show key"}
+            variant="outline"
+            size="icon"
+            onClick={() => setApiKeyVisible(!apiKeyVisible)}
+            title={apiKeyVisible ? "Hide key" : "Show key"}
+            disabled={!apiKey}
+          >
+            {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+          <Button aria-label="Copy key"
+            variant="outline"
+            size="icon"
+            onClick={handleCopyApiKey}
+            title="Copy key"
+            disabled={!apiKey}
+          >
+            {apiKeyCopied ? <Check className="h-4 w-4 text-pos" /> : <FileText className="h-4 w-4" />}
+          </Button>
+        </div>
+        {apiKey && (
+          <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <strong>Save this key now.</strong> It can&rsquo;t be shown again.
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Field
-              readOnly
-              value={
-                !apiKeyLoaded
-                  ? "Loading…"
-                  : apiKey
-                    ? (apiKeyVisible ? apiKey : `${apiKey.slice(0, 6)}${"•".repeat(20)}${apiKey.slice(-4)}`)
-                    : "•".repeat(40)
-              }
-              className="flex-1"
-              controlClassName="font-mono"
-            />
-            <Button aria-label={apiKeyVisible ? "Hide key" : "Show key"}
-              variant="outline"
-              size="icon"
-              onClick={() => setApiKeyVisible(!apiKeyVisible)}
-              title={apiKeyVisible ? "Hide key" : "Show key"}
-              disabled={!apiKey}
-            >
-              {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-            <Button aria-label="Copy key"
-              variant="outline"
-              size="icon"
-              onClick={handleCopyApiKey}
-              title="Copy key"
-              disabled={!apiKey}
-            >
-              {apiKeyCopied ? <Check className="h-4 w-4 text-pos" /> : <FileText className="h-4 w-4" />}
-            </Button>
-          </div>
-          {apiKey && (
-            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-              <strong>Save this key now.</strong> It can&rsquo;t be shown again.
-            </div>
+        )}
+        {apiKeyLoaded && !apiKey && (
+          <p className="text-xs text-muted-foreground" data-keep="status">
+            Key on file. Regenerate if unsaved.
+          </p>
+        )}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRegenerateApiKey}
+            disabled={apiKeyRegenerating}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${apiKeyRegenerating ? "animate-spin" : ""}`} />
+            {apiKeyRegenerating ? "Regenerating…" : "Regenerate"}
+          </Button>
+          {apiKeyStatus && (
+            <p className="text-xs text-muted-foreground" data-keep="status">{apiKeyStatus}</p>
           )}
-          {apiKeyLoaded && !apiKey && (
-            <p className="text-xs text-muted-foreground" data-keep="status">
-              Key on file. Regenerate if unsaved.
-            </p>
-          )}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRegenerateApiKey}
-              disabled={apiKeyRegenerating}
-            >
-              <RefreshCw className={`h-4 w-4 mr-1.5 ${apiKeyRegenerating ? "animate-spin" : ""}`} />
-              {apiKeyRegenerating ? "Regenerating…" : "Regenerate"}
-            </Button>
-            {apiKeyStatus && (
-              <p className="text-xs text-muted-foreground" data-keep="status">{apiKeyStatus}</p>
-            )}
-          </div>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Privacy & Backup */}
-      <Card className="border-primary/30">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={ShieldCheck} tone="emerald">
-                Backup
-                <InfoTip label="About backup" text="Full backup and restore, your way back in if you lose your password. Data is encrypted with AES-256; only you hold the key." />
-              </CardTitle>
-            </div>
+      <Card
+        frameClassName="border-primary/30"
+        title="Backup"
+        icon={ShieldCheck}
+        tone="emerald"
+        info="Full backup and restore, your way back in if you lose your password. Data is encrypted with AES-256; only you hold the key."
+        infoLabel="About backup"
+        className="space-y-5"
+      >
+        {/* Download backup */}
+        <div>
+          <div className="mb-3 flex items-center gap-1">
+            <p className="text-sm font-medium text-foreground">Download backup</p>
+            <InfoTip label="About backup download" text="All your data (accounts, transactions, budgets, portfolio, goals, more) as one JSON file. Keep it safe: it is how you recover after a reset." />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Download backup */}
-          <div>
-            <div className="mb-3 flex items-center gap-1">
-              <p className="text-sm font-medium text-foreground">Download backup</p>
-              <InfoTip label="About backup download" text="All your data (accounts, transactions, budgets, portfolio, goals, more) as one JSON file. Keep it safe: it is how you recover after a reset." />
-            </div>
-            <Button variant="outline" onClick={handleDownloadBackup} className="gap-2">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            {backupStatus && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1" data-keep="status">
-                <Check className="h-3 w-3 text-pos" /> {backupStatus}
-              </p>
-            )}
+          <Button variant="outline" onClick={handleDownloadBackup} className="gap-2">
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+          {backupStatus && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1" data-keep="status">
+              <Check className="h-3 w-3 text-pos" /> {backupStatus}
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-border/50" />
+
+        {/* Restore from backup */}
+        <div>
+          <div className="mb-3 flex items-center gap-1">
+            <p className="text-sm font-medium text-foreground">Restore backup</p>
+            <InfoTip label="About restore" text="Upload a Finlynq backup JSON. You see a preview before anything changes." />
           </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+            <Upload className="h-4 w-4" />
+            Choose file
+            <input
+              type="file"
+              accept=".json"
+              className="sr-only"
+              onChange={handleRestoreFileChange}
+            />
+          </label>
+          {restoreFile && <span className="ml-3 text-xs text-muted-foreground">{restoreFile.name}</span>}
 
-          <div className="border-t border-border/50" />
-
-          {/* Restore from backup */}
-          <div>
-            <div className="mb-3 flex items-center gap-1">
-              <p className="text-sm font-medium text-foreground">Restore backup</p>
-              <InfoTip label="About restore" text="Upload a Finlynq backup JSON. You see a preview before anything changes." />
-            </div>
-            <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
-              <Upload className="h-4 w-4" />
-              Choose file
-              <input
-                type="file"
-                accept=".json"
-                className="sr-only"
-                onChange={handleRestoreFileChange}
-              />
-            </label>
-            {restoreFile && <span className="ml-3 text-xs text-muted-foreground">{restoreFile.name}</span>}
-
-            {/* Preview */}
-            {restoreStep >= 1 && restorePreview && (
-              <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-                <p className="text-sm font-medium text-foreground">Contents</p>
-                <div className="grid grid-cols-2 regular:grid-cols-3 gap-2">
-                  {Object.entries(restorePreview)
-                    .filter(([, v]) => v > 0)
-                    .map(([key, count]) => (
-                      <div key={key} className="flex items-center justify-between rounded-lg bg-background border border-border/60 px-3 py-2">
-                        <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
-                        <span className="text-xs font-semibold text-foreground">{count}</span>
-                      </div>
-                    ))}
-                </div>
-
-                <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 flex items-start gap-2 text-xs text-warning">
-                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  <span><strong>Replaces all your current data. Cannot be undone.</strong> Download a backup first.</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Field
-                    value={restoreConfirm}
-                    onChange={(e) => setRestoreConfirm(e.target.value)}
-                    placeholder="Type RESTORE to confirm"
-                    className="max-w-52"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={restoreConfirm !== "RESTORE"}
-                    onClick={handleRestoreConfirm}
-                  >
-                    Restore
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => { setRestoreStep(0); setRestoreFile(null); setRestoreConfirm(""); setRestoreStatus(""); setRestorePreview(null); }}>
-                    Cancel
-                  </Button>
-                </div>
+          {/* Preview */}
+          {restoreStep >= 1 && restorePreview && (
+            <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">Contents</p>
+              <div className="grid grid-cols-2 regular:grid-cols-3 gap-2">
+                {Object.entries(restorePreview)
+                  .filter(([, v]) => v > 0)
+                  .map(([key, count]) => (
+                    <div key={key} className="flex items-center justify-between rounded-lg bg-background border border-border/60 px-3 py-2">
+                      <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                      <span className="text-xs font-semibold text-foreground">{count}</span>
+                    </div>
+                  ))}
               </div>
-            )}
 
-            {restoreStatus && (
-              <p data-keep="status" className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-pos" : "text-muted-foreground"}`}>
-                {restoreStatus.startsWith("Restore complete") ? <Check className="h-3 w-3 text-pos" /> : <AlertTriangle className="h-3 w-3 text-warning" />}
-                {restoreStatus}
-              </p>
-            )}
-          </div>
-        </CardContent>
+              <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 flex items-start gap-2 text-xs text-warning">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span><strong>Replaces all your current data. Cannot be undone.</strong> Download a backup first.</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Field
+                  value={restoreConfirm}
+                  onChange={(e) => setRestoreConfirm(e.target.value)}
+                  placeholder="Type RESTORE to confirm"
+                  className="max-w-52"
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={restoreConfirm !== "RESTORE"}
+                  onClick={handleRestoreConfirm}
+                >
+                  Restore
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => { setRestoreStep(0); setRestoreFile(null); setRestoreConfirm(""); setRestoreStatus(""); setRestorePreview(null); }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {restoreStatus && (
+            <p data-keep="status" className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-pos" : "text-muted-foreground"}`}>
+              {restoreStatus.startsWith("Restore complete") ? <Check className="h-3 w-3 text-pos" /> : <AlertTriangle className="h-3 w-3 text-warning" />}
+              {restoreStatus}
+            </p>
+          )}
+        </div>
       </Card>
       </div>
     </div>

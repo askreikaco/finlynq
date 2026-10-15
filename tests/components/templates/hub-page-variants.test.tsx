@@ -44,10 +44,10 @@ describe("HubPage variants: defaults", () => {
     );
   });
 
-  it("default look renders a SectionCard list and no card group", () => {
+  it("default look renders a Card list and no card group", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="section-card-body"]')).not.toBeNull();
+    expect(main.querySelector('[data-slot="card-body"]')).not.toBeNull();
     expect(main.querySelector(".divide-y")).toBeNull();
     expect(main.getAttribute("data-slot")).toBe("hub-group");
     expect(screen.getByTestId("more-root").querySelector('[data-slot="hub-columns"]')).toHaveClass("grid", "grid-cols-1", "regular:grid-cols-2", "wide:grid-cols-3", "items-start");
@@ -56,19 +56,19 @@ describe("HubPage variants: defaults", () => {
   it("section label is the shared card label", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const main = screen.getByTestId("more-group-main");
-    expect(main.querySelector('[data-slot="section-card-label"]')).not.toBeNull();
+    expect(main.querySelector('[data-slot="card-label-text"]')).not.toBeNull();
   });
 });
 
 describe("HubPage variants: look=card", () => {
-  it("renders a SectionCard list with divider rows", () => {
+  it("renders a Card list with divider rows", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const main = screen.getByTestId("settings-group-main");
-    const body = main.querySelector('[data-slot="section-card-body"]');
+    const body = main.querySelector('[data-slot="card-body"]');
     expect(body).not.toBeNull();
     expect(body).toHaveClass("[&>*:not(:last-child)]:shadow-[var(--list-divider)]");
     expect(body!.className).not.toMatch(/divide-/);
-    expect(main.querySelector('[data-slot="section-card"]')).toHaveClass("surface-card", "overflow-hidden");
+    expect(main.querySelector('[data-slot="card"]')).toHaveClass("surface-card", "overflow-hidden");
   });
 
   it("link row is a ListRow link with href, icon tile and chevron", () => {
@@ -160,7 +160,7 @@ describe("HubPage variants: section labels", () => {
     const h = within(screen.getByTestId("settings-group-main")).getByRole("heading", { name: "Main" });
     expect(h.tagName).toBe("H2");
     expect(h).toHaveClass("text-xs", "font-medium", "uppercase", "tracking-wide", "text-muted-foreground");
-    // padding lives on the shared CardLabel row (same px as MetricCard)
+    // padding lives on the shared CardLabel row (same px as Card)
     expect(h.closest('[data-slot="card-label"]')).toHaveClass("px-3", "@[11rem]:px-5");
   });
 

@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Inbox } from "lucide-react";
 import {
   RowCard,
@@ -481,10 +481,8 @@ export function InboxToCategorizeTab({
 
   if (loading && snapshot == null) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground text-center">
-          Loading…
-        </CardContent>
+      <Card className="py-8 text-sm text-muted-foreground text-center">
+        Loading…
       </Card>
     );
   }
@@ -507,20 +505,18 @@ export function InboxToCategorizeTab({
       )}
 
       {unlinkedRows.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center space-y-3">
-            <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
-            <div>
-              <p className="text-sm font-medium">
-                Auto-pilot is handling everything
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Nothing manual to do — either every row was auto-categorized
-                by a rule, or nothing new has come in. Upload a statement to
-                this account to see rows here when no rule matches.
-              </p>
-            </div>
-          </CardContent>
+        <Card className="py-12 text-center space-y-3">
+          <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div>
+            <p className="text-sm font-medium">
+              Auto-pilot is handling everything
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Nothing manual to do — either every row was auto-categorized
+              by a rule, or nothing new has come in. Upload a statement to
+              this account to see rows here when no rule matches.
+            </p>
+          </div>
         </Card>
       ) : (
         <div className="space-y-2">

@@ -11,7 +11,7 @@
 
 import { Chart } from "@/components/chart";
 import { Landmark, PieChart as PieChartIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { PIE_COLORS } from "../_types";
 
 type AllocationByTypeRow = { name: string; value: number; pct: number; color: string };
@@ -29,23 +29,13 @@ export function AllocationCharts({
   return (
     <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
       {/* By Asset Type */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle icon={PieChartIcon} tone="amber">By Asset Type</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Chart kind="donut" data={allocationByType} currency={displayCurrency} size="sm" breakdownList breakdownValue="both" />
-        </CardContent>
+      <Card title="By Asset Type" icon={PieChartIcon} tone="amber">
+        <Chart kind="donut" data={allocationByType} currency={displayCurrency} size="sm" breakdownList breakdownValue="both" />
       </Card>
 
       {/* By Account */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle icon={Landmark} tone="indigo">By Account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Chart kind="donut" data={allocationByAccount.map((d, i) => ({ ...d, color: PIE_COLORS[i % PIE_COLORS.length] }))} currency={displayCurrency} size="sm" breakdownList breakdownValue="both" breakdownScroll />
-        </CardContent>
+      <Card title="By Account" icon={Landmark} tone="indigo">
+        <Chart kind="donut" data={allocationByAccount.map((d, i) => ({ ...d, color: PIE_COLORS[i % PIE_COLORS.length] }))} currency={displayCurrency} size="sm" breakdownList breakdownValue="both" breakdownScroll />
       </Card>
     </div>
   );

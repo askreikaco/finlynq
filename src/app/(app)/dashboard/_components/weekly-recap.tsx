@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { SectionCard } from "@/components/mobile/section-card";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -11,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { WeeklyRecapData } from "./types";
 import { useAnimations } from "@/hooks/use-animations";
+import { Card } from "@/components/ui/card";
 
 const itemVariants = {
   hidden: { opacity: 1, y: 0 },
@@ -44,7 +44,7 @@ export function WeeklyRecap() {
   }));
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Weekly Recap" icon={CalendarDays} tone="violet" cardClassName="card-hover relative overflow-hidden">
+      <Card title="Weekly Recap" icon={CalendarDays} tone="violet" frameClassName="card-hover relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
         <div className="mb-3 flex items-center justify-between">
@@ -200,7 +200,7 @@ export function WeeklyRecap() {
             )}
           </AnimatePresence>
         </div>
-      </SectionCard>
+      </Card>
     </motion.div>
   );
 }

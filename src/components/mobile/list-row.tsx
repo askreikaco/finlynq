@@ -55,7 +55,7 @@ const BAR_TONE: Record<ProgressTone, string> = {
   pos: "bg-pos",
 };
 
-/** The ONE thin progress bar (ListRow's mini bar, MetricCard's progress part). `value` 0..100, clamped; null = empty track. */
+/** The ONE thin progress bar (ListRow's mini bar, Card's progress part). `value` 0..100, clamped; null = empty track. */
 export function ProgressBar({ value, tone = "primary", ariaLabel, className }: { value: number | null; tone?: ProgressTone; ariaLabel: string; className?: string }) {
   const fill = value == null ? null : Math.min(100, Math.max(0, value));
   return (
