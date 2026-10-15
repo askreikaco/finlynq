@@ -24,7 +24,6 @@ import { parseAccountIdsParam, serializeAccountIds } from "@/lib/reports/account
 import { Notice } from "@/components/notice";
 import { Chart } from "@/components/chart";
 import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MetricGrid, useCardLayout, usePageCustomize, CardLayoutEditor } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {

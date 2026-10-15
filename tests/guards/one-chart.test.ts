@@ -47,9 +47,9 @@ describe("one chart", () => {
     expect(hits).toEqual([]);
   });
 
-  it("the only sparkline shim is the one metric-card.tsx and progress-row.tsx still import", () => {
+  it("the only sparkline shim is the one metric-card.tsx and list-row.tsx still import", () => {
     const importers = FILES.filter((f) => /from "@\/components\/sparkline"/.test(f.src)).map((f) => f.rel).sort();
-    expect(importers).toEqual(["src/components/metric-card.tsx", "src/components/mobile/progress-row.tsx"]);
+    expect(importers).toEqual(["src/components/metric-card.tsx", "src/components/mobile/list-row.tsx"]);
   });
 
   it("charts never animate on mount: no isAnimationActive other than false, no useAnimations in the chart", () => {

@@ -41,7 +41,6 @@ const FORM_FILES = [
   "src/components/inbox/mode-picker.tsx",
   "src/components/inbox/import-prefs-picker.tsx",
   "src/components/ui/field/field.tsx",
-  "src/components/onboarding-tips.tsx",
   "src/components/reports/income-expense-trend-card.tsx",
   "src/app/(app)/tax/page.tsx",
   "src/app/(app)/fire/page.tsx",

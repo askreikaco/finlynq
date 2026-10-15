@@ -9,7 +9,7 @@ import { useState, type ReactNode } from "react";
 import { Inbox } from "lucide-react";
 import { Chart, type ChartKind } from "@/components/chart";
 import { Notice, type NoticeTone, type NoticeVariant } from "@/components/notice";
-import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/mobile/section-card";
 
@@ -40,9 +40,7 @@ const SANKEY = {
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center gap-1.5 text-xs">
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} /> {label}
-    </label>
+    <Field control="switch" label={label} checked={checked} onCheckedChange={onChange} />
   );
 }
 

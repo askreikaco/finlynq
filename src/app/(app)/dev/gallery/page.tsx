@@ -18,7 +18,6 @@ import { InsetRow } from "@/components/mobile/inset-row";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricGrid, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { MetricCard, MetricCardSkeleton, METRIC_TONES, PctBadge, type MetricCardProps, type MetricTone } from "@/components/metric-card";
-import { Sparkline } from "@/components/sparkline";
 import { Chart } from "@/components/chart";
 import { ChartDemos, NoticeDemos } from "./chart-notice-demos";
 import { TW } from "@/lib/design/tokens";

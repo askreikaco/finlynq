@@ -13,7 +13,6 @@ import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
 import { PageHeader, ListRow } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import { Field } from "@/components/ui/field";
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Chart, type ChartSeries } from "@/components/chart";
 
 // ─── Types ──────────────────────────────────────────────────────────

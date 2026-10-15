@@ -18,7 +18,6 @@ import type { MetricCardProps } from "@/components/metric-card";
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Cell, Pie, PieChart } from "recharts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overlay } from "@/components/ui/overlay";
 import { Chart } from "@/components/chart";
