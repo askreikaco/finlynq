@@ -393,7 +393,7 @@ export default function AdminPage() {
     return (
       <SectionPage {...adminPageProps}>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <Card className="p-8 text-center">
+          <Card frameClassName="w-96 max-w-full" className="p-8 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium">{error}</p>
             <p className="text-sm text-muted-foreground mt-2">

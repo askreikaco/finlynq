@@ -351,7 +351,7 @@ export default function FeedbackPage() {
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {items && items.length === 0 && !error && (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <Card className="p-4 text-center text-sm text-muted-foreground">
           You haven&apos;t sent any feedback yet.
           <div className="mt-3">
             <Button onClick={() => setSendOpen(true)}>Send feedback</Button>

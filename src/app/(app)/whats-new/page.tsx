@@ -70,7 +70,7 @@ export default function WhatsNewPage() {
       )}
 
       {items && items.length === 0 && !error && (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <Card className="p-4 text-center text-sm text-muted-foreground">
           No announcements yet. Check back soon.
         </Card>
       )}
