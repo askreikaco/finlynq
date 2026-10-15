@@ -31,7 +31,7 @@
 
 import { useRouter } from "next/navigation";
 import { AlertTriangle, X, PlusCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export interface UnresolvedRow {
@@ -76,56 +76,54 @@ export function UnresolvedCategoriesBanner({
   if (rowIds.length === 0) return null;
 
   return (
-    <Card className="border-warning/30 bg-warning/10">
-      <CardContent className="py-3 space-y-2">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-warning">
-              {rowIds.length} row{rowIds.length === 1 ? "" : "s"} need a category before import
-            </p>
-            <p className="text-xs text-warning mt-0.5">
-              Assign a category to each row (expand the row below) or create a rule that covers a payee pattern. Transfers don&apos;t need one.
-            </p>
-            <p className="text-xs text-warning mt-0.5">
-              If you added a transfer or account rule recently, click <strong>Re-apply rules</strong> at the top of the page.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onDismiss}
-            aria-label="Dismiss banner"
-            className="text-warning hover:text-warning p-1 -m-1 shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <Card frameClassName="border-warning/30 bg-warning/10" className="py-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-warning">
+            {rowIds.length} row{rowIds.length === 1 ? "" : "s"} need a category before import
+          </p>
+          <p className="text-xs text-warning mt-0.5">
+            Assign a category to each row (expand the row below) or create a rule that covers a payee pattern. Transfers don&apos;t need one.
+          </p>
+          <p className="text-xs text-warning mt-0.5">
+            If you added a transfer or account rule recently, click <strong>Re-apply rules</strong> at the top of the page.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss banner"
+          className="text-warning hover:text-warning p-1 -m-1 shrink-0"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-        <ul className="space-y-1.5 ml-6">
-          {rowIds.map((rid, idx) => {
-            const payee = payees[idx] ?? "(no payee)";
-            return (
-              <li key={rid} className="text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-warning break-all">
-                    {payee || <span className="italic text-muted-foreground">(empty payee)</span>}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-6 px-2 text-xs border-warning/30 hover:bg-warning/10"
-                    onClick={() => createRuleForRow(payees[idx] ?? "")}
-                  >
-                    <PlusCircle className="h-3 w-3 mr-1" />
-                    Create rule
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </CardContent>
+      <ul className="space-y-1.5 ml-6">
+        {rowIds.map((rid, idx) => {
+          const payee = payees[idx] ?? "(no payee)";
+          return (
+            <li key={rid} className="text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-warning break-all">
+                  {payee || <span className="italic text-muted-foreground">(empty payee)</span>}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-xs border-warning/30 hover:bg-warning/10"
+                  onClick={() => createRuleForRow(payees[idx] ?? "")}
+                >
+                  <PlusCircle className="h-3 w-3 mr-1" />
+                  Create rule
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
 
     </Card>
   );

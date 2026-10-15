@@ -2,9 +2,8 @@
 
 
 import { Fragment, Suspense, useMemo, useState, type ReactNode } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { SectionCard } from "@/components/mobile/section-card";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -28,7 +27,6 @@ import { AccountFormPanel } from "./_components/account-form-panel";
 import { AccountDetail } from "./_components/account-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
-import { MetricCard } from "@/components/metric-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import type { SeriesPoint } from "@/lib/dashboard/series-change";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -63,38 +61,24 @@ function SummarySkeleton() {
       </div>
       <div className="grid grid-cols-1 gap-3 regular:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl animate-shimmer" />
-                <div className="h-4 w-24 animate-shimmer rounded" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-7 w-32 animate-shimmer rounded mt-1" />
-            </CardContent>
-          </Card>
+          <Card key={i} loading />
         ))}
       </div>
       <div className="grid grid-cols-1 regular:grid-cols-2 gap-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="space-y-4">
             <div className="h-6 w-28 animate-shimmer rounded" />
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="h-4 w-20 animate-shimmer rounded" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Array.from({ length: 3 }).map((_, j) => (
-                  <div key={j} className="flex items-center justify-between py-2.5 px-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg animate-shimmer" />
-                      <div className="h-4 w-32 animate-shimmer rounded" />
-                    </div>
-                    <div className="h-4 w-20 animate-shimmer rounded" />
+            <Card className="space-y-3">
+              <div className="h-4 w-20 animate-shimmer rounded" />
+              {Array.from({ length: 3 }).map((_, j) => (
+                <div key={j} className="flex items-center justify-between py-2.5 px-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg animate-shimmer" />
+                    <div className="h-4 w-32 animate-shimmer rounded" />
                   </div>
-                ))}
-              </CardContent>
+                  <div className="h-4 w-20 animate-shimmer rounded" />
+                </div>
+              ))}
             </Card>
           </div>
         ))}
@@ -236,11 +220,10 @@ function AccountsPage() {
   );
 
   const renderSection = (title: string, list: AccountBalance[], type: "asset" | "liability") => (
-    <SectionCard
-      label={title}
-      labelPlacement="outside"
-      bare
-      labelClassName="px-1"
+    <Card
+      title={title}
+      titlePlacement="outside"
+      frame="bare"
     >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
@@ -279,7 +262,7 @@ function AccountsPage() {
           </Accordion>
         ))}
       </div>
-    </SectionCard>
+    </Card>
   );
 
   // Totals are aggregations across all currencies — sum the API-provided
@@ -397,23 +380,21 @@ function AccountsPage() {
           ),
           summary: (
             <div data-slot="accounts-summary" className={`${metricGridClass(2)} regular:contents`}>
-              <MetricCard
-                label="Total Assets"
+              <Card
+                title="Total Assets"
                 value={assetsCard.value ?? totalAssetsConverted}
                 currency={displayCurrency}
                 icon={TrendingUp}
                 tone="bg-pos/10 text-pos"
-                sparkColor="#10b981"
-                {...cardProps(assetsCard)}
+                {...cardProps(assetsCard, false, "#10b981")}
               />
-              <MetricCard
-                label="Total Liabilities"
+              <Card
+                title="Total Liabilities"
                 value={liabilitiesCard.value ?? totalLiabilitiesConverted}
                 currency={displayCurrency}
                 icon={TrendingDown}
                 tone="bg-destructive/10 text-destructive"
-                sparkColor="#f43f5e"
-                {...cardProps(liabilitiesCard)}
+                {...cardProps(liabilitiesCard, false, "#f43f5e")}
               />
             </div>
           ),

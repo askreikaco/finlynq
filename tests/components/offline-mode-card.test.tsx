@@ -24,7 +24,7 @@ describe("OfflineModeCard", () => {
   it("renders label, help and encryption line; a user who never chose is On (default); no IndexedDB opened", async () => {
     const open = vi.spyOn(indexedDB, "open");
     render(<OfflineModeCard />);
-    expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-title], h3, div, span" })).toBeTruthy();
+    expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-label-text], h3, div, span" })).toBeTruthy();
     // help lives in the (i) tip, not in visible paragraphs
     expect(screen.queryByText(/Saves edits on this device while offline/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "About offline mode" }));

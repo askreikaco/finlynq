@@ -1,7 +1,6 @@
 export { PageHeader, MoreActionsMenu, type PageHeaderProps, type MoreItem, type TopBarPrimary, type TopBarBack } from "./page-header";
 export { BackButton } from "./back-button";
-export { SectionCard } from "./section-card";
-export { CardLabel, CARD_PAD_X, CARD_PAD_T, CARD_LABEL_TOP, METRIC_TONES, type MetricTone } from "./card-label";
+export { METRIC_TONES, type MetricTone } from "./card-label";
 export { ListRow, ProgressBar, type ListRowProps, type SecondaryTone, type TileTone, type ProgressTone } from "./list-row";
 export { TxRow, type TxRowProps } from "./tx-row";
 export { Amount, amountToneClass, type AmountSize, type AmountTone } from "./amount";

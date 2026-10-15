@@ -13,15 +13,9 @@
  */
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListRow } from "@/components/mobile/list-row";
-import { InfoTip } from "@/components/ui/info-tip";
 import { Eye, EyeOff } from "lucide-react";
 import { safeAccountName } from "@/lib/safe-name";
 
@@ -99,71 +93,59 @@ export function ReconcileHideAccountsCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-            <EyeOff className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={EyeOff} tone="muted">
-              Hide accounts
-              <InfoTip
-                label="About hiding accounts"
-                text={
+    <Card
+      title="Hide accounts"
+      icon={EyeOff}
+      tone="muted"
+      info={
                   <>
                     Hidden accounts leave the <a href="/import" className="underline">Import</a> account picker. They stay
                     reachable here and by direct link.
                   </>
                 }
-              />
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <p className="mb-3 text-sm text-destructive">{error}</p>
-        )}
-        {loading ? (
-          <p className="text-sm text-muted-foreground" data-keep="status">Loading…</p>
-        ) : accounts.length === 0 ? (
-          <p className="text-sm text-muted-foreground" data-keep="empty">No accounts.</p>
-        ) : (
-          <ul className="-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-            {accounts.map((a) => {
-              const isHidden = hiddenIds.includes(a.id);
-              return (
-                <li key={a.id}>
-                  <ListRow
-                    size="dense"
-                    title={safeAccountName(a)}
-                    subtitle={[a.currency, a.archived ? "archived" : null, isHidden ? "hidden" : null].filter(Boolean).join(" · ")}
-                    actions={
-                      <Button
-                        variant={isHidden ? "outline" : "ghost"}
-                        size="sm"
-                        onClick={() => toggle(a.id)}
-                        disabled={savingId === a.id}
-                      >
-                        {isHidden ? (
-                          <>
-                            <Eye className="h-4 w-4 mr-1.5" /> Show
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="h-4 w-4 mr-1.5" /> Hide
-                          </>
-                        )}
-                      </Button>
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
+      infoLabel="About hiding accounts"
+    >
+      {error && (
+        <p className="mb-3 text-sm text-destructive">{error}</p>
+      )}
+      {loading ? (
+        <p className="text-sm text-muted-foreground" data-keep="status">Loading…</p>
+      ) : accounts.length === 0 ? (
+        <p className="text-sm text-muted-foreground" data-keep="empty">No accounts.</p>
+      ) : (
+        <ul className="-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+          {accounts.map((a) => {
+            const isHidden = hiddenIds.includes(a.id);
+            return (
+              <li key={a.id}>
+                <ListRow
+                  size="dense"
+                  title={safeAccountName(a)}
+                  subtitle={[a.currency, a.archived ? "archived" : null, isHidden ? "hidden" : null].filter(Boolean).join(" · ")}
+                  actions={
+                    <Button
+                      variant={isHidden ? "outline" : "ghost"}
+                      size="sm"
+                      onClick={() => toggle(a.id)}
+                      disabled={savingId === a.id}
+                    >
+                      {isHidden ? (
+                        <>
+                          <Eye className="h-4 w-4 mr-1.5" /> Show
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-1.5" /> Hide
+                        </>
+                      )}
+                    </Button>
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Check, Inbox } from "lucide-react";
 import {
   RowCard,
@@ -592,10 +592,8 @@ export function InboxToApproveTab({
 
   if (loading && snapshot == null) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground text-center">
-          Loading…
-        </CardContent>
+      <Card className="py-8 text-sm text-muted-foreground text-center">
+        Loading…
       </Card>
     );
   }
@@ -628,19 +626,17 @@ export function InboxToApproveTab({
       )}
 
       {unlinkedRows.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center space-y-3">
-            <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
-            <div>
-              <p className="text-sm font-medium">
-                No rows waiting for approval
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Upload a statement to this account and rows will appear here
-                with one-click approve.
-              </p>
-            </div>
-          </CardContent>
+        <Card className="py-12 text-center space-y-3">
+          <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div>
+            <p className="text-sm font-medium">
+              No rows waiting for approval
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload a statement to this account and rows will appear here
+              with one-click approve.
+            </p>
+          </div>
         </Card>
       ) : (
         <div className="space-y-2">

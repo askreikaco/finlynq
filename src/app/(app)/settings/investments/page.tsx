@@ -22,7 +22,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -55,7 +55,7 @@ import {
   type InvestmentsTab,
   type Security,
 } from "./_components/shared";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Field } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
@@ -399,70 +399,68 @@ function InvestmentsSettingsPage() {
             const flagged = allSecurities.filter((s) => advisoryFor(s));
             if (flagged.length === 0) return null;
             return (
-              <Card className="border-warning/30 bg-warning/10">
-                <CardContent className="space-y-2 py-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-warning">
-                    <AlertTriangle className="h-4 w-4" />
-                    {flagged.length === 1 ? "A ticker can't be priced" : "Some tickers can't be priced"}
-                  </div>
-                  <ul className="space-y-1 text-xs text-warning/90">
-                    {flagged.map((s) => {
-                      const a = advisoryFor(s)!;
-                      return (
-                        <li key={s.id} className="flex flex-wrap items-center gap-2">
-                          <span>
-                            <span className="font-mono font-semibold">{s.symbol}</span>
-                            {a.suggestedSymbol && (
-                              <>
-                                {" → "}
-                                <span className="font-mono font-semibold">{a.suggestedSymbol}</span>
-                              </>
-                            )}
-                            {`: ${a.message}`}
-                          </span>
-                          {a.suggestedSymbol ? (
+              <Card frameClassName="border-warning/30 bg-warning/10" className="space-y-2 py-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  {flagged.length === 1 ? "A ticker can't be priced" : "Some tickers can't be priced"}
+                </div>
+                <ul className="space-y-1 text-xs text-warning/90">
+                  {flagged.map((s) => {
+                    const a = advisoryFor(s)!;
+                    return (
+                      <li key={s.id} className="flex flex-wrap items-center gap-2">
+                        <span>
+                          <span className="font-mono font-semibold">{s.symbol}</span>
+                          {a.suggestedSymbol && (
+                            <>
+                              {" → "}
+                              <span className="font-mono font-semibold">{a.suggestedSymbol}</span>
+                            </>
+                          )}
+                          {`: ${a.message}`}
+                        </span>
+                        {a.suggestedSymbol ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
+                            onClick={() => setTickerTarget({ security: s, toSymbol: a.suggestedSymbol! })}
+                          >
+                            Change to {a.suggestedSymbol}
+                          </Button>
+                        ) : (
+                          // No replacement ticker to suggest (detected/unknown
+                          // symbol) — offer the other fix: price it by hand.
+                          <div className="flex shrink-0 items-center gap-1.5">
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
-                              onClick={() => setTickerTarget({ security: s, toSymbol: a.suggestedSymbol! })}
+                              onClick={() => openEdit(s)}
                             >
-                              Change to {a.suggestedSymbol}
+                              Fix symbol
                             </Button>
-                          ) : (
-                            // No replacement ticker to suggest (detected/unknown
-                            // symbol) — offer the other fix: price it by hand.
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
-                                onClick={() => openEdit(s)}
-                              >
-                                Fix symbol
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={manualBusyId === s.id}
-                                className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
-                                onClick={() => switchToManualPricing(s)}
-                              >
-                                {manualBusyId === s.id && (
-                                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                )}
-                                Use manual price
-                              </Button>
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <p className="text-xs text-warning/80" data-keep="warning">
-                    No market price until resolved; these holdings are excluded from portfolio value.
-                  </p>
-                </CardContent>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={manualBusyId === s.id}
+                              className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
+                              onClick={() => switchToManualPricing(s)}
+                            >
+                              {manualBusyId === s.id && (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              )}
+                              Use manual price
+                            </Button>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="text-xs text-warning/80" data-keep="warning">
+                  No market price until resolved; these holdings are excluded from portfolio value.
+                </p>
               </Card>
             );
           })()}
@@ -490,7 +488,7 @@ function InvestmentsSettingsPage() {
                 {filterInput("type", "Type")}
                 {filterInput("currency", "Currency")}
               </div>
-              <SectionCard list>
+              <Card frame="list">
                 {rows.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
                     {hasActiveFilter ? "No matches." : "No securities."}
@@ -517,7 +515,7 @@ function InvestmentsSettingsPage() {
                     );
                   })
                 )}
-              </SectionCard>
+              </Card>
             </div>
           )}
           {allSecurities.length > 0 && (

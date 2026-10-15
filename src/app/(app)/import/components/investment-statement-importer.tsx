@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertCircle, Landmark, Loader2 } from "lucide-react";
 import { FileDropZone } from "./file-drop-zone";
 import {
@@ -149,27 +149,23 @@ export function InvestmentStatementImporter() {
       )}
 
       {status && (
-        <Card
-          className={
+        <Card frameClassName={
             status.type === "success"
               ? "border-pos/30 bg-pos/10"
               : "border-destructive/30 bg-destructive/10"
-          }
-        >
-          <CardContent className="py-3">
-            <div className="flex items-start gap-2">
-              {status.type === "success" ? (
-                <CheckCircle2 className="h-4 w-4 text-pos mt-0.5" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-              )}
-              <p
-                className={`text-sm ${status.type === "success" ? "text-pos" : "text-destructive"}`}
-              >
-                {status.message}
-              </p>
-            </div>
-          </CardContent>
+          } className="py-3">
+          <div className="flex items-start gap-2">
+            {status.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4 text-pos mt-0.5" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+            )}
+            <p
+              className={`text-sm ${status.type === "success" ? "text-pos" : "text-destructive"}`}
+            >
+              {status.message}
+            </p>
+          </div>
         </Card>
       )}
 

@@ -18,11 +18,10 @@
  * ListRows (tap = DetailSheet); md+ keeps the table with a sticky header.
  */
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { useEffect, useMemo, useState } from "react";
 import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { Amount, ListRow, MetricGrid } from "@/components/mobile";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { SectionPage } from "@/components/templates/section-page";
 import { Notice } from "@/components/notice";
@@ -35,6 +34,7 @@ import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/met
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { formatCurrency } from "@/lib/currency";
 import { localDateISO } from "@/lib/utils/date";
+import { Card, type CardProps } from "@/components/ui/card";
 
 interface CurrencyCell {
   amount: number;
@@ -136,16 +136,16 @@ export default function DividendsPage() {
   const firstHeader = groupBy === "holding" ? "Holding" : "Period";
   const hasFilters = Boolean(from || to);
 
-  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
+  const summaryMetrics = useMemo<CardProps[]>(() => {
     if (!data) return [];
-    const items: MetricCardProps[] = [];
+    const items: CardProps[] = [];
     const through = localDateISO().slice(0, 7);
     const card = (ccy: string) => makeCardResolver(rangeArg, ccy);
     // Period figure (this month by default) with the page's total in the note: the big value, badge and delta share one basis.
-    const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricCardProps => {
+    const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): CardProps => {
       const c = card(ccy)(points, "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
+        title: label, value: c.value ?? total, currency: ccy, valueTone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -160,7 +160,7 @@ export default function DividendsPage() {
     }
     const rowsCard = makeCardResolver(rangeArg)(divRows && divRows.length > 0 ? countByMonth(divRows, (r) => r.date, through) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Dividend rows", value: <span>{rowsCard.value ?? data.totals.rowCount}</span>, ...cardProps(rowsCard), sub: rowsCard.delta ?? NO_HISTORY_CAPTION,
+      icon: Receipt, title: "Dividend rows", value: <span>{rowsCard.value ?? data.totals.rowCount}</span>, ...cardProps(rowsCard), sub: rowsCard.delta ?? NO_HISTORY_CAPTION,
       ...(rowsCard.value != null ? { note: `Total in view: ${data.totals.rowCount}` } : {}),
     });
     return items;
@@ -236,7 +236,7 @@ export default function DividendsPage() {
           </Notice>
         ) : (
           <>
-              <SectionCard label={firstHeader} icon={Coins} tone="emerald" list>
+              <Card title={firstHeader} icon={Coins} tone="emerald" frame="list">
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}
@@ -247,7 +247,7 @@ export default function DividendsPage() {
                     aria-label={`${g.label}, ${g.rowCount} dividend rows`}
                   />
                 ))}
-              </SectionCard>
+              </Card>
           </>
         )}
       </section>

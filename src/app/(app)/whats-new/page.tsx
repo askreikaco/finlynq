@@ -70,7 +70,7 @@ export default function WhatsNewPage() {
       )}
 
       {items && items.length === 0 && !error && (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <Card className="p-4 text-center text-sm text-muted-foreground">
           No announcements yet. Check back soon.
         </Card>
       )}
@@ -79,7 +79,7 @@ export default function WhatsNewPage() {
         {items?.map((a) => {
           const warning = a.severity === "warning";
           return (
-            <Card key={a.id} className="p-4">
+            <Card key={a.id}>
               <div className="flex items-start gap-3">
                 {warning ? (
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />

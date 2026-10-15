@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-// Metric cards with charts: /loans, /goals, /categories (budget totals) and /dashboard render the shared MetricCard with a monthly
+// Metric cards with charts: /loans, /goals, /categories (budget totals) and /dashboard render the shared Card with a monthly
 // sparkline, a % badge and a signed difference line vs the previous period (default: this month vs last month;
 // ?range= compares with the preceding period of the same length). No history = value only, never a fake chart.
 import * as React from "react";
@@ -219,7 +219,7 @@ const BUDGET_SERIES = [
 ];
 
 describe("/categories budget metric cards", () => {
-  it("every summary metric is a MetricCard; spent has sparkline, % vs previous month, inverted tone and a delta line", async () => {
+  it("every summary metric is a Card; spent has sparkline, % vs previous month, inverted tone and a delta line", async () => {
     H.search = "month=2026-10";
     stubBudgets(BUDGET_SERIES);
     render(<BudgetsPage />);
@@ -564,7 +564,7 @@ describe("series builders", () => {
     expect(c.delta).toBe("+$50.00 vs last month");
     expect(c.badgePct).toBeCloseTo(50);
     expect(c.sparkData).toEqual([10, 20, 100, 150]);
-    expect(cardProps(c)).toMatchObject({ delta: { pct: 50, text: "+$50.00 vs last month" }, sparkData: [10, 20, 100, 150] });
+    expect(cardProps(c)).toMatchObject({ delta: { pct: 50, text: "+$50.00 vs last month" }, spark: { data: [10, 20, 100, 150] } });
     expect(cardProps(c, true).delta?.invert).toBe(true);
     const none = makeCardResolver(range, "USD")([], "last", 155);
     expect(none).toMatchObject({ value: 155, delta: null, badgePct: null });
@@ -920,7 +920,7 @@ describe("/reports summary cards", () => {
   const tileOf = (label: string) => screen.getAllByText(label).map((e) => e.closest(".gradient-border")).find(Boolean) as HTMLElement;
   const SERIES = monthly([["2026-07", 1000, 700], ["2026-08", 1000, 700], ["2026-09", 1000, 700], ["2026-10", 1200, 600]]);
 
-  it("the four summary tiles are MetricCards: period figure, badge, signed difference, sparkline; the report range total is the note", async () => {
+  it("the four summary tiles are Cards: period figure, badge, signed difference, sparkline; the report range total is the note", async () => {
     await renderReports(SERIES);
     await waitFor(() => expect(tileOf("Total Income").textContent).toMatch(/\+\$200\.00 vs last month/));
     const income = tileOf("Total Income");
@@ -953,7 +953,7 @@ describe("/reports summary cards", () => {
     expect(income.textContent).not.toMatch(/vs (last month|previous period)/);
   });
 
-  it("the Net Savings tile is not duplicated and the balance-sheet Net Worth is a MetricCard (no hand-rolled KPI)", async () => {
+  it("the Net Savings tile is not duplicated and the balance-sheet Net Worth is a Card (no hand-rolled KPI)", async () => {
     await renderReports(SERIES, { balance: true });
     // exactly one Net Savings tile (the top one): no duplicate hero card at the bottom of the income tab
     expect(screen.getAllByText("Net Savings").filter((e) => e.closest(".gradient-border")).length).toBe(1);

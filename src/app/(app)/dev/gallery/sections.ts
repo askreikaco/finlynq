@@ -1,7 +1,6 @@
 /** Gallery catalogue index: id (anchor) + label. page.tsx renders one <section id> per entry; the test checks both. */
 export const GALLERY_SECTIONS = [
-  { id: "metric", label: "MetricCard" },
-  { id: "section-card", label: "SectionCard" },
+  { id: "card", label: "Card" },
   { id: "list-row", label: "ListRow" },
   { id: "shadow", label: "Card shadow" },
   { id: "buttons", label: "Buttons / Badges" },

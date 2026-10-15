@@ -6,8 +6,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Code, Database, ToggleLeft, ToggleRight } from "lucide-react";
@@ -68,41 +67,33 @@ export default function DeveloperSettingsPage() {
       grid
     >
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
-              {devMode ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
-            </div>
-            <div>
-              <CardTitle icon={Code} tone="violet">
-                Dev mode
-                <InfoTip label="About dev mode" text="Shows advanced and experimental features in the navigation. Off shows the production set only." />
-              </CardTitle>
-            </div>
+      <Card
+        title="Dev mode"
+        icon={Code}
+        tone="violet"
+        info="Shows advanced and experimental features in the navigation. Off shows the production set only."
+        infoLabel="About dev mode"
+        className="space-y-3"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">
+              {devMode ? "On" : "Off"}
+            </p>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">
-                {devMode ? "On" : "Off"}
-              </p>
-            </div>
-            <Button
-              variant={devMode ? "default" : "outline"}
-              size="sm"
-              onClick={handleDevModeToggle}
-              disabled={devModeLoading}
-            >
-              {devMode ? <ToggleRight className="h-4 w-4 mr-1.5" /> : <ToggleLeft className="h-4 w-4 mr-1.5" />}
-              {devMode ? "Disable" : "Enable"}
-            </Button>
-          </div>
-          {devModeStatus && (
-            <p className="text-xs text-muted-foreground" data-keep="status">{devModeStatus}</p>
-          )}
-        </CardContent>
+          <Button
+            variant={devMode ? "default" : "outline"}
+            size="sm"
+            onClick={handleDevModeToggle}
+            disabled={devModeLoading}
+          >
+            {devMode ? <ToggleRight className="h-4 w-4 mr-1.5" /> : <ToggleLeft className="h-4 w-4 mr-1.5" />}
+            {devMode ? "Disable" : "Enable"}
+          </Button>
+        </div>
+        {devModeStatus && (
+          <p className="text-xs text-muted-foreground" data-keep="status">{devModeStatus}</p>
+        )}
       </Card>
 
       <div className="col-span-full">

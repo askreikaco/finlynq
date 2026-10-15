@@ -29,9 +29,10 @@ import {
   X,
 } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { Overlay } from "@/components/ui/overlay";
+import { Card } from "@/components/ui/card";
 
 interface InboxRow {
   id: string;
@@ -257,11 +258,11 @@ export default function AdminInboxPage() {
       }}
     >
       {error && (
-        <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
+        <Card className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</Card>
       )}
 
       {/* ─── List (one column at every width) ─── */}
-      <SectionCard padded={false}>
+      <Card padded={false}>
         <Tabs value={category} onValueChange={(v) => setCategory(v as "mailbox" | "trash")}>
           <div className="border-b px-3 pt-3">
             <TabsList>
@@ -306,7 +307,7 @@ export default function AdminInboxPage() {
             </ul>
           )}
         </div>
-      </SectionCard>
+      </Card>
 
       {/* ─── Conversation (tap a row) ─── */}
       <Overlay

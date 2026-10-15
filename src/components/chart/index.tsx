@@ -5,7 +5,7 @@
  * use case, show/hide per case"). `kind` picks the drawing; the optional parts (legend, tooltip, axes, grid,
  * breakdownList, lines, zeroLine, delta, centre total, ...) are shown or hidden per call site.
  *
- *   sparkline      values (+ labels = hover tooltip)           MetricCard footer, list-row trend
+ *   sparkline      values (+ labels = hover tooltip)           Card footer, list-row trend
  *   line | area    data + series, optional axes/grid/legend     net worth, performance, trends, projections
  *   bar            data + series (or horizontal)                reports, category history, weekly recap
  *   stacked-bar | stacked-area   series = StackLegendEntry[]    by-account / by-category stacks

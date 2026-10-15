@@ -100,7 +100,7 @@ describe("ListPage", () => {
 
   it("shows the empty state with its CTA and no views when there are no records", () => {
     api.data = [];
-    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Total", value: 0 }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, title: "Total", value: 0 }]} />);
     expect(screen.getByText("No goals yet")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Create goal" }).getAttribute("href")).toBe("/goals/new");
     expect(screen.queryByText("cards-content")).toBeNull();
@@ -113,14 +113,14 @@ describe("ListPage", () => {
     const { unmount } = render(
       <ListPage<Goal>
         {...baseProps()}
-        summary={(records) => [{ icon: Wallet, label: "Count", value: <span>{records.length}</span> }]}
+        summary={(records) => [{ icon: Wallet, title: "Count", value: <span>{records.length}</span> }]}
       />,
     );
     expect(screen.getByText("Count")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
     unmount();
 
-    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: <span>7</span> }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, title: "Static", value: <span>7</span> }]} />);
     expect(screen.getByText("Static")).toBeTruthy();
     expect(screen.getByText("7")).toBeTruthy();
   });

@@ -5,9 +5,10 @@ import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "l
 import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
-import { SectionCard, TxRow, type TileTone } from "@/components/mobile";
+import { TxRow, type TileTone } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { PendingSyncBadge } from "./pending-sync-badge";
+import { Card } from "@/components/ui/card";
 
 /** Bulk selection for the list: rows show a checkbox and a tap toggles the row. Pending rows are never selectable. */
 export interface TxListSelection {
@@ -39,7 +40,7 @@ interface MobileTxListProps {
 }
 
 /**
- * The one transactions list at every width: date-grouped SectionCards of native ListRows.
+ * The one transactions list at every width: date-grouped Cards of native ListRows.
  * Each row: type tile | payee (fallback category) + "Waiting to sync" badge | amount with sign.
  * Subtitle: category · account (when not scoped to one account), or "From … · To …" for transfers.
  * Icons match the Accounts page: income = ArrowUpRight, expense = ArrowDownRight, transfer = ArrowLeftRight.
@@ -82,13 +83,13 @@ export function MobileTxList({
         className="grid grid-cols-1 items-start gap-6"
       >
       {Object.entries(grouped).map(([dateLabel, txns]) => (
-        <SectionCard
+        <Card
           key={dateLabel}
-          label={dateLabel}
-          labelPlacement="outside"
+          title={dateLabel}
+          titlePlacement="outside"
           /* The date label sits ABOVE the card group and sticks under the page header while its group scrolls. */
-          labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
-          list
+          titleClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
+          frame="list"
         >
           {txns.map((t) => (
             <TransactionRow
@@ -102,7 +103,7 @@ export function MobileTxList({
               selected={selectedId === t.id}
             />
           ))}
-        </SectionCard>
+        </Card>
       ))}
       </div>
 

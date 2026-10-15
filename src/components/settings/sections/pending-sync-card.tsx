@@ -6,7 +6,7 @@
  */
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { discardPendingSync, retryPendingSync, usePendingSync } from "@/lib/data/local-write-queue";
@@ -29,24 +29,24 @@ export function PendingSyncCard() {
   if (!enabled) return null;
   if (locked) {
     return (
-      <Card data-testid="pending-sync-locked">
-        <CardHeader>
-          <CardTitle icon={RefreshCw} tone="amber">Pending sync</CardTitle>
-          <p className="text-xs text-muted-foreground" data-keep="status">Locked</p>
-        </CardHeader>
-        <CardContent>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={() => {
-              setBusy(true);
-              void passkey.unlock().finally(() => setBusy(false));
-            }}
-          >
-            {busy ? "Waiting for passkey…" : "Use passkey to unlock"}
-          </Button>
-        </CardContent>
+      <Card
+        data-testid="pending-sync-locked"
+        title="Pending sync"
+        icon={RefreshCw}
+        tone="amber"
+        description={<p className="text-xs text-muted-foreground" data-keep="status">Locked</p>}
+      >
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void passkey.unlock().finally(() => setBusy(false));
+          }}
+        >
+          {busy ? "Waiting for passkey…" : "Use passkey to unlock"}
+        </Button>
       </Card>
     );
   }
@@ -54,16 +54,20 @@ export function PendingSyncCard() {
   const pending = items.filter((i) => i.status === "pending");
   const failed = items.filter((i) => i.status === "failed");
   return (
-    <Card data-testid="pending-sync-card">
-      <CardHeader>
-        <CardTitle icon={RefreshCw} tone="amber">Pending sync</CardTitle>
-        <p className="text-xs text-muted-foreground" data-keep="status">
+    <Card
+      data-testid="pending-sync-card"
+      title="Pending sync"
+      icon={RefreshCw}
+      tone="amber"
+      description={
+        <span data-keep="status">
           {pending.length > 0 ? `${pending.length} waiting to sync.` : "Nothing waiting."}
           {failed.length > 0 ? ` ${failed.length} failed.` : ""}
-        </p>
-      </CardHeader>
+        </span>
+      }
+    >
       {failed.length > 0 && (
-        <CardContent className="space-y-3">
+        <div className="space-y-3">
           {failed.map((i) => (
             <div key={i.opId} className="flex items-center justify-between gap-3" data-testid="pending-sync-failed">
               <div className="min-w-0">
@@ -81,7 +85,7 @@ export function PendingSyncCard() {
               </div>
             </div>
           ))}
-        </CardContent>
+        </div>
       )}
     </Card>
   );

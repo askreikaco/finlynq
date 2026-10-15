@@ -14,7 +14,6 @@
  * (/categories/new and /categories/<id>/edit hold the form), no sheet.
  */
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -40,10 +39,7 @@ import { groupSelId, isGroupSelId } from "@/lib/categories/group-key";
 import { withMode, withSel } from "@/lib/list-detail/selection";
 import { sizeClassFor } from "@/components/ui/size-class";
 import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
-import {
-  CardLayoutEditor, ListDetailLayout, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize,
-  type ListDetailPaneApi, type MoreItem,
-} from "@/components/mobile";
+import { CardLayoutEditor, ListDetailLayout, MetricGrid, PageHeader, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi, type MoreItem } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { CATEGORY_FILTER_KEYS, CATEGORY_SORTS } from "@/lib/toolbar/list-configs";
@@ -55,6 +51,7 @@ import type { PageCard } from "@/lib/card-layout";
 import type { Budget } from "../budgets/_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
 import { usePendingBudgets } from "@/lib/data/local-write-queue";
+import { Card, type CardProps } from "@/components/ui/card";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -311,23 +308,23 @@ function CategoriesOverview() {
   const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
   const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalLeft });
   // Exactly these three cards.
-  const metrics: MetricCardProps[] = [
+  const metrics: CardProps[] = [
     {
-      id: "total-budget", label: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
+      id: "total-budget", title: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
       delta: { pct: budgetCard.badgePct, text: budgetCard.delta ?? NO_HISTORY_CAPTION },
-      sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
+      spark: { data: budgetCard.sparkData, color: "#6366f1", labels: budgetCard.sparkLabels }, 
     },
     {
-      id: "total-spent", label: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
+      id: "total-spent", title: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
       valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
       delta: { pct: spentCard.badgePct, text: spentCard.delta ?? NO_HISTORY_CAPTION, invert: true },
-      sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
+      spark: { data: spentCard.sparkData, color: "#f43f5e", labels: spentCard.sparkLabels }, 
     },
     {
-      id: "remaining", label: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
+      id: "remaining", title: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
       valueClassName: totalLeft >= 0 ? "text-pos" : "text-destructive",
       delta: { pct: leftCard.badgePct, text: leftCard.delta ?? NO_HISTORY_CAPTION },
-      sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
+      spark: { data: leftCard.sparkData, color: "#10b981", labels: leftCard.sparkLabels }, 
     },
   ];
 
@@ -491,7 +488,7 @@ function CategoriesOverview() {
       </div>
     );
     const summary = (
-      <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
+      <Card title={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
         {slices.length > 0 ? (
           <Chart
             kind="donut"
@@ -511,15 +508,15 @@ function CategoriesOverview() {
             <p className="text-sm text-muted-foreground">No {noun}.</p>
           </div>
         )}
-      </SectionCard>
+      </Card>
     );
 
     const byCategory = (
-      <SectionCard
-        label="Categories"
+      <Card
+        title="Categories"
         icon={Tags}
         tone="indigo"
-        list
+        frame="list"
         className="[&>*]:min-w-0"
       >
         {rows.length === 0 ? (
@@ -547,7 +544,7 @@ function CategoriesOverview() {
             ),
           )
         )}
-      </SectionCard>
+      </Card>
     );
 
     return { total: data.total, summary, "by-category": byCategory } as Record<string, ReactNode> & { total: number };

@@ -23,7 +23,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/ui/field";
@@ -105,139 +105,138 @@ export function UnboundImportPicker({
   };
 
   return (
-    <Card className="border-warning/30 bg-warning/10">
-      <CardHeader className="pb-3">
-        <CardTitle icon={AlertCircle} tone="amber">
-          This email import didn&apos;t match any saved template
-        </CardTitle>
-        <p className="text-xs text-muted-foreground mt-1.5">
+    <Card
+      frameClassName="border-warning/30 bg-warning/10"
+      title="This email import didn't match any saved template"
+      icon={AlertCircle}
+      tone="amber"
+      description={<p className="text-xs text-muted-foreground mt-1.5">
           <Mail className="h-3 w-3 inline mr-1" />
           From <span className="font-mono">{fromAddress ?? "(unknown)"}</span>
           {subject ? <> · &ldquo;{subject}&rdquo;</> : null}
           {" · "}
           {totalRowCount} row{totalRowCount === 1 ? "" : "s"} parsed by auto-detect
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {/* ─── Preview of the CSV ──────────────────────────────────── */}
-        <div>
-          <div className="text-xs font-medium text-muted-foreground mb-2">Preview</div>
-          <div className="border rounded-md overflow-x-auto bg-background">
-            <table className="text-xs w-full">
-              <thead className="bg-muted/50">
+        </p>}
+      className="space-y-5"
+    >
+      {/* ─── Preview of the CSV ──────────────────────────────────── */}
+      <div>
+        <div className="text-xs font-medium text-muted-foreground mb-2">Preview</div>
+        <div className="border rounded-md overflow-x-auto bg-background">
+          <table className="text-xs w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                {headers.map((h) => (
+                  <th key={h} className="px-2 py-1.5 text-left font-medium whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sampleRows.length === 0 ? (
                 <tr>
-                  {headers.map((h) => (
-                    <th key={h} className="px-2 py-1.5 text-left font-medium whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+                  <td className="px-2 py-2 text-muted-foreground italic" colSpan={headers.length}>
+                    (no sample rows captured)
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {sampleRows.length === 0 ? (
-                  <tr>
-                    <td className="px-2 py-2 text-muted-foreground italic" colSpan={headers.length}>
-                      (no sample rows captured)
-                    </td>
+              ) : (
+                sampleRows.map((row, i) => (
+                  <tr key={i} className="border-t">
+                    {headers.map((h) => (
+                      <td key={h} className="px-2 py-1 whitespace-nowrap">
+                        {row[h] ?? ""}
+                      </td>
+                    ))}
                   </tr>
-                ) : (
-                  sampleRows.map((row, i) => (
-                    <tr key={i} className="border-t">
-                      {headers.map((h) => (
-                        <td key={h} className="px-2 py-1 whitespace-nowrap">
-                          {row[h] ?? ""}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        {/* ─── Path 1: Pick a template ─────────────────────────────── */}
-        {sortedTemplates.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-muted-foreground mb-2">
-              Apply a saved template (uses its default account)
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Field
-                control="select"
-                value={String(selectedTemplateId ?? "")}
-                onValueChange={(v) => {
-                  setSelectedTemplateId(v ? Number(v) : null);
-                  setSelectedAccountId(null);
-                  setError(null);
-                }}
-                disabled={submitting}
-                className="flex-1 min-w-[200px]"
-                options={[
-                  { value: "", label: "— Pick a template —" },
-                  ...sortedTemplates.map((t) => ({ value: String(t.id), label: `${t.name}${t.matchesHeaders ? "  ★ matches headers" : ""}${t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}` })),
-                ]}
-              />
-              <Button
-                size="sm"
-                disabled={selectedTemplateId == null || submitting}
-                onClick={() =>
-                  selectedTemplateId != null && apply({ templateId: selectedTemplateId })
-                }
-              >
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                Apply template
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Path 2: Bind to an account directly ─────────────────── */}
+      {/* ─── Path 1: Pick a template ─────────────────────────────── */}
+      {sortedTemplates.length > 0 && (
         <div>
           <div className="text-xs font-medium text-muted-foreground mb-2">
-            …or just bind to an account (skip template, no column remapping)
+            Apply a saved template (uses its default account)
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Field
               control="select"
-              value={String(selectedAccountId ?? "")}
+              value={String(selectedTemplateId ?? "")}
               onValueChange={(v) => {
-                setSelectedAccountId(v ? Number(v) : null);
-                setSelectedTemplateId(null);
+                setSelectedTemplateId(v ? Number(v) : null);
+                setSelectedAccountId(null);
                 setError(null);
               }}
               disabled={submitting}
               className="flex-1 min-w-[200px]"
               options={[
-                { value: "", label: "— Pick an account —" },
-                ...accounts.map((a) => ({ value: String(a.id), label: `${a.name}(${a.currency}) ${a.isInvestment ? " · investment" : ""}` })),
+                { value: "", label: "— Pick a template —" },
+                ...sortedTemplates.map((t) => ({ value: String(t.id), label: `${t.name}${t.matchesHeaders ? "  ★ matches headers" : ""}${t.defaultAccount ? `  → ${t.defaultAccount}` : "  (no default account)"}` })),
               ]}
             />
             <Button
               size="sm"
-              variant="outline"
-              disabled={selectedAccountId == null || submitting}
+              disabled={selectedTemplateId == null || submitting}
               onClick={() =>
-                selectedAccountId != null && apply({ accountId: selectedAccountId })
+                selectedTemplateId != null && apply({ templateId: selectedTemplateId })
               }
             >
-              Bind to account
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Apply template
             </Button>
           </div>
         </div>
+      )}
 
-        {error && (
-          <div className="text-xs text-destructive flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5" />
-            {error}
-          </div>
-        )}
+      {/* ─── Path 2: Bind to an account directly ─────────────────── */}
+      <div>
+        <div className="text-xs font-medium text-muted-foreground mb-2">
+          …or just bind to an account (skip template, no column remapping)
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Field
+            control="select"
+            value={String(selectedAccountId ?? "")}
+            onValueChange={(v) => {
+              setSelectedAccountId(v ? Number(v) : null);
+              setSelectedTemplateId(null);
+              setError(null);
+            }}
+            disabled={submitting}
+            className="flex-1 min-w-[200px]"
+            options={[
+              { value: "", label: "— Pick an account —" },
+              ...accounts.map((a) => ({ value: String(a.id), label: `${a.name}(${a.currency}) ${a.isInvestment ? " · investment" : ""}` })),
+            ]}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={selectedAccountId == null || submitting}
+            onClick={() =>
+              selectedAccountId != null && apply({ accountId: selectedAccountId })
+            }
+          >
+            Bind to account
+          </Button>
+        </div>
+      </div>
 
-        <Badge variant="outline" className="text-xs font-normal">
-          Tip: if the auto-detected amounts or dates look wrong above, Discard this batch
-          and re-send after saving a CSV template that matches your bank&apos;s format.
-        </Badge>
-      </CardContent>
+      {error && (
+        <div className="text-xs text-destructive flex items-center gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {error}
+        </div>
+      )}
+
+      <Badge variant="outline" className="text-xs font-normal">
+        Tip: if the auto-detected amounts or dates look wrong above, Discard this batch
+        and re-send after saving a CSV template that matches your bank&apos;s format.
+      </Badge>
     </Card>
   );
 }

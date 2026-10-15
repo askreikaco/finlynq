@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Overlay } from "@/components/ui/overlay";
 import { Badge } from "@/components/ui/badge";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { ArrowRight, FileSpreadsheet, Table2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 interface SheetInfo {
   name: string;
@@ -153,7 +154,7 @@ export function ExcelMapperDialog({
         {/* Sample data preview: one list row per sample row (no table). */}
         {sheet.sampleRows.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <SectionCard label="Sample rows" icon={Table2} tone="muted" list>
+            <Card title="Sample rows" icon={Table2} tone="muted" frame="list">
               {sheet.sampleRows.map((row, i) => (
                 <ListRow
                   key={i}
@@ -161,7 +162,7 @@ export function ExcelMapperDialog({
                   subtitle={sheet.headers.slice(1).map((h, k) => `${h}: ${row[k + 1] ?? ""}`).join(" · ")}
                 />
               ))}
-            </SectionCard>
+            </Card>
           </div>
         )}
 

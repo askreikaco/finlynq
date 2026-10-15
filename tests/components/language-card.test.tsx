@@ -10,13 +10,6 @@ let state = { pref: "auto", locale: "en-CA", setPref };
 vi.mock("@/components/language-provider", () => ({ useLanguage: () => state }));
 let cur = { displayCurrency: "USD", isLoading: false };
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => cur }));
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children }: any) => <div>{children}</div>,
-  CardContent: ({ children }: any) => <div>{children}</div>,
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  CardTitle: ({ children }: any) => <div>{children}</div>,
-  CardDescription: ({ children }: any) => <div>{children}</div>,
-}));
 import { LanguageCard, languageExample } from "@/components/settings/language-card";
 
 afterEach(() => { cleanup(); state = { pref: "auto", locale: "en-CA", setPref }; cur = { displayCurrency: "USD", isLoading: false }; });

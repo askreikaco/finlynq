@@ -17,10 +17,9 @@
  * hint encouraging the user to upload a statement balance.
  */
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertTriangle, Info, Landmark, Database } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
-import { MetricCard } from "@/components/metric-card";
 import type { MetricTone } from "@/components/mobile/card-label";
 
 export interface BalanceSummary {
@@ -56,9 +55,9 @@ export function BalanceSummaryCard({
   if (loading || !summary) {
     return (
       <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-        <MetricCard label="Bank says" icon={Landmark} value="—" loading />
-        <MetricCard label="Finlynq has" icon={Database} value="—" loading />
-        <MetricCard label="Delta" icon={Info} value="—" loading />
+        <Card title="Bank says" icon={Landmark} value="—" loading />
+        <Card title="Finlynq has" icon={Database} value="—" loading />
+        <Card title="Delta" icon={Info} value="—" loading />
       </div>
     );
   }
@@ -89,23 +88,23 @@ export function BalanceSummaryCard({
 
   return (
     <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-      <MetricCard
-        label="Bank says"
+      <Card
+        title="Bank says"
         icon={Landmark}
         tone="muted"
         value={bankSideLatest === null ? "—" : bankSideLatest}
         currency={currency}
         sub={latestAnchor ? `as of ${latestAnchor.date}` : "no anchor yet"}
       />
-      <MetricCard
-        label="Finlynq has"
+      <Card
+        title="Finlynq has"
         icon={Database}
         tone="muted"
         value={systemSideLatest}
         currency={currency}
       />
-      <MetricCard
-        label={status === "no_anchor" ? "Status" : "Delta"}
+      <Card
+        title={status === "no_anchor" ? "Status" : "Delta"}
         icon={Icon}
         tone={tone}
         value={

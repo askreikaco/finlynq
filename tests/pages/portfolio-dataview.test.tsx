@@ -131,7 +131,7 @@ describe("portfolio: charts show at every size, mounted once", () => {
 describe("portfolio: no viewport-hidden trees or CompactOnly/FromMd around sections", () => {
   // Scope: the portfolio's own blocks (summary, toolbar, Cards). Shared components are not part of
   // this page's migration and keep their own tokens, tracked by the guard baseline: the PageHeader
-  // (mobile/), and every ui/card (class "group/card"), which MetricCard and the Cards section use.
+  // (mobile/), and every Card title row (data-slot card-label), which Card and the Cards section use.
   it.each(["compact", "regular", "wide"] as const)("no viewport-token classes in the summary, toolbar or Cards at %s", (sz) => {
     size.current = sz;
     render(<PortfolioPage />);
@@ -144,7 +144,7 @@ describe("portfolio: no viewport-hidden trees or CompactOnly/FromMd around secti
       expect(roots.length).toBeGreaterThanOrEqual(2);
       return roots
         .flatMap((root) => [root, ...Array.from(root.querySelectorAll("[class]"))])
-        .filter((el) => el.closest("[class*='group/card']") === null)
+        .filter((el) => el.closest("[data-slot='card-label']") === null)
         .filter((el) => VIEWPORT_TOKEN.test(el.getAttribute("class") ?? ""))
         .map((el) => el.getAttribute("class"));
     };

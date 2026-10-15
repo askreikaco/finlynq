@@ -7,8 +7,7 @@
  */
 import { WifiOff } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -36,32 +35,28 @@ export function OfflineModeCard() {
   }
 
   return (
-    <Card data-testid="offline-mode-card">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <CardTitle icon={WifiOff} tone="muted">
-              Offline mode (beta)
-              <InfoTip
-                label="About offline mode"
-                text="Saves edits on this device while offline and syncs them later. Home and Accounts open from saved data. Trusted devices only. Copies are encrypted and wiped on sign-out; turn off on shared computers. Unsent changes survive an unexpected sign-out."
-              />
-            </CardTitle>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="text-sm text-muted-foreground" data-testid="offline-mode-status">{status}</span>
-            <Field
-              control="switch"
-              checked={on}
-              onCheckedChange={(v) => void onChange(v)}
-              disabled={trusted !== true}
-              aria-label="Offline mode"
-            />
-          </div>
+    <Card
+      data-testid="offline-mode-card"
+      title="Offline mode (beta)"
+      icon={WifiOff}
+      tone="muted"
+      info="Saves edits on this device while offline and syncs them later. Home and Accounts open from saved data. Trusted devices only. Copies are encrypted and wiped on sign-out; turn off on shared computers. Unsent changes survive an unexpected sign-out."
+      infoLabel="About offline mode"
+      action={
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-sm text-muted-foreground" data-testid="offline-mode-status">{status}</span>
+          <Field
+            control="switch"
+            checked={on}
+            onCheckedChange={(v) => void onChange(v)}
+            disabled={trusted !== true}
+            aria-label="Offline mode"
+          />
         </div>
-      </CardHeader>
+      }
+    >
       {enabled && trusted === true && (
-        <CardContent data-testid="offline-key-section" className="space-y-2">
+        <div data-testid="offline-key-section" className="space-y-2">
           <p className="text-sm font-medium">On-device key</p>
           <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-key-age">
             {key.info
@@ -77,12 +72,10 @@ export function OfflineModeCard() {
           {key.last === "failed" && (
             <p className="text-xs text-destructive" data-testid="offline-key-failed">Rotation failed. Nothing lost; retry.</p>
           )}
-        </CardContent>
+        </div>
       )}
       {untrusted && (
-        <CardContent>
-          <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-mode-untrusted">Trusted devices only</p>
-        </CardContent>
+        <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-mode-untrusted">Trusted devices only</p>
       )}
       <Overlay
         variant="confirm"

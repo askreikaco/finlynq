@@ -11,7 +11,6 @@ import { Suspense, useEffect } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Layers } from "lucide-react";
-import { SectionCard } from "@/components/mobile/section-card";
 import { ListRow } from "@/components/mobile/list-row";
 import { SectionPage } from "@/components/templates/section-page";
 import {
@@ -20,6 +19,7 @@ import {
   isOpKey,
   opHref,
 } from "@/components/portfolio/forms/op-catalog";
+import { Card } from "@/components/ui/card";
 
 function PortfolioNewInner() {
   const router = useRouter();
@@ -53,11 +53,11 @@ function PortfolioNewInner() {
       {OP_GROUPS.map((group) => {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
-          <SectionCard key={group.key} list label={group.label} icon={Layers} tone="indigo">
+          <Card key={group.key} frame="list" title={group.label} icon={Layers} tone="indigo">
             {ops.map((o) => (
               <ListRow key={o.key} href={opHref(o.key)} icon={o.icon} tile="primary" title={o.title} subtitle={o.description} />
             ))}
-          </SectionCard>
+          </Card>
         );
       })}
     </SectionPage>

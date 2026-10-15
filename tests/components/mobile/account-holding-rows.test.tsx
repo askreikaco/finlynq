@@ -74,7 +74,7 @@ describe("HoldingRow", () => {
 
 describe("MetricGrid", () => {
   it("MetricGrid is 2-col; counts plain, money via Amount", () => {
-    render(<MetricGrid metrics={[{ icon: Wallet, label: "Holdings", value: <span>4</span> }, { icon: Wallet, label: "Cost", value: 1234.5, currency: "USD" }]} />);
+    render(<MetricGrid metrics={[{ icon: Wallet, title: "Holdings", value: <span>4</span> }, { icon: Wallet, title: "Cost", value: 1234.5, currency: "USD" }]} />);
     expect(cls(document.querySelector("[data-slot=metric-grid]")!)).toContain("grid-cols-2");
     expect(screen.getByText("4")).toBeTruthy();
     expect(screen.getByText("$1,234.50")).toBeTruthy();

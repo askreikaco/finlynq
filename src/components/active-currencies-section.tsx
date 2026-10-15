@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Check, Coins, Globe, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Check, Coins, Loader2, Plus, X } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { currencyLabel, isSupportedCurrency } from "@/lib/fx/supported-currencies";
 
@@ -147,156 +146,148 @@ export function ActiveCurrenciesSection() {
   const commonQuickPicks = COMMON_CURRENCIES.filter((c) => !active.includes(c));
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-            <Globe className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={Coins} tone="amber">
-              Currencies
-              <InfoTip label="About currencies" text="Only these currencies appear in dropdowns (transactions, accounts, FX rates)." />
-            </CardTitle>
-            {source === "derived" ? (
+    <Card
+      title="Currencies"
+      icon={Coins}
+      tone="amber"
+      info="Only these currencies appear in dropdowns (transactions, accounts, FX rates)."
+      infoLabel="About currencies"
+      description={<>{source === "derived" ? (
               <span className="mt-1 block text-xs text-warning">
                 Taken from your data. Add or remove one to lock it in.
               </span>
+            ) : null}</>}
+      className="space-y-3"
+    >
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {loading ? (
+        <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
+      ) : (
+        <>
+          {/* Active chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {active.length === 0 ? (
+              <p className="text-xs text-muted-foreground" data-keep="status">No currencies selected.</p>
             ) : null}
+            {active.map((c) => (
+              <button
+                key={c}
+                onClick={() => removeCode(c)}
+                disabled={saving}
+                className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:border-destructive/50 hover:bg-destructive/10 transition-colors"
+                title={`${currencyLabel(c)}${isSupportedCurrency(c) ? "" : " (custom, needs a rate)"}`}
+              >
+                <span className="font-mono font-semibold">{c}</span>
+                <span className="text-muted-foreground">{currencyLabel(c)}</span>
+                <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+              </button>
+            ))}
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-        {loading ? (
-          <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
-        ) : (
-          <>
-            {/* Active chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {active.length === 0 ? (
-                <p className="text-xs text-muted-foreground" data-keep="status">No currencies selected.</p>
-              ) : null}
-              {active.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => removeCode(c)}
-                  disabled={saving}
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:border-destructive/50 hover:bg-destructive/10 transition-colors"
-                  title={`${currencyLabel(c)}${isSupportedCurrency(c) ? "" : " (custom, needs a rate)"}`}
-                >
-                  <span className="font-mono font-semibold">{c}</span>
-                  <span className="text-muted-foreground">{currencyLabel(c)}</span>
-                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
-                </button>
-              ))}
-            </div>
-
-            {/* Add */}
-            {showPicker ? (
-              <div className="rounded-md border border-border/50 p-3 space-y-3">
-                <div className="space-y-1">
-                  <Field
-                    label="Add currency"
-                    info="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one."
-                    infoLabel="About adding a currency"
-                    placeholder="e.g. EUR, AED, JPY, BTC, XAU…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value.toUpperCase())}
-                    maxLength={4}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && (lookup.status === "supported" || lookup.status === "custom")) {
-                        addCode(lookup.code);
-                      }
-                    }}
-                    compact
-                    controlClassName="font-mono"
-                  />
-                </div>
-
-                {/* Live lookup result */}
-                {lookup.status === "invalid" ? (
-                  <p className="text-xs text-muted-foreground" data-keep="status">Enter a 3-4 letter code.</p>
-                ) : lookup.status === "already" ? (
-                  <p className="text-xs text-muted-foreground" data-keep="status">
-                    <span className="font-mono font-semibold">{lookup.code}</span> is already in your list.
-                  </p>
-                ) : lookup.status === "loading" ? (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-keep="status">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking <span className="font-mono font-semibold">{lookup.code}</span>…
-                  </p>
-                ) : lookup.status === "supported" ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-pos/30 bg-pos/5 px-3 py-2">
-                    <div className="min-w-0 text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-pos">
-                        <Check className="h-3.5 w-3.5" /> Supported
-                      </span>
-                      <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
-                      <span className="ml-1 text-muted-foreground">{currencyLabel(lookup.code)}</span>
-                      <span className="block text-muted-foreground mt-0.5">
-                        {lookup.code === "USD"
-                          ? "Anchor currency."
-                          : `1 ${lookup.code} ≈ ${lookup.rate.toFixed(4)} USD · ${sourceLabel(lookup.source)}`}
-                      </span>
-                    </div>
-                    <Button size="sm" onClick={() => addCode(lookup.code)} disabled={saving}>Add</Button>
-                  </div>
-                ) : lookup.status === "custom" ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2">
-                    <div className="min-w-0 text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-warning">
-                        <AlertTriangle className="h-3.5 w-3.5" /> Custom currency
-                      </span>
-                      <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
-                      <span className="block text-muted-foreground mt-0.5">
-                        No market rate. Add it, then set a custom rate below.
-                      </span>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
-                  </div>
-                ) : lookup.status === "error" ? (
-                  <p className="text-xs text-muted-foreground" data-keep="status">
-                    Check failed for <span className="font-mono font-semibold">{lookup.code}</span> — add as custom.
-                    <Button size="sm" variant="ghost" className="ml-1 h-6 px-2 text-xs" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
-                  </p>
-                ) : null}
-
-                {/* Common quick-picks */}
-                {commonQuickPicks.length > 0 ? (
-                  <div className="border-t border-border/50 pt-3 space-y-1.5">
-                    <span className="block text-xs font-medium">Common</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {commonQuickPicks.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => addCode(c)}
-                          disabled={saving}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background px-2.5 py-1 text-xs hover:border-primary/60 hover:bg-primary/5 transition-colors"
-                        >
-                          <span className="font-mono font-semibold">{c}</span>
-                          <span className="text-muted-foreground">{currencyLabel(c)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="flex justify-end pt-1">
-                  <Button size="sm" variant="ghost" onClick={() => { setShowPicker(false); setQuery(""); setLookup({ status: "idle" }); }}>
-                    Done
-                  </Button>
-                </div>
+          {/* Add */}
+          {showPicker ? (
+            <div className="rounded-md border border-border/50 p-3 space-y-3">
+              <div className="space-y-1">
+                <Field
+                  label="Add currency"
+                  info="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one."
+                  infoLabel="About adding a currency"
+                  placeholder="e.g. EUR, AED, JPY, BTC, XAU…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value.toUpperCase())}
+                  maxLength={4}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (lookup.status === "supported" || lookup.status === "custom")) {
+                      addCode(lookup.code);
+                    }
+                  }}
+                  compact
+                  controlClassName="font-mono"
+                />
               </div>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setShowPicker(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Add currency
-              </Button>
-            )}
-          </>
-        )}
-      </CardContent>
+
+              {/* Live lookup result */}
+              {lookup.status === "invalid" ? (
+                <p className="text-xs text-muted-foreground" data-keep="status">Enter a 3-4 letter code.</p>
+              ) : lookup.status === "already" ? (
+                <p className="text-xs text-muted-foreground" data-keep="status">
+                  <span className="font-mono font-semibold">{lookup.code}</span> is already in your list.
+                </p>
+              ) : lookup.status === "loading" ? (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-keep="status">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking <span className="font-mono font-semibold">{lookup.code}</span>…
+                </p>
+              ) : lookup.status === "supported" ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-pos/30 bg-pos/5 px-3 py-2">
+                  <div className="min-w-0 text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-pos">
+                      <Check className="h-3.5 w-3.5" /> Supported
+                    </span>
+                    <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
+                    <span className="ml-1 text-muted-foreground">{currencyLabel(lookup.code)}</span>
+                    <span className="block text-muted-foreground mt-0.5">
+                      {lookup.code === "USD"
+                        ? "Anchor currency."
+                        : `1 ${lookup.code} ≈ ${lookup.rate.toFixed(4)} USD · ${sourceLabel(lookup.source)}`}
+                    </span>
+                  </div>
+                  <Button size="sm" onClick={() => addCode(lookup.code)} disabled={saving}>Add</Button>
+                </div>
+              ) : lookup.status === "custom" ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2">
+                  <div className="min-w-0 text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-warning">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Custom currency
+                    </span>
+                    <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
+                    <span className="block text-muted-foreground mt-0.5">
+                      No market rate. Add it, then set a custom rate below.
+                    </span>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
+                </div>
+              ) : lookup.status === "error" ? (
+                <p className="text-xs text-muted-foreground" data-keep="status">
+                  Check failed for <span className="font-mono font-semibold">{lookup.code}</span> — add as custom.
+                  <Button size="sm" variant="ghost" className="ml-1 h-6 px-2 text-xs" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
+                </p>
+              ) : null}
+
+              {/* Common quick-picks */}
+              {commonQuickPicks.length > 0 ? (
+                <div className="border-t border-border/50 pt-3 space-y-1.5">
+                  <span className="block text-xs font-medium">Common</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {commonQuickPicks.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => addCode(c)}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background px-2.5 py-1 text-xs hover:border-primary/60 hover:bg-primary/5 transition-colors"
+                      >
+                        <span className="font-mono font-semibold">{c}</span>
+                        <span className="text-muted-foreground">{currencyLabel(c)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex justify-end pt-1">
+                <Button size="sm" variant="ghost" onClick={() => { setShowPicker(false); setQuery(""); setLookup({ status: "idle" }); }}>
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setShowPicker(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Add currency
+            </Button>
+          )}
+        </>
+      )}
     </Card>
   );
 }

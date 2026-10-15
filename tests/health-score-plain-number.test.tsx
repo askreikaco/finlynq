@@ -6,7 +6,7 @@
  * even when the display currency is non-USD (e.g., VND which uses ₫, or CAD which uses C$).
  *
  * This test prevents regressions of the bug where health.score was passed as a
- * number to MetricCard, causing it to render as currency (e.g., "C$68,00").
+ * number to Card, causing it to render as currency (e.g., "C$68,00").
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup, waitFor } from "@testing-library/react";
@@ -37,10 +37,6 @@ afterEach(() => {
 });
 
 // Mock UI components
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children, ...props }: React.ComponentProps<'div'>) => <div data-testid="card" {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: React.ComponentProps<'div'>) => <div {...props}>{children}</div>,
-}));
 
 vi.mock("lucide-react", () => ({
   Activity: () => <span>Activity</span>,
@@ -71,7 +67,7 @@ vi.mock("@/app/(app)/dashboard/_components/health-info-dialog", () => ({
 
 // Import AFTER mocks
 import { HealthScoreCard } from "@/app/(app)/dashboard/_components/health-score-card";
-import { MetricCard } from "@/components/metric-card";
+import { Card } from "@/components/ui/card";
 import { CurrencyProvider } from "@/components/currency-provider";
 
 function TestWrapper({ children }: { children: ReactNode; currency?: string }) {
@@ -270,12 +266,12 @@ describe("HealthScoreCard Plain Number Rendering (CAD)", () => {
   });
 });
 
-describe("MetricCard Plain Number vs Currency Guard Tests", () => {
+describe("Card Plain Number vs Currency Guard Tests", () => {
   it("Guard: numeric value still renders as currency (regression protection)", async () => {
     const { container } = render(
       <TestWrapper currency="VND">
-        <MetricCard
-          label="Account Balance"
+        <Card
+          title="Account Balance"
           icon={MockIcon}
           value={5000000}
         />

@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
@@ -241,73 +241,68 @@ export default function AdminDiagnosticsPage() {
       </p>
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/30 bg-destructive/10" className="py-3 text-sm text-destructive">{error}
         </Card>
       )}
 
       {/* Summary + filters */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4 text-sm">
-          {(data?.summary ?? []).length === 0 && (
-            <span className="text-muted-foreground">No entries recorded yet.</span>
-          )}
-          {(data?.summary ?? []).map((s) => (
-            <div key={s.kind} className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                {KIND_LABEL[s.kind] ?? s.kind}
+      <Card className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4 text-sm">
+        {(data?.summary ?? []).length === 0 && (
+          <span className="text-muted-foreground">No entries recorded yet.</span>
+        )}
+        {(data?.summary ?? []).map((s) => (
+          <div key={s.kind} className="flex flex-col">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              {KIND_LABEL[s.kind] ?? s.kind}
+            </span>
+            <span className="font-semibold tabular-nums">
+              {s.total.toLocaleString()}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                ({s.last24h.toLocaleString()} / 24h)
               </span>
-              <span className="font-semibold tabular-nums">
-                {s.total.toLocaleString()}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
-                  ({s.last24h.toLocaleString()} / 24h)
-                </span>
-              </span>
-            </div>
-          ))}
-
-          <div className="ml-auto flex items-center gap-2">
-            <Field
-              control="select"
-              value={kind}
-              onValueChange={(v) => setKind(v)}
-              options={[
-                { value: "", label: "All kinds" },
-                { value: "slow_query", label: "Slow query" },
-                { value: "db_error", label: "DB error" },
-                { value: "api_error", label: "API error" },
-                { value: "outbound_error", label: "Outbound API" },
-              ]}
-            />
-            <Field
-              control="number"
-              inputMode="numeric"
-              placeholder="min ms"
-              value={minMs}
-              onChange={(e) => setMinMs(e.target.value)}
-              className="w-24"
-            />
+            </span>
           </div>
-        </CardContent>
+        ))}
+
+        <div className="ml-auto flex items-center gap-2">
+          <Field
+            control="select"
+            value={kind}
+            onValueChange={(v) => setKind(v)}
+            options={[
+              { value: "", label: "All kinds" },
+              { value: "slow_query", label: "Slow query" },
+              { value: "db_error", label: "DB error" },
+              { value: "api_error", label: "API error" },
+              { value: "outbound_error", label: "Outbound API" },
+            ]}
+          />
+          <Field
+            control="number"
+            inputMode="numeric"
+            placeholder="min ms"
+            value={minMs}
+            onChange={(e) => setMinMs(e.target.value)}
+            className="w-24"
+          />
+        </div>
       </Card>
 
       {/* Rows */}
-      <Card>
-        <CardContent className="p-2">
-          <ColumnList<Row>
-            columns={columns}
-            rows={rows}
-            rowKey={(r) => r.id}
-            rowClassName={(r) =>
-              r.kind === "db_error" || r.kind === "api_error" ? "bg-destructive/5" : undefined
-            }
-            emptyState={
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                {loading ? "Loading…" : "No entries match — the log is clean."}
-              </p>
-            }
-          />
-        </CardContent>
+      <Card className="p-2">
+        <ColumnList<Row>
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          rowClassName={(r) =>
+            r.kind === "db_error" || r.kind === "api_error" ? "bg-destructive/5" : undefined
+          }
+          emptyState={
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {loading ? "Loading…" : "No entries match — the log is clean."}
+            </p>
+          }
+        />
       </Card>
 
       <Overlay

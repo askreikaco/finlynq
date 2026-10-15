@@ -1,15 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import {
   AlertCircle,
   CheckCircle2,
@@ -336,9 +331,11 @@ export function GenericCsvConnectorTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle icon={FileSpreadsheet} tone="emerald" infoLabel="About generic csv (full ledger)" info={<>Migrate a whole-portfolio export from any app — one CSV with{" "}
+      <Card
+        title="Generic CSV (full ledger)"
+        icon={FileSpreadsheet}
+        tone="emerald"
+        info={<>Migrate a whole-portfolio export from any app — one CSV with{" "}
             <span className="font-mono">date</span>,{" "}
             <span className="font-mono">amount</span>,{" "}
             <span className="font-mono">account</span> columns (plus optional
@@ -349,235 +346,235 @@ export function GenericCsvConnectorTab() {
             transfer</span>, also map the{" "}
             <span className="font-mono">amount received</span> and{" "}
             <span className="font-mono">currency received</span> columns so each
-            side is recorded in its own currency.</>}>Generic CSV (full ledger)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
-              <div className="flex-1">{error}</div>
-            </div>
-          )}
+            side is recorded in its own currency.</>}
+        infoLabel="About generic csv (full ledger)"
+        className="space-y-4"
+      >
+        {error && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
+            <div className="flex-1">{error}</div>
+          </div>
+        )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-3.5 w-3.5 mr-1.5" />
-              {file ? "Choose a different file" : "Choose CSV file"}
-            </Button>
-            {file && (
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
+            {file ? "Choose a different file" : "Choose CSV file"}
+          </Button>
+          {file && (
+            <>
+              <Badge variant="secondary" className="font-mono text-xs">
+                {file.name} ({Math.round(file.size / 1024)} KB)
+              </Badge>
+              <Button size="sm" onClick={() => runPreview()} disabled={busy}>
+                {stage === "previewing" && (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                )}
+                {stage === "executed" ? "Re-preview" : "Preview import"}
+              </Button>
+            </>
+          )}
+        </div>
+
+        {showMapper && headers.length > 0 && (
+          <div className="space-y-4">
+            {/* Column mapping */}
+            <div className="space-y-2">
+              <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                Match columns
+                <InfoTip
+                  label="About matching columns"
+                  text="Tell Finlynq which column holds each field. Required fields are marked with *."
+                />
+              </h3>
+              <div className="grid gap-2 regular:grid-cols-2">
+                {FIELDS.map((f) => (
+                  <Field
+                    key={f.key}
+                    label={f.label}
+                    required={f.required}
+                    control="select"
+                    compact
+                    value={mapping[f.key] ?? NONE}
+                    onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}
+                    placeholder="— Not mapped —"
+                    invalid={f.required && !mapping[f.key]}
+                    options={[
+                      ...(!f.required ? [{ value: NONE, label: "— Not mapped —" }] : []),
+                      ...headers.map((h) => ({ value: h, label: h })),
+                    ]}
+                  />
+                ))}
+              </div>
+              {missingRequired.length > 0 && (
+                <p className="text-xs text-destructive">
+                  Map the required field(s): {missingRequired.join(", ")}.
+                </p>
+              )}
+            </div>
+
+            {/* Sample preview */}
+            {sampleRows.length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-xs font-medium text-muted-foreground">
+                  First {sampleRows.length} rows
+                </h4>
+                <div className="max-h-64 overflow-y-auto">
+                  <Card frame="list">
+                    {sampleRows.map((row, i) => (
+                      <ListRow
+                        key={i}
+                        title={String(row[headers[0]] ?? "") || `Row ${i + 1}`}
+                        subtitle={headers.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
+                      />
+                    ))}
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Options */}
+            <div className="flex flex-wrap items-center gap-4">
+              <Field
+                label="Default currency"
+                value={defaultCurrency}
+                onChange={(e) => setDefaultCurrency(e.target.value.toUpperCase())}
+                onBlur={() => mapping.date && mapping.amount && mapping.account && runPreview(mapping)}
+                placeholder="USD"
+                maxLength={10}
+                compact
+                controlClassName="font-mono"
+                className="w-24"
+              />
+              <Field
+                label="Import opening-balance rows"
+                control="switch"
+                checked={includeOpening}
+                onCheckedChange={(v) => {
+                  setIncludeOpening(v);
+                  if (mapping.date && mapping.amount && mapping.account) runPreview(mapping);
+                }}
+              />
+            </div>
+
+            {summary && (
               <>
-                <Badge variant="secondary" className="font-mono text-xs">
-                  {file.name} ({Math.round(file.size / 1024)} KB)
-                </Badge>
-                <Button size="sm" onClick={() => runPreview()} disabled={busy}>
-                  {stage === "previewing" && (
+                <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono">
+                  {summary.transactions.toLocaleString(getDisplayLocale())} transactions ·{" "}
+                  {summary.transfers} transfers · {summary.categories.length}{" "}
+                  categories
+                  {summary.rowErrors.length > 0 && (
+                    <span className="text-warning">
+                      {" "}
+                      · {summary.rowErrors.length} rows skipped
+                    </span>
+                  )}
+                </div>
+
+                <IssueDetails
+                  title="Rows skipped while reading the file"
+                  items={summary.rowErrors.map((e) => `Row ${e.row}: ${e.reason}`)}
+                />
+
+                <div className="space-y-2">
+                  <h3 className="flex items-center gap-0.5 text-sm font-medium">
+                    Map accounts
+                    <InfoTip
+                      label="About mapping accounts"
+                      text="Each source account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
+                    />
+                  </h3>
+                  <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {summary.accounts.map((p) => {
+                      const sel = target[p.sourceName] ?? "new";
+                      return (
+                        <div
+                          key={p.sourceName}
+                          className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
+                        >
+                          <div className="flex-1 min-w-[160px]">
+                            <span className="font-medium">{p.sourceName}</span>
+                            <span className="text-muted-foreground text-xs ml-2 font-mono">
+                              {p.currency} · {p.txCount} tx
+                            </span>
+                          </div>
+                          <Field
+                            control="combobox"
+                            value={sel}
+                            onValueChange={(v) =>
+                              setTarget((prev) => ({
+                                ...prev,
+                                [p.sourceName]: v || "new",
+                              }))
+                            }
+                            options={accountItems}
+                            placeholder="Select account"
+                            searchPlaceholder="Search accounts…"
+                            emptyMessage="No matching account"
+                            compact
+                            className="w-[220px]"
+                          />
+                          {sel === "new" && (
+                            <Field
+                              control="select"
+                              value={newType[p.sourceName] ?? "A"}
+                              onValueChange={(v) =>
+                                setNewType((prev) => ({
+                                  ...prev,
+                                  [p.sourceName]: (v as "A" | "L") ?? "A",
+                                }))
+                              }
+                              compact
+                              className="w-[110px]"
+                              options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <Button onClick={runExecute} disabled={busy}>
+                  {stage === "executing" && (
                     <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   )}
-                  {stage === "executed" ? "Re-preview" : "Preview import"}
+                  Import {summary.transactions.toLocaleString(getDisplayLocale())} transactions
                 </Button>
               </>
             )}
           </div>
+        )}
 
-          {showMapper && headers.length > 0 && (
-            <div className="space-y-4">
-              {/* Column mapping */}
-              <div className="space-y-2">
-                <h3 className="flex items-center gap-0.5 text-sm font-medium">
-                  Match columns
-                  <InfoTip
-                    label="About matching columns"
-                    text="Tell Finlynq which column holds each field. Required fields are marked with *."
-                  />
-                </h3>
-                <div className="grid gap-2 regular:grid-cols-2">
-                  {FIELDS.map((f) => (
-                    <Field
-                      key={f.key}
-                      label={f.label}
-                      required={f.required}
-                      control="select"
-                      compact
-                      value={mapping[f.key] ?? NONE}
-                      onValueChange={(v) => setFieldHeader(f.key, v ?? NONE)}
-                      placeholder="— Not mapped —"
-                      invalid={f.required && !mapping[f.key]}
-                      options={[
-                        ...(!f.required ? [{ value: NONE, label: "— Not mapped —" }] : []),
-                        ...headers.map((h) => ({ value: h, label: h })),
-                      ]}
-                    />
-                  ))}
-                </div>
-                {missingRequired.length > 0 && (
-                  <p className="text-xs text-destructive">
-                    Map the required field(s): {missingRequired.join(", ")}.
-                  </p>
-                )}
-              </div>
-
-              {/* Sample preview */}
-              {sampleRows.length > 0 && (
-                <div className="space-y-1">
-                  <h4 className="text-xs font-medium text-muted-foreground">
-                    First {sampleRows.length} rows
-                  </h4>
-                  <div className="max-h-64 overflow-y-auto">
-                    <SectionCard list>
-                      {sampleRows.map((row, i) => (
-                        <ListRow
-                          key={i}
-                          title={String(row[headers[0]] ?? "") || `Row ${i + 1}`}
-                          subtitle={headers.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
-                        />
-                      ))}
-                    </SectionCard>
-                  </div>
-                </div>
-              )}
-
-              {/* Options */}
-              <div className="flex flex-wrap items-center gap-4">
-                <Field
-                  label="Default currency"
-                  value={defaultCurrency}
-                  onChange={(e) => setDefaultCurrency(e.target.value.toUpperCase())}
-                  onBlur={() => mapping.date && mapping.amount && mapping.account && runPreview(mapping)}
-                  placeholder="USD"
-                  maxLength={10}
-                  compact
-                  controlClassName="font-mono"
-                  className="w-24"
-                />
-                <Field
-                  label="Import opening-balance rows"
-                  control="switch"
-                  checked={includeOpening}
-                  onCheckedChange={(v) => {
-                    setIncludeOpening(v);
-                    if (mapping.date && mapping.amount && mapping.account) runPreview(mapping);
-                  }}
-                />
-              </div>
-
-              {summary && (
-                <>
-                  <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono">
-                    {summary.transactions.toLocaleString(getDisplayLocale())} transactions ·{" "}
-                    {summary.transfers} transfers · {summary.categories.length}{" "}
-                    categories
-                    {summary.rowErrors.length > 0 && (
-                      <span className="text-warning">
-                        {" "}
-                        · {summary.rowErrors.length} rows skipped
-                      </span>
-                    )}
-                  </div>
-
-                  <IssueDetails
-                    title="Rows skipped while reading the file"
-                    items={summary.rowErrors.map((e) => `Row ${e.row}: ${e.reason}`)}
-                  />
-
-                  <div className="space-y-2">
-                    <h3 className="flex items-center gap-0.5 text-sm font-medium">
-                      Map accounts
-                      <InfoTip
-                        label="About mapping accounts"
-                        text="Each source account becomes a Finlynq account. Matched names are linked automatically; the rest are created new."
-                      />
-                    </h3>
-                    <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                      {summary.accounts.map((p) => {
-                        const sel = target[p.sourceName] ?? "new";
-                        return (
-                          <div
-                            key={p.sourceName}
-                            className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
-                          >
-                            <div className="flex-1 min-w-[160px]">
-                              <span className="font-medium">{p.sourceName}</span>
-                              <span className="text-muted-foreground text-xs ml-2 font-mono">
-                                {p.currency} · {p.txCount} tx
-                              </span>
-                            </div>
-                            <Field
-                              control="combobox"
-                              value={sel}
-                              onValueChange={(v) =>
-                                setTarget((prev) => ({
-                                  ...prev,
-                                  [p.sourceName]: v || "new",
-                                }))
-                              }
-                              options={accountItems}
-                              placeholder="Select account"
-                              searchPlaceholder="Search accounts…"
-                              emptyMessage="No matching account"
-                              compact
-                              className="w-[220px]"
-                            />
-                            {sel === "new" && (
-                              <Field
-                                control="select"
-                                value={newType[p.sourceName] ?? "A"}
-                                onValueChange={(v) =>
-                                  setNewType((prev) => ({
-                                    ...prev,
-                                    [p.sourceName]: (v as "A" | "L") ?? "A",
-                                  }))
-                                }
-                                compact
-                                className="w-[110px]"
-                                options={[{ value: "A", label: "Asset" }, { value: "L", label: "Liability" }]}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <Button onClick={runExecute} disabled={busy}>
-                    {stage === "executing" && (
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    )}
-                    Import {summary.transactions.toLocaleString(getDisplayLocale())} transactions
-                  </Button>
-                </>
-              )}
+        {result && stage === "executed" && (
+          <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-1">
+            <div className="font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-pos" />
+              Import complete
             </div>
-          )}
-
-          {result && stage === "executed" && (
-            <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-1">
-              <div className="font-medium flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-pos" />
-                Import complete
-              </div>
-              <div className="text-xs text-muted-foreground font-mono space-y-0.5 mt-1">
-                <div>Imported: {result.imported}</div>
-                <div>Skipped duplicates: {result.skippedDuplicates}</div>
-                <div>Accounts created: {result.accountsCreated}</div>
-                <div>Categories created: {result.categoriesCreated}</div>
-              </div>
-              {result.errors && result.errors.length > 0 && (
-                <IssueDetails title="Warnings" items={result.errors} />
-              )}
+            <div className="text-xs text-muted-foreground font-mono space-y-0.5 mt-1">
+              <div>Imported: {result.imported}</div>
+              <div>Skipped duplicates: {result.skippedDuplicates}</div>
+              <div>Accounts created: {result.accountsCreated}</div>
+              <div>Categories created: {result.categoriesCreated}</div>
             </div>
-          )}
-        </CardContent>
+            {result.errors && result.errors.length > 0 && (
+              <IssueDetails title="Warnings" items={result.errors} />
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );

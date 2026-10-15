@@ -2,7 +2,7 @@
 
 /**
  * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
- * inset groups (SectionCard `list` + src/components/mobile/inset-row.tsx), one column on phone, a grid of group cards (2 cols at regular) from regular up; at wide it is column 1 of the cascading columns (src/components/mobile/column-nav.tsx): one single-column list, current row marked. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
+ * inset groups (Card `list` + src/components/mobile/inset-row.tsx), one column on phone, a grid of group cards (2 cols at regular) from regular up; at wide it is column 1 of the cascading columns (src/components/mobile/column-nav.tsx): one single-column list, current row marked. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
  */
 
 import { useEffect, useRef, useState, useMemo, memo } from "react";
@@ -18,9 +18,9 @@ import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
 import { ThemePicker, type ThemeChoice } from "@/components/mobile/inset-row";
 import { ListRow } from "@/components/mobile/list-row";
-import { SectionCard } from "@/components/mobile/section-card";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
+import { Card } from "@/components/ui/card";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -226,17 +226,17 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
       {/* Card groups: one column on phone, 2 at regular, 3 at wide; each group is one grid cell (never split). */}
       <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-1" data-testid="more-grid">
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
-        <SectionCard list label="Account" {...groupLabelIcon("Account")} data-testid="more-account">
+        <Card frame="list" title="Account" {...groupLabelIcon("Account")} data-testid="more-account">
           <AccountSwitcher variant="list" />
-        </SectionCard>
+        </Card>
 
         {groups.map((g) => (
-          <SectionCard
+          <Card
             key={g.id}
-            list
-            label={g.header}
+            frame="list"
+            title={g.header}
             {...groupLabelIcon(g.header)}
-            labelPlacement={g.id === "explore" ? "outside" : "inside"}
+            titlePlacement={g.id === "explore" ? "outside" : "inside"}
             data-testid={`more-group-${g.id}`}
           >
             {g.rows.map((r) => (
@@ -251,16 +251,16 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
                 data-testid="more-row"
               />
             ))}
-          </SectionCard>
+          </Card>
         ))}
 
-        <SectionCard list label="Appearance" {...groupLabelIcon("Appearance")} data-testid="more-group-appearance">
+        <Card frame="list" title="Appearance" {...groupLabelIcon("Appearance")} data-testid="more-group-appearance">
           <ThemePicker value={current} onChange={(v) => setTheme(v)} />
-        </SectionCard>
+        </Card>
 
-        <SectionCard list data-testid="more-group-session">
+        <Card frame="list" data-testid="more-group-session">
           <ListRow tone="destructive" icon={LogOut} title="Log out" onPress={signOut} data-testid="more-signout" />
-        </SectionCard>
+        </Card>
       </div>
     </div>
   );

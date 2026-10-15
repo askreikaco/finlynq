@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 // Batch 7 dashboard cards (Key metrics, Net Worth hero, Financial health, Action Center, Weekly Recap, Quick
-// Import, Income vs Expenses, Spending by Category, Insights): one layout at every size. Cards are SectionCard
-// (or the shared MetricCard), with no ui/card markup and no regular:/wide: layout switch.
+// Import, Income vs Expenses, Spending by Category, Insights): one layout at every size. Cards are Card
+// (or the shared Card), with no ui/card markup and no regular:/wide: layout switch.
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
@@ -41,15 +41,15 @@ const DASHBOARD_CARDS_CONVERTED = [
   "src/app/(app)/dashboard/_components/insights-section.tsx",
 ];
 
-/** Cards that used to hand-build their own ui/card markup. They now sit in SectionCard. */
+/** Cards that used to hand-build their own ui/card markup. They now sit in Card. */
 const WAS_UI_CARD = DASHBOARD_CARDS_CONVERTED.filter((f) => !/key-metrics|net-worth-hero-card|health-score-card/.test(f));
 
 afterEach(cleanup);
 
-describe("Batch 7: converted dashboard cards carry no ui/card markup and no regular:/wide: switch", () => {
+describe("Batch 7: converted dashboard cards carry no shadcn card-part markup and no regular:/wide: switch", () => {
   for (const f of DASHBOARD_CARDS_CONVERTED) {
-    it(`${f} imports no ui/card`, () => {
-      expect(read(f)).not.toMatch(/from "@\/components\/ui\/card"/);
+    it(`${f} uses no shadcn card parts`, () => {
+      expect(read(f)).not.toMatch(/\b(CardHeader|CardContent|CardTitle|CardDescription|CardFooter|CardAction)\b/);
     });
     it(`${f} has no regular:/wide: layout switch`, () => {
       const src = read(f);
@@ -60,10 +60,10 @@ describe("Batch 7: converted dashboard cards carry no ui/card markup and no regu
   }
 });
 
-describe("Batch 7: former ui/card cards render through SectionCard", () => {
+describe("Batch 7: former ui/card cards render through Card", () => {
   for (const f of WAS_UI_CARD) {
-    it(`${f} wraps its card in SectionCard`, () => {
-      expect(read(f)).toMatch(/<SectionCard\b/);
+    it(`${f} wraps its card in Card`, () => {
+      expect(read(f)).toMatch(/<Card\b/);
     });
   }
 });
@@ -71,7 +71,7 @@ describe("Batch 7: former ui/card cards render through SectionCard", () => {
 describe("Batch 7: Key metrics render", () => {
   const health = { savingsRatePct: 25, dti: { pct: 30, reliable: true } } as never;
 
-  it("two MetricCards (Savings Rate, Debt-to-Income) with their figures and captions", () => {
+  it("two Cards (Savings Rate, Debt-to-Income) with their figures and captions", () => {
     render(<KeyMetrics health={health} />);
     expect(screen.getByText("Savings Rate")).toBeTruthy();
     expect(screen.getByText("Debt-to-Income")).toBeTruthy();

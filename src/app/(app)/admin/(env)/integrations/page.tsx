@@ -15,8 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Mail, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { Field } from "@/components/ui/field";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 
 type Source = "db" | "env" | "none";
 type SecretField = "brevoApiKey" | "resendApiKey" | "smtpUser" | "smtpPass";
@@ -246,9 +247,9 @@ export default function AdminIntegrationsPage() {
   if (loading) {
     return (
       <SectionPage id="admin-integrations" title="Integrations" width="report" center>
-        <SectionCard>
+        <Card>
           <p className="text-sm">Loading...</p>
-        </SectionCard>
+        </Card>
       </SectionPage>
     );
   }
@@ -268,17 +269,17 @@ export default function AdminIntegrationsPage() {
   return (
     <SectionPage id="admin-integrations" title="Integrations" width="report" center>
       {error && (
-        <SectionCard>
+        <Card>
           <div className="flex items-start gap-3 text-destructive">
             <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
             <div>{error}</div>
           </div>
-        </SectionCard>
+        </Card>
       )}
 
       {!error && status && (
         <div data-slot="integration-cards" className={TW.grid3}>
-          <SectionCard label="Email Transport Status" icon={Mail} tone="cyan" className="space-y-4">
+          <Card title="Email Transport Status" icon={Mail} tone="cyan" className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -313,10 +314,10 @@ export default function AdminIntegrationsPage() {
                 ))}
               </ul>
             </div>
-          </SectionCard>
+          </Card>
 
-          <SectionCard
-            label={
+          <Card
+            title={
               <>
                 Settings
                 <InfoTip
@@ -464,10 +465,10 @@ export default function AdminIntegrationsPage() {
                 )}
               </div>
             )}
-          </SectionCard>
+          </Card>
 
           {status.provider !== "none" ? (
-            <SectionCard label="Send a test email" icon={Send} tone="indigo">
+            <Card title="Send a test email" icon={Send} tone="indigo">
               <form onSubmit={sendTest} className="space-y-4">
                 <Field
                   label="To"
@@ -493,14 +494,14 @@ export default function AdminIntegrationsPage() {
                   {sending ? "Sending..." : "Send"}
                 </Button>
               </form>
-            </SectionCard>
+            </Card>
           ) : (
-            <SectionCard>
+            <Card>
               <div className="flex items-start gap-3 text-muted-foreground">
                 <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
                 <div>No email provider configured</div>
               </div>
-            </SectionCard>
+            </Card>
           )}
         </div>
       )}

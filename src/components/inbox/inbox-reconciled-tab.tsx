@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Check, Inbox } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import type { ReconcileData } from "./inbox-reconcile-tab";
@@ -74,10 +74,8 @@ export function InboxReconciledTab({
 
   if (!effective) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground text-center">
-          {loading ? "Loading…" : "No data."}
-        </CardContent>
+      <Card className="py-8 text-sm text-muted-foreground text-center">
+        {loading ? "Loading…" : "No data."}
       </Card>
     );
   }
@@ -115,19 +113,17 @@ export function InboxReconciledTab({
             onRowClick={handleAutoRuleRowClick}
           />
         )}
-        <Card>
-          <CardContent className="py-12 text-center space-y-3">
-            <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
-            <div>
-              <p className="text-sm font-medium">
-                Nothing reconciled yet on this account
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Once you accept a suggestion or bulk-link rows on the Reconcile
-                tab, they&apos;ll show up here.
-              </p>
-            </div>
-          </CardContent>
+        <Card className="py-12 text-center space-y-3">
+          <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div>
+            <p className="text-sm font-medium">
+              Nothing reconciled yet on this account
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Once you accept a suggestion or bulk-link rows on the Reconcile
+              tab, they&apos;ll show up here.
+            </p>
+          </div>
         </Card>
       </div>
     );

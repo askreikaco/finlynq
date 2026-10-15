@@ -2,7 +2,7 @@
 
 /**
  * LoanAmortization: THE amortization view of one loan (chart, schedule, monthly interest, what-if). Every figure comes from the
- * schedule the server computed in the loan's OWN currency. The /loans page renders it in a SectionCard (phones); the loan
+ * schedule the server computed in the loan's OWN currency. The /loans page renders it in a Card (phones); the loan
  * detail renders it `compact` in the split-view pane (charts sized to the 25% pane).
  */
 import { useEffect, useState } from "react";

@@ -14,16 +14,11 @@
  */
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AccordionItem } from "@/components/ui/accordion";
 import { InfoTip } from "@/components/ui/info-tip";
-import { BookTemplate, ChevronRight, Clock, Copy, Eye, EyeOff, FileCheck, FileSpreadsheet, Landmark, Link as LinkIcon, Mail, RefreshCw, Sliders, ToggleLeft, ToggleRight } from "lucide-react";
+import { BookTemplate, ChevronRight, Clock, Copy, Eye, EyeOff, FileCheck, FileSpreadsheet, Landmark, Link as LinkIcon, Mail, RefreshCw, Sliders } from "lucide-react";
 import Link from "next/link";
 import { TemplateManager } from "@/app/(app)/import/components/template-manager";
 import { ConnectorTab } from "@/app/(app)/import/components/connector-tab";
@@ -92,88 +87,63 @@ export function ImportSettingsCard() {
   };
 
   return (
-    <Card id="import-settings" className="scroll-mt-6">
-      <CardHeader>
-        <CardTitle icon={Sliders} tone="indigo">
-          Import settings
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-          <a href="/import" className="text-sm underline hover:text-foreground">
-            Go to Import
-          </a>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-              {confirmCsvMapping ? (
-                <ToggleRight className="h-5 w-5" />
-              ) : (
-                <ToggleLeft className="h-5 w-5" />
-              )}
-            </div>
-            <div>
-              <CardTitle icon={FileCheck} tone="cyan">
-                Confirm mapping
-                <InfoTip
-                  label="About confirm mapping"
-                  text="When on, CSV and OFX/QFX uploads show the detected field mapping for review before rows are staged. Per-account choices in the import preview still apply."
-                />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium">
-                {confirmCsvMapping ? "On" : "Off"}
-              </p>
-            </div>
-            <Field
-              control="switch"
-              checked={confirmCsvMapping}
-              onCheckedChange={() => void toggleConfirmCsvMapping()}
-              disabled={confirmCsvLoading}
-              aria-label="Confirm mapping"
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <Card
+      id="import-settings"
+      frameClassName="scroll-mt-6"
+      title="Import settings"
+      icon={Sliders}
+      tone="indigo"
+      className="space-y-6"
+    >
+        <a href="/import" className="text-sm underline hover:text-foreground">
+          Go to Import
+        </a>
+    <Card
+      title="Confirm mapping"
+      icon={FileCheck}
+      tone="cyan"
+      info="When on, CSV and OFX/QFX uploads show the detected field mapping for review before rows are staged. Per-account choices in the import preview still apply."
+      infoLabel="About confirm mapping"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium">
+            {confirmCsvMapping ? "On" : "Off"}
+          </p>
+        </div>
+        <Field
+          control="switch"
+          checked={confirmCsvMapping}
+          onCheckedChange={() => void toggleConfirmCsvMapping()}
+          disabled={confirmCsvLoading}
+          aria-label="Confirm mapping"
+        />
+      </div>
+    </Card>
 
-      {/* FINLYNQ-147 / FINLYNQ-241 — hide accounts from the /import reconcile
-          dropdown. The full list lives on a subpage to keep this page compact. */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-              <EyeOff className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Eye} tone="cyan">
-                Reconcile picker
-                <InfoTip label="About reconcile picker" text="Choose which accounts appear in the Import page account picker. Hidden accounts stay reachable by direct link." />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Link
-            href="/settings/import/reconcile-visibility"
-            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
-            Manage visibility
-            {hiddenAccountCount !== null && hiddenAccountCount > 0 && (
-              <span className="ml-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                {hiddenAccountCount} hidden
-              </span>
-            )}
-            <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
-          </Link>
-        </CardContent>
-      </Card>
-      </CardContent>
+    {/* FINLYNQ-147 / FINLYNQ-241 — hide accounts from the /import reconcile
+        dropdown. The full list lives on a subpage to keep this page compact. */}
+    <Card
+      title="Reconcile picker"
+      icon={Eye}
+      tone="cyan"
+      info="Choose which accounts appear in the Import page account picker. Hidden accounts stay reachable by direct link."
+      infoLabel="About reconcile picker"
+    >
+      <Link
+        href="/settings/import/reconcile-visibility"
+        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        <EyeOff className="h-4 w-4 text-muted-foreground" />
+        Manage visibility
+        {hiddenAccountCount !== null && hiddenAccountCount > 0 && (
+          <span className="ml-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+            {hiddenAccountCount} hidden
+          </span>
+        )}
+        <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+      </Link>
+    </Card>
     </Card>
   );
 }
@@ -323,77 +293,71 @@ export function ImportEmailItem() {
           info="Your import address, retention and email rules."
         >
           <div className="space-y-4" id="email">
-            <Card>
-              <CardHeader>
-                <CardTitle icon={Mail} tone="cyan">
-                  Address
-                  <InfoTip
-                    label="How email import works"
-                    text="Forward statements or CSVs to this address. CSVs match your saved templates. Transactions in the email body are parsed too (Import, Email tab); add an email rule to auto-record a known sender. Duplicates are skipped. Parsed imports expire after 14 days; raw emails are deleted after your retention window."
-                  />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {importEmail ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 rounded-lg border bg-muted/50 px-4 py-2.5 font-mono text-sm">
-                        {importEmail}
-                      </div>
-                      <Button variant="outline" size="sm" onClick={copyEmail}>
-                        <Copy className="h-4 w-4 mr-1" />
-                        {copied ? "Copied!" : "Copy"}
-                      </Button>
+            <Card
+              title="Address"
+              icon={Mail}
+              tone="cyan"
+              info="Forward statements or CSVs to this address. CSVs match your saved templates. Transactions in the email body are parsed too (Import, Email tab); add an email rule to auto-record a known sender. Duplicates are skipped. Parsed imports expire after 14 days; raw emails are deleted after your retention window."
+              infoLabel="How email import works"
+              className="space-y-4"
+            >
+              {importEmail ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 rounded-lg border bg-muted/50 px-4 py-2.5 font-mono text-sm">
+                      {importEmail}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={generateEmail}
-                      disabled={emailLoading}
-                    >
-                      <RefreshCw
-                        className={`h-3.5 w-3.5 mr-1.5 ${emailLoading ? "animate-spin" : ""}`}
-                      />
-                      Regenerate
+                    <Button variant="outline" size="sm" onClick={copyEmail}>
+                      <Copy className="h-4 w-4 mr-1" />
+                      {copied ? "Copied!" : "Copy"}
                     </Button>
-                  </>
-                ) : (
-                  <Button onClick={generateEmail} disabled={emailLoading}>
-                    <Mail className="h-4 w-4 mr-2" />
-                    {emailLoading
-                      ? "Generating..."
-                      : "Generate address"}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={generateEmail}
+                    disabled={emailLoading}
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 mr-1.5 ${emailLoading ? "animate-spin" : ""}`}
+                    />
+                    Regenerate
                   </Button>
-                )}
-              </CardContent>
+                </>
+              ) : (
+                <Button onClick={generateEmail} disabled={emailLoading}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  {emailLoading
+                    ? "Generating..."
+                    : "Generate address"}
+                </Button>
+              )}
             </Card>
 
             {/* FINLYNQ-138 — imported-email retention window. */}
-            <Card>
-              <CardHeader>
-                <CardTitle icon={Clock} tone="amber">
-                  Retention
-                  <InfoTip label="About retention" text="How long raw forwarded emails are kept before permanent deletion. Applies to existing emails at the next cleanup. Recorded transactions are unaffected." />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium">Keep emails for</p>
-                  </div>
-                  <Field
-                    control="select"
-                    value={String(retentionDays)}
-                    onValueChange={(v) =>
-                      v && void updateRetentionDays(parseInt(v, 10))
-                    }
-                    disabled={retentionLoading}
-                    compact
-                    className="w-[140px]"
-                    options={retentionOptions.map((d) => ({ value: String(d), label: <>{d} days</> }))}
-                  />
+            <Card
+              title="Retention"
+              icon={Clock}
+              tone="amber"
+              info="How long raw forwarded emails are kept before permanent deletion. Applies to existing emails at the next cleanup. Recorded transactions are unaffected."
+              infoLabel="About retention"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Keep emails for</p>
                 </div>
-              </CardContent>
+                <Field
+                  control="select"
+                  value={String(retentionDays)}
+                  onValueChange={(v) =>
+                    v && void updateRetentionDays(parseInt(v, 10))
+                  }
+                  disabled={retentionLoading}
+                  compact
+                  className="w-[140px]"
+                  options={retentionOptions.map((d) => ({ value: String(d), label: <>{d} days</> }))}
+                />
+              </div>
             </Card>
 
             <EmailRulesManager />

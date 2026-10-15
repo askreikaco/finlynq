@@ -7,12 +7,12 @@
  */
 
 import { useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ListRow, SectionCard } from "@/components/mobile";
-import { AlertTriangle, ArrowLeftRight, Briefcase, Database, Download, Eye, FileText, History, RefreshCw, Tag, Trash2, Upload, Wallet } from "lucide-react";
+import { ListRow } from "@/components/mobile";
+import { ArrowLeftRight, Briefcase, Database, Download, Eye, FileText, History, RefreshCw, Tag, Trash2, Upload, Wallet } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { getSessionInfo } from "@/lib/data/session-info";
@@ -359,275 +359,229 @@ export function DataSection() {
       <OfflineModeCard />
       <PasskeyUnlockCard />
       {/* CSV Import */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
-              <Upload className="h-5 w-5" />
+      <Card
+        title="Import"
+        icon={Upload}
+        tone="cyan"
+        info="Import accounts, categories or holdings from CSV."
+        infoLabel="About import"
+        className="space-y-4"
+      >
+        {/* Import type buttons */}
+        <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
+          {([
+            { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note." },
+            { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note." },
+            { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-info", hint: "Columns: symbol, name, quantity, currency, note." },
+          ] as const).map(({ key, label, icon: Icon, color, hint }) => (
+            <div key={key} className="relative space-y-1">
+              <InfoTip label={`${label} CSV columns`} text={hint} className="absolute right-1 top-1 z-10" />
+              <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
+                <Icon className={`h-5 w-5 ${color}`} />
+                <span className="text-sm font-medium">{label}</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="sr-only"
+                  onChange={handleImportFileInput(key)}
+                />
+              </label>
             </div>
-            <div>
-              <CardTitle icon={Upload} tone="cyan">
-                Import
-                <InfoTip label="About import" text="Import accounts, categories or holdings from CSV." />
-              </CardTitle>
+          ))}
+        </div>
+
+        {/* Preview */}
+        {importPreview.length > 0 && importSection && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium truncate">{importFileName}</span>
+              <Badge variant="outline" className="text-xs">Preview</Badge>
+            </div>
+            <Card title="Preview" icon={Eye} tone="muted" frame="list">
+              {importPreview.map((row, i) => (
+                <ListRow
+                  key={i}
+                  title={String(row[importHeaders[0]] ?? "") || `Row ${i + 1}`}
+                  subtitle={importHeaders.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
+                />
+              ))}
+            </Card>
+            <p className="text-xs text-muted-foreground" data-keep="status">First {importPreview.length} rows shown. The full file imports on confirm.</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleImportConfirm} disabled={importLoading}>
+                {importLoading ? "Importing…" : `Import ${importSection}`}
+              </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Import type buttons */}
-          <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
-            {([
-              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note." },
-              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note." },
-              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-info", hint: "Columns: symbol, name, quantity, currency, note." },
-            ] as const).map(({ key, label, icon: Icon, color, hint }) => (
-              <div key={key} className="relative space-y-1">
-                <InfoTip label={`${label} CSV columns`} text={hint} className="absolute right-1 top-1 z-10" />
-                <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
-                  <Icon className={`h-5 w-5 ${color}`} />
-                  <span className="text-sm font-medium">{label}</span>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    className="sr-only"
-                    onChange={handleImportFileInput(key)}
-                  />
-                </label>
-              </div>
-            ))}
-          </div>
+        )}
 
-          {/* Preview */}
-          {importPreview.length > 0 && importSection && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium truncate">{importFileName}</span>
-                <Badge variant="outline" className="text-xs">Preview</Badge>
-              </div>
-              <SectionCard label="Preview" icon={Eye} tone="muted" list>
-                {importPreview.map((row, i) => (
-                  <ListRow
-                    key={i}
-                    title={String(row[importHeaders[0]] ?? "") || `Row ${i + 1}`}
-                    subtitle={importHeaders.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
-                  />
-                ))}
-              </SectionCard>
-              <p className="text-xs text-muted-foreground" data-keep="status">First {importPreview.length} rows shown. The full file imports on confirm.</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleImportConfirm} disabled={importLoading}>
-                  {importLoading ? "Importing…" : `Import ${importSection}`}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {importStatus && (
-            <p data-keep="status" className={`text-xs flex items-center gap-1 ${importStatus.includes("fail") || importStatus.includes("error") ? "text-destructive" : "text-muted-foreground"}`}>
-              <Upload className="h-3 w-3" /> {importStatus}
-            </p>
-          )}
-        </CardContent>
+        {importStatus && (
+          <p data-keep="status" className={`text-xs flex items-center gap-1 ${importStatus.includes("fail") || importStatus.includes("error") ? "text-destructive" : "text-muted-foreground"}`}>
+            <Upload className="h-3 w-3" /> {importStatus}
+          </p>
+        )}
       </Card>
 
       {/* Data Export */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Database className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Download} tone="emerald">
-                Export
-                <InfoTip label="About export" text="Export your data as CSV files." />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            {exportItems.map((item) => (
-              <Button key={item.type} variant="outline" className="justify-start h-auto py-3 px-4" onClick={() => handleExport(item.type)}>
-                <item.icon className={`h-4 w-4 mr-2 ${item.iconColor}`} />
-                <div className="text-left">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  
-                </div>
-              </Button>
-            ))}
-          </div>
-          {exportStatus && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1" data-keep="status">
-              <Download className="h-3 w-3" /> {exportStatus}
-            </p>
-          )}
-        </CardContent>
+      <Card
+        title="Export"
+        icon={Download}
+        tone="emerald"
+        info="Export your data as CSV files."
+        infoLabel="About export"
+        className="space-y-3"
+      >
+        <div className="grid grid-cols-2 gap-3">
+          {exportItems.map((item) => (
+            <Button key={item.type} variant="outline" className="justify-start h-auto py-3 px-4" onClick={() => handleExport(item.type)}>
+              <item.icon className={`h-4 w-4 mr-2 ${item.iconColor}`} />
+              <div className="text-left">
+                <p className="text-sm font-medium">{item.label}</p>
+                
+              </div>
+            </Button>
+          ))}
+        </div>
+        {exportStatus && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1" data-keep="status">
+            <Download className="h-3 w-3" /> {exportStatus}
+          </p>
+        )}
       </Card>
 
       {/* Backfill transactions — canonicalization pipeline */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-              <ArrowLeftRight className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={History} tone="amber">
-                Backfill
-                <InfoTip label="About backfill" text="Fixes legacy or imported transactions so realized gains and lot tracking work. Reviews proposals first; balances unchanged." />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={() => { window.location.href = "/settings/backfill"; }}>
-            Open wizard
-          </Button>
-        </CardContent>
+      <Card
+        title="Backfill"
+        icon={History}
+        tone="amber"
+        info="Fixes legacy or imported transactions so realized gains and lot tracking work. Reviews proposals first; balances unchanged."
+        infoLabel="About backfill"
+      >
+        <Button variant="outline" onClick={() => { window.location.href = "/settings/backfill"; }}>
+          Open wizard
+        </Button>
       </Card>
 
       {/* Rebuild balance history */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <History className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={RefreshCw} tone="violet">
-                Balance history
-                <InfoTip label="About balance history" text="Recomputes daily balances from your first transaction. Run it if Net Worth Over Time looks stale after back-dated edits or deletes." />
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <RebuildSnapshotsButton />
-        </CardContent>
+      <Card
+        title="Balance history"
+        icon={RefreshCw}
+        tone="violet"
+        info="Recomputes daily balances from your first transaction. Run it if Net Worth Over Time looks stale after back-dated edits or deletes."
+        infoLabel="About balance history"
+      >
+        <RebuildSnapshotsButton />
       </Card>
 
       {/* Data Management — danger zone */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle icon={Database} tone="indigo">Danger zone</CardTitle>
+      <Card title="Danger zone" icon={Database} tone="indigo" className="space-y-3">
+        {clearStep === 0 && (
+          <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={handleClearData}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All Data
+          </Button>
+        )}
+
+        {clearStep === 1 && (
+          <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <p className="text-sm font-medium text-destructive">Are you sure? This will permanently delete all your data.</p>
+            <div className="flex gap-2">
+              <Button variant="destructive" size="sm" onClick={handleClearData}>Yes, I want to delete everything</Button>
+              <Button variant="ghost" size="sm" onClick={() => setClearStep(0)}>Cancel</Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {clearStep === 0 && (
-            <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={handleClearData}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear All Data
-            </Button>
+        )}
+
+        {clearStep === 2 && (
+          <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <p className="text-sm font-medium text-destructive">Type DELETE to confirm permanent deletion of all data:</p>
+            <div className="flex gap-2">
+              <Field
+                value={clearConfirm}
+                onChange={(e) => setClearConfirm(e.target.value)}
+                placeholder="Type DELETE"
+                className="max-w-40"
+              />
+              <Button variant="destructive" size="sm" onClick={handleClearData} disabled={clearConfirm !== "DELETE"}>Confirm</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setClearStep(0); setClearConfirm(""); setClearStatus(""); }}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {clearStatus && (
+          <p className={`text-xs ${clearStatus.includes("success") ? "text-pos" : "text-destructive"}`}>
+            {clearStatus}
+          </p>
+        )}
+
+        {/* Delete account — irreversible: removes your login + all data */}
+        <div className="pt-3 mt-1 border-t border-border/60 space-y-3">
+          {delStep === 0 && (
+            <div className="space-y-1.5">
+              <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={handleDeleteAccount}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+              <p className="text-xs text-muted-foreground" data-keep="warning">Permanently deletes your account and all data.</p>
+            </div>
           )}
 
-          {clearStep === 1 && (
+          {delStep === 1 && (
             <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-              <p className="text-sm font-medium text-destructive">Are you sure? This will permanently delete all your data.</p>
+              <p className="text-sm font-medium text-destructive">This permanently deletes your account and all of your data, including your login. This cannot be undone.</p>
               <div className="flex gap-2">
-                <Button variant="destructive" size="sm" onClick={handleClearData}>Yes, I want to delete everything</Button>
-                <Button variant="ghost" size="sm" onClick={() => setClearStep(0)}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={handleDeleteAccount}>Continue</Button>
+                <Button variant="ghost" size="sm" onClick={resetDeleteAccount}>Cancel</Button>
               </div>
             </div>
           )}
 
-          {clearStep === 2 && (
+          {delStep === 2 && (
             <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-              <p className="text-sm font-medium text-destructive">Type DELETE to confirm permanent deletion of all data:</p>
-              <div className="flex gap-2">
+              <p className="text-sm font-medium text-destructive">Confirm permanent account deletion:</p>
+              <div className="space-y-2">
                 <Field
-                  value={clearConfirm}
-                  onChange={(e) => setClearConfirm(e.target.value)}
+                  type="password"
+                  value={delPassword}
+                  onChange={(e) => setDelPassword(e.target.value)}
+                  placeholder="Your password"
+                  autoComplete="current-password"
+                  className="max-w-xs"
+                />
+                <Field
+                  value={delConfirm}
+                  onChange={(e) => setDelConfirm(e.target.value)}
                   placeholder="Type DELETE"
                   className="max-w-40"
                 />
-                <Button variant="destructive" size="sm" onClick={handleClearData} disabled={clearConfirm !== "DELETE"}>Confirm</Button>
-                <Button variant="ghost" size="sm" onClick={() => { setClearStep(0); setClearConfirm(""); setClearStatus(""); }}>Cancel</Button>
+                {delMfaRequired && (
+                  <Field
+                    value={delMfaCode}
+                    onChange={(e) => setDelMfaCode(e.target.value)}
+                    placeholder="6-digit code"
+                    inputMode="numeric"
+                    maxLength={6}
+                    className="max-w-40"
+                  />
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={delLoading || delConfirm !== "DELETE" || !delPassword}>
+                  {delLoading ? "Deleting…" : "Delete my account"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={resetDeleteAccount} disabled={delLoading}>Cancel</Button>
               </div>
             </div>
           )}
 
-          {clearStatus && (
-            <p className={`text-xs ${clearStatus.includes("success") ? "text-pos" : "text-destructive"}`}>
-              {clearStatus}
-            </p>
+          {delStatus && (
+            <p className="text-xs text-destructive">{delStatus}</p>
           )}
-
-          {/* Delete account — irreversible: removes your login + all data */}
-          <div className="pt-3 mt-1 border-t border-border/60 space-y-3">
-            {delStep === 0 && (
-              <div className="space-y-1.5">
-                <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={handleDeleteAccount}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
-                </Button>
-                <p className="text-xs text-muted-foreground" data-keep="warning">Permanently deletes your account and all data.</p>
-              </div>
-            )}
-
-            {delStep === 1 && (
-              <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-                <p className="text-sm font-medium text-destructive">This permanently deletes your account and all of your data, including your login. This cannot be undone.</p>
-                <div className="flex gap-2">
-                  <Button variant="destructive" size="sm" onClick={handleDeleteAccount}>Continue</Button>
-                  <Button variant="ghost" size="sm" onClick={resetDeleteAccount}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {delStep === 2 && (
-              <div className="space-y-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-                <p className="text-sm font-medium text-destructive">Confirm permanent account deletion:</p>
-                <div className="space-y-2">
-                  <Field
-                    type="password"
-                    value={delPassword}
-                    onChange={(e) => setDelPassword(e.target.value)}
-                    placeholder="Your password"
-                    autoComplete="current-password"
-                    className="max-w-xs"
-                  />
-                  <Field
-                    value={delConfirm}
-                    onChange={(e) => setDelConfirm(e.target.value)}
-                    placeholder="Type DELETE"
-                    className="max-w-40"
-                  />
-                  {delMfaRequired && (
-                    <Field
-                      value={delMfaCode}
-                      onChange={(e) => setDelMfaCode(e.target.value)}
-                      placeholder="6-digit code"
-                      inputMode="numeric"
-                      maxLength={6}
-                      className="max-w-40"
-                    />
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="destructive" size="sm" onClick={handleDeleteAccount} disabled={delLoading || delConfirm !== "DELETE" || !delPassword}>
-                    {delLoading ? "Deleting…" : "Delete my account"}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={resetDeleteAccount} disabled={delLoading}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {delStatus && (
-              <p className="text-xs text-destructive">{delStatus}</p>
-            )}
-          </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

@@ -1,4 +1,4 @@
-import { MetricCard, type MetricCardProps } from "@/components/metric-card";
+import { Card, type CardProps } from "@/components/ui/card";
 
 /**
  * The one metric/stat tile grid rule: 2 columns on mobile (max), 3 on tablet (max), 4 on desktop (default).
@@ -27,14 +27,14 @@ export function metricGridClass(count: number, gap = "gap-3", max: 2 | 3 | 4 = 4
 }
 
 /**
- * The layout wrapper for MetricCards (see METRIC_GRID_CLASS): one MetricCard per entry, all props as MetricCard's.
+ * The layout wrapper for metric Cards (see METRIC_GRID_CLASS): one Card per entry, all props as Card's.
  * `columns` caps the desktop column count (default 4: 2 on mobile, 3 on tablet, 4 on desktop).
  */
-export function MetricGrid({ metrics, columns = 4 }: { metrics: MetricCardProps[]; columns?: 2 | 3 | 4 }) {
+export function MetricGrid({ metrics, columns = 4 }: { metrics: CardProps[]; columns?: 2 | 3 | 4 }) {
   return (
     <div data-slot="metric-grid" data-columns={columns} className={metricGridClass(metrics.length, "gap-3", columns)}>
       {metrics.map((m, i) => (
-        <MetricCard key={m.id ?? (typeof m.label === "string" ? m.label : i)} {...m} />
+        <Card key={m.id ?? (typeof m.title === "string" ? m.title : i)} {...m} />
       ))}
     </div>
   );

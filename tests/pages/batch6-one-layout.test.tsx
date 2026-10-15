@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 // Batch 6 mobile-design pages (Family overview cards and states, admin instance config): one layout at every
-// size. The overview stat tiles sit in MetricGrid, the sections are SectionCards, the loans are ListRows, and the
+// size. The overview stat tiles sit in MetricGrid, the sections are Cards, the loans are ListRows, and the
 // admin instance page renders through SectionPage (report width, centred) with ListRows instead of a table.
 import { Wallet } from "lucide-react";
 import * as React from "react";
@@ -50,27 +50,27 @@ describe("Batch 6: converted files render no <table>", () => {
 
 describe("Batch 6: old Card / StatCard markup is gone from the overview and instance pages", () => {
   for (const f of CONVERTED) {
-    it(`${f} imports no ui/card and no dashboard StatCard`, () => {
+    it(`${f} uses no shadcn card parts and no dashboard StatCard`, () => {
       const src = read(f);
-      expect(src).not.toMatch(/from "@\/components\/ui\/card"/);
+      expect(src).not.toMatch(/\b(CardHeader|CardContent|CardTitle|CardDescription|CardFooter|CardAction)\b/);
       expect(src).not.toMatch(/StatCard/);
     });
   }
 
-  it("family overview stat tiles go through MetricGrid, cards through SectionCard", () => {
+  it("family overview stat tiles go through MetricGrid, cards through Card", () => {
     const cards = read("src/app/(app)/family/_components/overview-cards.tsx");
     expect(cards).toMatch(/<MetricGrid\b/);
-    expect(cards).toMatch(/<SectionCard\b/);
-    expect(read("src/app/(app)/family/_components/overview-tab.tsx")).toMatch(/<SectionCard\b/);
+    expect(cards).toMatch(/<Card\b/);
+    expect(read("src/app/(app)/family/_components/overview-tab.tsx")).toMatch(/<Card\b/);
     expect(read("src/app/(app)/family/_components/member-card.tsx")).toMatch(/<ListRow\b/);
   });
 
-  it("admin instance renders through SectionPage (report width, centred) with SectionCard and ListRow", () => {
+  it("admin instance renders through SectionPage (report width, centred) with Card and ListRow", () => {
     const src = read("src/app/(app)/admin/instance/page.tsx");
     expect(src).toMatch(/<SectionPage\b[^>]*width="report"/);
     expect(src).toMatch(/<SectionPage\b[^>]*\bcenter\b/);
     expect(src).toMatch(/from "@\/components\/templates\/section-page"/);
-    expect(src).toMatch(/<SectionCard\b/);
+    expect(src).toMatch(/<Card\b/);
     expect(src).toMatch(/<ListRow\b/);
     expect(src).not.toMatch(/PageHeader/);
     expect(src).not.toMatch(/max-w-section|max-w-3xl|max-w-4xl/);
@@ -97,8 +97,8 @@ describe("Batch 6: shared metric grid for two figures stays two columns", () => 
       <MetricGrid
         columns={2}
         metrics={[
-          { icon: Wallet, label: "Income", value: 1200, currency: "USD", sub: "This month" },
-          { icon: Wallet, label: "Expenses", value: 300, currency: "USD", sub: "This month · 25% of income" },
+          { icon: Wallet, title: "Income", value: 1200, currency: "USD", sub: "This month" },
+          { icon: Wallet, title: "Expenses", value: 300, currency: "USD", sub: "This month · 25% of income" },
         ]}
       />,
     );
@@ -112,22 +112,22 @@ describe("Batch 6: shared metric grid for two figures stays two columns", () => 
   });
 });
 
-describe("Batch 6: family overview cards render through SectionCard", () => {
+describe("Batch 6: family overview cards render through Card", () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("an unavailable headline figure is a SectionCard with its label, the not-shared text and the test id", async () => {
+  it("an unavailable headline figure is a Card with its label, the not-shared text and the test id", async () => {
     const { UnavailableCard } = await import("@/app/(app)/family/_components/overview-cards");
     render(<UnavailableCard title="Income" text="Not shared" />);
     const card = screen.getByTestId("card-unavailable");
     expect(card.tagName).toBe("SECTION");
-    expect(card.getAttribute("data-slot")).toBe("section-card");
+    expect(card.getAttribute("data-slot")).toBe("card");
     expect(within(card).getByRole("heading", { name: "Income" })).toBeTruthy();
     expect(within(card).getByText("Not shared")).toBeTruthy();
   });
 
-  it("an empty income vs expenses series shows the no-cashflow message inside a SectionCard", async () => {
+  it("an empty income vs expenses series shows the no-cashflow message inside a Card", async () => {
     const { IncomeVsExpensesCard } = await import("@/app/(app)/family/_components/overview-cards");
     const { container } = render(
       <IncomeVsExpensesCard
@@ -137,7 +137,7 @@ describe("Batch 6: family overview cards render through SectionCard", () => {
         asOf="2026-10-01"
       />,
     );
-    expect(container.querySelector('[data-slot="section-card"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="card"]')).not.toBeNull();
     expect(screen.getByText(FAMILY_STRINGS.overview_card_no_cashflow)).toBeTruthy();
     expect(screen.getByRole("heading", { name: FAMILY_STRINGS.overview_card_income_vs_expenses })).toBeTruthy();
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, CircleSlash, AlertTriangle } from "lucide-react";
@@ -50,10 +50,8 @@ export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: 
 
   if (shares.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-6 text-center py-8">
-          <p className="text-muted-foreground">{emptyMessage}</p>
-        </CardContent>
+      <Card className="pt-6 text-center py-8">
+        <p className="text-muted-foreground">{emptyMessage}</p>
       </Card>
     );
   }
@@ -93,92 +91,90 @@ export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: 
           const canResend = role === "owner" && share.status === "pending";
           return (
             <li key={share.id}>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-col gap-4 regular:flex-row regular:items-start regular:justify-between">
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="min-w-0">
-                        <p className="font-medium break-words">
-                          {role === "owner" ? share.counterparty.email : share.counterparty.name}
-                        </p>
-                        {role === "owner" && share.counterparty.name && (
-                          <p className="text-sm text-muted-foreground break-words">{share.counterparty.name}</p>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <Badge variant="outline" className="gap-1.5">
-                          <StatusIcon status={share.status} />
-                          {STATUS_LABEL[share.status] ?? share.status}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {fill(FAMILY_STRINGS.sharing_list_sections_count, {
-                            // retired sections (accounts/goals/budgets) of older shares are not shown
-                            count: share.sections.filter(isOverviewSection).length,
-                            total: FAMILY_OVERVIEW_SECTIONS.length,
-                          })}
-                        </span>
-                      </div>
-                      {share.sections.some(isOverviewSection) && (
-                        <p className="text-xs text-muted-foreground">
-                          {share.sections.filter(isOverviewSection).map(getSectionLabel).join(", ")}
-                        </p>
+              <Card className="pt-6">
+                <div className="flex flex-col gap-4 regular:flex-row regular:items-start regular:justify-between">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="min-w-0">
+                      <p className="font-medium break-words">
+                        {role === "owner" ? share.counterparty.email : share.counterparty.name}
+                      </p>
+                      {role === "owner" && share.counterparty.name && (
+                        <p className="text-sm text-muted-foreground break-words">{share.counterparty.name}</p>
                       )}
+                    </div>
 
-                      <dl className="text-xs text-muted-foreground space-y-0.5">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Badge variant="outline" className="gap-1.5">
+                        <StatusIcon status={share.status} />
+                        {STATUS_LABEL[share.status] ?? share.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {fill(FAMILY_STRINGS.sharing_list_sections_count, {
+                          // retired sections (accounts/goals/budgets) of older shares are not shown
+                          count: share.sections.filter(isOverviewSection).length,
+                          total: FAMILY_OVERVIEW_SECTIONS.length,
+                        })}
+                      </span>
+                    </div>
+                    {share.sections.some(isOverviewSection) && (
+                      <p className="text-xs text-muted-foreground">
+                        {share.sections.filter(isOverviewSection).map(getSectionLabel).join(", ")}
+                      </p>
+                    )}
+
+                    <dl className="text-xs text-muted-foreground space-y-0.5">
+                      <div>
+                        <dt className="inline">{FAMILY_STRINGS.sharing_list_created_at}: </dt>
+                        <dd className="inline">{formatDateTimeLocal(share.createdAt)}</dd>
+                      </div>
+                      {share.acceptedAt && (
                         <div>
-                          <dt className="inline">{FAMILY_STRINGS.sharing_list_created_at}: </dt>
-                          <dd className="inline">{formatDateTimeLocal(share.createdAt)}</dd>
+                          <dt className="inline">{FAMILY_STRINGS.sharing_list_accepted_at}: </dt>
+                          <dd className="inline">{formatDateTimeLocal(share.acceptedAt)}</dd>
                         </div>
-                        {share.acceptedAt && (
-                          <div>
-                            <dt className="inline">{FAMILY_STRINGS.sharing_list_accepted_at}: </dt>
-                            <dd className="inline">{formatDateTimeLocal(share.acceptedAt)}</dd>
-                          </div>
-                        )}
-                        {share.lastViewedAt && (
-                          <div>
-                            <dt className="inline">{FAMILY_STRINGS.sharing_list_last_viewed}: </dt>
-                            <dd className="inline">{formatDateTimeLocal(share.lastViewedAt)}</dd>
-                          </div>
-                        )}
-                      </dl>
+                      )}
+                      {share.lastViewedAt && (
+                        <div>
+                          <dt className="inline">{FAMILY_STRINGS.sharing_list_last_viewed}: </dt>
+                          <dd className="inline">{formatDateTimeLocal(share.lastViewedAt)}</dd>
+                        </div>
+                      )}
+                    </dl>
 
-                      {share.mustShareBack && (
-                        <p className="text-xs font-medium text-info">
-                          {fill(FAMILY_STRINGS.sharing_list_must_share_back, {
-                            sections: share.requiredBackSections.map(getSectionLabel).join(", "),
-                          })}
-                        </p>
-                      )}
-                      {role === "owner" && share.reconsentRequired && (
-                        <p className="text-xs font-medium text-warning">
-                          {fill(FAMILY_STRINGS.sharing_list_reconsent_waiting, {
-                            sections: share.reconsentSections.map(getSectionLabel).join(", "),
-                          })}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {canEdit && (
-                        <Button size="sm" variant="outline" onClick={() => setEditId(share.id)}>
-                          {FAMILY_STRINGS.sharing_list_edit_sections}
-                        </Button>
-                      )}
-                      {canResend && (
-                        <Button size="sm" variant="outline" disabled={resending === share.id} onClick={() => resend(share.id)}>
-                          {FAMILY_STRINGS.sharing_list_resend}
-                        </Button>
-                      )}
-                      {canEnd && (
-                        <Button size="sm" variant="outline" className="text-destructive" onClick={() => setRevokeId(share.id)}>
-                          {role === "owner" ? FAMILY_STRINGS.sharing_list_revoke : FAMILY_STRINGS.sharing_list_leave}
-                        </Button>
-                      )}
-                    </div>
+                    {share.mustShareBack && (
+                      <p className="text-xs font-medium text-info">
+                        {fill(FAMILY_STRINGS.sharing_list_must_share_back, {
+                          sections: share.requiredBackSections.map(getSectionLabel).join(", "),
+                        })}
+                      </p>
+                    )}
+                    {role === "owner" && share.reconsentRequired && (
+                      <p className="text-xs font-medium text-warning">
+                        {fill(FAMILY_STRINGS.sharing_list_reconsent_waiting, {
+                          sections: share.reconsentSections.map(getSectionLabel).join(", "),
+                        })}
+                      </p>
+                    )}
                   </div>
-                </CardContent>
+
+                  <div className="flex flex-wrap gap-2">
+                    {canEdit && (
+                      <Button size="sm" variant="outline" onClick={() => setEditId(share.id)}>
+                        {FAMILY_STRINGS.sharing_list_edit_sections}
+                      </Button>
+                    )}
+                    {canResend && (
+                      <Button size="sm" variant="outline" disabled={resending === share.id} onClick={() => resend(share.id)}>
+                        {FAMILY_STRINGS.sharing_list_resend}
+                      </Button>
+                    )}
+                    {canEnd && (
+                      <Button size="sm" variant="outline" className="text-destructive" onClick={() => setRevokeId(share.id)}>
+                        {role === "owner" ? FAMILY_STRINGS.sharing_list_revoke : FAMILY_STRINGS.sharing_list_leave}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </Card>
             </li>
           );

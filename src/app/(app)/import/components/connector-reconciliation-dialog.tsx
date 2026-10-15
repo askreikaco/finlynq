@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Overlay } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/currency";
+import { Card } from "@/components/ui/card";
 
 interface ReconciliationRow {
   externalAccountId: string;
@@ -128,7 +129,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
 
         {result && (
           <div className="space-y-3">
-            <SectionCard list>
+            <Card frame="list">
               {result.rows.map((row) => (
                 <div key={row.finlynqAccountId} className="py-1">
                   <ListRow
@@ -169,7 +170,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
                   )}
                 </div>
               ))}
-            </SectionCard>
+            </Card>
             {result.unmatchedExternal.length > 0 && (
               <div className="text-xs text-muted-foreground">
                 {result.unmatchedExternal.length} external account{result.unmatchedExternal.length === 1 ? "" : "s"}{" "}
