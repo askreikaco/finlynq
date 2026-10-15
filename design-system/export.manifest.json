@@ -162,19 +162,17 @@
     },
     {
       "id": "button",
-      "title": "Button, RoundIconButton",
+      "title": "Button",
       "src": [
-        "src/components/ui/button.tsx",
-        "src/components/ui/round-icon-button.tsx"
+        "src/components/ui/button.tsx"
       ],
       "public": [
-        "src/components/ui/button.tsx",
-        "src/components/ui/round-icon-button.tsx"
+        "src/components/ui/button.tsx"
       ],
       "usage": [
-        "import { Button, RoundIconButton } from '@reika/ui';",
+        "import { Button } from '@reika/ui';",
         "<Button variant=\"default\" size=\"lg\">Save</Button>",
-        "<RoundIconButton aria-label=\"Add\"><Plus /></RoundIconButton>"
+        "<Button size=\"icon\" aria-label=\"Add\"><Plus /></Button>"
       ]
     },
     {
@@ -313,7 +311,7 @@
     },
     {
       "id": "card",
-      "title": "Card family (shadcn Card)",
+      "title": "Card (the one card: metric, section, plain, list)",
       "src": [
         "src/components/ui/card.tsx"
       ],
@@ -321,29 +319,9 @@
         "src/components/ui/card.tsx"
       ],
       "usage": [
-        "import { Card, CardHeader, CardTitle, CardContent } from '@reika/ui';",
-        "<Card><CardHeader><CardTitle>Title</CardTitle></CardHeader>",
-        "<CardContent>...</CardContent></Card>"
-      ]
-    },
-    {
-      "id": "card-legacy",
-      "title": "MetricCard, SectionCard (retired by the one-Card merge)",
-      "retiredWhenPresent": [
-        "tests/guards/one-card.test.ts"
-      ],
-      "src": [
-        "src/components/metric-card.tsx",
-        "src/components/mobile/section-card.tsx"
-      ],
-      "public": [
-        "src/components/metric-card.tsx",
-        "src/components/mobile/section-card.tsx"
-      ],
-      "usage": [
-        "import { MetricCard, SectionCard } from '@reika/ui';",
-        "<MetricCard label=\"Net worth\" icon={Wallet} tone=\"indigo\" value={125000} />",
-        "<SectionCard label=\"Accounts\" list>...</SectionCard>"
+        "import { Card } from '@reika/ui';",
+        "<Card title=\"Accounts\" icon={Wallet} frame=\"card\">...</Card>",
+        "<Card title=\"Net worth\" value={125000} delta={{ pct: 1.9, text: '+$2,300' }} className=\"w-full\" />"
       ]
     }
   ],
