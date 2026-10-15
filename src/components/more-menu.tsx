@@ -16,7 +16,8 @@ import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
-import { InsetGroup, InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
+import { InsetGroup, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
+import { ListRow } from "@/components/mobile/list-row";
 import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
@@ -224,22 +225,23 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
       <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-1" data-testid="more-grid">
       <section data-testid="more-account" className="space-y-2">
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
-        <InsetGroup header="Account" inset="avatar" data-testid="more-account-card">
+        <InsetGroup header="Account" inset="avatar" className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]" data-testid="more-account-card">
           <AccountSwitcher variant="list" />
         </InsetGroup>
       </section>
 
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-            <InsetGroup header={g.header} headerPlacement={g.id === "explore" ? "outside" : "inside"}>
+            <InsetGroup header={g.header} headerPlacement={g.id === "explore" ? "outside" : "inside"} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {g.rows.map((r) => (
-                <InsetRow
+                <ListRow
                   key={r.id}
                   href={r.href}
-                  label={r.label}
+                  title={r.label}
                   icon={r.icon}
-                  badge={badges[r.href] ?? 0}
-                  current={isCurrentRoute(columnCurrent, r.href)}
+                  tile="primary"
+                  unread={badges[r.href] ?? 0}
+                  selected={isCurrentRoute(columnCurrent, r.href)}
                   data-testid="more-row"
                 />
               ))}
@@ -255,7 +257,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
 
       <section data-testid="more-group-session" className="space-y-2">
         <InsetGroup>
-          <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
+          <ListRow tone="destructive" icon={LogOut} title="Log out" onPress={signOut} data-testid="more-signout" />
         </InsetGroup>
       </section>
       </div>

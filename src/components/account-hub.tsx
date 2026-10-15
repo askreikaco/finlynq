@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Account hub page: iOS grouped list showing all account sections (every size).
  */
@@ -33,7 +35,7 @@ export function AccountHub() {
 
   return (
     <div data-slot="account-hub" className={`${TW.grid3} px-4 py-6`}>
-      <SectionCard label="Account" icon={User} tone="indigo">
+      <SectionCard label="Account" icon={User} tone="indigo" padded={false}>
         <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {orderedEntries.map((entry) => (
             entry && (
@@ -42,7 +44,6 @@ export function AccountHub() {
                 title={entry.label}
                 icon={entry.icon}
                 href={entry.path}
-                className="py-3"
               />
             )
           ))}

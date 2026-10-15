@@ -164,9 +164,9 @@ export default function AdminEmailInboxPage() {
       <SectionCard
         label="By user" icon={Users} tone="indigo"
         padded={false}
-        className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
+        className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]"
       >
-        <p className="px-1 pt-3 text-xs text-muted-foreground">
+        <p className="px-4 pt-3 text-xs text-muted-foreground">
           Counts honor the action / source / date filters (not the selected user).
         </p>
         {data?.byUser.map((g) => (
@@ -255,7 +255,7 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
         {loading && !data && (
           <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}
@@ -291,7 +291,7 @@ export default function AdminEmailInboxPage() {
               }
               secondary={fmt(r.receivedAt)}
             />
-            <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 pb-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-2 text-xs text-muted-foreground">
               <span>Source {r.sourceKind}</span>
               <span>Confidence {r.parseConfidence ?? "—"}</span>
               <span>Tier {r.encryptionTier ?? "service"}</span>

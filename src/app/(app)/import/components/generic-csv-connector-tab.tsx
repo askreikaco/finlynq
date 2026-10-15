@@ -459,7 +459,7 @@ export function GenericCsvConnectorTab() {
                     First {sampleRows.length} rows
                   </h4>
                   <div className="max-h-64 overflow-y-auto">
-                    <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                    <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {sampleRows.map((row, i) => (
                         <ListRow
                           key={i}

@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
 import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Landmark, Link2, Loader2, Plus, RefreshCw } from "lucide-react";
+import { ListRow } from "@/components/mobile/list-row";
 
 /** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
@@ -577,24 +578,14 @@ export function BankFeedsSection() {
             ) : pending.length === 0 ? (
               <p className="text-sm text-muted-foreground" data-keep="empty">No pending charges.</p>
             ) : (
-              <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <div className="overflow-hidden rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {pending.map((p) => (
-                  <div
+                  <ListRow
                     key={`${p.accountId ?? "x"}-${p.fitId}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {safeName(p.payee, "charge", 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate" data-keep="status">
-                        {p.date} · {p.accountName}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium tabular-nums shrink-0">
-                      {formatCurrency(p.amount, p.currency)}
-                    </span>
-                  </div>
+                    title={safeName(p.payee, "charge", 0)}
+                    subtitle={`${p.date} · ${p.accountName}`}
+                    value={formatCurrency(p.amount, p.currency)}
+                  />
                 ))}
               </div>
             )}

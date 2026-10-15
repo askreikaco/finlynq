@@ -549,7 +549,7 @@ export default function AccountDetailPage() {
           data-slot="account-information"
           label="Information" icon={Info} tone="cyan"
           padded={false}
-          className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
+          className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]"
           action={
         <Button
           size="sm"
@@ -683,83 +683,64 @@ export default function AccountDetailPage() {
           <SheetHeader className="px-4 mb-4">
             <SheetTitle>Actions</SheetTitle>
           </SheetHeader>
-          <div className="space-y-0">
-            <button
-              onClick={() => {
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+            <ListRow
+              icon={Pencil}
+              title="Edit account"
+              chevron={false}
+              onPress={() => {
                 openEdit("details");
                 setActionsSheetOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-            >
-              <Pencil className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Edit account</span>
-            </button>
-            <button
-              onClick={() => {
+            />
+            <ListRow
+              icon={Receipt}
+              title="Import statement"
+              chevron={false}
+              onPress={() => {
                 router.push(`/import?accountId=${account.id}`);
                 setActionsSheetOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-            >
-              <Receipt className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Import statement</span>
-            </button>
+            />
             {account.mode && (
-              <button
-                onClick={() => {
+              <ListRow
+                icon={Inbox}
+                title="Import mode"
+                chevron={false}
+                onPress={() => {
                   openEdit("reconciliation");
                   setActionsSheetOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-              >
-                <Inbox className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Import mode</span>
-              </button>
+              />
             )}
-            <button
-              onClick={() => {
+            <ListRow
+              icon={TrendingUp}
+              title="View in Reports"
+              chevron={false}
+              onPress={() => {
                 router.push(`/reports?accountId=${account.id}`);
                 setActionsSheetOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-            >
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">View in Reports</span>
-            </button>
-            {account.archived ? (
-              <button
-                onClick={() => {
-                  setActionsSheetOpen(false);
-                  void toggleArchived();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-              >
-                <Wallet className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Unarchive</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setActionsSheetOpen(false);
-                  void toggleArchived();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-              >
-                <Wallet className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Archive</span>
-              </button>
-            )}
-            <button
-              onClick={() => {
+            />
+            <ListRow
+              icon={Wallet}
+              title={account.archived ? "Unarchive" : "Archive"}
+              chevron={false}
+              onPress={() => {
+                setActionsSheetOpen(false);
+                void toggleArchived();
+              }}
+            />
+            <ListRow
+              icon={Trash2}
+              tone="destructive"
+              title="Delete account"
+              onPress={() => {
                 setActionsSheetOpen(false);
                 setAccountActionError(null);
                 setDeleteAccountOpen(true);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-destructive/10 transition-colors text-left text-destructive"
-            >
-              <Trash2 className="h-5 w-5" />
-              <span className="text-sm font-medium">Delete account</span>
-            </button>
+            />
           </div>
         </SheetContent>
       </Sheet>

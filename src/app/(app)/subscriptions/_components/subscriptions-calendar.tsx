@@ -15,6 +15,7 @@ import {
 } from "@/lib/subscriptions/calendar-events";
 import { useAppSizeClass } from "@/components/adaptive";
 import type { Subscription } from "./types";
+import { ListRow } from "@/components/mobile/list-row";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, Scale } from "lucide-react";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -22,12 +23,12 @@ const pad = (n: number) => String(n).padStart(2, "0");
 /** Chip / dot styling per event kind. Legend reads the same map. */
 function eventTone(ev: Pick<ScheduleEvent, "type" | "source">) {
   if (ev.type === "income") {
-    return { dot: "bg-pos", chip: "bg-pos/10 text-pos", text: "text-pos" };
+    return { dot: "var(--pos)", chip: "bg-pos/10 text-pos", text: "text-pos" };
   }
   if (ev.source === "subscription") {
-    return { dot: "bg-primary", chip: "bg-primary/15 text-foreground", text: "text-destructive" };
+    return { dot: "var(--primary)", chip: "bg-primary/15 text-foreground", text: "text-destructive" };
   }
-  return { dot: "bg-destructive", chip: "bg-destructive/10 text-destructive", text: "text-destructive" };
+  return { dot: "var(--destructive)", chip: "bg-destructive/10 text-destructive", text: "text-destructive" };
 }
 
 /**
@@ -209,38 +210,38 @@ export function SubscriptionsCalendar({
             {selectedEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nothing expected on this day.</p>
             ) : (
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+              <div className="-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {selectedEvents.map((ev, idx) => {
                   const tone = eventTone(ev);
                   return (
-                    <div key={`${ev.name}-${idx}`} className="flex items-center justify-between gap-3 py-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{ev.name}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-0.5">
-                            <Badge variant="secondary" className="text-xs">
-                              {ev.source === "subscription" ? "Subscription" : ev.type === "income" ? "Expected income" : "Detected"}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">{frequencyLabel(ev.frequency, ev.intervalDays)}</Badge>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={`font-semibold text-sm tabular-nums ${tone.text}`}>
+                    <ListRow
+                      key={`${ev.name}-${idx}`}
+                      dot={tone.dot}
+                      title={ev.name}
+                      subtitle={
+                        <span className="flex flex-wrap gap-1.5">
+                          <Badge variant="secondary" className="text-xs">
+                            {ev.source === "subscription" ? "Subscription" : ev.type === "income" ? "Expected income" : "Detected"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">{frequencyLabel(ev.frequency, ev.intervalDays)}</Badge>
+                        </span>
+                      }
+                      value={
+                        <span className={tone.text}>
                           {ev.type === "income" ? "+" : "−"}
                           {formatCurrency(ev.amount, ev.currency)}
                         </span>
-                        {ev.source === "subscription" && ev.subscriptionId != null && (
+                      }
+                      actions={
+                        ev.source === "subscription" && ev.subscriptionId != null ? (
                           <Button variant="outline" size="sm" onClick={() => onEdit(ev.subscriptionId!)}>Edit</Button>
-                        )}
-                        {ev.source === "detected" && ev.type === "bill" && ev.detected && (
+                        ) : ev.source === "detected" && ev.type === "bill" && ev.detected ? (
                           <Button variant="outline" size="sm" onClick={() => onTrack(ev.detected!)}>
                             <Plus className="h-3.5 w-3.5 mr-1" /> Track
                           </Button>
-                        )}
-                      </div>
-                    </div>
+                        ) : undefined
+                      }
+                    />
                   );
                 })}
               </div>

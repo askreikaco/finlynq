@@ -72,25 +72,22 @@ describe("HubPage variants: look=card", () => {
     expect(main.querySelector('[data-slot="inset-group"]')).toBeNull();
   });
 
-  it("link row carries the card row classes and href", () => {
+  it("link row is a ListRow link with href, icon tile and chevron", () => {
     render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
     const row = screen.getByTestId("settings-row-inbox");
     expect(row.tagName).toBe("A");
     expect(row).toHaveAttribute("href", "/inbox");
-    expect(row).toHaveClass("flex", "min-h-14", "items-center", "gap-3", "px-4", "py-3", "hover:bg-muted/50");
+    expect(row).toHaveAttribute("data-slot", "list-row");
+    expect(row).toHaveClass("flex", "items-center", "gap-3", "px-4", "hover:bg-muted/50");
     expect(row).toHaveClass("focus-visible:ring-3", "focus-visible:ring-ring/50");
-    expect(row).not.toHaveClass("active:bg-muted");
-    expect(row.querySelector("span.bg-primary\\/10")).not.toBeNull();
-    expect(row.querySelector("svg")).toHaveClass("size-4");
+    expect(row.querySelector('[data-slot="list-row-tile"]')).toHaveClass("bg-primary/10");
+    expect(row.querySelector('[data-slot="list-row-chevron"]')).not.toBeNull();
   });
 
   it("chevron shows for interactive rows and not for destructive rows", () => {
-    render(<HubPage id="settings" title="Settings" look="card" chevronSize="5" groups={groups} />);
-    const inbox = screen.getByTestId("settings-row-inbox");
-    expect(inbox.querySelector("svg.size-5")).not.toBeNull();
-    const logout = screen.getByTestId("settings-row-logout");
-    expect(logout.querySelector("svg.size-5")).toBeNull();
-    expect(logout.querySelector("svg.size-4")).toBeNull();
+    render(<HubPage id="settings" title="Settings" look="card" groups={groups} />);
+    expect(screen.getByTestId("settings-row-inbox").querySelector('[data-slot="list-row-chevron"]')).not.toBeNull();
+    expect(screen.getByTestId("settings-row-logout").querySelector('[data-slot="list-row-chevron"]')).toBeNull();
   });
 
   it("button row calls onClick and is disabled when disabled", () => {
@@ -118,34 +115,9 @@ describe("HubPage variants: look=card", () => {
     expect(screen.getByTestId("p-row-off")).toBeDisabled();
   });
 
-  it("iconSize 18px renders size-[18px] icons", () => {
-    render(<HubPage id="settings" title="Settings" look="card" iconSize="18px" groups={groups} />);
-    expect(screen.getByTestId("settings-row-settings").querySelector("svg")).toHaveClass("size-[18px]");
-  });
-
-  it("activeBg adds active:bg-muted to link rows", () => {
-    render(<HubPage id="settings" title="Settings" look="card" activeBg groups={groups} />);
-    expect(screen.getByTestId("settings-row-inbox")).toHaveClass("active:bg-muted");
-  });
-
-  it("slot props set data-slot on group, row, icon and chevron", () => {
-    render(
-      <HubPage
-        id="settings"
-        title="Settings"
-        look="card"
-        groupSlot="settings-hub-group"
-        rowSlot="settings-hub-row"
-        iconSlot="settings-hub-icon"
-        chevronSlot="settings-hub-chevron"
-        groups={groups}
-      />,
-    );
+  it("groupSlot sets data-slot on each group", () => {
+    render(<HubPage id="settings" title="Settings" look="card" groupSlot="settings-hub-group" groups={groups} />);
     expect(screen.getByTestId("settings-group-main").getAttribute("data-slot")).toBe("settings-hub-group");
-    const row = screen.getByTestId("settings-row-inbox");
-    expect(row.getAttribute("data-slot")).toBe("settings-hub-row");
-    expect(row.querySelector('[data-slot="settings-hub-icon"]')).not.toBeNull();
-    expect(row.querySelector('[data-slot="settings-hub-chevron"]')).not.toBeNull();
   });
 
   it("renders value and badge in the card row", () => {
@@ -172,8 +144,8 @@ describe("HubPage variants: description", () => {
     render(<HubPage id="p" title="P" look="card" groups={described} />);
     const row = screen.getByTestId("p-row-op");
     const label = within(row).getByText("Buy");
-    expect(label).toHaveClass("block", "truncate", "text-base");
-    expect(within(row).getByText("Record a purchase")).toHaveClass("block", "text-xs", "text-muted-foreground");
+    expect(label).toHaveClass("truncate", "text-sm");
+    expect(within(row).getByText("Record a purchase")).toHaveClass("truncate", "text-xs", "text-muted-foreground");
   });
 
   it("renders description under the label in the inset look too", () => {

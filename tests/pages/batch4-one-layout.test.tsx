@@ -136,7 +136,7 @@ describe("ColumnList (DataTable rows as native ListRows)", () => {
 
   it("a sort pill orders the rows and a second tap reverses them", () => {
     const { container } = render(<ColumnList columns={COLUMNS} rows={ROWS} rowKey={(r) => r.id} />);
-    const names = () => Array.from(container.querySelectorAll('[data-slot="list-row"] .font-semibold')).map((n) => n.textContent);
+    const names = () => Array.from(container.querySelectorAll('[data-slot="list-row"] [data-slot="list-label"]')).map((n) => n.textContent);
     fireEvent.click(screen.getByRole("button", { name: "Count" }));
     expect(names()).toEqual(["Alpha", "Gamma", "Beta"]);
     fireEvent.click(screen.getByRole("button", { name: /Count/ }));

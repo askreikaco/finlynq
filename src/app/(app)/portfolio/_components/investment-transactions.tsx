@@ -49,7 +49,7 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
         ) : rows.length === 0 ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">No investment transactions yet.</p>
         ) : (
-          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {rows.map((t) => (
               <ListRow
                 key={t.id}

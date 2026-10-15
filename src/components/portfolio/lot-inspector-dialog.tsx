@@ -32,6 +32,7 @@ import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matri
 import { formatCurrency } from "@/lib/currency";
 import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
+import { ListRow } from "@/components/mobile/list-row";
 
 interface LotRow {
   id: number;
@@ -544,48 +545,43 @@ export function LotInspectorDialog({
                     </div>
                   </div>
                   {lotClosures.length > 0 ? (
-                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] text-xs">
+                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {lotClosures.map((c) => (
-                        <li
-                          key={c.id}
-                          className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5"
-                        >
-                          <span className="text-muted-foreground flex items-center gap-1.5">
-                            {c.openAfterClose && (
-                              <span
-                                className="text-warning"
-                                title={`This closure (${c.closeDate}) consumes a lot that opened later — likely a sell imported before its buy. Rebuild this ticker to fix.`}
-                              >
-                                ⚠
+                        <li key={c.id}>
+                          <ListRow
+                            size="dense"
+                            title={
+                              <span className="flex items-center gap-1.5">
+                                {c.openAfterClose && (
+                                  <span
+                                    className="text-warning"
+                                    title={`This closure (${c.closeDate}) consumes a lot that opened later — likely a sell imported before its buy. Rebuild this ticker to fix.`}
+                                  >
+                                    ⚠
+                                  </span>
+                                )}
+                                {c.closeKind} · tx #{c.closeTxId} · {c.closeDate}
                               </span>
-                            )}
-                            {c.closeKind} · tx #{c.closeTxId} · {c.closeDate}
-                          </span>
-                          <span className="flex items-center gap-3 font-mono">
-                            <span>{c.qtyClosed.toLocaleString(getDisplayLocale())} sh</span>
-                            <span className="text-muted-foreground">
-                              @ {formatCurrency(c.proceedsPerShare, c.currency)}
-                            </span>
-                            <span
-                              className={
-                                c.realizedGain >= 0
-                                  ? "text-pos"
-                                  : "text-destructive"
-                              }
-                            >
-                              {c.realizedGain >= 0 ? "+" : ""}
-                              {formatCurrency(c.realizedGain, c.currency)}
-                            </span>
-                            {c.closeKind === "sell" && (
-                              <button
-                                type="button"
-                                className="text-xs text-primary underline-offset-2 hover:underline"
-                                onClick={() => startEdit(c.closeTxId)}
-                              >
-                                Edit allocation
-                              </button>
-                            )}
-                          </span>
+                            }
+                            subtitle={`${c.qtyClosed.toLocaleString(getDisplayLocale())} sh @ ${formatCurrency(c.proceedsPerShare, c.currency)}`}
+                            value={
+                              <span className={c.realizedGain >= 0 ? "text-pos" : "text-destructive"}>
+                                {c.realizedGain >= 0 ? "+" : ""}
+                                {formatCurrency(c.realizedGain, c.currency)}
+                              </span>
+                            }
+                            actions={
+                              c.closeKind === "sell" ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary underline-offset-2 hover:underline"
+                                  onClick={() => startEdit(c.closeTxId)}
+                                >
+                                  Edit allocation
+                                </button>
+                              ) : undefined
+                            }
+                          />
                         </li>
                       ))}
                     </ul>

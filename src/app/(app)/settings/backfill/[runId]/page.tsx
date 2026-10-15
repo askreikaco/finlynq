@@ -339,8 +339,8 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       )}
 
       {!loading && proposals.length > 0 && (
-        <SectionCard padded={false} className="px-3">
-          <div className="flex items-center justify-between gap-2 pt-3 pb-2 text-xs">
+        <SectionCard padded={false}>
+          <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2 text-xs">
             <span className="text-muted-foreground" data-keep="status">{sortedProposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</span>
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Sort:</span>
@@ -445,14 +445,14 @@ function ProposalCard({
   const realized = proposal.deltasJson.realizedGainBase;
   // The checkbox sits beside the row, not inside its button (no interactive nesting).
   return (
-    <div className={`flex items-center gap-2 ${selected ? "bg-primary/5" : ""}`}>
+    <div className={`flex items-center ${selected ? "bg-muted" : ""}`}>
       {!isRefused && !isApplied && (
         <input
           type="checkbox"
           aria-label={`Approve: ${proposal.summary}`}
           checked={isApproved}
           onChange={onToggleApprove}
-          className="size-4 shrink-0"
+          className="ml-4 size-4 shrink-0"
         />
       )}
       <div className="min-w-0 flex-1">
@@ -681,11 +681,11 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
-        {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
+      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+        {ids.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
-          if (!r) return <p key={id} className="py-3 text-sm text-muted-foreground" data-keep="data">Tx #{id} (row not found)</p>;
+          if (!r) return <p key={id} className="px-4 py-3 text-sm text-muted-foreground" data-keep="data">Tx #{id} (row not found)</p>;
           return (
             <div key={id}>
               <ListRow
@@ -742,7 +742,7 @@ function RowDetailsLine({
   if (row.payee) items.push({ key: "payee", value: row.payee });
   if (items.length === 0) return null;
   return (
-    <div className="px-1 pb-2 text-xs text-muted-foreground">
+    <div className="px-4 pb-2 text-xs text-muted-foreground">
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {items.map((it) => {
           const isHi = highlight?.has(it.key);
@@ -783,7 +783,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -798,7 +798,7 @@ function ReplacementPreviewTable({
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3" cardClassName="border-warning/40 bg-warning/5">
+          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]" cardClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -1664,7 +1664,7 @@ function WillBecomeTable({
   if (changedKeys.has("related")) secondaryHi.add("related");
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Will become" icon={PlusCircle} tone="emerald" padded={false} className="px-3" cardClassName="border-pos/40 bg-pos/5">
+      <SectionCard label="Will become" icon={PlusCircle} tone="emerald" padded={false} cardClassName="border-pos/40 bg-pos/5">
         <ListRow
           title={`#${willBecome.id} · ${willBecome.date}`}
           subtitle={
@@ -1888,7 +1888,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}

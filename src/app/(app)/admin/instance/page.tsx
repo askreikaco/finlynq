@@ -91,8 +91,8 @@ interface SectionProps {
 
 function ConfigSection({ title, description, children }: SectionProps) {
   return (
-    <SectionCard label={title} icon={Server} tone="indigo">
-      <p className="text-sm text-muted-foreground mb-2">{description}</p>
+    <SectionCard label={title} icon={Server} tone="indigo" padded={false}>
+      <p className="px-4 pb-2 text-sm text-muted-foreground">{description}</p>
       <ul className="flex flex-col [&>*:not(:last-child)]:shadow-[var(--list-divider)]">{children}</ul>
     </SectionCard>
   );

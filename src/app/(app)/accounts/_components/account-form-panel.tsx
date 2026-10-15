@@ -363,7 +363,7 @@ function AccountEditView({ accountId, returnTo, embedded }: { accountId: number;
                 No cash sleeves yet. Add one to start recording trades.
               </p>
             ) : (
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
                 {sleeves.map((s) => (
                   <ListRow
                     key={s.id}

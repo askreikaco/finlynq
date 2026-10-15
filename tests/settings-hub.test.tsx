@@ -104,7 +104,7 @@ describe("SettingsHub", () => {
   it("renders entries with their registry icons in an icon tile per row", () => {
     render(<SettingsHub />);
 
-    // Check that each settings link has exactly one SVG icon in the settings-hub-icon tile
+    // Check that each settings link has exactly one SVG icon in the list-row-tile
     const settingsLinks = screen.getAllByRole("link")
       .filter((l) => {
         const href = l.getAttribute("href");
@@ -114,7 +114,7 @@ describe("SettingsHub", () => {
     expect(settingsLinks.length).toBeGreaterThanOrEqual(6);
 
     settingsLinks.forEach((link) => {
-      const tileSvg = link.querySelector('[data-slot="settings-hub-icon"] svg');
+      const tileSvg = link.querySelector('[data-slot="list-row-tile"] svg');
       expect(tileSvg).not.toBeNull();
       expect(tileSvg).toBeDefined();
     });
@@ -157,7 +157,7 @@ describe("SettingsHub", () => {
   it("renders each row with chevron-right for navigation", () => {
     render(<SettingsHub />);
 
-    const chevrons = document.querySelectorAll('[data-slot="settings-hub-chevron"]');
+    const chevrons = document.querySelectorAll('[data-slot="list-row-chevron"]');
     expect(chevrons.length).toBeGreaterThanOrEqual(6);
   });
 

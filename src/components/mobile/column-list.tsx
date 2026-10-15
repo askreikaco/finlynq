@@ -100,7 +100,7 @@ export function ColumnList<T>({
       {rows.length === 0 ? (
         emptyState ?? null
       ) : (
-        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
           {sorted.map((row) => {
             const subtitle = middle.map((c, i) => (
               <React.Fragment key={c.key}>

@@ -41,7 +41,7 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
   const [open, setOpen] = useState<{ stock: EtfStock; index: number } | null>(null);
   return (
     <>
-      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
         {rows.map((s, i) => (
           <ListRow
             key={s.ticker}
@@ -294,7 +294,7 @@ export function EtfXrayCard({
             <p className="text-xs text-muted-foreground">
               Your ETF holdings and their weight in the ETF portfolio.
             </p>
-            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {etfXray.etfs.map((etf) => (
                 <ListRow
                   key={`${etf.symbol}-${etf.account}`}

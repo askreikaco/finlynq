@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, TxRow, SectionCard, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -123,7 +123,7 @@ const DEBT_CHART_COLOR = "#f43f5e";
 
 type LoanTrend = { values: number[]; labels: string[] };
 
-/** One loan row (the shared ProgressRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
+/** One loan row (the shared ListRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
 function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean; trend?: LoanTrend | null }) {
   const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
   const freq = FREQUENCY_LABELS[loan.paymentFrequency];
@@ -131,26 +131,24 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { 
   const converted = loan.currency !== displayCurrency && shown != null;
   const paidPct = loan.principal > 0 && loan.remainingBalance != null ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
   return (
-    <ProgressRowButton onPress={onOpen} selected={selected}>
-      <ProgressRow
-        slot="loan"
-        label={loan.name}
-        dot={STATUS_DOT[paidOff ? "completed" : "active"]}
-        chartColor={DEBT_CHART_COLOR}
-        meta={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
-        value={loan.remainingBalance != null ? formatCurrency(loan.remainingBalance, loan.currency) : "—"}
-        delta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : `of ${formatCurrency(loan.principal, loan.currency)}`}
-        deltaTitle="Remaining balance"
-        trend={trend?.values ?? null}
-        sparkLabels={trend?.labels}
-        cur={displayCurrency}
-        pct={paidPct}
-        barTone={paidOff ? "pos" : "primary"}
-        progressLabel={`${Math.round(Math.min(100, Math.max(0, paidPct)))}%`}
-        progressAria={`Loan ${loan.name} paid`}
-        strike={paidOff}
-      />
-    </ProgressRowButton>
+    <ListRow
+      slot="loan"
+      title={loan.name}
+      subtitle={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
+      dot={STATUS_DOT[paidOff ? "completed" : "active"]}
+      value={loan.remainingBalance != null ? formatCurrency(loan.remainingBalance, loan.currency) : "—"}
+      delta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : `of ${formatCurrency(loan.principal, loan.currency)}`}
+      deltaTitle="Remaining balance"
+      trend={trend?.values ?? null}
+      trendLabels={trend?.labels}
+      trendColor={DEBT_CHART_COLOR}
+      currency={displayCurrency}
+      progress={{ pct: paidPct, tone: paidOff ? "pos" : "primary", label: `${Math.round(Math.min(100, Math.max(0, paidPct)))}%`, aria: `Loan ${loan.name} paid` }}
+      strike={paidOff}
+      chevron={false}
+      selected={selected}
+      onPress={onOpen}
+    />
   );
 }
 

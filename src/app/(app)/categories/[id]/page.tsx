@@ -278,12 +278,12 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     payees: hasData ? (
-      <SectionCard label="Top payees" icon={Users} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
-        <p className="px-1 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, {periodName}</p>
+      <SectionCard label="Top payees" icon={Users} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+        <p className="px-4 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, {periodName}</p>
         {data.payeesLocked ? (
-          <p className="px-1 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
+          <p className="px-4 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
         ) : data.topPayees.length === 0 ? (
-          <p className="px-1 py-3 text-sm text-muted-foreground">No payees recorded.</p>
+          <p className="px-4 py-3 text-sm text-muted-foreground">No payees recorded.</p>
         ) : (
           data.topPayees.map((p) => (
             <ListRow
@@ -298,8 +298,8 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     recent: hasData ? (
-      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
-        <p className="px-1 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in {periodName}{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
+      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+        <p className="px-4 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in {periodName}{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
         {data.recent.map((t) => (
           <ListRow
             key={t.id}
@@ -309,7 +309,7 @@ function CategoryPageContent() {
             value={<Amount value={t.amount} currency={t.currency} size="md" tone="auto" />}
           />
         ))}
-        <div className="px-1 py-3">
+        <div className="px-4 py-3">
           <Link
             href={buildTxDrillUrl({ categoryId: String(categoryId), startDate: windowStart, endDate: windowEnd })}
             className="inline-block text-sm font-medium text-primary hover:underline"

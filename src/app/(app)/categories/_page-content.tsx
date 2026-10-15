@@ -11,7 +11,6 @@
 
 import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,7 @@ import { useAppSizeClass } from "@/components/adaptive/size-class-context";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
-import { CategoryRow } from "./_components/category-row";
+import { CategoryRow, type CategoryRowProps } from "./_components/category-row";
 import {
   CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
   type MetricItem, type OverflowAction,
@@ -389,8 +388,6 @@ function CategoriesOverview() {
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
 
-  const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
   /** One type's pieces: heading total, the share (pie) card and the category list card. */
   function panelFor(t: CatType) {
     const data = dataOf[t]!;
@@ -442,7 +439,7 @@ function CategoriesOverview() {
     }
 
     /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
+    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean; row?: CategoryRowProps["row"] }) => (
       <CategoryRow
         label={r.label}
         dot={r.dot}
@@ -456,40 +453,35 @@ function CategoriesOverview() {
         count={r.count}
         badge={r.badge}
         indent={r.indent}
+        row={r.row}
       />
     );
 
-    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false, row?: CategoryRowProps["row"]) =>
       rowFor({
-        indent,
+        indent, row,
         label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
         badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
       });
 
     const groupRow = (row: OverviewRow) =>
-      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key), row: { embedded: true } });
 
     /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
-    function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
-      const body = categoryRow(c, group, dot, indent);
-      return editMode ? (
-        <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
-          {body}
-        </button>
-      ) : (
-        <Link
-        href={`/categories/${c.id}`}
-        className={`${className}${detail.selectedId === String(c.id) ? " bg-primary/5" : ""}`}
-        aria-current={detail.selectedId === String(c.id) ? "true" : undefined}
-        onClick={(e) => {
-          if (!detail.split) return;
-          e.preventDefault();
-          detail.select(c.id); // wide: the row selects into the pane; the detail page stays one click away from the form
-        }}
-      >
-        {body}
-      </Link>
-      );
+    function categoryLink(c: OverviewCategory, group: string, dot: string, indent = false) {
+      const selected = detail.selectedId === String(c.id);
+      return editMode
+        ? categoryRow(c, group, dot, indent, { onPress: () => setEdit(c.id), "aria-label": `Edit: ${subLabel(c.name, group)}`, "data-edit-row": "", className: "bg-primary/5", chevron: "reserve" })
+        : categoryRow(c, group, dot, indent, {
+            href: `/categories/${c.id}`,
+            selected,
+            chevron: "reserve",
+            onPress: (e) => {
+              if (!detail.split) return;
+              e.preventDefault();
+              detail.select(c.id); // wide: the row selects into the pane; the detail page stays one click away from the form
+            },
+          });
     }
 
     const summary = (
@@ -582,14 +574,14 @@ function CategoriesOverview() {
                   >
                     <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {row.categories.map((c) => (
-                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
+                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), true)}</li>
                       ))}
                     </ul>
                   </AccordionItem>
                 </Accordion>
               </div>
             ) : (
-              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key), ROW_LINK)}</div>
+              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key))}</div>
             ),
           )
         )}

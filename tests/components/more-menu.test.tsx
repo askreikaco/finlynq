@@ -159,9 +159,9 @@ describe("More screen", () => {
       expect(r?.textContent).toContain("1");
       return r!;
     });
-    expect(feedbackRow.querySelector("[class*='bg-primary']")).not.toBeNull();
+    expect(feedbackRow.querySelector("[data-slot='list-row-unread']")).not.toBeNull();
     const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
-    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
+    expect(whatsnewRow?.querySelector("[data-slot='list-row-unread']")).toBeNull();
   });
 
   it("shows badge with unread announcement count on whats-new row", async () => {
@@ -178,7 +178,7 @@ describe("More screen", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
     const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
     expect(whatsnewRow?.textContent).not.toContain("2");
-    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
+    expect(whatsnewRow?.querySelector("[data-slot='list-row-unread']")).toBeNull();
   });
 });
 

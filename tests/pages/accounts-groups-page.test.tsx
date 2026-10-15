@@ -71,7 +71,7 @@ describe("/accounts/groups page", () => {
     render(<AccountGroupsPage />);
     await screen.findByRole("button", { name: "Actions for Banks" });
     const assets = document.querySelector("[data-slot=manage-groups-A]") as HTMLElement;
-    const names = Array.from(assets.querySelectorAll("li span")).map((s) => s.textContent);
+    const names = Array.from(assets.querySelectorAll("[data-slot=list-label]")).map((s) => s.textContent);
     expect(names).toEqual(["Banks", "Investments", "Other"]);
     const liab = document.querySelector("[data-slot=manage-groups-L]") as HTMLElement;
     expect(within(liab).getByText("Credit Card")).toBeTruthy();

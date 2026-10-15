@@ -490,7 +490,7 @@ function InvestmentsSettingsPage() {
                 {filterInput("type", "Type")}
                 {filterInput("currency", "Currency")}
               </div>
-              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {rows.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
                     {hasActiveFilter ? "No matches." : "No securities."}
@@ -542,57 +542,44 @@ function InvestmentsSettingsPage() {
                 const open = expandedSecurities.has(s.id);
                 return (
                   <div key={s.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleSecurity(s.id)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="font-mono text-sm font-medium">{symbolLabel(s)}</span>
-                        {descriptionOf(s) && (
-                          <span className="truncate text-xs text-muted-foreground">{descriptionOf(s)}</span>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {s.accounts.length} {s.accounts.length === 1 ? "account" : "accounts"}
-                      </Badge>
-                    </button>
+                    <ListRow
+                      leading={open ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
+                      title={<span className="font-mono">{symbolLabel(s)}</span>}
+                      subtitle={descriptionOf(s) || undefined}
+                      value={<Badge variant="outline" className="text-xs">{s.accounts.length} {s.accounts.length === 1 ? "account" : "accounts"}</Badge>}
+                      chevron={false}
+                      onPress={() => toggleSecurity(s.id)}
+                    />
                     {open && (
-                      <div className="px-3 pb-3 pl-9 space-y-1.5">
+                      <div className="pb-3 pl-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                         {s.accounts.length === 0 ? (
-                          <p className="text-xs text-muted-foreground" data-keep="empty">Not in any account.</p>
+                          <p className="px-4 py-2 text-xs text-muted-foreground" data-keep="empty">Not in any account.</p>
                         ) : (
                           s.accounts.map((a) => (
-                            <div
+                            <ListRow
                               key={a.positionId}
-                              className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5"
-                            >
-                              <span className="text-sm">
-                                {a.accountName ?? "(account)"}
-                                {a.isCash && (
-                                  <span className="ml-1.5 text-xs text-muted-foreground">cash sleeve</span>
-                                )}
-                              </span>
-                              <Button aria-label="Unlink (transaction-free positions only)"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => unlinkPosition(a.positionId)}
-                                title="Unlink (transaction-free positions only)"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
+                              size="dense"
+                              title={a.accountName ?? "(account)"}
+                              subtitle={a.isCash ? "cash sleeve" : undefined}
+                              trailing={
+                                <Button aria-label="Unlink (transaction-free positions only)"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => unlinkPosition(a.positionId)}
+                                  title="Unlink (transaction-free positions only)"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              }
+                            />
                           ))
                         )}
-                        <Button variant="outline" size="sm" onClick={() => openLinkAccount(s.id)}>
-                          <Plus className="h-3.5 w-3.5 mr-1" /> Account
-                        </Button>
+                        <div className="px-4 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => openLinkAccount(s.id)}>
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Account
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -616,57 +603,40 @@ function InvestmentsSettingsPage() {
                 const open = expandedAccounts.has(account.id);
                 return (
                   <div key={account.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleAccount(account.id)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="text-sm font-medium truncate">{account.name}</span>
-                        <Badge variant="outline" className="font-mono text-xs shrink-0">
-                          {account.currency}
-                        </Badge>
-                      </div>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {items.length} {items.length === 1 ? "security" : "securities"}
-                      </Badge>
-                    </button>
+                    <ListRow
+                      leading={open ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
+                      title={account.name}
+                      subtitle={account.currency}
+                      value={<Badge variant="outline" className="text-xs">{items.length} {items.length === 1 ? "security" : "securities"}</Badge>}
+                      chevron={false}
+                      onPress={() => toggleAccount(account.id)}
+                    />
                     {open && (
-                      <div className="px-3 pb-3 pl-9 space-y-1.5">
+                      <div className="pb-3 pl-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                         {items.length === 0 ? (
-                          <p className="text-xs text-muted-foreground" data-keep="empty">No securities.</p>
+                          <p className="px-4 py-2 text-xs text-muted-foreground" data-keep="empty">No securities.</p>
                         ) : (
                           items.map(({ security, positionId, isCash }) => (
-                            <div
+                            <ListRow
                               key={positionId}
-                              className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-1.5"
-                            >
-                              <span className="text-sm font-mono">
-                                {symbolLabel(security)}
-                                {isCash && (
-                                  <span className="ml-1.5 font-sans text-xs text-muted-foreground">
-                                    cash sleeve
-                                  </span>
-                                )}
-                              </span>
-                              <Button aria-label="Unlink (transaction-free positions only)"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => unlinkPosition(positionId)}
-                                title="Unlink (transaction-free positions only)"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
+                              size="dense"
+                              title={<span className="font-mono">{symbolLabel(security)}</span>}
+                              subtitle={isCash ? "cash sleeve" : undefined}
+                              trailing={
+                                <Button aria-label="Unlink (transaction-free positions only)"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => unlinkPosition(positionId)}
+                                  title="Unlink (transaction-free positions only)"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              }
+                            />
                           ))
                         )}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 px-4 pt-2">
                           <Button variant="outline" size="sm" onClick={() => openLinkSecurity(account.id)}>
                             <Plus className="h-3.5 w-3.5 mr-1" /> Security
                           </Button>

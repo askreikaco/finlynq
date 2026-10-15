@@ -91,7 +91,7 @@ afterEach(() => { cleanup(); H.SIZE.v = "regular"; H.FETCHED.length = 0; H.SELEC
 describe("shared CategoryRow", () => {
   it("source: group header and category both render through CategoryRow; the old bespoke row/header are gone", () => {
     const src = read(PAGE);
-    expect(src).toContain('import { CategoryRow } from "./_components/category-row"');
+    expect(src).toContain('import { CategoryRow, type CategoryRowProps } from "./_components/category-row"');
     expect(src.match(/<CategoryRow\b/g)).toHaveLength(1); // one component, fed by rowFor for both kinds
     expect(src).toContain("rowFor({");
     expect(src).toMatch(/const groupRow[\s\S]*rowFor\(/);
@@ -145,9 +145,10 @@ describe("Edit mode and column alignment", () => {
 
   it("child rows indent the name only: group and category rows share the right-hand value columns", () => {
     const src = read(PAGE);
-    expect(src).toContain('py-3 pl-4 pr-11'); // = group trigger px-4 + chevron slot
-    expect(src).not.toMatch(/ROW_LINK\} pl-8/);
-    expect(read("src/components/mobile/progress-row.tsx")).toContain('indent && "pl-5"');
+    // single rows reserve the chevron slot where the group trigger has its accordion chevron, so the value columns line up
+    expect(src).toContain('chevron: "reserve"');
+    expect(src).toContain("embedded: true"); // the group row sits inside the accordion trigger
+    expect(read("src/components/mobile/list-row.tsx")).toContain('indent && "pl-5"');
   });
 });
 

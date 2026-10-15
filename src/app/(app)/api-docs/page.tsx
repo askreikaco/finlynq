@@ -4,6 +4,7 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useState } from "react";
 import { ListRow } from "@/components/mobile";
+import { ChevronDown } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
 
@@ -415,7 +416,7 @@ function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
   return (
     <div className="mt-3">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
         {params.map((p) => (
           <ListRow
             key={p.name}
@@ -434,18 +435,16 @@ function RouteCard({ route }: { route: ApiRoute }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-lg border border-border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
-      >
-        <MethodBadge method={route.method} />
-        <code className="flex-1 text-sm font-medium text-foreground">{route.path}</code>
-        <span className="hidden text-xs text-muted-foreground regular:inline">{route.description}</span>
-        <svg className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <div className="overflow-hidden rounded-lg border border-border">
+      <ListRow
+        leading={<MethodBadge method={route.method} />}
+        title={<code className="text-sm">{route.path}</code>}
+        subtitle={<span className="hidden regular:inline">{route.description}</span>}
+        trailing={<ChevronDown aria-hidden className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />}
+        chevron={false}
+        onPress={() => setOpen(!open)}
+        aria-expanded={open}
+      />
       {open && (
         <div className="border-t border-border px-4 py-3">
           <p className="text-sm text-muted-foreground">{route.description}</p>
@@ -672,7 +671,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
               </h3>
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
                 {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
                   <ListRow
                     key={tool.name}
@@ -687,7 +686,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Write Tools ({MCP_TOOLS.filter((t) => t.type === "write").length})
               </h3>
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card">
                 {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
                   <ListRow
                     key={tool.name}

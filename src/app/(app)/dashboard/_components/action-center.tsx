@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SectionCard } from "@/components/mobile/section-card";
+import { ListRow } from "@/components/mobile/list-row";
 import { AlertTriangle, Bell, CheckCircle2, ChevronRight, ListChecks, Shield, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,9 +17,9 @@ const itemVariants = {
 };
 
 const SEVERITY_ICON = {
-  critical: { icon: AlertTriangle, color: "text-destructive", dot: "bg-destructive" },
-  warning: { icon: AlertTriangle, color: "text-warning", dot: "bg-warning" },
-  info: { icon: Bell, color: "text-info", dot: "bg-info" },
+  critical: { icon: AlertTriangle, color: "text-destructive", dot: "var(--destructive)" },
+  warning: { icon: AlertTriangle, color: "text-warning", dot: "var(--warning)" },
+  info: { icon: Bell, color: "text-info", dot: "var(--info)" },
 };
 
 const MAX_VISIBLE = 3;
@@ -79,11 +80,10 @@ export function ActionCenter() {
               </div>
             </div>
           ) : (
-            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+            <div className="-mx-3 @[11rem]:-mx-5 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               <AnimatePresence mode="popLayout">
-                {displayItems.map((item, i) => {
+                {displayItems.map((item) => {
                   const config = SEVERITY_ICON[item.severity];
-                  const Icon = config.icon;
                   return (
                     <motion.div
                       key={item.id}
@@ -91,17 +91,15 @@ export function ActionCenter() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -80 }}
                       transition={{ duration: 0.15 }}
-                      className="group flex items-center gap-3 py-3 first:pt-1"
+                      className="group"
                     >
-                      {/* Severity dot */}
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${config.dot}`} />
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">{item.title}</p>
-                          {item.amount !== undefined && (
-                            <span className="text-xs font-mono font-semibold text-muted-foreground tabular-nums">
+                      <ListRow
+                        dot={config.dot}
+                        title={item.title}
+                        subtitle={item.description}
+                        value={
+                          item.amount !== undefined ? (
+                            <span className="font-mono text-xs text-muted-foreground">
                               {/* The server converts every figure and stamps the
                                   currency on the item. Omitting it falls through
                                   to formatCurrency's own USD default (FINLYNQ-183),
@@ -112,28 +110,27 @@ export function ActionCenter() {
                                   server-only module that pulls in `pg`. */}
                               {formatCurrency(item.amount, item.currency)}
                             </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Link
-                          href={item.actionUrl}
-                          className="text-xs font-medium text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/5"
-                        >
-                          View
-                        </Link>
-                        <button
-                          onClick={() => dismiss(item.id)}
-                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-regular:opacity-100 max-regular:p-3 max-regular:-m-3 hover:bg-muted/80 transition-all"
-                          title="Dismiss"
-                          aria-label="Dismiss alert"
-                        >
-                          <X className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </div>
+                          ) : undefined
+                        }
+                        trailing={
+                          <span className="flex shrink-0 items-center gap-1">
+                            <Link
+                              href={item.actionUrl}
+                              className="rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/5 hover:text-primary/80"
+                            >
+                              View
+                            </Link>
+                            <button
+                              onClick={() => dismiss(item.id)}
+                              className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-regular:opacity-100 max-regular:p-3 max-regular:-m-3 hover:bg-muted/80 transition-all"
+                              title="Dismiss"
+                              aria-label="Dismiss alert"
+                            >
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                          </span>
+                        }
+                      />
                     </motion.div>
                   );
                 })}
