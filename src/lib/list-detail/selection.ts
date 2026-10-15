@@ -1,5 +1,6 @@
 /**
  * Split-view selection lives in the URL: `?sel=<id>` selects an item, `?sel=new` starts a create.
+ * `?mode=edit` (with an item) shows its edit form instead of its detail page (see parseMode / withMode).
  * Pure helpers (no React) so the parsing and the pane's sticky offsets are unit-tested in one place.
  */
 
@@ -20,11 +21,31 @@ export function parseSel(raw: string | null | undefined): ListSelection {
   return ID_RE.test(raw) ? { kind: "item", id: raw } : { kind: "none" };
 }
 
-/** The query string (with leading "?", or "" when empty) for `search` with `sel` set (null removes it). */
+/** The query string (with leading "?", or "" when empty) for `search` with `sel` set (null removes it). Always resets `mode`: a new selection opens on the detail view. */
 export function withSel(search: string | URLSearchParams, sel: string | number | null): string {
   const p = new URLSearchParams(typeof search === "string" ? search : search.toString());
   if (sel === null || sel === "") p.delete(SEL_PARAM);
   else p.set(SEL_PARAM, String(sel));
+  p.delete(MODE_PARAM);
+  const qs = p.toString();
+  return qs ? `?${qs}` : "";
+}
+
+/** `?mode=edit` switches the pane from an item's detail page to its edit form. No param = detail. */
+export const MODE_PARAM = "mode";
+export const MODE_EDIT = "edit";
+export type PaneMode = "view" | "edit";
+
+/** "edit" only for the exact value "edit"; anything else (missing, junk) is the detail view. */
+export function parseMode(raw: string | null | undefined): PaneMode {
+  return raw === MODE_EDIT ? "edit" : "view";
+}
+
+/** The query string for `search` with `mode` set ("view" removes the param). Other params are kept. */
+export function withMode(search: string | URLSearchParams, mode: PaneMode): string {
+  const p = new URLSearchParams(typeof search === "string" ? search : search.toString());
+  if (mode === "edit") p.set(MODE_PARAM, MODE_EDIT);
+  else p.delete(MODE_PARAM);
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }

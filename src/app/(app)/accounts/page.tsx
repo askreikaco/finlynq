@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { AccountFormPanel } from "./_components/account-form-panel";
+import { AccountDetail } from "./_components/account-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
@@ -391,13 +392,21 @@ function AccountsPage() {
       <ListDetailLayout
         entity="account"
         newLabel="Create Account"
-        pane={(api) => (
+        detailTitle="Account"
+        detailHref={(id) => `/accounts/${id}`}
+        renderDetail={(id, api) => (
+          <AccountDetail
+            id={id}
+            embedded={{ onEdit: api.edit, onDeleted: () => { loadAccounts(); api.afterDeleted(); }, onChanged: loadAccounts }}
+          />
+        )}
+        renderForm={(api) => (
                 <AccountFormPanel
                   embedded
                   mode={api.isNew ? "create" : "edit"}
                   id={api.selectedId ?? undefined}
                   onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
-                  onCancel={api.clear}
+                  onCancel={api.cancel}
                   onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
                 />
               )}

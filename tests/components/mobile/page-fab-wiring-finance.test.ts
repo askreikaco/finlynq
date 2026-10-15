@@ -13,7 +13,7 @@ import { FAB_ROUTES } from "@/components/mobile/fab-registry";
 const APP = "src/app/(app)";
 
 const PAGES = [
-  { file: `${APP}/accounts/[id]/page.tsx`, component: "AccountDetailPage", route: "/accounts/[id]", key: "accounts.detail.add" },
+  { file: `${APP}/accounts/_components/account-detail.tsx`, component: "AccountDetail", route: "/accounts/[id]", key: "accounts.detail.add" },
 ] as const;
 
 function read(rel: string): string {
