@@ -10,9 +10,8 @@
  * import/pending/page.tsx; all state + callbacks owned by the page.
  */
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ArrowLeft, Check, Sparkles, ArrowRight, X } from "lucide-react";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import type { StagedDetail } from "../_types";
 import { PageHeader, MoreActionsMenu, type MoreItem } from "@/components/mobile";
@@ -103,7 +102,7 @@ export function ReconcileHeader({
       <>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={closeDetail} aria-label="Back to list">
+            <Button variant="ghost" iconOnly onClick={closeDetail} aria-label="Back to list">
               <ArrowLeft className="size-4" aria-hidden />
             </Button>
             <h2 className="truncate text-lg font-semibold">{title}</h2>

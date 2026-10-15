@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { Loader2, Users } from "lucide-react";
@@ -78,34 +78,35 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
 
   return (
     <>
-      <Card className="border-info/30 bg-info/10">
-        <CardHeader>
-          <CardTitle icon={Users} tone="indigo">{FAMILY_STRINGS.accept_card_title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div aria-live="polite" className="space-y-3">
-            {result === "accepted" && <Notice tone="success">{FAMILY_STRINGS.accept_success}</Notice>}
-            {result === "declined" && <Notice tone="neutral">{FAMILY_STRINGS.accept_declined}</Notice>}
-            {error && (
-              <Notice tone="danger">{error}</Notice>
-            )}
-          </div>
-          {!result && (
-            <>
-              <p className="text-sm">{FAMILY_STRINGS.accept_card_message}</p>
-              <div className="flex flex-col gap-2 regular:flex-row">
-                <Button onClick={() => act("accept")} disabled={busy !== null} className="gap-2">
-                  {busy === "accept" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {FAMILY_STRINGS.accept_button}
-                </Button>
-                <Button variant="outline" onClick={() => act("decline")} disabled={busy !== null} className="gap-2">
-                  {busy === "decline" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {FAMILY_STRINGS.decline_button}
-                </Button>
-              </div>
-            </>
+      <Card
+        frameClassName="border-info/30 bg-info/10"
+        title={FAMILY_STRINGS.accept_card_title}
+        icon={Users}
+        tone="indigo"
+        className="space-y-3"
+      >
+        <div aria-live="polite" className="space-y-3">
+          {result === "accepted" && <Notice tone="success">{FAMILY_STRINGS.accept_success}</Notice>}
+          {result === "declined" && <Notice tone="neutral">{FAMILY_STRINGS.accept_declined}</Notice>}
+          {error && (
+            <Notice tone="danger">{error}</Notice>
           )}
-        </CardContent>
+        </div>
+        {!result && (
+          <>
+            <p className="text-sm">{FAMILY_STRINGS.accept_card_message}</p>
+            <div className="flex flex-col gap-2 regular:flex-row">
+              <Button onClick={() => act("accept")} disabled={busy !== null} className="gap-2">
+                {busy === "accept" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {FAMILY_STRINGS.accept_button}
+              </Button>
+              <Button variant="outline" onClick={() => act("decline")} disabled={busy !== null} className="gap-2">
+                {busy === "decline" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {FAMILY_STRINGS.decline_button}
+              </Button>
+            </div>
+          </>
+        )}
       </Card>
       {stepUp.dialog}
     </>

@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
@@ -213,8 +213,7 @@ export default function AdminApiLogPage() {
       </p>
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/30 bg-destructive/10" className="py-3 text-sm text-destructive">{error}
         </Card>
       )}
 
@@ -224,9 +223,9 @@ export default function AdminApiLogPage() {
           <MetricGrid
             columns={2}
             metrics={[
-              { id: "buffered", label: "Buffered", icon: Database, value: `${data.meta.count.toLocaleString()} / ${data.meta.cap.toLocaleString()}` },
+              { id: "buffered", title: "Buffered", icon: Database, value: `${data.meta.count.toLocaleString()} / ${data.meta.cap.toLocaleString()}` },
               {
-                id: "errors", label: "Errors", icon: AlertTriangle, value: summary.errors.toLocaleString(),
+                id: "errors", title: "Errors", icon: AlertTriangle, value: summary.errors.toLocaleString(),
                 tone: summary.errors > 0 ? "rose" : "muted", valueClassName: summary.errors > 0 ? "text-destructive" : undefined,
               },
             ]}
@@ -244,20 +243,18 @@ export default function AdminApiLogPage() {
       )}
 
       {/* Calls */}
-      <Card>
-        <CardContent className="p-2">
-          <ColumnList<OutboundCall>
-            columns={columns}
-            rows={calls}
-            rowKey={(r) => r.id}
-            rowClassName={(r) => (!r.ok ? "bg-destructive/5" : undefined)}
-            emptyState={
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                {loading ? "Loading…" : "No outbound calls recorded yet. Reproduce an operation, then Refresh."}
-              </p>
-            }
-          />
-        </CardContent>
+      <Card className="p-2">
+        <ColumnList<OutboundCall>
+          columns={columns}
+          rows={calls}
+          rowKey={(r) => r.id}
+          rowClassName={(r) => (!r.ok ? "bg-destructive/5" : undefined)}
+          emptyState={
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {loading ? "Loading…" : "No outbound calls recorded yet. Reproduce an operation, then Refresh."}
+            </p>
+          }
+        />
       </Card>
 
       <Overlay

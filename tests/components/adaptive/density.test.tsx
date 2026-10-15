@@ -138,12 +138,11 @@ function mount2() {
 describe("shared layout components honour dense:", () => {
   const read = (p: string) => fs.readFileSync(p, "utf8");
 
-  it("Card tightens gap and padding in compact only", () => {
-    const src = read("src/components/ui/card.tsx");
-    for (const c of ["dense:pointer-fine:gap-3", "dense:pointer-fine:py-2.5", "dense:pointer-fine:[.border-b]:pb-3"]) expect(src).toContain(c);
+  it("Card title row tightens its top padding in compact only", () => {
+    const src = read("src/components/mobile/card-label.tsx");
+    expect(src).toContain("dense:pointer-fine:pt-[26px]");
     // Default classes untouched.
-    expect(src).toContain("gap-4");
-    expect(src).toContain("py-3 regular:py-4");
+    expect(src).toContain("pt-7 regular:pt-8");
   });
 
   it("Field / ListRow / DataView carry dense: tweaks", () => {
@@ -165,13 +164,12 @@ describe("shared layout components honour dense:", () => {
       </div>,
     );
     const card = container.querySelector('[data-slot="card"]')!;
-    expect(card.className).toContain("gap-4");
-    expect(card.className).toContain("py-3");
-    expect(card.className).toContain("regular:py-4");
+    expect(card.className).toContain("surface-card");
+    expect(card.className).toContain("rounded-xl");
     const group = container.firstElementChild!.lastElementChild!;
     expect(group.className).toContain("rounded-xl");
     // Every added token is dense:-prefixed; stripping them yields the original class list.
     const stripped = card.className.split(/\s+/).filter((t) => !t.startsWith("dense:")).join(" ");
-    expect(stripped).toContain("group/card flex flex-col gap-4 overflow-hidden rounded-xl surface-card py-3 regular:py-4 text-sm");
+    expect(stripped).toContain("surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground");
   });
 });

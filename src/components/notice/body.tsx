@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Info, Inbox, Loader2, RefreshCw, X, type LucideIcon } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Info, Inbox, RefreshCw, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Disclosure } from "@/components/adaptive";
@@ -48,15 +48,14 @@ function defaultRole(variant: NoticeVariant, tone: NoticeTone): "alert" | "statu
   return "status";
 }
 
-function ActionButton({ action, size = "sm", className }: { action: NoticeAction; size?: "sm" | "default"; className?: string }) {
-  const variant = action.tone === "outline" ? "outline" : "default";
+function ActionButton({ action, size = "sm", className }: { action: NoticeAction; size?: "sm" | "md"; className?: string }) {
+  const variant = action.tone === "outline" ? "outline" : "primary";
   return action.href ? (
-    <Button size={size} variant={variant} className={className} data-testid={action.testId} onClick={action.onClick} render={<Link href={action.href} />}>
+    <Button size={size} variant={variant} className={className} data-testid={action.testId} onClick={action.onClick} href={action.href}>
       {action.label}
     </Button>
   ) : (
-    <Button size={size} variant={variant} className={className} data-testid={action.testId} disabled={action.disabled || action.busy} onClick={action.onClick}>
-      {action.busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+    <Button size={size} variant={variant} className={className} data-testid={action.testId} disabled={action.disabled} loading={action.busy} onClick={action.onClick}>
       {action.label}
     </Button>
   );
@@ -188,8 +187,8 @@ export function NoticeBody(p: NoticeBodyProps) {
         {body != null && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>}
         {(p.action || p.secondaryAction) && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {p.action && <ActionButton action={p.action} size="default" />}
-            {p.secondaryAction && <ActionButton action={{ tone: "outline", ...p.secondaryAction }} size="default" />}
+            {p.action && <ActionButton action={p.action} size="md" />}
+            {p.secondaryAction && <ActionButton action={{ tone: "outline", ...p.secondaryAction }} size="md" />}
           </div>
         )}
         {p.retry && (

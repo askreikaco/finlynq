@@ -574,13 +574,13 @@ export function LotInspectorDialog({
                             }
                             actions={
                               c.closeKind === "sell" ? (
-                                <button
+                                <Button
                                   type="button"
-                                  className="text-xs text-primary underline-offset-2 hover:underline"
+                                  variant="link" size="sm"
                                   onClick={() => startEdit(c.closeTxId)}
                                 >
                                   Edit allocation
-                                </button>
+                                </Button>
                               ) : undefined
                             }
                           />

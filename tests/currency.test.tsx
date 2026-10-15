@@ -21,12 +21,6 @@ vi.mock("@/components/currency-provider", () => ({
 }));
 
 // Mock UI components
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardHeader: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardTitle: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}));
 
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
@@ -105,7 +99,7 @@ vi.mock("@/components/language-provider", () => ({
 
 // Import components after mocking dependencies
 import { AnimatedNumber } from "@/components/animated-number";
-import { MetricCard } from "@/components/metric-card";
+import { Card } from "@/components/ui/card";
 import { AvailableToSpend } from "@/app/(app)/dashboard/_components/available-to-spend";
 import { SpendingCategoryChart } from "@/app/(app)/dashboard/_components/spending-category-chart";
 import { InsightsSection } from "@/app/(app)/dashboard/_components/insights-section";
@@ -125,11 +119,11 @@ describe("Dashboard Currency Display", () => {
     expect(container).toBeTruthy();
   });
 
-  it("MetricCard renders with provided currency", () => {
+  it("Card renders with provided currency", () => {
     const mockIcon = () => <span>Icon</span>;
     const { container } = render(
-      <MetricCard
-        label="Test Metric"
+      <Card
+        title="Test Metric"
         icon={mockIcon}
         value={500000}
         currency="VND"

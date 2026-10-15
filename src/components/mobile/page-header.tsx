@@ -2,17 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, Filter, ListChecks, Loader2, MoreHorizontal, Pencil, Plus, Settings, type LucideIcon } from "lucide-react";
+import { Check, ChevronLeft, Filter, ListChecks, MoreHorizontal, Pencil, Plus, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RoundIconButton } from "@/components/ui/round-icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BackButton } from "./back-button";
+import { onBackLinkClick } from "@/lib/nav/history-depth";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
 import { usePageCustomizeRegistration } from "./page-customize";
 import { FilterButton } from "@/components/page-toolbar";
@@ -103,13 +102,15 @@ function PrimaryAction({ primary }: { primary: TopBarPrimary }) {
     "data-kind": primary.kind,
     "data-testid": primary.testId,
   } as const;
-  const icon = busy ? <Loader2 className="animate-spin" aria-hidden /> : <Icon aria-hidden />;
   if ("href" in primary && primary.href !== undefined) {
     const { href, onSelect } = primary;
     return (
       <Button
         {...common}
-        render={<Link href={href} />}
+        iconOnly
+        shape="round"
+        leading={Icon}
+        href={href}
         onClick={
           onSelect
             ? (e: React.MouseEvent) => {
@@ -118,22 +119,16 @@ function PrimaryAction({ primary }: { primary: TopBarPrimary }) {
               }
             : undefined
         }
-      >
-        {icon}
-      </Button>
+      />
     );
   }
   if (primary.kind === "save" && "form" in primary && primary.form !== undefined) {
     return (
-      <Button {...common} type="submit" form={primary.form} disabled={primary.disabled || busy}>
-        {icon}
-      </Button>
+      <Button {...common} iconOnly shape="round" leading={Icon} loading={busy} type="submit" form={primary.form} disabled={primary.disabled} />
     );
   }
   return (
-    <Button {...common} type="button" disabled={primary.disabled || busy} onClick={primary.onSelect}>
-      {icon}
-    </Button>
+    <Button {...common} iconOnly shape="round" leading={Icon} loading={busy} type="button" disabled={primary.disabled} onClick={primary.onSelect} />
   );
 }
 
@@ -141,7 +136,7 @@ function PrimaryAction({ primary }: { primary: TopBarPrimary }) {
 export function MoreActionsMenu({ items }: { items: MoreItem[] }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<RoundIconButton aria-label="More actions" data-slot="overflow-trigger" />}>
+      <DropdownMenuTrigger render={<Button variant="ghost" iconOnly shape="round" aria-label="More actions" data-slot="overflow-trigger" />}>
         <MoreHorizontal className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -166,6 +161,23 @@ export function MoreActionsMenu({ items }: { items: MoreItem[] }) {
   );
 }
 
+/** The Back control: a round iconOnly Button on the glass capsule; a link when `href` is given, else a button. */
+function BackControl({ href, onClick, label = "Back", className }: { href?: string; onClick?: () => void; label?: string; className?: string }) {
+  return (
+    <Button
+      variant="ghost"
+      iconOnly
+      shape="round"
+      surface={false}
+      leading={ChevronLeft}
+      aria-label={label}
+      data-slot="back-button"
+      className={cn("glass-capsule hover:bg-accent", className)}
+      {...(href ? { href, onClick: onBackLinkClick } : { type: "button" as const, onClick })}
+    />
+  );
+}
+
 function BackSlot({ back }: { back: TopBarBack | false | undefined }) {
   // Automatic target: the nav registry parent (or a valid ?returnTo=) on a level 2+ route.
   const auto = useBackTarget();
@@ -173,10 +185,10 @@ function BackSlot({ back }: { back: TopBarBack | false | undefined }) {
   const spec: TopBarBack | null = back ?? (auto && auto.level >= 2 ? (auto.href ? { href: auto.href } : { onBack: () => window.history.back() }) : null);
   if (!spec) return null;
   if ("onBack" in spec) {
-    return <BackButton onClick={spec.onBack} label={spec.label} className="justify-self-start" />;
+    return <BackControl onClick={spec.onBack} label={spec.label} className="justify-self-start" />;
   }
   return (
-    <BackButton
+    <BackControl
       href={spec.href}
       label={spec.label}
       // Hidden by CSS at wide inside the cascading columns (column-nav.tsx) when it only leads to a visible column.
@@ -221,17 +233,19 @@ export function PageHeader({ title, info, back, primary, more, filter, bulkEdit 
             >
               {moreItems.length > 0 ? <MoreActionsMenu items={moreItems} /> : null}
               {bulkEdit ? (
-                <RoundIconButton
+                <Button
                   type="button"
+                  variant="ghost"
+                  iconOnly
+                  shape="round"
+                  leading={ListChecks}
                   aria-label={bulkEdit.label ?? "Edit list"}
-                  aria-pressed={bulkEdit.active ?? false}
+                  pressed={bulkEdit.active ?? false}
                   data-slot="bulk-edit-trigger"
                   onClick={bulkEdit.onToggle}
-                >
-                  <ListChecks className="size-4" aria-hidden />
-                </RoundIconButton>
+                />
               ) : filter ? (
-                <FilterButton {...filter} variant="outline" />
+                <FilterButton {...filter} />
               ) : null}
             </div>
           ) : null}

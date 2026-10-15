@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -20,28 +21,21 @@ const WIDTH_TOKEN = /(^|\s)(max-)?(sm|md|lg|xl|2xl):/;
 
 describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device incl. iPad)", () => {
   it.each([
-    ["default", "h-8", "pointer-coarse:h-11"],
-    ["sm", "h-7", "pointer-coarse:h-11"],
-    ["lg", "h-9", "pointer-coarse:h-11"],
-    ["icon", "size-8", "pointer-coarse:size-11"],
-    ["icon-sm", "size-7", "pointer-coarse:size-11"],
-    ["icon-lg", "size-9", "pointer-coarse:size-11"],
-  ] as const)("Button size=%s keeps %s and adds %s", (size, desktop, touch) => {
-    const c = cls(buttonVariants({ size }));
+    ["md", false, "h-8", "pointer-coarse:h-11"],
+    ["sm", false, "h-7", "pointer-coarse:h-11"],
+    ["lg", false, "h-11", "pointer-coarse:h-11"],
+    ["md", true, "size-8", "pointer-coarse:size-11"],
+    ["sm", true, "size-7", "pointer-coarse:size-11"],
+    ["lg", true, "size-11", "pointer-coarse:size-11"],
+  ] as const)("Button size=%s iconOnly=%s keeps %s and adds %s", (size, iconOnly, desktop, touch) => {
+    const c = cls(cn(buttonVariants({ size, iconOnly })));
     expect(c).toContain(desktop);
     expect(c).toContain(touch);
   });
 
-  it("xs buttons keep their box but extend the hit area to >=44px on coarse pointers", () => {
-    const c = cls(buttonVariants({ size: "xs" }));
-    expect(c).toContain("h-6");
-    expect(c).toContain("pointer-coarse:before:-inset-2.5");
-    expect(c).toContain("pointer-coarse:relative");
-  });
-
   it("no Button size uses a width-based touch token", () => {
-    for (const size of ["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"] as const) {
-      expect(cls(buttonVariants({ size })).filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
+    for (const size of ["sm", "md", "lg", "fab"] as const) {
+      for (const iconOnly of [false, true]) expect(cls(buttonVariants({ size, iconOnly })).filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
     }
   });
 
@@ -53,7 +47,7 @@ describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device
     expect(c.filter((t) => /^h-1[0-9]$|^size-1[0-9]$/.test(t))).toEqual([]);
   });
 
-  it("Button exposes data-size so layout tests can tell xs from default", () => {
+  it("Button exposes data-size so layout tests can tell sizes apart", () => {
     render(<Button size="sm">x</Button>);
     expect(screen.getByRole("button").getAttribute("data-size")).toBe("sm");
   });
@@ -98,9 +92,9 @@ describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device
     expect(c.filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
   });
 
-  it("Card padding is a layout token: py-3 by default, regular:py-4 from 640px", () => {
-    const src = read("src/components/ui/card.tsx");
-    expect(src).toContain("py-3 regular:py-4");
+  it("Card title padding is a layout token: pt-7 by default, regular:pt-8 from 640px", () => {
+    const src = read("src/components/mobile/card-label.tsx");
+    expect(src).toContain("pt-7 regular:pt-8");
     expect(src).not.toMatch(/max-md:/);
   });
 });

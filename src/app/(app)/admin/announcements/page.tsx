@@ -164,7 +164,7 @@ export default function AdminAnnouncementsPage() {
 
       <div data-slot="announcement-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Create / edit form */}
-      <Card ref={formRef} className="p-4">
+      <Card ref={formRef}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">
             {editingId ? `Editing #${editingId}` : "New announcement"}
@@ -289,12 +289,12 @@ export default function AdminAnnouncementsPage() {
                 <Button variant="outline" size="sm" onClick={() => togglePublish(a)}>
                   {a.published ? "Unpublish" : "Publish"}
                 </Button>
-                <Button variant="ghost" size="icon-sm" onClick={() => startEdit(a)} aria-label="Edit">
+                <Button variant="ghost" iconOnly size="sm" onClick={() => startEdit(a)} aria-label="Edit">
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  iconOnly size="sm"
                   onClick={() => remove(a.id)}
                   aria-label="Delete"
                   className="text-destructive"

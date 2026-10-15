@@ -23,11 +23,9 @@
  * cancel() (create: close; edit: back to the detail view when there is one, else close).
  */
 import * as React from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, MousePointerClick, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RoundIconButton } from "@/components/ui/round-icon-button";
 import { cn } from "@/lib/utils";
 import { useAppSizeClass } from "@/components/adaptive/size-class-context";
 import { PANE_CLASS, SPLIT_GRID_CLASS, parseMode, parseSel, withMode, withSel, type ListSelection, type PaneMode } from "@/lib/list-detail/selection";
@@ -203,29 +201,30 @@ export function ListDetailLayout({
               <h2 className="min-w-0 truncate text-base font-semibold text-foreground">{title ?? detailTitle}</h2>
               <div className="flex shrink-0 items-center gap-2">
                 {detailHref ? (
-                  <RoundIconButton
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    shape="round"
+                    leading={ExternalLink}
                     aria-label="Open page"
-                    title="Open page"
+                    tooltip="Open page"
                     data-slot="list-detail-open"
-                    render={<Link href={detailHref(api.sel.id)} />}
-                  >
-                    <ExternalLink className="size-4" aria-hidden />
-                  </RoundIconButton>
+                    href={detailHref(api.sel.id)}
+                  />
                 ) : null}
-                <RoundIconButton aria-label="Close" title="Close" data-slot="list-detail-close" onClick={api.clear}>
-                  <X className="size-4" />
-                </RoundIconButton>
+                <Button variant="ghost" iconOnly shape="round" leading={X} aria-label="Close" tooltip="Close" data-slot="list-detail-close" onClick={api.clear} />
                 {/* Same anatomy as the top bar: the yellow round primary (Edit on a detail) is rightmost. */}
                 <Button
                   type="button"
+                  iconOnly
+                  shape="round"
+                  leading={Pencil}
                   aria-label="Edit"
-                  title="Edit"
+                  tooltip="Edit"
                   data-slot="list-detail-edit"
-                  className="size-11 shrink-0 rounded-full p-0"
+                  className="[&_svg:not([class*='size-'])]:size-5"
                   onClick={() => api.edit()}
-                >
-                  <Pencil className="size-5" aria-hidden />
-                </Button>
+                />
               </div>
             </div>
             <React.Fragment key={`${api.sel.id}:${rev}`}>{renderDetail!(api.sel.id, paneApi)}</React.Fragment>

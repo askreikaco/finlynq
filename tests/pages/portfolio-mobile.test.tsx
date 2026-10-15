@@ -77,10 +77,10 @@ function makeOverview(over: Record<string, unknown> = {}) {
 beforeEach(() => { overview.current = makeOverview(); });
 afterEach(cleanup);
 const cls = (el: Element) => el.className.toString().split(/\s+/);
-/** The holdings of one account (its SectionCard), as list rows. */
+/** The holdings of one account (its Card), as list rows. */
 const groupRows = (account: string): HTMLElement[] => {
-  const card = Array.from(document.querySelectorAll<HTMLElement>("[data-slot=section-card]")).find(
-    (c) => c.querySelector("[data-slot=section-card-label]")?.textContent === account,
+  const card = Array.from(document.querySelectorAll<HTMLElement>("[data-slot=card]")).find(
+    (c) => c.querySelector("[data-slot=card-label-text]")?.textContent === account,
   );
   if (!card) return [];
   return Array.from(card.querySelectorAll<HTMLElement>("[data-slot=list-row]"));
@@ -93,7 +93,7 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     const summary = document.querySelector("[data-slot=portfolio-summary]") as HTMLElement;
     expect(summary).toBeTruthy();
     expect(summary.querySelector("[class*='md:hidden']")).toBeNull();
-    // The Total value hero is the ONE MetricCard (hero size); the range control sits above it.
+    // The Total value hero is the ONE Card (hero size); the range control sits above it.
     expect(document.querySelector("[data-slot=metric-range]")).toBeTruthy();
     const hero = summary.querySelector("[data-testid=metric-total-value]") as HTMLElement;
     expect(within(hero).getByText(formatCurrency(65500000, "VND"))).toBeTruthy();
@@ -188,7 +188,7 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     const tiles = Array.from(grid.children) as HTMLElement[];
     expect(tiles.length).toBeGreaterThan(0);
     for (const t of tiles) {
-      // MetricCard renders label, value, sub-line: a tile with no sub-line has only two text rows.
+      // Card renders label, value, sub-line: a tile with no sub-line has only two text rows.
       expect(t.querySelectorAll("p, span, div").length, t.textContent ?? "").toBeGreaterThan(0);
     }
     expect(within(grid).getByText("Across 2 accounts")).toBeTruthy();

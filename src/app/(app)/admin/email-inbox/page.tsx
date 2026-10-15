@@ -13,11 +13,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { List, Lock, RefreshCw, Users } from "lucide-react";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -146,14 +146,13 @@ export default function AdminEmailInboxPage() {
       }}
     >
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/30 bg-destructive/10" className="py-3 text-sm text-destructive">{error}
         </Card>
       )}
 
       {/* ─── Per-user grouped counts ──────────────────────────────────────── */}
-      <SectionCard
-        label={
+      <Card
+        title={
           <>
             By user
             <InfoTip label="About user counts" text="Counts honor the action / source / date filters (not the selected user)." />
@@ -161,7 +160,7 @@ export default function AdminEmailInboxPage() {
         }
         icon={Users}
         tone="indigo"
-        list
+        frame="list"
       >
         {data?.byUser.map((g) => (
           <ListRow
@@ -186,38 +185,30 @@ export default function AdminEmailInboxPage() {
             No email-import rows match these filters.
           </p>
         )}
-      </SectionCard>
+      </Card>
 
       {/* ─── Filters ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex flex-wrap gap-1.5">
           {ACTIONS.map((a) => (
-            <button
+            <Button
               key={a}
               onClick={() => setAction(a)}
-              className={`rounded-md border px-2.5 py-1 text-xs capitalize transition-colors ${
-                action === a
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
-              }`}
+              variant="outline" size="sm" pressed={action === a} className="capitalize"
             >
               {a.replace(/_/g, " ")}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-1.5">
           {SOURCE_KINDS.map((s) => (
-            <button
+            <Button
               key={s}
               onClick={() => setSourceKind(s)}
-              className={`rounded-md border px-2.5 py-1 text-xs capitalize transition-colors ${
-                sourceKind === s
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
-              }`}
+              variant="outline" size="sm" pressed={sourceKind === s} className="capitalize"
             >
               {s}
-            </button>
+            </Button>
           ))}
         </div>
         <Field label="From" control="date" value={since} onChange={(e) => setSince(e.target.value)} />
@@ -233,7 +224,7 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" list>
+      <Card title="Rows" icon={List} tone="muted" frame="list">
         {loading && !data && (
           <p data-keep="status" className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}
@@ -278,7 +269,7 @@ export default function AdminEmailInboxPage() {
             </div>
           </div>
         ))}
-      </SectionCard>
+      </Card>
     </SectionPage>
   );
 }

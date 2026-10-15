@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import * as React from "react";
 import { ListRow } from "./list-row";
 import { compareValues, type DataTableColumn, type SortDir } from "@/components/ui/data-table";
@@ -80,19 +81,15 @@ export function ColumnList<T>({
           {sortable.map((c) => {
             const active = sort?.key === c.key;
             return (
-              <button
+              <Button
                 key={c.key}
                 type="button"
-                aria-pressed={active}
                 onClick={() => cycle(c.key)}
-                className={cn(
-                  "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium",
-                  active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
-                )}
+                variant="outline" size="sm" shape="round" pressed={active}
               >
                 {labelOf(c)}
                 {active ? (sort?.dir === "asc" ? "↑" : "↓") : null}
-              </button>
+              </Button>
             );
           })}
         </div>

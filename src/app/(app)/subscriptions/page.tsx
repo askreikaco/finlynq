@@ -17,7 +17,6 @@
  * a row opens /subscriptions/[id] on phones and selects into the split pane on wide screens.
  */
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, useState, type MouseEvent } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -28,7 +27,7 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { ListRow, MetricGrid, TxRow, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -36,8 +35,7 @@ import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { DueActions, STATUS_BADGE, SubscriptionDetail, dueLabel, isDue, relativeDue } from "./_components/subscription-detail";
 import { SectionPage } from "@/components/templates/section-page";
 import { Notice } from "@/components/notice";
-import { Card, CardContent } from "@/components/ui/card";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
+import { Card, type CardProps, CARD_ROW_GRID } from "@/components/ui/card";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
@@ -140,7 +138,7 @@ function SubscriptionsPageContent() {
     const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
     return Array.isArray(rows) ? rows : null;
   }, [seriesRes.data]);
-  const summaryMetrics = useMemo<MetricCardProps[]>(() => {
+  const summaryMetrics = useMemo<CardProps[]>(() => {
     const caption = compareCaption(selection);
     const pts = (pick: (r: SeriesRow) => number): MonthPoint[] | null => (seriesRows ? seriesRows.map((r) => ({ month: r.month, value: pick(r) })) : null);
     const card = (pick: (r: SeriesRow) => number, pageValue: number, kind: "money" | "count") =>
@@ -149,18 +147,18 @@ function SubscriptionsPageContent() {
     const annual = card((r) => r.annual, totals.annual, "money");
     const due = card((r) => r.dueSoon, totals.dueSoonAmount, "money");
     const active = card((r) => r.active, totals.activeCount, "count");
-    const shared = (c: ReturnType<typeof card>, invert = false) => ({
+    const shared = (c: ReturnType<typeof card>, invert = false, color?: string) => ({
       delta: { pct: c.badgePct, text: c.delta ?? NO_HISTORY_CAPTION, ...(invert ? { invert } : {}) },
-      sparkData: c.sparkData, sparkLabels: c.sparkLabels,
+      spark: { data: c.sparkData, labels: c.sparkLabels, color },
     });
     return [
-      { id: "monthly", icon: CalendarClock, tone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
+      { id: "monthly", icon: CalendarClock, tone: "indigo", title: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, ...shared(monthly, true),
         note: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
-      { id: "yearly", icon: CalendarRange, tone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, sparkColor: "#8b5cf6", ...shared(annual, true),
+      { id: "yearly", icon: CalendarRange, tone: "violet", title: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, ...shared(annual, true, "#8b5cf6"),
         note: "Annualised" },
-      { id: "due-soon", icon: CalendarClock, tone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, sparkColor: "#f59e0b", ...shared(due, true),
+      { id: "due-soon", icon: CalendarClock, tone: "amber", title: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, ...shared(due, true, "#f59e0b"),
         note: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}` },
-      { id: "active", icon: CheckCircle2, tone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
+      { id: "active", icon: CheckCircle2, tone: "emerald", title: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, ...shared(active, false, "#10b981"),
         note: `of ${subs.length} tracked` },
     ];
   }, [seriesRows, period, explicit, selection, totals, displayCurrency, subs.length]);
@@ -355,7 +353,7 @@ function SubscriptionsPageContent() {
                 <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
                   {/* Detected from transactions */}
                   {suggestions.length > 0 && (
-                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
+                    <Card title="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full">
                       <p className="px-4 pt-3 pb-1 text-sm text-muted-foreground">
                         {suggestions.length === 1
                           ? "1 payment repeats on a schedule but isn't tracked yet."
@@ -389,24 +387,24 @@ function SubscriptionsPageContent() {
                           {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
                         </Button>
                       )}
-                    </SectionCard>
+                    </Card>
                   )}
 
                   {subs.length === 0 && (
-                    <Card className="col-span-full"><CardContent className="p-0"><Notice
-                      variant="empty"
-                      icon={CreditCard}
-                      title="No subscriptions tracked yet"
-                      action={{ label: "Add subscription", onClick: openAdd }}
-                    >
-                      Add streaming, insurance, memberships and other repeating bills.
-                    </Notice></CardContent></Card>
+                    <Card frameClassName="col-span-full" className="p-0"><Notice
+                    variant="empty"
+                    icon={CreditCard}
+                    title="No subscriptions tracked yet"
+                    action={{ label: "Add subscription", onClick: openAdd }}
+                  >
+                    Add streaming, insurance, memberships and other repeating bills.
+                  </Notice></Card>
                   )}
 
                   {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} list className={`col-span-full ${CARD_ROW_GRID}`}>
+                      <Card key={g.key} titlePlacement="outside" title={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} frame="list" className={`col-span-full ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}
@@ -421,7 +419,7 @@ function SubscriptionsPageContent() {
                             onSkip={() => skipDue(sub)}
                           />
                         ))}
-                      </SectionCard>
+                      </Card>
                     ),
                   )}
                 </div>

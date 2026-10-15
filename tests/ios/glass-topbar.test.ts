@@ -115,12 +115,12 @@ describe("PageHeader phone bar (render)", () => {
   it("a lone primary is its own yellow round button: no capsule, primary fill via the topbar-primary rule", () => {
     const { container } = render(h(PageHeader, { title: "Tx", primary: { kind: "add", label: "Add transaction", onSelect: () => {} } }));
     const primary = screen.getByRole("button", { name: "Add transaction" });
-    expect(primary.getAttribute("data-variant")).toBe("default");
+    expect(primary.getAttribute("data-variant")).toBe("primary");
     expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
     expect(primary.parentElement).toBe(container.querySelector('[data-slot="page-header-actions"]'));
     expect(css).toContain('[data-slot="page-header-actions"] > [data-slot="topbar-primary"] {');
     // the see-through reset is scoped to non-default buttons only
-    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n  background: transparent;');
+    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="primary"]) {\n  background: transparent;');
   });
 
   it("no capsule or glass around the title (title block and h1 carry no glass classes)", () => {

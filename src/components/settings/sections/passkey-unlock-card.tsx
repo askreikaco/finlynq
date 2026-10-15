@@ -8,8 +8,7 @@
  */
 import { KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Overlay } from "@/components/ui/overlay";
 import { getSessionInfo } from "@/lib/data/session-info";
@@ -109,62 +108,59 @@ export function PasskeyUnlockCard() {
   };
 
   return (
-    <Card data-testid="passkey-unlock-card">
-      <CardHeader>
-        <CardTitle icon={KeyRound} tone="violet">
-          Passkey unlock (beta)
-          <InfoTip
-            label="About passkey unlock"
-            text="Protects the offline copy with Face ID, Touch ID or Windows Hello. It opens only after the passkey, in this tab until reload. Stays on this device; does not replace your password."
-          />
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {supported === false && (
-          <p className="text-sm text-muted-foreground" data-keep="status" data-testid="passkey-unlock-unsupported">
-            Not supported here.
-          </p>
-        )}
-        {supported === true && !enabled && (
-          <Button size="sm" disabled={busy} onClick={() => void run(() => enablePasskeyUnlock(userId))} data-testid="passkey-unlock-enable">
-            {busy ? "Waiting for passkey…" : "Turn on"}
+    <Card
+      data-testid="passkey-unlock-card"
+      title="Passkey unlock (beta)"
+      icon={KeyRound}
+      tone="violet"
+      info="Protects the offline copy with Face ID, Touch ID or Windows Hello. It opens only after the passkey, in this tab until reload. Stays on this device; does not replace your password."
+      infoLabel="About passkey unlock"
+      className="space-y-3"
+    >
+      {supported === false && (
+        <p className="text-sm text-muted-foreground" data-keep="status" data-testid="passkey-unlock-unsupported">
+          Not supported here.
+        </p>
+      )}
+      {supported === true && !enabled && (
+        <Button size="sm" disabled={busy} onClick={() => void run(() => enablePasskeyUnlock(userId))} data-testid="passkey-unlock-enable">
+          {busy ? "Waiting for passkey…" : "Turn on"}
+        </Button>
+      )}
+      {supported === true && enabled && (
+        <div className="flex flex-wrap items-center gap-2">
+          {passkey.locked && (
+            <Button size="sm" disabled={busy} onClick={() => void run(() => unlockWithPasskey(userId))} data-testid="passkey-unlock-now">
+              Unlock now
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => void run(() => unlockWithPasskey(userId))}
+            data-testid="passkey-unlock-test"
+          >
+            Test
           </Button>
-        )}
-        {supported === true && enabled && (
-          <div className="flex flex-wrap items-center gap-2">
-            {passkey.locked && (
-              <Button size="sm" disabled={busy} onClick={() => void run(() => unlockWithPasskey(userId))} data-testid="passkey-unlock-now">
-                Unlock now
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => void run(() => unlockWithPasskey(userId))}
-              data-testid="passkey-unlock-test"
-            >
-              Test
-            </Button>
-            <Button variant="outline" size="sm" disabled={busy} onClick={() => void onDisable()} data-testid="passkey-unlock-disable">
-              Turn off
-            </Button>
-            <Button variant="outline" size="sm" disabled={busy} onClick={() => void onForget()} data-testid="passkey-unlock-forget">
-              Forget passkey
-            </Button>
-            {passkey.locked ? (
-              <span className="text-xs text-muted-foreground" data-keep="status" data-testid="passkey-unlock-locked">Locked</span>
-            ) : (
-              hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified.</span>
-            )}
-          </div>
-        )}
-        {message && (
-          <p role="status" data-keep="status" className={message.tone === "error" ? "text-xs text-destructive" : "text-xs text-muted-foreground"} data-testid="passkey-unlock-message">
-            {message.text}
-          </p>
-        )}
-      </CardContent>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => void onDisable()} data-testid="passkey-unlock-disable">
+            Turn off
+          </Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => void onForget()} data-testid="passkey-unlock-forget">
+            Forget passkey
+          </Button>
+          {passkey.locked ? (
+            <span className="text-xs text-muted-foreground" data-keep="status" data-testid="passkey-unlock-locked">Locked</span>
+          ) : (
+            hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified.</span>
+          )}
+        </div>
+      )}
+      {message && (
+        <p role="status" data-keep="status" className={message.tone === "error" ? "text-xs text-destructive" : "text-xs text-muted-foreground"} data-testid="passkey-unlock-message">
+          {message.text}
+        </p>
+      )}
       <Overlay
         variant="confirm"
         open={confirmCount !== null}

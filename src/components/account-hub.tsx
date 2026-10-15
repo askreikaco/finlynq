@@ -8,7 +8,7 @@ import { User } from "lucide-react";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import { ListRow } from "@/components/mobile/list-row";
 import { TW } from "@/lib/design/tokens";
-import { SectionCard } from "@/components/mobile/section-card";
+import { Card } from "@/components/ui/card";
 
 /**
  * Account hub: lists all account sections in one grouped view.
@@ -35,7 +35,7 @@ export function AccountHub() {
 
   return (
     <div data-slot="account-hub" className={`${TW.grid3} px-4 py-6`}>
-      <SectionCard label="Account" icon={User} tone="indigo" padded={false}>
+      <Card title="Account" icon={User} tone="indigo" padded={false}>
         <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {orderedEntries.map((entry) => (
             entry && (
@@ -48,7 +48,7 @@ export function AccountHub() {
             )
           ))}
         </div>
-      </SectionCard>
+      </Card>
     </div>
   );
 }

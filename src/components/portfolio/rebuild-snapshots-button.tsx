@@ -35,8 +35,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
-type Variant = "default" | "outline" | "secondary" | "ghost";
-type Size = "sm" | "default" | "lg";
+type Variant = "primary" | "outline" | "secondary" | "ghost";
+type Size = "sm" | "md" | "lg";
 
 type RebuildPhase = "investment" | "cash";
 
@@ -201,8 +201,7 @@ export function RebuildSnapshotsButton({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant={variant} size={size} onClick={run} disabled={isRunning}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRunning ? "animate-spin" : ""}`} />
+        <Button variant={variant} size={size} leading={RefreshCw} loading={isRunning} onClick={run}>
           {isRunning ? "Rebuilding…" : label}
         </Button>
         {msg && !isRunning && (

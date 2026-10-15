@@ -16,7 +16,7 @@
 import { TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -163,18 +163,17 @@ export function NetWorthHistoryChart({
   const showStacked = stackable && stacked && legend.length > 0;
 
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-1 px-5 pt-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <CardTitle icon={TrendingUp} tone="indigo">{title}</CardTitle>
-            <p className="text-xs text-muted-foreground">{currency}</p>
-          </div>
-          <div className="flex items-center gap-1">
+    <Card
+      frameClassName="card-hover"
+      title={title}
+      icon={TrendingUp}
+      tone="indigo"
+      description={<p className="text-xs text-muted-foreground">{currency}</p>}
+      action={<div className="flex items-center gap-1">
             {stackable && (
               <Button
                 size="sm"
-                variant={stacked ? "default" : "outline"}
+                variant={stacked ? "primary" : "outline"}
                 onClick={() => setStacked((s) => !s)}
                 title="Break the total into a stacked top-10 view by account"
               >
@@ -185,7 +184,7 @@ export function NetWorthHistoryChart({
               <>
                 <Button
                   size="sm"
-                  variant={basis === "native" ? "default" : "outline"}
+                  variant={basis === "native" ? "primary" : "outline"}
                   onClick={() => setBasis("native")}
                   title={`Show this balance in the account's own currency (${accountCurrency})`}
                 >
@@ -193,7 +192,7 @@ export function NetWorthHistoryChart({
                 </Button>
                 <Button
                   size="sm"
-                  variant={basis === "reporting" ? "default" : "outline"}
+                  variant={basis === "reporting" ? "primary" : "outline"}
                   onClick={() => setBasis("reporting")}
                   title={`Show this balance converted to your display currency (${data?.displayCurrency})`}
                 >
@@ -205,74 +204,72 @@ export function NetWorthHistoryChart({
               <Button
                 key={p.key}
                 size="sm"
-                variant={period === p.key ? "default" : "outline"}
+                variant={period === p.key ? "primary" : "outline"}
                 onClick={() => setPeriod(p.key)}
               >
                 {p.label}
               </Button>
             ))}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="px-5 pb-5">
-        {loading ? (
-          <p className="text-sm text-muted-foreground py-16 text-center">Loading…</p>
-        ) : error || !data ? (
-          <p className="text-sm text-muted-foreground py-16 text-center">
-            Could not load history. Try again shortly.
+          </div>}
+      className="px-5 pb-5"
+    >
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-16 text-center">Loading…</p>
+      ) : error || !data ? (
+        <p className="text-sm text-muted-foreground py-16 text-center">
+          Could not load history. Try again shortly.
+        </p>
+      ) : !hasAnyValue ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+          <p className="text-sm text-muted-foreground max-w-sm">
+            No history to chart yet.
+            <InfoTip
+              label="About the history chart"
+              text={`Add accounts and transactions to see your${accountId != null ? " balance" : " net worth"} over time. If the chart looks stale or flat, rebuild your balance history.`}
+            />
           </p>
-        ) : !hasAnyValue ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-            <p className="text-sm text-muted-foreground max-w-sm">
-              No history to chart yet.
-              <InfoTip
-                label="About the history chart"
-                text={`Add accounts and transactions to see your${accountId != null ? " balance" : " net worth"} over time. If the chart looks stale or flat, rebuild your balance history.`}
-              />
+          <RebuildSnapshotsButton onDone={res.reload} />
+        </div>
+      ) : (
+        <>
+          {showStacked ? (
+            // FINLYNQ-187: sign-split stacks put liability accounts below the axis, so the zero line is always drawn.
+            <Chart
+              kind="stacked-area"
+              data={stackedRows}
+              series={legend}
+              xKey="date"
+              height={260}
+              currency={currency}
+              formatX={(d) => dateTick(d, period === "all")}
+              formatLabel={fmtFullDate}
+              tooltipTotal
+              tooltipWide
+              zeroLine
+              legend
+            />
+          ) : (
+            <Chart
+              kind="area"
+              data={series}
+              xKey="date"
+              height={260}
+              currency={currency}
+              series={[{ key: "value", name: accountId != null ? "Balance" : "Net Worth", strokeWidth: 2.5, breakdownKey: accountId == null ? "breakdown" : undefined }]}
+              breakdownHeading="By account"
+              formatX={(d) => dateTick(d, period === "all")}
+              formatLabel={fmtFullDate}
+              yDomain={domain}
+              zeroLine={spansZero}
+            />
+          )}
+          {!data.hasInvestmentData && accountId == null && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Cash &amp; liabilities only — no investment snapshots found.
             </p>
-            <RebuildSnapshotsButton onDone={res.reload} />
-          </div>
-        ) : (
-          <>
-            {showStacked ? (
-              // FINLYNQ-187: sign-split stacks put liability accounts below the axis, so the zero line is always drawn.
-              <Chart
-                kind="stacked-area"
-                data={stackedRows}
-                series={legend}
-                xKey="date"
-                height={260}
-                currency={currency}
-                formatX={(d) => dateTick(d, period === "all")}
-                formatLabel={fmtFullDate}
-                tooltipTotal
-                tooltipWide
-                zeroLine
-                legend
-              />
-            ) : (
-              <Chart
-                kind="area"
-                data={series}
-                xKey="date"
-                height={260}
-                currency={currency}
-                series={[{ key: "value", name: accountId != null ? "Balance" : "Net Worth", strokeWidth: 2.5, breakdownKey: accountId == null ? "breakdown" : undefined }]}
-                breakdownHeading="By account"
-                formatX={(d) => dateTick(d, period === "all")}
-                formatLabel={fmtFullDate}
-                yDomain={domain}
-                zeroLine={spansZero}
-              />
-            )}
-            {!data.hasInvestmentData && accountId == null && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Cash &amp; liabilities only — no investment snapshots found.
-              </p>
-            )}
-          </>
-        )}
-      </CardContent>
+          )}
+        </>
+      )}
     </Card>
   );
 }

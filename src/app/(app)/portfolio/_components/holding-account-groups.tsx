@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Holdings on the Investment page, one layout at every width: a SectionCard per account, each holding a
+ * Holdings on the Investment page, one layout at every width: a Card per account, each holding a
  * HoldingRow (name | market value + unrealized %). A tap opens the holding's DetailSheet: quantity, average
  * cost, price, cost basis, the G/L split and the row's actions (Edit, Lots, View transactions).
  * Replaces the All Holdings table and the Holdings-by-account accordion. No <table>.
@@ -13,11 +13,12 @@ import Link from "next/link";
 import { formatCurrencyAdaptive, formatCurrency } from "@/lib/currency";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { HoldingRow, SectionCard } from "@/components/mobile";
+import { HoldingRow } from "@/components/mobile";
 import { Overlay, type DetailItem } from "@/components/ui/overlay";
 import { LotInspectorDialog } from "@/components/portfolio/lot-inspector-dialog";
 import { Button } from "@/components/ui/button";
 import type { EnrichedHolding } from "../_types";
+import { Card } from "@/components/ui/card";
 
 export interface AccountHoldingGroup {
   accountName: string;
@@ -63,7 +64,7 @@ export function HoldingAccountGroups({
       data-slot="holdings-by-account"
     >
       {groups.map((g) => (
-        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" list>
+        <Card key={g.accountName} title={g.accountName} icon={Landmark} tone="indigo" frame="list">
           {g.holdings.map((h) => (
             <HoldingRow
               key={h.id}
@@ -74,7 +75,7 @@ export function HoldingAccountGroups({
               onPress={() => setOpen(h)}
             />
           ))}
-        </SectionCard>
+        </Card>
       ))}
 
       {open && (

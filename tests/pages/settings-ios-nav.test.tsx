@@ -36,7 +36,7 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     const groups = container.querySelectorAll('[data-slot="settings-hub-group"]');
     expect(groups.length).toBe(2);
     for (const g of Array.from(groups)) {
-      expect(cls(g.querySelector("[data-slot=section-card]") ?? g)).toContain("surface-card");
+      expect(cls(g.querySelector("[data-slot=card]") ?? g)).toContain("surface-card");
     }
 
     const rows = container.querySelectorAll('[data-slot="settings-hub-row"]');

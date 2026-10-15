@@ -12,12 +12,10 @@
  * A page passes only the slots that apply to it ("where applicable"): no `range` = no dates, no `search` = no text.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, RefreshCw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RoundIconButton } from "@/components/ui/round-icon-button";
 import { CONTROL_SURFACE } from "@/components/ui/control-surface";
-import { RefreshButton } from "@/components/refresh-button";
+import { useRefreshAll } from "@/lib/data/fetch-activity";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { cn } from "@/lib/utils";
 import { localDateISO } from "@/lib/utils/date";
@@ -55,21 +53,21 @@ export function MonthSwitcher({ selection, onChange }: { selection: RangeSelecti
   const unit = selection.range === "this_year" ? "year" : selection.range === "this_quarter" ? "quarter" : "month";
   return (
     <div data-slot="month-switcher" className={cn("flex h-11 items-center gap-1 rounded-full px-0.5", CONTROL_SURFACE)}>
-      <RoundIconButton type="button" surface={false} aria-label={`Previous ${unit}`} onClick={() => onChange(stepSelection(selection, -1, today))}>
-        <ChevronLeft className="h-4 w-4" />
-      </RoundIconButton>
+      <Button type="button" variant="ghost" iconOnly shape="round" surface={false} leading={ChevronLeft} aria-label={`Previous ${unit}`} onClick={() => onChange(stepSelection(selection, -1, today))} />
       <span data-testid="month-label" aria-live="polite" className="min-w-16 text-center text-sm font-medium tabular-nums">
         {periodLabel(selection, today)}
       </span>
-      <RoundIconButton
+      <Button
         type="button"
+        variant="ghost"
+        iconOnly
+        shape="round"
         surface={false}
+        leading={ChevronRight}
         aria-label={`Next ${unit}`}
         disabled={!canStepNext(selection, today)}
         onClick={() => onChange(stepSelection(selection, 1, today))}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </RoundIconButton>
+      />
     </div>
   );
 }
@@ -86,8 +84,12 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
   }, [open]);
   if (!open) {
     return (
-      <RoundIconButton
+      <Button
         type="button"
+        variant="ghost"
+        iconOnly
+        shape="round"
+        leading={Search}
         aria-label="Search"
         aria-expanded={false}
         data-slot="search-toggle"
@@ -95,9 +97,7 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
           focusNext.current = true;
           setOpen(true);
         }}
-      >
-        <Search className="h-4 w-4" />
-      </RoundIconButton>
+      />
     );
   }
   return (
@@ -124,9 +124,12 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            iconOnly
+            size="sm"
+            shape="round"
+            surface={false}
             aria-label="Clear search"
-            className="-mr-2 shrink-0 rounded-full"
+            className="-mr-2 shrink-0"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               onChange("");
@@ -142,8 +145,8 @@ export function SearchToggle({ value, onChange, placeholder = "Search" }: NonNul
   );
 }
 
-/** `variant` is kept for old callers; the button is always the shared RoundIconButton. */
-export function FilterButton({ href, activeCount = 0 }: NonNullable<PageToolbarProps["filter"]> & { variant?: "ghost" | "outline" }) {
+/** Filter: a round iconOnly Button link; the only logic here is the click-time href (see below). */
+export function FilterButton({ href, activeCount = 0 }: NonNullable<PageToolbarProps["filter"]>) {
   // A function href reads the CURRENT address (range / search are written with replaceState, which Next does not
   // track). It is re-read after every render, so the link is already right when it is clicked; the first render
   // (and the server) render "#" for a function href, so hydration matches.
@@ -154,24 +157,39 @@ export function FilterButton({ href, activeCount = 0 }: NonNullable<PageToolbarP
     if (next !== resolved) setResolved(next);
   });
   return (
-    <RoundIconButton
+    <Button
+      variant="ghost"
+      iconOnly
+      shape="round"
+      leading={Filter}
+      href={resolved ?? "#"}
+      badge={activeCount}
       aria-label="Filter"
-      title={activeCount > 0 ? `Filter (${activeCount} active)` : "Filter"}
+      tooltip={activeCount > 0 ? `Filter (${activeCount} active)` : "Filter"}
       data-slot="filter-button"
-      className="relative"
-      render={<Link href={resolved ?? "#"} />}
-    >
-      <Filter className="h-4 w-4" />
-      {activeCount > 0 && (
-        <span
-          data-testid="filter-badge"
-          aria-hidden
-          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
-        >
-          {activeCount}
-        </span>
-      )}
-    </RoundIconButton>
+    />
+  );
+}
+
+/** Refresh: a round iconOnly Button wired to the page's cache-aware refresh (useRefreshAll); the icon spins while fetching. */
+function RefreshSlot() {
+  const { refresh, fetching } = useRefreshAll();
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      iconOnly
+      shape="round"
+      leading={RefreshCw}
+      loading={fetching}
+      aria-label="Refresh"
+      tooltip="Refresh"
+      data-slot="refresh-button"
+      data-fetching={fetching ? "true" : "false"}
+      onClick={() => {
+        void refresh();
+      }}
+    />
   );
 }
 
@@ -193,7 +211,7 @@ export function PageToolbar({ range, monthSwitcher = true, search, filter, refre
       )}
       {(refresh || trailing) && (
         <div data-slot="toolbar-trailing" className={cn("flex items-center gap-1", !filter && "ml-auto")}>
-          {refresh && <RefreshButton />}
+          {refresh && <RefreshSlot />}
           {trailing}
         </div>
       )}

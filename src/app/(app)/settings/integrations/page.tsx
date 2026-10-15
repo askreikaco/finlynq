@@ -13,11 +13,10 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Bot, Landmark, Plug, Zap } from "lucide-react";
+import { Bot, Landmark, Plug } from "lucide-react";
 import { McpGuide } from "@/components/mcp-guide/mcp-guide";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
@@ -83,27 +82,19 @@ export default function IntegrationsSettingsPage() {
     >
 
       {loaded && !isConnected && (
-        <Card className="border-warning/30 bg-warning/10">
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning shrink-0">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle icon={Plug} tone="indigo">
-                  Set up MCP
-                  <InfoTip label="About MCP" text="Connect AI assistants like Claude, ChatGPT or other MCP clients to your financial data." />
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Link href="/connect" onClick={(e) => { e.preventDefault(); setTab("connect"); }}>
-              <Button variant="outline" className="border-warning/30 hover:bg-warning/10">
-                MCP guide
-              </Button>
-            </Link>
-          </CardContent>
+        <Card
+          frameClassName="border-warning/30 bg-warning/10"
+          title="Set up MCP"
+          icon={Plug}
+          tone="indigo"
+          info="Connect AI assistants like Claude, ChatGPT or other MCP clients to your financial data."
+          infoLabel="About MCP"
+        >
+          <Link href="/connect" onClick={(e) => { e.preventDefault(); setTab("connect"); }}>
+            <Button variant="outline" className="border-warning/30 hover:bg-warning/10">
+              MCP guide
+            </Button>
+          </Link>
         </Card>
       )}
 

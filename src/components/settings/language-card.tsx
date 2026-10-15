@@ -6,8 +6,7 @@
  */
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 import { Languages } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { detectBrowserLanguage } from "@/lib/locale";
@@ -54,40 +53,32 @@ export function LanguageCard() {
   const example = languageExample(pref, isLoading ? null : displayCurrency, detectBrowserLanguage());
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
-            <Languages className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle icon={Languages} tone="cyan">
-              Language
-              <InfoTip label="About language" text="Number and date formats. Labels are not translated." />
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Field
-          control="select"
-          value={pref}
-          onValueChange={async (v) => {
-            if (!isLanguagePref(v)) return;
-            setError(null);
-            if (!(await setPref(v))) setError("Could not save. Try again.");
-          }}
-          aria-label="Language"
-          className="w-64"
-          options={OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
-        <p className="text-sm text-muted-foreground" data-keep="preview" data-testid="language-example">
-          Example: <span className="font-mono text-foreground">{example.number}</span>
-          {" · "}
-          <span className="font-mono text-foreground">{example.date}</span>
-        </p>
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-      </CardContent>
+    <Card
+      title="Language"
+      icon={Languages}
+      tone="cyan"
+      info="Number and date formats. Labels are not translated."
+      infoLabel="About language"
+      className="space-y-3"
+    >
+      <Field
+        control="select"
+        value={pref}
+        onValueChange={async (v) => {
+          if (!isLanguagePref(v)) return;
+          setError(null);
+          if (!(await setPref(v))) setError("Could not save. Try again.");
+        }}
+        aria-label="Language"
+        className="w-64"
+        options={OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+      />
+      <p className="text-sm text-muted-foreground" data-keep="preview" data-testid="language-example">
+        Example: <span className="font-mono text-foreground">{example.number}</span>
+        {" · "}
+        <span className="font-mono text-foreground">{example.date}</span>
+      </p>
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
     </Card>
   );
 }

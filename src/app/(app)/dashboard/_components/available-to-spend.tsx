@@ -1,10 +1,10 @@
 "use client";
 
-import { MetricCard } from "@/components/metric-card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Wallet } from "lucide-react";
 import type { MetricTrend } from "./key-metrics";
+import { Card } from "@/components/ui/card";
 
 type Props = {
   income: number;
@@ -24,8 +24,8 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
   const pctSpent = income > 0 ? (expenses / income) * 100 : 0;
 
   return (
-    <MetricCard
-      label="Available to Spend"
+    <Card
+      title="Available to Spend"
       icon={Wallet}
       tone="cyan"
       value={Math.abs(available)}
@@ -34,9 +34,7 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
       sub={trend?.delta ?? (monthLabel ? `${monthLabel} remaining` : "This month remaining")}
       note={trend?.delta ? (monthLabel ? `${monthLabel} remaining` : "This month remaining") : undefined}
       delta={{ pct: trend?.badgePct }}
-      sparkData={trend?.sparkData}
-      sparkLabels={trend?.sparkLabels}
-      sparkColor="#06b6d4"
+      spark={{ data: trend?.sparkData, color: "#06b6d4", labels: trend?.sparkLabels }}
       progress={income > 0 ? { value: pctSpent, tone: pctSpent > 100 ? "destructive" : pctSpent > 80 ? "warning" : "pos", caption: `${Math.round(pctSpent)}% of income spent`, ariaLabel: "Income spent" } : undefined}
     >
       {income > 0 && (
@@ -61,7 +59,7 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel, trend
           </div>
         </div>
       )}
-    </MetricCard>
+    </Card>
   );
 }
 

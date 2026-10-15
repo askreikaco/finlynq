@@ -9,10 +9,11 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Chart } from "@/components/chart";
 import { Activity, BarChart3, CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
-import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid } from "@/components/mobile";
 import { Field } from "@/components/ui/field";
 import { SectionPage } from "@/components/templates/section-page";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 
 type FireResult = {
   fireNumber: number;
@@ -199,7 +200,7 @@ function FirePageContent() {
 
       <div data-slot="fire-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Inputs */}
-      <SectionCard label="Your details" icon={SlidersHorizontal} tone="indigo">
+      <Card title="Your details" icon={SlidersHorizontal} tone="indigo">
         <div className="space-y-4">
           <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
             <Field
@@ -258,7 +259,7 @@ function FirePageContent() {
             <Flame className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate FIRE"}
           </Button>
         </div>
-      </SectionCard>
+      </Card>
 
       {/* Results */}
       <div className="space-y-6 wide:col-span-2">
@@ -266,26 +267,26 @@ function FirePageContent() {
         <>
           <MetricGrid
             metrics={[
-              { icon: Flame, label: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
-              { icon: Hourglass, label: "Years to FIRE", value: `${result.yearsToFire} years` },
-              { icon: CalendarClock, label: "FIRE Age", value: `Age ${result.fireAge}` },
-              { icon: CalendarClock, label: "Projected FIRE Date", value: result.fireDate },
-              { icon: Flame, label: "Coast FIRE Number", value: result.coastFireNumber, currency: displayCurrency },
-              { icon: CalendarClock, label: "Coast FIRE Age", value: `Age ${result.coastFireAge}` },
+              { icon: Flame, title: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
+              { icon: Hourglass, title: "Years to FIRE", value: `${result.yearsToFire} years` },
+              { icon: CalendarClock, title: "FIRE Age", value: `Age ${result.fireAge}` },
+              { icon: CalendarClock, title: "Projected FIRE Date", value: result.fireDate },
+              { icon: Flame, title: "Coast FIRE Number", value: result.coastFireNumber, currency: displayCurrency },
+              { icon: CalendarClock, title: "Coast FIRE Age", value: `Age ${result.coastFireAge}` },
             ]}
           />
 
           {/* Coast FIRE explanation */}
-          <SectionCard className="bg-pos/10 border-pos/30">
+          <Card className="bg-pos/10 border-pos/30">
             <p className="text-sm text-pos">
               <strong>Coast FIRE:</strong> If you already have {formatCurrency(result.coastFireNumber, displayCurrency)} invested,
               you could stop saving entirely and still reach your FIRE number by age {parseInt(form.targetRetirementAge)} through investment growth alone.
               At your current savings rate, you will reach Coast FIRE at age {result.coastFireAge}.
             </p>
-          </SectionCard>
+          </Card>
 
           {/* Net Worth Projection Chart */}
-          <SectionCard label="Projected net worth vs FIRE number" icon={TrendingUp} tone="emerald">
+          <Card title="Projected net worth vs FIRE number" icon={TrendingUp} tone="emerald">
             <Chart
               kind="area"
               data={result.projections}
@@ -304,11 +305,11 @@ function FirePageContent() {
                   : []),
               ]}
             />
-          </SectionCard>
+          </Card>
 
           {/* Monte Carlo Analysis */}
-          <SectionCard
-            label={
+          <Card
+            title={
               <>
                 Monte Carlo analysis
                 <InfoTip label="About Monte Carlo analysis" text="1,000 simulations with random market returns to stress-test your plan" />
@@ -391,11 +392,11 @@ function FirePageContent() {
                   {/* Final value percentiles */}
                   <MetricGrid
                     metrics={[
-                      { icon: TrendingDown, label: "Worst case (P10)", value: fmtMoney(mcResult.finalValues.p10) },
-                      { icon: Percent, label: "P25", value: fmtMoney(mcResult.finalValues.p25) },
-                      { icon: Scale, label: "Median (P50)", value: fmtMoney(mcResult.finalValues.p50) },
-                      { icon: Percent, label: "P75", value: fmtMoney(mcResult.finalValues.p75) },
-                      { icon: TrendingUp, label: "Best case (P90)", value: fmtMoney(mcResult.finalValues.p90) },
+                      { icon: TrendingDown, title: "Worst case (P10)", value: fmtMoney(mcResult.finalValues.p10) },
+                      { icon: Percent, title: "P25", value: fmtMoney(mcResult.finalValues.p25) },
+                      { icon: Scale, title: "Median (P50)", value: fmtMoney(mcResult.finalValues.p50) },
+                      { icon: Percent, title: "P75", value: fmtMoney(mcResult.finalValues.p75) },
+                      { icon: TrendingUp, title: "Best case (P90)", value: fmtMoney(mcResult.finalValues.p90) },
                     ]}
                   />
                 </>
@@ -409,11 +410,11 @@ function FirePageContent() {
                 </div>
               )}
             </div>
-          </SectionCard>
+          </Card>
 
           {/* Sensitivity: years to FIRE by return rate, for one monthly-savings amount */}
-          <SectionCard
-            label={
+          <Card
+            title={
               <>
                 Sensitivity analysis: years to FIRE
                 <InfoTip label="About sensitivity analysis" text="How different return rates and savings amounts affect your timeline" />
@@ -456,15 +457,15 @@ function FirePageContent() {
                 })}
               </div>
             </div>
-          </SectionCard>
+          </Card>
         </>
       ) : (
-        <SectionCard>
+        <Card>
           <div className="py-12 text-center">
             <Flame className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" aria-hidden />
             <p data-keep="empty" className="text-muted-foreground">Enter your details and click Calculate FIRE</p>
           </div>
-        </SectionCard>
+        </Card>
       )}
       </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useState, type FormEvent } from "react";
 import { isWebAuthnPending, passkeyLogin } from "@/lib/client/passkey-prf";
 import { Field } from "@/components/ui/field";
@@ -217,13 +218,13 @@ export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
             {error}
           </p>
         )}
-        <button
+        <Button
           type="submit"
           disabled={busy || password === ""}
-          className="h-11 w-full rounded-lg bg-primary font-medium text-primary-foreground disabled:opacity-50"
+          size="lg" fullWidth
         >
           Unlock
-        </button>
+        </Button>
         {hasPasskey && supported && (
           <button
             type="button"

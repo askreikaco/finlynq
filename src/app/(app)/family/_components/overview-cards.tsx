@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Dashboard / reports / portfolio cards as rendered on the Family overview. Cards sit in SectionCard,
+ * Dashboard / reports / portfolio cards as rendered on the Family overview. Cards sit in Card,
  * income and expenses in MetricGrid, and the rest reuse the source page's own component (NetWorthHeroCard,
  * KeyMetrics, Chart (net worth, performance), IncomeExpenseTrendCard, PerformanceBadges), fed from
  * the allow-listed overview DTO, so the figures and the look match those pages.
@@ -11,7 +11,7 @@ import { ArrowLeftRight, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { MetricGrid, SectionCard, metricGridClass } from "@/components/mobile";
+import { MetricGrid, metricGridClass } from "@/components/mobile";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { KeyMetrics, type SavingsTrend } from "@/app/(app)/dashboard/_components/key-metrics";
 import { Chart } from "@/components/chart";
@@ -25,6 +25,7 @@ import { resolveCard } from "@/lib/metrics/delta";
 import { cardProps, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
 import { fill } from "./section-labels";
+import { Card } from "@/components/ui/card";
 
 export type Period = OverviewResponse["period"];
 
@@ -60,12 +61,12 @@ function flowLabel(key: string, daily: boolean): string {
 /** A card slot whose data is not available (section not shared / failed): never a 0. */
 export function UnavailableCard({ title, text }: { title: string; text: string }) {
   return (
-    <SectionCard label={title} icon={Users} tone="indigo" data-testid="card-unavailable">
+    <Card title={title} icon={Users} tone="indigo" data-testid="card-unavailable">
       <p className="text-3xl font-bold leading-none text-muted-foreground" aria-hidden="true">
         {FAMILY_STRINGS.overview_none}
       </p>
       <p className="text-xs text-muted-foreground mt-1">{text}</p>
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -165,13 +166,13 @@ export function HeadlineCards(d: HeadlineData) {
         columns={2}
         metrics={[
           {
-            icon: TrendingUp, label: incomeLabel, value: d.flows.income, currency,
+            icon: TrendingUp, title: incomeLabel, value: d.flows.income, currency,
             ...(incomeCard ? cardProps(incomeCard) : {}),
             ...(incomeCard?.delta ? { note: caption } : { sub: caption }),
           },
           {
             icon: TrendingDown,
-            label: expensesLabel,
+            title: expensesLabel,
             value: d.flows.expenses,
             currency,
             ...(expensesCard ? cardProps(expensesCard, true) : {}),
@@ -236,7 +237,7 @@ export function NetWorthOverTimeCard({
   const first = history[0];
   const last = history[history.length - 1];
   return (
-    <SectionCard label={title} icon={Users} tone="indigo">
+    <Card title={title} icon={Users} tone="indigo">
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">
           {currency}{period === "all" ? " · All time" : ""}
@@ -271,7 +272,7 @@ export function NetWorthOverTimeCard({
         )}
         {note && <p className="text-xs text-muted-foreground mt-2">{note}</p>}
       </div>
-    </SectionCard>
+    </Card>
   );
 }
 
@@ -290,9 +291,9 @@ export function IncomeVsExpensesCard({
   const { points, daily } = flowPoints(series, period);
   if (points.length === 0) {
     return (
-      <SectionCard label={FAMILY_STRINGS.overview_card_income_vs_expenses} icon={ArrowLeftRight} tone="emerald">
+      <Card title={FAMILY_STRINGS.overview_card_income_vs_expenses} icon={ArrowLeftRight} tone="emerald">
         <p className="text-sm text-muted-foreground py-12 text-center">{FAMILY_STRINGS.overview_card_no_cashflow}</p>
-      </SectionCard>
+      </Card>
     );
   }
   const from = series.from ?? (daily ? points[0].key : `${points[0].key}-01`);
@@ -325,7 +326,7 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
     [performance.series],
   );
   return (
-    <SectionCard label={FAMILY_STRINGS.overview_card_performance} icon={TrendingUp} tone="violet">
+    <Card title={FAMILY_STRINGS.overview_card_performance} icon={TrendingUp} tone="violet">
       <div className="space-y-2">
         {prepared.data.length === 0 ? (
           <p className="text-sm text-muted-foreground">{FAMILY_STRINGS.overview_card_no_snapshots}</p>
@@ -337,6 +338,6 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
           </>
         )}
       </div>
-    </SectionCard>
+    </Card>
   );
 }

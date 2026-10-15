@@ -381,18 +381,13 @@ export default function AdminFeedbackPage() {
     >
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button
+          <Button
             key={f}
             onClick={() => setFilter(f)}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm capitalize transition-colors",
-              filter === f
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border hover:bg-muted",
-            )}
+            variant="outline" pressed={filter === f} className="capitalize"
           >
             {f}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -403,7 +398,7 @@ export default function AdminFeedbackPage() {
 
       <div data-slot="feedback-cards" className={TW.grid3}>
         {rows?.map((r) => (
-          <Card key={r.id} className="p-4">
+          <Card key={r.id}>
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={typeColor[r.type] ?? typeColor.other}>{r.type}</Badge>
               <Badge variant="outline" className="capitalize">

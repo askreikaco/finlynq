@@ -4,13 +4,13 @@
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
-import { SectionCard } from "@/components/mobile/section-card";
 import { ListRow } from "@/components/mobile/list-row";
 import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { cn } from "@/lib/utils";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import { PageHeader } from "@/components/mobile/page-header";
 import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
+import { Card } from "@/components/ui/card";
 
 /** iOS-style groups: each group is one inset rounded list. Order is fixed; entries come from the registry. */
 const GROUPS: Array<{ title: string; paths: string[] }> = [
@@ -60,7 +60,7 @@ export function SettingsHub() {
         )}
       >
         {groups.map((group) => (
-          <SectionCard key={group.title} data-slot="settings-hub-group" list label={group.title} {...groupLabelIcon(group.title)}>
+          <Card key={group.title} data-slot="settings-hub-group" frame="list" title={group.title} {...groupLabelIcon(group.title)}>
             {group.entries.map((entry) => (
               <ListRow
                 key={entry.path}
@@ -72,7 +72,7 @@ export function SettingsHub() {
                 selected={isCurrentRoute(columnCurrent, entry.path)}
               />
             ))}
-          </SectionCard>
+          </Card>
         ))}
       </div>
     </div>

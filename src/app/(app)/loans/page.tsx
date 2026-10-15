@@ -1,14 +1,13 @@
 "use client";
 
-import type { MetricCardProps } from "@/components/metric-card";
 import { Suspense, useMemo, type MouseEvent } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, type CardProps } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CalendarClock, CheckCircle2, Landmark, ListChecks } from "lucide-react";
-import { MetricGrid, SectionCard, ListRow, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { MetricGrid, ListRow, ListDetailLayout, useListDetail } from "@/components/mobile";
 import { Notice } from "@/components/notice";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { LoanDetail, FREQUENCY_LABELS } from "./_components/loan-detail";
@@ -35,14 +34,7 @@ function LoansSkeleton() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <div className="h-4 w-24 animate-shimmer rounded" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-7 w-32 animate-shimmer rounded mt-1" />
-            </CardContent>
-          </Card>
+          <Card key={i} loading />
         ))}
       </div>
       <div className="space-y-2 rounded-xl border border-border/50 bg-card p-4">
@@ -162,21 +154,21 @@ function LoansPageContent() {
   const debtCard = resolveCard({ ...common, points: loanSeries?.balance, mode: "last", pageValue: totalDebt, kind: "money" });
   const payCard = resolveCard({ ...common, points: loanSeries?.payment, mode: "last", pageValue: totalMonthly, kind: "money" });
   const activeCard = resolveCard({ ...common, points: loanSeries?.active, mode: "last", pageValue: activeLoans.length, kind: "count" });
-  const metrics: MetricCardProps[] = [
+  const metrics: CardProps[] = [
     {
-      id: "total-debt", label: "Total debt", icon: Landmark, tone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
+      id: "total-debt", title: "Total debt", icon: Landmark, tone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
       delta: { pct: debtCard.badgePct, text: debtCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
-      sparkData: debtCard.sparkData, sparkLabels: debtCard.sparkLabels, sparkColor: "#f43f5e",
+      spark: { data: debtCard.sparkData, color: "#f43f5e", labels: debtCard.sparkLabels }, 
     },
     {
-      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, tone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
+      id: "monthly-payments", title: "Monthly payments", icon: CalendarClock, tone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
       delta: { pct: payCard.badgePct, text: payCard.delta ?? NO_HISTORY_CAPTION, invert: true }, note: caveat,
-      sparkData: payCard.sparkData, sparkLabels: payCard.sparkLabels, sparkColor: "#f59e0b",
+      spark: { data: payCard.sparkData, color: "#f59e0b", labels: payCard.sparkLabels }, 
     },
     {
-      id: "active-loans", label: "Active loans", icon: ListChecks, tone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
+      id: "active-loans", title: "Active loans", icon: ListChecks, tone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
       delta: { pct: activeCard.badgePct, text: activeCard.delta ?? NO_HISTORY_CAPTION, invert: true },
-      sparkData: activeCard.sparkData, sparkLabels: activeCard.sparkLabels, sparkColor: "#6366f1",
+      spark: { data: activeCard.sparkData, color: "#6366f1", labels: activeCard.sparkLabels }, 
     },
   ];
 
@@ -229,11 +221,11 @@ function LoansPageContent() {
                 </Notice>
               )}
           {activeList.length > 0 && (
-            <SectionCard label="Active" icon={Landmark} tone="indigo" list className="[&>*]:min-w-0">
+            <Card title="Active" icon={Landmark} tone="indigo" frame="list" className="[&>*]:min-w-0">
               {activeList.map((loan) => (
                 <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} href={`/loans/${loan.id}`} onPress={rowPress(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
               ))}
-            </SectionCard>
+            </Card>
           )}
 
           {/* Paid-off loans: collapsed by default */}

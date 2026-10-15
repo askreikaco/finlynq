@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { AlertCircle, Loader2, RefreshCw, Users } from "lucide-react";
@@ -15,6 +14,7 @@ import { errorMessage } from "./api";
 import { fill } from "./section-labels";
 import { Field } from "@/components/ui/field";
 import { HeadlineCards, IncomeVsExpensesCard, NetWorthOverTimeCard, type Period } from "./overview-cards";
+import { Card } from "@/components/ui/card";
 
 /** The ranges offered (legacy 6m / 1y stay API-only). Default: this month. */
 const PERIODS: Array<{ value: Period; label: string }> = [
@@ -164,7 +164,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
 
   if (error && !data) {
     return (
-      <SectionCard className="border-destructive bg-destructive/5">
+      <Card className="border-destructive bg-destructive/5">
         <div className="flex gap-3">
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div role="alert">
@@ -174,15 +174,15 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
             </Button>
           </div>
         </div>
-      </SectionCard>
+      </Card>
     );
   }
 
   if (!data || data.members.length === 0) {
     return (
-      <SectionCard>
+      <Card>
         <p className="text-center py-12 text-muted-foreground">{FAMILY_STRINGS.overview_empty}</p>
-      </SectionCard>
+      </Card>
     );
   }
 
@@ -221,19 +221,21 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           ]}
           className="flex-1"
         />
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          iconOnly
+          shape="round"
+          leading={RefreshCw}
+          loading={refreshing}
           onClick={() => {
             setRefreshing(true);
             setRefreshNonce((n) => n + 1);
           }}
-          disabled={refreshing}
           aria-label="Refresh"
-          title={generatedAt ? `Refresh · updated ${formatUpdated(generatedAt)}` : "Refresh"}
-          className="ml-auto shrink-0 w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full flex items-center justify-center bg-muted active:bg-muted/70 text-muted-foreground hover:text-foreground disabled:opacity-60"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-        </button>
+          tooltip={generatedAt ? `Refresh · updated ${formatUpdated(generatedAt)}` : "Refresh"}
+          className="ml-auto shrink-0"
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 empty:hidden">

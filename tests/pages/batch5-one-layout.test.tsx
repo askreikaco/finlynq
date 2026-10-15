@@ -122,7 +122,7 @@ describe("Batch 5: pages sit in the shared SectionPage column", () => {
     expect(src).toMatch(/configured" : "not configured"/);
   });
 
-  it("the system stat block is a MetricGrid and the sparklines stay inside the SectionCard", () => {
+  it("the system stat block is a MetricGrid and the sparklines stay inside the Card", () => {
     const src = read("src/app/(app)/admin/(env)/system/page.tsx");
     expect(src).toMatch(/<MetricGrid\b/);
     expect(src).toMatch(/<MiniSpark values=\{cpuHistory\}/);
@@ -134,9 +134,9 @@ describe("Batch 5: shared pieces render as one column", () => {
     render(
       <MetricGrid
         metrics={[
-          { icon: Wallet, label: "A", value: "1" },
-          { icon: Wallet, label: "B", value: "2" },
-          { icon: Wallet, label: "C", value: "3" },
+          { icon: Wallet, title: "A", value: "1" },
+          { icon: Wallet, title: "B", value: "2" },
+          { icon: Wallet, title: "C", value: "3" },
         ]}
         columns={3}
       />,

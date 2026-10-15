@@ -20,6 +20,7 @@ const POINTER_MOD = /pointer-(fine|coarse)/;
 // file -> viewport tokens allowed on primitives there. Width or display toggles only, never sizes.
 export const EXCEPTIONS: Record<string, string[]> = {
   "src/components/ui/pagination.tsx": ["max-regular:hidden"],
+  "src/components/mobile/page-fab.tsx": ["regular:hidden"], // the floating action button is phone only (display toggle)
 };
 
 export interface Hit { file: string; line: number; tag: string; token: string }

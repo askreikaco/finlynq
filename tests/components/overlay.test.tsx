@@ -36,7 +36,7 @@ describe("Overlay: one surface, every part a field", () => {
     render(<Overlay variant="confirm" destructive={false} open onClose={() => {}} title="Switch?" confirmLabel="Switch" onConfirm={() => {}} />);
     const dlg = await screen.findByRole("dialog");
     expect(dlg.querySelector("svg.lucide-triangle-alert, svg.lucide-alert-triangle")).toBeNull();
-    expect(within(dlg).getByRole("button", { name: "Switch" }).getAttribute("data-variant")).toBe("default");
+    expect(within(dlg).getByRole("button", { name: "Switch" }).getAttribute("data-variant")).toBe("primary");
   });
 
   it("form variant: actions render in order, an action without onClick closes, the primary runs its handler", async () => {

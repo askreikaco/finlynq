@@ -1,9 +1,9 @@
 "use client";
 
-import { SectionCard } from "@/components/mobile/section-card";
 import { DetailList } from "@/components/mobile/detail-list";
 import type { DetailItem } from "@/components/ui/overlay";
 import type { DialogTransaction } from "@/components/transactions/transaction-dialog";
+import { Card } from "@/components/ui/card";
 
 /**
  * Edit page: the read-only facts about the row that no field shows (they used to sit in the list's row sheet):
@@ -34,14 +34,14 @@ export function EditDetails({
   const items = editDetailItems(tx, splitCount);
   if (items.length === 0) return null;
   return (
-    <SectionCard
-      label="Details"
+    <Card
+      title="Details"
       info="Read-only facts about this transaction. Kind is the investment operation that created it; the split count is how many categories its amount is divided between."
       infoLabel="About details"
       data-testid="tx-edit-details"
       className="py-0"
     >
       <DetailList items={items} />
-    </SectionCard>
+    </Card>
   );
 }

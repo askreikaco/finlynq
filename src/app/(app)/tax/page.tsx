@@ -8,13 +8,14 @@ import { Chart } from "@/components/chart";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, Coins, Layers, Lightbulb, Percent, PiggyBank } from "lucide-react";
-import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { ListRow, MetricGrid } from "@/components/mobile";
 import { Overlay } from "@/components/ui/overlay";
 import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { Field } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/notice";
+import { Card } from "@/components/ui/card";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -77,14 +78,14 @@ function TaxPageContent() {
     >
       <MetricGrid
         metrics={[
-          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, valueTone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
-          { icon: Coins, label: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
-          { icon: Percent, label: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
+          { icon: PiggyBank, title: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, valueTone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
+          { icon: Coins, title: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
+          { icon: Percent, title: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
         ]}
       />
 
       <div data-slot="tax-cards" className={TW.grid3}>
-      <SectionCard label="TFSA" icon={PiggyBank} tone="emerald" padded={false}>
+      <Card title="TFSA" icon={PiggyBank} tone="emerald" padded={false}>
         <div className="space-y-3 pt-3">
           <div className="px-4">
             <Chart kind="progress" value={tfsaPct} ariaLabel="TFSA room used" />
@@ -96,11 +97,11 @@ function TaxPageContent() {
             <ListRow title="CESG grant (RESP)" value={`${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`} secondary="max $500/yr, $7,200 lifetime" />
           </div>
         </div>
-      </SectionCard>
+      </Card>
 
       {/* RRSP vs TFSA Calculator */}
-      <SectionCard
-        label={
+      <Card
+        title={
           <>
             RRSP vs TFSA Calculator
             <InfoTip label="About RRSP vs TFSA" text="Compare the tax benefit of contributing to RRSP vs TFSA" />
@@ -144,10 +145,10 @@ function TaxPageContent() {
             </div>
           )}
         </div>
-      </SectionCard>
+      </Card>
 
       {/* Marginal Tax Rates */}
-      <SectionCard label="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" list>
+      <Card title="Marginal Tax Rates (Ontario)" icon={Percent} tone="amber" frame="list">
         {Object.entries(data.marginalRates).map(([key, rates]) => (
           <ListRow
             key={key}
@@ -156,11 +157,11 @@ function TaxPageContent() {
             value={<span className="tabular-nums text-sm font-semibold">{rates.combined}%</span>}
           />
         ))}
-      </SectionCard>
+      </Card>
 
       {/* Asset Location Advice: tap a holding for the reason */}
       {data.assetLocationAdvice.length > 0 && (
-        <SectionCard label="Asset Location Advice" icon={Layers} tone="violet" list>
+        <Card title="Asset Location Advice" icon={Layers} tone="violet" frame="list">
           {data.assetLocationAdvice.map((a, i) => (
             <ListRow
               key={`${a.symbol}-${i}`}
@@ -169,7 +170,7 @@ function TaxPageContent() {
               onPress={() => setOpenAdvice(i)}
             />
           ))}
-        </SectionCard>
+        </Card>
       )}
       </div>
 

@@ -139,15 +139,16 @@ export function ratioSeries(num: readonly MonthPoint[], den: readonly MonthPoint
 export const throughMonthOf = (today: string): string => monthOf(today);
 export { shiftMonth };
 
-import type { MetricCardProps } from "@/components/metric-card";
+import type { CardProps } from "@/components/ui/card";
 import { aggregate, compareCaption, pctChange, previousPeriod, type Period, type RangeSelection } from "./period";
 import { formatDelta, resolveCard, type DeltaKind, type ResolvedCard } from "./delta";
+
 
 /**
  * Bind the page's selected range once, get a resolver per card:
  *   const card = makeCardResolver({ selection, explicit, period }, currency);
  *   const c = card(points, "last", pageValue);                 // money, badge + "+$X vs last month" + sparkline
- *   <MetricCard value={c.value ?? pageValue} {...cardProps(c)} />
+ *   <Card value={c.value ?? pageValue} {...cardProps(c)} />
  * `pageValue` is the figure the page computes itself (the big number for the default period).
  */
 export function makeCardResolver(
@@ -164,11 +165,11 @@ export function makeCardResolver(
     resolveCard({ points: points ? [...points] : null, period: range.period, mode, isDefault: !range.explicit, pageValue, kind, currency, caption });
 }
 
-/** The card props every MetricCard takes from a ResolvedCard (`delta` = badge + signed difference line, sparkline); `invert` = less is better. */
-export function cardProps(c: ResolvedCard, invert = false): Pick<MetricCardProps, "delta" | "sparkData" | "sparkLabels"> {
+/** The card props every metric Card takes from a ResolvedCard (`delta` = badge + signed difference line, sparkline); `invert` = less is better. */
+export function cardProps(c: ResolvedCard, invert = false, sparkColor?: string): Pick<CardProps, "delta" | "spark"> {
   return {
     delta: { pct: c.badgePct, ...(c.delta ? { text: c.delta } : {}), ...(invert ? { invert } : {}) },
-    ...(c.sparkData ? { sparkData: c.sparkData, sparkLabels: c.sparkLabels } : {}),
+    ...(c.sparkData ? { spark: { data: c.sparkData, labels: c.sparkLabels, ...(sparkColor ? { color: sparkColor } : {}) } } : {}),
   };
 }
 

@@ -16,7 +16,7 @@ const TOUCHED = [
   "src/app/(app)/transactions/_components/transaction-split-form.tsx",
   "src/app/(app)/portfolio/_components/holding-account-groups.tsx",
   "src/app/(app)/portfolio/realized-gains/page.tsx",
-  "src/components/metric-card.tsx",
+  "src/components/ui/card.tsx",
 ];
 
 describe("1. account switcher avatar holds 2-letter initials", () => {
@@ -98,7 +98,7 @@ describe("4. fixed-size boxes grown for 12px text", () => {
   });
 
   it("metric card number steps text-2xl at the 13rem container (no 30px step inside 13rem)", () => {
-    const src = read("src/components/metric-card.tsx");
+    const src = read("src/components/ui/card.tsx");
     const cls = src.match(/const numberSize = size === "hero" \? "([^"]*)" : "([^"]*)"/);
     expect(cls).not.toBeNull();
     expect(cls![2]).toContain("@[13rem]:text-2xl");

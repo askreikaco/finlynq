@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Overlay } from "@/components/ui/overlay";
-import { ListRow, SectionCard } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
 import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import type { ColumnMapping, DateFormatOverride } from "@/lib/import-templates";
 // Pure, dependency-free module — importing parseAmount from "@/lib/csv-parser"
@@ -12,6 +12,7 @@ import { parseAmount } from "@/lib/parse-amount";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx/supported-currencies";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Card } from "@/components/ui/card";
 
 type DateFormatUi = "auto" | DateFormatOverride;
 
@@ -502,7 +503,7 @@ export function ColumnMappingDialog({
             <div className="space-y-1.5">
               <h3 className="text-sm font-medium">Sample (first {mappedSample.length} rows)</h3>
               <div className="max-h-64 overflow-y-auto">
-                <SectionCard list>
+                <Card frame="list">
                   {mappedSample.map((r, i) => {
                     const invParts = isInvestment ? [r.ticker, r.security, r.quantity ? `qty ${r.quantity}` : null] : [];
                     const subtitle = [r.date || "—", r.account || null, r.note || null, ...invParts].filter(Boolean).join(" · ");
@@ -516,7 +517,7 @@ export function ColumnMappingDialog({
                       />
                     );
                   })}
-                </SectionCard>
+                </Card>
               </div>
             </div>
           )}

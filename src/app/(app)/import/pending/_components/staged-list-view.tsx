@@ -8,7 +8,7 @@
  */
 
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -97,20 +97,16 @@ export function StagedListView({
       )}
 
       {toast && (
-        <Card
-          className={
+        <Card frameClassName={
             toast.type === "success"
               ? "border-pos/30 bg-pos/10"
               : "border-destructive/30 bg-destructive/10"
-          }
-        >
-          <CardContent className="py-3 text-sm">{toast.msg}</CardContent>
+          } className="py-3 text-sm">{toast.msg}
         </Card>
       )}
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/30 bg-destructive/10" className="py-3 text-sm text-destructive">{error}
         </Card>
       )}
 
@@ -147,34 +143,30 @@ export function StagedListView({
       )}
 
       {loading && !list && (
-        <Card>
-          <CardContent className="py-8 text-sm text-muted-foreground text-center">
-            Loading…
-          </CardContent>
+        <Card className="py-8 text-sm text-muted-foreground text-center">
+          Loading…
         </Card>
       )}
 
       {!embedded && list && list.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center space-y-3">
-            <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
-            <div>
-              <p className="text-sm font-medium">Nothing pending</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Upload a CSV/OFX/QFX statement from the{" "}
-                <Link href="/import" className="underline">
-                  Import
-                </Link>{" "}
-                page, or forward a bank statement to your import address — both
-                land here for review.
-              </p>
-            </div>
-            <Link href="/import" className="inline-block">
-              <Button variant="outline" size="sm">
-                View import options
-              </Button>
-            </Link>
-          </CardContent>
+        <Card className="py-12 text-center space-y-3">
+          <Inbox className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div>
+            <p className="text-sm font-medium">Nothing pending</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload a CSV/OFX/QFX statement from the{" "}
+              <Link href="/import" className="underline">
+                Import
+              </Link>{" "}
+              page, or forward a bank statement to your import address — both
+              land here for review.
+            </p>
+          </div>
+          <Link href="/import" className="inline-block">
+            <Button variant="outline" size="sm">
+              View import options
+            </Button>
+          </Link>
         </Card>
       )}
 
@@ -207,37 +199,36 @@ export function StagedListView({
             return (
               <Card
                 key={row.id}
-                className="cursor-pointer hover:border-primary/50 transition-colors"
+                frameClassName="cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => openDetail(row.id)}
+                className="py-4"
               >
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <p className="text-sm font-medium truncate">{headline}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{subline}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="text-sm font-medium truncate">{headline}</p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className="font-mono">
-                        {row.totalRowCount} {row.totalRowCount === 1 ? "row" : "rows"}
-                      </Badge>
-                      {row.duplicateCount > 0 && (
-                        <Badge
-                          variant="outline"
-                          className="bg-warning/10 text-warning border-warning/30"
-                        >
-                          {row.duplicateCount} dupe{row.duplicateCount === 1 ? "" : "s"}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="bg-muted/60 text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {daysUntil(row.expiresAt)}d left
-                      </Badge>
-                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{subline}</p>
                   </div>
-                </CardContent>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="font-mono">
+                      {row.totalRowCount} {row.totalRowCount === 1 ? "row" : "rows"}
+                    </Badge>
+                    {row.duplicateCount > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="bg-warning/10 text-warning border-warning/30"
+                      >
+                        {row.duplicateCount} dupe{row.duplicateCount === 1 ? "" : "s"}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="bg-muted/60 text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {daysUntil(row.expiresAt)}d left
+                    </Badge>
+                  </div>
+                </div>
               </Card>
             );
           })}

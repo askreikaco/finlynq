@@ -34,7 +34,7 @@
  */
 
 import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 
@@ -82,13 +82,11 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
   // the bank-ledger calculation can't run.
   if (boundAccountId == null) {
     return (
-      <Card className="border-muted bg-muted/30">
-        <CardContent className="py-3 px-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Info className="h-4 w-4 shrink-0" />
-          <span>
-            No account linked — statement balance not reconcilable.
-          </span>
-        </CardContent>
+      <Card frameClassName="border-muted bg-muted/30" className="py-3 px-4 flex items-center gap-2 text-sm text-muted-foreground">
+        <Info className="h-4 w-4 shrink-0" />
+        <span>
+          No account linked — statement balance not reconcilable.
+        </span>
       </Card>
     );
   }
@@ -100,18 +98,20 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
   // note rather than an empty/zero figure that looks wrong.
   if (bankLedgerBalance == null) {
     return (
-      <Card className="border-muted bg-muted/30" data-testid="reconciliation-callout">
-        <CardContent className="py-3 px-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Info className="h-4 w-4 shrink-0" />
-          <span>
-            Statement says{" "}
-            <span className="font-mono">
-              {formatCurrency(statementBalance, ccy)}
-            </span>
-            {statementBalanceDate ? ` as of ${statementBalanceDate}` : ""} — the
-            bank ledger has no balance yet to compare against.
+      <Card
+        frameClassName="border-muted bg-muted/30"
+        data-testid="reconciliation-callout"
+        className="py-3 px-4 flex items-center gap-2 text-sm text-muted-foreground"
+      >
+        <Info className="h-4 w-4 shrink-0" />
+        <span>
+          Statement says{" "}
+          <span className="font-mono">
+            {formatCurrency(statementBalance, ccy)}
           </span>
-        </CardContent>
+          {statementBalanceDate ? ` as of ${statementBalanceDate}` : ""} — the
+          bank ledger has no balance yet to compare against.
+        </span>
       </Card>
     );
   }
@@ -130,72 +130,70 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
     : "text-warning";
 
   return (
-    <Card className={cardCls} data-testid="reconciliation-callout">
-      <CardContent className="py-4 px-5">
-        <div className="flex items-start justify-between gap-4">
-          <div
-            className={`grid grid-cols-1 ${hasPending ? "regular:grid-cols-3" : "regular:grid-cols-2"} gap-4 flex-1`}
-          >
+    <Card frameClassName={cardCls} data-testid="reconciliation-callout" className="py-4 px-5">
+      <div className="flex items-start justify-between gap-4">
+        <div
+          className={`grid grid-cols-1 ${hasPending ? "regular:grid-cols-3" : "regular:grid-cols-2"} gap-4 flex-1`}
+        >
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Statement says
+            </p>
+            <p className="text-lg font-mono font-semibold mt-1">
+              {formatCurrency(statementBalance, ccy)}
+            </p>
+            {statementBalanceDate && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                as of {statementBalanceDate}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Bank ledger has
+            </p>
+            <p
+              className={`text-lg font-mono font-semibold mt-1 ${hasPending ? "" : resultCls}`}
+            >
+              {formatCurrency(bankLedgerBalance, ccy)}
+            </p>
+          </div>
+          {hasPending && (
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Statement says
-              </p>
-              <p className="text-lg font-mono font-semibold mt-1">
-                {formatCurrency(statementBalance, ccy)}
-              </p>
-              {statementBalanceDate && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  as of {statementBalanceDate}
-                </p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Bank ledger has
+                After sending {sendCount} {sendCount === 1 ? "row" : "rows"}
               </p>
               <p
-                className={`text-lg font-mono font-semibold mt-1 ${hasPending ? "" : resultCls}`}
+                className={`text-lg font-mono font-semibold mt-1 ${resultCls}`}
               >
-                {formatCurrency(bankLedgerBalance, ccy)}
+                {formatCurrency(result, ccy)}
               </p>
             </div>
-            {hasPending && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  After sending {sendCount} {sendCount === 1 ? "row" : "rows"}
-                </p>
-                <p
-                  className={`text-lg font-mono font-semibold mt-1 ${resultCls}`}
-                >
-                  {formatCurrency(result, ccy)}
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="shrink-0 pt-1">
-            {isMatch ? (
-              <CheckCircle2
-                className="h-6 w-6 text-pos"
-                aria-label="Reconciled — bank ledger matches statement"
-              />
-            ) : (
-              <AlertTriangle
-                className="h-6 w-6 text-warning"
-                aria-label="Mismatch — bank ledger does not match statement"
-              />
-            )}
-          </div>
+          )}
         </div>
-        {!isMatch && (
-          <p className="text-xs text-muted-foreground mt-3">
-            Difference of{" "}
-            <span className="font-mono">
-              {formatCurrency(Math.abs(result - statementBalance), ccy)}
-            </span>
-            . Statements often lag — pending transactions may not have cleared.
-          </p>
-        )}
-      </CardContent>
+        <div className="shrink-0 pt-1">
+          {isMatch ? (
+            <CheckCircle2
+              className="h-6 w-6 text-pos"
+              aria-label="Reconciled — bank ledger matches statement"
+            />
+          ) : (
+            <AlertTriangle
+              className="h-6 w-6 text-warning"
+              aria-label="Mismatch — bank ledger does not match statement"
+            />
+          )}
+        </div>
+      </div>
+      {!isMatch && (
+        <p className="text-xs text-muted-foreground mt-3">
+          Difference of{" "}
+          <span className="font-mono">
+            {formatCurrency(Math.abs(result - statementBalance), ccy)}
+          </span>
+          . Statements often lag — pending transactions may not have cleared.
+        </p>
+      )}
     </Card>
   );
 }

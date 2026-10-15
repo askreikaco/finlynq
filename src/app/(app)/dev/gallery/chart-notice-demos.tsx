@@ -11,7 +11,7 @@ import { Chart, type ChartKind } from "@/components/chart";
 import { Notice, type NoticeTone, type NoticeVariant } from "@/components/notice";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { SectionCard } from "@/components/mobile/section-card";
+import { Card } from "@/components/ui/card";
 
 const SPARK = [10, 12, 11, 15, 14, 18, 17, 21, 20, 24];
 const SPARK_LABELS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
@@ -143,7 +143,7 @@ export function ChartDemos() {
         <Chart kind="sankey" sankey={SANKEY} tooltip={p.tooltip} />
       </Cell>
 
-      <SectionCard label="progress">
+      <Card title="progress">
         <div className="space-y-3">
           <Chart kind="progress" value={65} label="Primary, with value" valueLabel ariaLabel="Primary" />
           <Chart kind="progress" value={90} tone="warning" size="lg" label="Warning, large, target at 80%" valueLabel target={p.target ? 80 : undefined} ariaLabel="Warning" />
@@ -152,7 +152,7 @@ export function ChartDemos() {
           <Chart kind="progress" value={55} status="overdue" label="Status colour" ariaLabel="Status" />
           <Chart kind="progress" value={30} color="#8b5cf6" label="Custom colour" ariaLabel="Custom" />
         </div>
-      </SectionCard>
+      </Card>
     </div>
   );
 }
@@ -180,7 +180,7 @@ export function NoticeDemos() {
     <div className="space-y-4" data-testid="gallery-notice">
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Tone">
         {TONES.map((t) => (
-          <Button key={t} size="sm" variant={tone === t ? "default" : "outline"} onClick={() => setTone(t)}>{t}</Button>
+          <Button key={t} size="sm" variant={tone === t ? "primary" : "outline"} onClick={() => setTone(t)}>{t}</Button>
         ))}
         <Button size="sm" variant="ghost" onClick={() => setRound((r) => r + 1)}>Reset dismissed</Button>
       </div>
@@ -204,16 +204,16 @@ export function NoticeDemos() {
           <Notice tone="danger">Could not save. Try again.</Notice>
         </Cell>
         <Cell name="variant=&quot;empty&quot;">
-          <SectionCard>
+          <Card>
             <Notice variant="empty" icon={Inbox} title="Nothing here" action={{ label: "Add", onClick: () => {} }} info={parts.info ? "Empty states keep one short line; anything longer goes behind the (i)." : undefined}>
               Add your first item.
             </Notice>
-          </SectionCard>
+          </Card>
         </Cell>
         <Cell name={`variant="error" · retry`}>
-          <SectionCard>
+          <Card>
             <Notice variant="error" retry={() => {}} />
-          </SectionCard>
+          </Card>
         </Cell>
         <Cell name="items (onboarding tips: per-item dismiss, collapsible)">
           <Notice

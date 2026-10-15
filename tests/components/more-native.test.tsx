@@ -69,7 +69,7 @@ describe("More account card", () => {
     const sec = screen.getByTestId("more-account");
     expect(within(sec).getByRole("heading", { level: 2, name: "Account" })).toBeInTheDocument();
     const card = sec;
-    expect(card).toHaveAttribute("data-slot", "section-card");
+    expect(card).toHaveAttribute("data-slot", "card");
     await waitFor(() => expect(within(card).getAllByTestId("account-row")).toHaveLength(2));
     const [current, other] = within(card).getAllByTestId("account-row");
     expect(current).toHaveAttribute("aria-current", "true");
@@ -108,17 +108,17 @@ describe("More section headers and groups", () => {
     await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
     const headers = screen
       .getByTestId("more-menu")
-      .querySelectorAll("[data-slot='section-card'] [data-slot='section-card-label']");
+      .querySelectorAll("[data-slot='card'] [data-slot='card-label-text']");
     // Explore's label sits OUTSIDE its card (labelPlacement="outside"); the others are inside.
     expect(Array.from(headers).map((h) => h.textContent)).toEqual(["Account", "Tools", "Admin", "Appearance"]);
     const outside = Array.from(
-      screen.getByTestId("more-menu").querySelectorAll("[data-slot='section-card-label-outside']"),
+      screen.getByTestId("more-menu").querySelectorAll("[data-slot='card-title-outside']"),
     ).find((h) => h.textContent === "Explore");
     expect(outside).toBeTruthy();
-    expect(outside!.closest("[data-slot='section-card-body']")).toBeNull();
+    expect(outside!.closest("[data-slot='card-body']")).toBeNull();
     for (const id of ["main", "explore", "tools", "admin", "appearance"]) {
       const g = screen.getByTestId(`more-group-${id}`);
-      expect(g.matches("[data-slot='section-card']") || g.querySelector("[data-slot='section-card-body']")).toBeTruthy();
+      expect(g.matches("[data-slot='card']") || g.querySelector("[data-slot='card-body']")).toBeTruthy();
     }
   });
 
@@ -129,7 +129,7 @@ describe("More section headers and groups", () => {
     expect(rows.length).toBeGreaterThan(5);
     for (const r of rows) {
       expect(r).toHaveAttribute("data-slot", "list-row");
-      expect(r.closest("[data-slot='section-card-body']")).not.toBeNull();
+      expect(r.closest("[data-slot='card-body']")).not.toBeNull();
       expect(r.getAttribute("href")).toMatch(/^\//);
     }
   });

@@ -2,7 +2,6 @@
 
 import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { SectionCard } from "@/components/mobile/section-card";
 import { Chart } from "@/components/chart";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
 import { motion } from "framer-motion";
 import type { MonthlyData } from "./types";
 import { useAnimations } from "@/hooks/use-animations";
+import { Card } from "@/components/ui/card";
 
 const itemVariants = {
   hidden: { opacity: 1, y: 0 },
@@ -88,13 +88,13 @@ export function IncomeExpenseChart({
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Income vs Expenses" icon={ArrowLeftRight} tone="emerald" cardClassName="card-hover">
+      <Card title="Income vs Expenses" icon={ArrowLeftRight} tone="emerald" frameClassName="card-hover">
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="text-xs text-muted-foreground">Last 12 months</p>
           {stackable && (
             <Button
               size="sm"
-              variant={stacked ? "default" : "outline"}
+              variant={stacked ? "primary" : "outline"}
               onClick={() => setStacked((s) => !s)}
               title="Split into stacked top-10 category views"
             >
@@ -137,7 +137,7 @@ export function IncomeExpenseChart({
             </>
           )}
         </div>
-      </SectionCard>
+      </Card>
     </motion.div>
   );
 }

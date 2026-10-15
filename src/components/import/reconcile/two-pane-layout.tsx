@@ -9,9 +9,9 @@
  */
 
 import type { ReactNode } from "react";
-import { SectionCard } from "@/components/mobile/section-card";
+import { Card } from "@/components/ui/card";
 
-/** Each pane is a SectionCard capped in height; only its body scrolls. */
+/** Each pane is a Card capped in height; only its body scrolls. */
 const PANE_CARD = "flex max-h-[55dvh] flex-col overflow-hidden";
 const PANE_BODY = "min-h-0 overflow-y-auto";
 
@@ -30,12 +30,12 @@ export function TwoPaneLayout({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
-      <SectionCard label={leftLabel} padded={false} cardClassName={PANE_CARD} className={PANE_BODY}>
+      <Card title={leftLabel} padded={false} frameClassName={PANE_CARD} className={PANE_BODY}>
         {left}
-      </SectionCard>
-      <SectionCard label={rightLabel} padded={false} cardClassName={PANE_CARD} className={PANE_BODY}>
+      </Card>
+      <Card title={rightLabel} padded={false} frameClassName={PANE_CARD} className={PANE_BODY}>
         {right}
-      </SectionCard>
+      </Card>
     </div>
   );
 }

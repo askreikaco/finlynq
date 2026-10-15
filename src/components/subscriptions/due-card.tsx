@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ListRow } from "@/components/mobile/list-row";
 import { useApi } from "@/lib/data/use-api";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -52,59 +52,61 @@ export function DueCard({ limit = DUE_CARD_LIMIT, returnTo = "/transactions" }: 
   }
 
   return (
-    <Card data-testid="due-card" className="border-warning/30 bg-warning/[0.04]">
-      <CardContent className="space-y-2 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarClock className="h-4 w-4 text-warning" aria-hidden="true" />
-            Due ({due.length})
-          </h2>
-          {due.length > limit && (
-            <Link href="/subscriptions" data-testid="due-see-all" className="text-xs font-medium text-primary hover:underline">
-              See all
-            </Link>
-          )}
-        </div>
-        <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-lg border bg-background">
-          {shown.map((sub) => {
-            const more = dueSummary(sub);
-            return (
-              <li key={sub.id} data-testid={`due-row-${sub.id}`}>
-                <ListRow
-                  title={sub.name ?? "Subscription"}
-                  subtitle={`${formatCurrency(sub.amount, sub.currency)} · Due ${formatDate(sub.nextDate as string)}${more ? ` · ${more}` : ""}`}
-                  actions={
-                    <>
-                      <Button
-                        size="sm"
-                        data-testid={`due-post-${sub.id}`}
-                        disabled={busyId !== null}
-                        onClick={() => router.push(postNowHref(sub.id, sub.nextDate as string, returnTo))}
-                      >
-                        Post now
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        data-testid={`due-skip-${sub.id}`}
-                        disabled={busyId !== null}
-                        onClick={() => void skip(sub)}
-                      >
-                        {busyId === sub.id ? "Skipping…" : "Skip"}
-                      </Button>
-                    </>
-                  }
-                />
-              </li>
-            );
-          })}
-        </ul>
-        {error && (
-          <p role="alert" className="text-xs text-destructive">
-            {error}
-          </p>
+    <Card
+      data-testid="due-card"
+      frameClassName="border-warning/30 bg-warning/[0.04]"
+      className="space-y-2 py-3"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <CalendarClock className="h-4 w-4 text-warning" aria-hidden="true" />
+          Due ({due.length})
+        </h2>
+        {due.length > limit && (
+          <Link href="/subscriptions" data-testid="due-see-all" className="text-xs font-medium text-primary hover:underline">
+            See all
+          </Link>
         )}
-      </CardContent>
+      </div>
+      <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-lg border bg-background">
+        {shown.map((sub) => {
+          const more = dueSummary(sub);
+          return (
+            <li key={sub.id} data-testid={`due-row-${sub.id}`}>
+              <ListRow
+                title={sub.name ?? "Subscription"}
+                subtitle={`${formatCurrency(sub.amount, sub.currency)} · Due ${formatDate(sub.nextDate as string)}${more ? ` · ${more}` : ""}`}
+                actions={
+                  <>
+                    <Button
+                      size="sm"
+                      data-testid={`due-post-${sub.id}`}
+                      disabled={busyId !== null}
+                      onClick={() => router.push(postNowHref(sub.id, sub.nextDate as string, returnTo))}
+                    >
+                      Post now
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      data-testid={`due-skip-${sub.id}`}
+                      disabled={busyId !== null}
+                      onClick={() => void skip(sub)}
+                    >
+                      {busyId === sub.id ? "Skipping…" : "Skip"}
+                    </Button>
+                  </>
+                }
+              />
+            </li>
+          );
+        })}
+      </ul>
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </Card>
   );
 }

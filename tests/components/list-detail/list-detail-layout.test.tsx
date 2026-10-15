@@ -365,7 +365,7 @@ describe("accounts wiring: one detail component for the route and the pane", () 
     const read = (p: string) => fs.readFileSync(p, "utf8");
     const route = read("src/app/(app)/accounts/[id]/page.tsx");
     expect(route).toMatch(/<AccountDetail\b/);
-    expect(route).not.toContain("MetricCard");
+    expect(route).not.toContain("<Card");
     const list = read("src/app/(app)/accounts/page.tsx");
     expect(list).toMatch(/renderDetail=\{/);
     expect(list).toMatch(/<AccountDetail\b[\s\S]*embedded=\{\{[^}]*onEdit: \(tab\) => api\.edit\(/);

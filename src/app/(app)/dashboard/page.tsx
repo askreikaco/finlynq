@@ -5,12 +5,11 @@ import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { DollarSign, TrendingUp, CreditCard, Target, Settings, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
-import { MetricCard } from "@/components/metric-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
 import { NetWorthHeroCard } from "./_components/net-worth-hero-card";
 import { HealthScoreCard } from "./_components/health-score-card";
@@ -61,7 +60,7 @@ function QuickImportWidget() {
 
   return (
     <Card
-      className={`relative overflow-hidden border-dashed transition-colors cursor-pointer ${
+      frameClassName={`relative overflow-hidden border-dashed transition-colors cursor-pointer ${
         dragOver
           ? "border-primary bg-primary/5"
           : "border-border/60 hover:border-primary/50 hover:bg-muted/30"
@@ -72,7 +71,7 @@ function QuickImportWidget() {
       onClick={() => inputRef.current?.click()}
     >
       <input ref={inputRef} type="file" accept=".csv,.ofx,.qfx" className="hidden" onChange={handleFileChange} />
-      <CardContent className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+      <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
           dragOver ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
         }`}>
@@ -89,7 +88,7 @@ function QuickImportWidget() {
         >
           Or browse files →
         </Link>
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -345,7 +344,7 @@ export default function DashboardPage() {
   // Stat cards config
   const summaryCards = [
     {
-      label: "Monthly Income",
+      title: "Monthly Income",
       // Name the month the figure covers — it's the last COMPLETE month, not
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
       value: shownIncome,
@@ -354,25 +353,25 @@ export default function DashboardPage() {
       note: periodLabel,
       icon: TrendingUp,
       tone: "bg-pos/10 text-pos",
-      sparkColor: "#10b981",
-      sparkData: explicit ? (incomeCard.sparkData ?? incomeSparkline) : incomeSparkline,
-      sparkLabels: explicit ? (incomeCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
+      
+      spark: { data: explicit ? (incomeCard.sparkData ?? incomeSparkline) : incomeSparkline, color: "#10b981", labels: explicit ? (incomeCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels },
+      
       href: buildTxDrillUrl({ startDate: monthDrill.startDate, endDate: monthDrill.endDate }),
     },
     {
-      label: "Monthly Expenses",
+      title: "Monthly Expenses",
       value: shownExpenses,
       note: [periodLabel, shownIncome > 0 ? `${Math.round((shownExpenses / shownIncome) * 100)}% of income` : ""].filter(Boolean).join(" · "),
       delta: { pct: expenseCard.badgePct, text: expenseCard.delta ?? undefined, invert: true },
       icon: CreditCard,
       tone: "bg-destructive/10 text-destructive",
-      sparkColor: "#f43f5e",
-      sparkData: explicit ? (expenseCard.sparkData ?? expenseSparkline) : expenseSparkline,
-      sparkLabels: explicit ? (expenseCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
+      
+      spark: { data: explicit ? (expenseCard.sparkData ?? expenseSparkline) : expenseSparkline, color: "#f43f5e", labels: explicit ? (expenseCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels },
+      
       href: buildTxDrillUrl({ startDate: monthDrill.startDate, endDate: monthDrill.endDate }),
     },
     {
-      label: "Budgets",
+      title: "Budgets",
       // Percent of the budget spent; the amounts and the covered month go in the note.
       value: <span>{budgetPct != null ? `${Math.round(budgetPct)}%` : "—"}</span>,
       valueClassName: budgetPct == null ? "text-muted-foreground" : budgetPct > 100 ? "text-destructive" : budgetPct > 85 ? "text-warning" : "text-pos",
@@ -386,9 +385,9 @@ export default function DashboardPage() {
       },
       icon: Target,
       tone: "bg-warning/10 text-warning",
-      sparkColor: "#f59e0b",
-      sparkData: budgetSpark.length >= 2 ? budgetSpark.map((r) => Math.round((r.spent / r.budget) * 1000) / 10) : undefined,
-      sparkLabels: budgetSpark.length >= 2 ? budgetSpark.map((r) => r.month) : undefined,
+      
+      spark: { data: budgetSpark.length >= 2 ? budgetSpark.map((r) => Math.round((r.spent / r.budget) * 1000) / 10) : undefined, color: "#f59e0b", labels: budgetSpark.length >= 2 ? budgetSpark.map((r) => r.month) : undefined },
+      
       href: "/categories",
     },
   ];
@@ -456,7 +455,7 @@ export default function DashboardPage() {
       render: () => (
         <Fragment key="summary-stats">
           {summaryCards.map((card) => (
-            <MetricCard key={card.label} {...card} currency={apiDisplayCurrency} />
+            <Card key={card.title} {...card} currency={apiDisplayCurrency} />
           ))}
         </Fragment>
       ),

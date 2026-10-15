@@ -3,7 +3,7 @@
 import { Fragment, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
 import { formatCurrency } from "@/lib/currency";
@@ -15,7 +15,6 @@ import { Notice } from "@/components/notice";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
-import { MetricCard } from "@/components/metric-card";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { PageToolbar } from "@/components/page-toolbar";
 import { cardProps, makeCardResolver, monthEndBalances } from "@/lib/metrics/series";
@@ -23,9 +22,7 @@ import { localDateISO } from "@/lib/utils/date";
 import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { useTransactionsToolbar } from "../../transactions/_hooks/use-transactions-toolbar";
-import {
-  PageHeader, CardLayoutEditor, ListRow, SectionCard, useCardLayout, usePageCustomize, usePaneTitle,
-} from "@/components/mobile";
+import { PageHeader, CardLayoutEditor, ListRow, useCardLayout, usePageCustomize, usePaneTitle } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -431,15 +428,14 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
         // Account cards in the user's saved order (Customize). Each id renders once.
         const nodes: Record<string, ReactNode> = {
           balance: (
-      <MetricCard
-        label={holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
+      <Card
+        title={holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
         icon={Wallet}
         tone={displayBalance >= 0 ? "emerald" : "rose"}
         value={balanceCard.value ?? displayBalance}
         currency={account.currency}
         valueClassName={displayBalance >= 0 ? "text-pos" : "text-destructive"}
-        sparkColor={displayBalance >= 0 ? "#10b981" : "#f43f5e"}
-        {...cardProps(balanceCard, account.type === "L")}
+        {...cardProps(balanceCard, account.type === "L", displayBalance >= 0 ? "#10b981" : "#f43f5e")}
         note={
           holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
             <>
@@ -451,61 +447,59 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
       />
 ),
           actions: (
-      <Card>
-        <CardContent className="@container pt-5">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={() => router.push(`/transactions/new?kind=income&account=${account.id}`)}
-              className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
-              title="Record income"
-            >
-              <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
-                <ArrowDownLeft className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs font-medium text-center">In</span>
-            </button>
+      <Card className="@container pt-5">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => router.push(`/transactions/new?kind=income&account=${account.id}`)}
+            className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
+            title="Record income"
+          >
+            <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
+              <ArrowDownLeft className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-center">In</span>
+          </button>
 
-            <button
-              onClick={() => router.push(`/transactions/new?kind=expense&account=${account.id}`)}
-              className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
-              title="Record expense"
-            >
-              <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
-                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs font-medium text-center">Out</span>
-            </button>
+          <button
+            onClick={() => router.push(`/transactions/new?kind=expense&account=${account.id}`)}
+            className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
+            title="Record expense"
+          >
+            <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
+              <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-center">Out</span>
+          </button>
 
-            <button
-              onClick={() => router.push(`/transactions/new?kind=transfer&account=${account.id}`)}
-              className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
-              title="Transfer between accounts"
-            >
-              <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
-                <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs font-medium text-center">Transfer</span>
-            </button>
+          <button
+            onClick={() => router.push(`/transactions/new?kind=transfer&account=${account.id}`)}
+            className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
+            title="Transfer between accounts"
+          >
+            <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
+              <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-center">Transfer</span>
+          </button>
 
-            <button
-              onClick={() => setActionsSheetOpen(true)}
-              className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
-              title="More actions"
-            >
-              <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
-                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs font-medium text-center">More</span>
-            </button>
-          </div>
-        </CardContent>
+          <button
+            onClick={() => setActionsSheetOpen(true)}
+            className="flex min-w-0 flex-col items-center justify-center gap-2 flex-1 p-3 @max-xs:p-1 rounded-lg hover:bg-muted transition-colors"
+            title="More actions"
+          >
+            <div className="h-12 w-12 @max-xs:h-10 @max-xs:w-10 rounded-full bg-muted flex items-center justify-center">
+              <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-center">More</span>
+          </button>
+        </div>
       </Card>
 ),
           information: (
-        <SectionCard
+        <Card
           data-slot="account-information"
-          label="Information" icon={Info} tone="cyan"
-          list
+          title="Information" icon={Info} tone="cyan"
+          frame="list"
           action={
         <Button
           size="sm"
@@ -555,7 +549,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
               }
             />
             {account.archived === true && <ListRow title="Status" value={<Badge variant="secondary" className="text-xs">Archived</Badge>} />}
-        </SectionCard>
+        </Card>
       ),
           history: (
             <NetWorthHistoryChart

@@ -21,13 +21,11 @@ function rulePatch(f: Record<string, string | number | null>): Partial<RuleRow> 
   if (f.isActive !== undefined && f.isActive !== null) p.isActive = f.isActive === "true";
   return p as Partial<RuleRow>;
 }
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoTip } from "@/components/ui/info-tip";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import { Field } from "@/components/ui/field";
-import { AlertTriangle, ListChecks, Plus, Trash2, Zap } from "lucide-react";
+import { AlertTriangle, ListChecks, Plus, Trash2 } from "lucide-react";
 import type { Condition, Action } from "@/lib/rules/schema";
 
 /** Where the rule create/edit pages send the user back to (this section's page). */
@@ -188,80 +186,67 @@ export function RulesSection() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle icon={ListChecks} tone="indigo">
-                  Rules
-                  <InfoTip label="About rules" text={<>Auto-categorize and transform transactions. Highest priority first; first match wins. <a href="/docs/transaction-rules-v2" className="underline">Docs</a></>} />
-                </CardTitle>
-              </div>
-            </div>
-            <Link href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Link>
+      <Card
+        title="Rules"
+        icon={ListChecks}
+        tone="indigo"
+        info={<>Auto-categorize and transform transactions. Highest priority first; first match wins. <a href="/docs/transaction-rules-v2" className="underline">Docs</a></>}
+        infoLabel="About rules"
+        action={<Button href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} variant="outline" size="sm" leading={Plus}>
+              Add
+            </Button>}
+        className="space-y-2"
+      >
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {error}
+            <button className="ml-auto text-xs underline" onClick={() => setError("")}>dismiss</button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {error}
-              <button className="ml-auto text-xs underline" onClick={() => setError("")}>dismiss</button>
-            </div>
-          )}
+        )}
 
-          {rules.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6" data-keep="empty">No rules.</p>
-          )}
+        {rules.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-6" data-keep="empty">No rules.</p>
+        )}
 
-          {shownRules.map((rule) => (
-            <div
-              key={rule.id}
-              className={`rounded-lg border p-3 space-y-1 ${!rule.isActive ? "opacity-60" : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm truncate">{rule.name}</span>
-                    {rule.pendingSync && <SyncMarkBadge mark={rule.pendingSync} />}
-                    {rule.priority > 0 && <Badge variant="secondary" className="text-xs">P{rule.priority}</Badge>}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
-                    <strong>When:</strong> {summarizeConditions(rule.conditions ?? { all: [] }, rule.actionFKNames)}
-                  </p>
-                  <p className="text-xs text-muted-foreground" data-keep="data">
-                    <strong>Then:</strong> {summarizeActions(rule.actions ?? [], rule.actionFKNames)}
-                  </p>
+        {shownRules.map((rule) => (
+          <div
+            key={rule.id}
+            className={`rounded-lg border p-3 space-y-1 ${!rule.isActive ? "opacity-60" : ""}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm truncate">{rule.name}</span>
+                  {rule.pendingSync && <SyncMarkBadge mark={rule.pendingSync} />}
+                  {rule.priority > 0 && <Badge variant="secondary" className="text-xs">P{rule.priority}</Badge>}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="flex h-8 items-center px-1">
-                    <Field
-                      control="switch"
-                      checked={!!rule.isActive}
-                      onCheckedChange={() => handleToggle(rule)}
-                      aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}
-                    />
-                  </span>
-                  <Link
-                    href={`/settings/rules/${rule.id}/edit?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`}
-                    className={buttonVariants({ variant: "ghost", size: "sm" })}
-                  >
-                    Edit
-                  </Link>
-                  <Button aria-label="Delete rule" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
+                <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
+                  <strong>When:</strong> {summarizeConditions(rule.conditions ?? { all: [] }, rule.actionFKNames)}
+                </p>
+                <p className="text-xs text-muted-foreground" data-keep="data">
+                  <strong>Then:</strong> {summarizeActions(rule.actions ?? [], rule.actionFKNames)}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="flex h-8 items-center px-1">
+                  <Field
+                    control="switch"
+                    checked={!!rule.isActive}
+                    onCheckedChange={() => handleToggle(rule)}
+                    aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}
+                  />
+                </span>
+                <Button href={`/settings/rules/${rule.id}/edit?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} variant="ghost" size="sm">
+                  Edit
+                </Button>
+                <Button aria-label="Delete rule" variant="ghost" iconOnly className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
               </div>
             </div>
-          ))}
-        </CardContent>
+          </div>
+        ))}
       </Card>
     </div>
   );

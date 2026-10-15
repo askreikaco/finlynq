@@ -103,7 +103,7 @@ describe("Transactions: one list at every width", () => {
       expect(screen.queryAllByRole("radiogroup", { name: "View" })).toHaveLength(0);
       expect(container.querySelectorAll("[data-view]")).toHaveLength(0);
       expect(listRows()).toHaveLength(3);
-      expect(container.querySelectorAll('[data-slot="section-card"]').length).toBeGreaterThan(0);
+      expect(container.querySelectorAll('[data-slot="card"]').length).toBeGreaterThan(0);
     });
   }
 
@@ -196,7 +196,7 @@ describe("Transactions: paging and split view", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
     const sentinel = screen.getByTestId("infinite-scroll-trigger");
-    expect(sentinel.closest('[data-slot="section-card"]')).toBeNull();
+    expect(sentinel.closest('[data-slot="card"]')).toBeNull();
     H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
     expect(loadNextPage).toHaveBeenCalledTimes(1);
   });
@@ -244,7 +244,7 @@ describe("Transactions: static guards for the one-layout rule", () => {
 
   it("the old table file is gone; the list is the only row component and the row sheet is gone", () => {
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
-    expect(read(LIST)).toContain("<SectionCard");
+    expect(read(LIST)).toContain("<Card");
     expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-sheet.tsx"))).toBe(false);
     expect(read(WORKSPACE)).not.toContain('variant="detail"');
   });

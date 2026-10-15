@@ -101,7 +101,7 @@ describe("shared CategoryRow", () => {
 
   it("a group row and a category row both show dot, label, amount, change vs last month, chart and budget progress", () => {
     render(<CategoriesPageContent />);
-    const list = document.querySelector('[data-slot="category-list"], [data-slot="section-card-body"] [data-slot="category-group"]')!.closest("section")!;
+    const list = document.querySelector('[data-slot="category-list"], [data-slot="card-body"] [data-slot="category-group"]')!.closest("section")!;
     // closed group (Housing) + ungrouped (Coffee) = 2 rows; open the group for its 2 children
     expect(within(list).getAllByText("Housing").length).toBeGreaterThan(0);
     fireEvent.click(within(list).getByRole("button", { name: "Expand Housing" })); // only the chevron expands
@@ -280,8 +280,8 @@ describe("Spending + Income in two columns (regular+), tabs on phones", () => {
     expect(within(sp as HTMLElement).getByText("Coffee")).toBeTruthy();
     expect(within(inc as HTMLElement).getByText("Salary")).toBeTruthy();
     expect(within(inc as HTMLElement).queryByText("Coffee")).toBeNull();
-    expect(sp.querySelectorAll('[data-slot="section-card"]')).toHaveLength(2); // share + categories
-    expect(inc.querySelectorAll('[data-slot="section-card"]')).toHaveLength(2);
+    expect(sp.querySelectorAll('[data-slot="card"]')).toHaveLength(2); // share + categories
+    expect(inc.querySelectorAll('[data-slot="card"]')).toHaveLength(2);
     expect(screen.queryByRole("tab", { name: "Spending" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Income" })).toBeNull();
     // metric cards stay the three spending cards, full width above the columns

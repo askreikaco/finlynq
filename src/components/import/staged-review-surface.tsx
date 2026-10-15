@@ -31,7 +31,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { ReconciliationCallout } from "@/components/staging/reconciliation-callout";
@@ -1171,14 +1171,11 @@ export function StagedReviewSurface({
       />
 
       {toast && (
-        <Card
-          className={
+        <Card frameClassName={
             toast.type === "success"
               ? "border-pos/30 bg-pos/10"
               : "border-destructive/30 bg-destructive/10"
-          }
-        >
-          <CardContent className="py-3 text-sm">{toast.msg}</CardContent>
+          } className="py-3 text-sm">{toast.msg}
         </Card>
       )}
 
@@ -1221,21 +1218,19 @@ export function StagedReviewSurface({
         )}
 
       {anchorsOnlyHint && (
-        <Card className="border-info/30 bg-info/10">
-          <CardContent className="py-2.5 px-3 text-sm flex items-start gap-3">
-            <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
-            <div className="text-info">
-              All {anchorsOnlyHint.totalRows} transaction
-              {anchorsOnlyHint.totalRows === 1 ? "" : "s"} in this file are
-              already in the bank ledger. Clicking <strong>Approve</strong> will
-              still load{" "}
-              <strong>
-                {anchorsOnlyHint.anchorCount} balance anchor
-                {anchorsOnlyHint.anchorCount === 1 ? "" : "s"}
-              </strong>{" "}
-              from this file into the bank-side ledger.
-            </div>
-          </CardContent>
+        <Card frameClassName="border-info/30 bg-info/10" className="py-2.5 px-3 text-sm flex items-start gap-3">
+          <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
+          <div className="text-info">
+            All {anchorsOnlyHint.totalRows} transaction
+            {anchorsOnlyHint.totalRows === 1 ? "" : "s"} in this file are
+            already in the bank ledger. Clicking <strong>Approve</strong> will
+            still load{" "}
+            <strong>
+              {anchorsOnlyHint.anchorCount} balance anchor
+              {anchorsOnlyHint.anchorCount === 1 ? "" : "s"}
+            </strong>{" "}
+            from this file into the bank-side ledger.
+          </div>
         </Card>
       )}
 
@@ -1258,29 +1253,25 @@ export function StagedReviewSurface({
       )}
 
       {linkMode && (
-        <Card className="border-info/30 bg-info/10">
-          <CardContent className="py-2 px-3 text-sm flex items-center justify-between gap-3">
-            <span>
-              <LinkIcon className="h-3.5 w-3.5 inline mr-1.5" />
-              Pick a transaction on the left pane to link to staged row{" "}
-              <span className="font-mono">
-                #{detail?.rows.find((r) => r.id === linkMode.stagedRowId)?.rowIndex ?? "?"}
-              </span>
+        <Card frameClassName="border-info/30 bg-info/10" className="py-2 px-3 text-sm flex items-center justify-between gap-3">
+          <span>
+            <LinkIcon className="h-3.5 w-3.5 inline mr-1.5" />
+            Pick a transaction on the left pane to link to staged row{" "}
+            <span className="font-mono">
+              #{detail?.rows.find((r) => r.id === linkMode.stagedRowId)?.rowIndex ?? "?"}
             </span>
-            <Button size="sm" variant="ghost" onClick={cancelLink}>
-              <XIcon className="h-3.5 w-3.5 mr-1" />
-              Cancel
-            </Button>
-          </CardContent>
+          </span>
+          <Button size="sm" variant="ghost" onClick={cancelLink}>
+            <XIcon className="h-3.5 w-3.5 mr-1" />
+            Cancel
+          </Button>
         </Card>
       )}
 
       <div className="flex-1 min-h-0">
         {detailLoading ? (
-          <Card>
-            <CardContent className="py-8 text-sm text-muted-foreground text-center">
-              Loading rows…
-            </CardContent>
+          <Card className="py-8 text-sm text-muted-foreground text-center">
+            Loading rows…
           </Card>
         ) : detail && detail.pickerCandidates && detail.staged.headers ? (
           // 2026-05-28 — Unbound email-import path: CSV didn't template-match
@@ -1304,7 +1295,7 @@ export function StagedReviewSurface({
                 </span>
                 <Button
                   size="sm"
-                  variant={showOnlyUnmatched ? "default" : "outline"}
+                  variant={showOnlyUnmatched ? "primary" : "outline"}
                   onClick={() => setShowOnlyUnmatched((v) => !v)}
                   className="h-7"
                   title="Hide rows that already have a counterpart on the other side"

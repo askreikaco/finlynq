@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Rows for iOS-style grouped lists. The container + its title is SectionCard (`list`, label inside or outside).
+ * Rows for iOS-style grouped lists. The container + its title is Card (`list`, label inside or outside).
  *  - InsetRow: 56px row with optional outline icon, label, muted value, badge, chevron, or a switch.
  *    Variants: default, accent (primary text), destructive, toggle.
  *  - ThemePicker: Light / Dark / System preview thumbnails as a radiogroup (roving tabindex, arrows).

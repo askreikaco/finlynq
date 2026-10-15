@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { type DataTableColumn, type SortDir } from "@/components/ui/data-table";
@@ -308,15 +308,13 @@ export default function AdminPriceCachePage() {
       {/* Tabs */}
       <div className="flex items-center gap-1.5">
         {(["price", "fx"] as const).map((t) => (
-          <button
+          <Button
             key={t}
             onClick={() => switchTab(t)}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              tab === t ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"
-            }`}
+            variant="outline" pressed={tab === t}
           >
             {t === "price" ? "Price cache" : "FX rates"}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -324,13 +322,13 @@ export default function AdminPriceCachePage() {
       {data && (
         <MetricGrid
           metrics={[
-            { id: "total-rows", label: "Total rows", icon: Database, value: data.summary.totalRows.toLocaleString() },
-            { id: "keys", label: tab === "fx" ? "Currencies" : "Symbols", icon: Layers, value: data.summary.distinctKeys.toLocaleString() },
-            { id: "first-date", label: "First date", icon: CalendarDays, value: data.summary.firstDate ?? "—" },
-            { id: "last-date", label: "Last date", icon: CalendarDays, value: data.summary.lastDate ?? "—" },
-            { id: "today-rows", label: "Today rows", icon: CalendarCheck, value: data.summary.todayRows.toLocaleString() },
+            { id: "total-rows", title: "Total rows", icon: Database, value: data.summary.totalRows.toLocaleString() },
+            { id: "keys", title: tab === "fx" ? "Currencies" : "Symbols", icon: Layers, value: data.summary.distinctKeys.toLocaleString() },
+            { id: "first-date", title: "First date", icon: CalendarDays, value: data.summary.firstDate ?? "—" },
+            { id: "last-date", title: "Last date", icon: CalendarDays, value: data.summary.lastDate ?? "—" },
+            { id: "today-rows", title: "Today rows", icon: CalendarCheck, value: data.summary.todayRows.toLocaleString() },
             {
-              id: "stale-today", label: "Stale today", icon: AlertTriangle, value: data.summary.staleTodayRows.toLocaleString(),
+              id: "stale-today", title: "Stale today", icon: AlertTriangle, value: data.summary.staleTodayRows.toLocaleString(),
               tone: data.summary.staleTodayRows > 0 ? "amber" : "muted", valueClassName: data.summary.staleTodayRows > 0 ? "text-warning" : undefined,
             },
           ]}
@@ -396,69 +394,66 @@ export default function AdminPriceCachePage() {
       </div>
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
+        <Card frameClassName="border-destructive/30 bg-destructive/10" className="py-3 text-sm text-destructive">{error}
         </Card>
       )}
 
       {/* Rows */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
-            <span>
-              {loading && !data
-                ? "Loading…"
-                : `Showing ${showingFrom.toLocaleString()}–${showingTo.toLocaleString()} of ${total.toLocaleString()} matching rows (newest fetched first; sort + filter narrow the full set, not just this page)`}
-            </span>
-            <div className="flex items-center gap-1">
-              {filterActive && total > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mr-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  disabled={loading || bulkDeleting}
-                  onClick={() => setBulkOpen(true)}
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  Delete {total.toLocaleString()} matching
-                </Button>
-              )}
-              <Button aria-label="Previous page"
+      <Card className="p-0">
+        <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
+          <span>
+            {loading && !data
+              ? "Loading…"
+              : `Showing ${showingFrom.toLocaleString()}–${showingTo.toLocaleString()} of ${total.toLocaleString()} matching rows (newest fetched first; sort + filter narrow the full set, not just this page)`}
+          </span>
+          <div className="flex items-center gap-1">
+            {filterActive && total > 0 && (
+              <Button
                 variant="outline"
                 size="sm"
-                disabled={offset <= 0 || loading}
-                onClick={() => setOffset(Math.max(0, offset - limit))}
+                className="mr-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={loading || bulkDeleting}
+                onClick={() => setBulkOpen(true)}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Delete {total.toLocaleString()} matching
               </Button>
-              <Button aria-label="Next page"
-                variant="outline"
-                size="sm"
-                disabled={showingTo >= total || loading}
-                onClick={() => setOffset(offset + limit)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
+            <Button aria-label="Previous page"
+              variant="outline"
+              size="sm"
+              disabled={offset <= 0 || loading}
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button aria-label="Next page"
+              variant="outline"
+              size="sm"
+              disabled={showingTo >= total || loading}
+              onClick={() => setOffset(offset + limit)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="p-2">
-            <ColumnList<Row>
-              columns={columns}
-              rows={data?.rows ?? []}
-              rowKey={(r) => r.id}
-              sort={sort}
-              onSortChange={(s) => {
-                setSort(s);
-                resetOffset();
-              }}
-              emptyState={
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  {loading ? "Loading…" : `No ${keyLabel} rows match these filters.`}
-                </p>
-              }
-            />
-          </div>
-        </CardContent>
+        </div>
+        <div className="p-2">
+          <ColumnList<Row>
+            columns={columns}
+            rows={data?.rows ?? []}
+            rowKey={(r) => r.id}
+            sort={sort}
+            onSortChange={(s) => {
+              setSort(s);
+              resetOffset();
+            }}
+            emptyState={
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                {loading ? "Loading…" : `No ${keyLabel} rows match these filters.`}
+              </p>
+            }
+          />
+        </div>
       </Card>
 
       {/* Delete a single cache row */}

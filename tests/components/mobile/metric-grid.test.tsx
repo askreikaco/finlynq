@@ -11,10 +11,10 @@ afterEach(cleanup);
 
 const tokens = (cls: string) => cls.split(/\s+/);
 const four = [
-  { icon: Wallet, label: "A", value: 1 },
-  { icon: Wallet, label: "B", value: 2 },
-  { icon: Wallet, label: "C", value: 3 },
-  { icon: Wallet, label: "D", value: 4 },
+  { icon: Wallet, title: "A", value: 1 },
+  { icon: Wallet, title: "B", value: 2 },
+  { icon: Wallet, title: "C", value: 3 },
+  { icon: Wallet, title: "D", value: 4 },
 ];
 
 describe("metric grid rule: 2 mobile (max), 3 tablet (max), 4 desktop (default)", () => {
@@ -88,8 +88,8 @@ describe("MetricGrid", () => {
     render(
       <MetricGrid
         metrics={[
-          { icon: Wallet, label: "Total debt", value: 1234.5, currency: "USD", tone: "neg" },
-          { icon: Wallet, label: "FIRE age", value: "Age 65" },
+          { icon: Wallet, title: "Total debt", value: 1234.5, currency: "USD", tone: "neg" },
+          { icon: Wallet, title: "FIRE age", value: "Age 65" },
         ]}
       />,
     );
@@ -98,13 +98,13 @@ describe("MetricGrid", () => {
   });
 
   it("shows the sub line under the value and a signed amount when showSign is set", () => {
-    render(<MetricGrid metrics={[{ icon: Wallet, label: "Extra", value: 50, currency: "USD", showSign: true, sub: "per month" }]} />);
+    render(<MetricGrid metrics={[{ icon: Wallet, title: "Extra", value: 50, currency: "USD", showSign: true, sub: "per month" }]} />);
     expect(screen.getByText("+" + formatCurrency(50, "USD"))).toBeTruthy();
     expect(screen.getByText("per month")).toBeTruthy();
   });
 
   it("renders no table", () => {
-    const { container } = render(<MetricGrid metrics={[{ icon: Wallet, label: "A", value: 1 }]} />);
+    const { container } = render(<MetricGrid metrics={[{ icon: Wallet, title: "A", value: 1 }]} />);
     expect(container.querySelector("table")).toBeNull();
   });
 });

@@ -37,7 +37,7 @@ const LIST_FILES = [
   "src/components/mobile/detail-list.tsx",
   "src/components/ui/overlay.tsx",
   "src/components/mobile/column-list.tsx",
-  "src/components/mobile/section-card.tsx",
+  "src/components/ui/card.tsx",
   "src/components/mobile/account-row.tsx",
   "src/components/mobile/holding-row.tsx",
   "src/components/more-menu.tsx",
@@ -97,7 +97,7 @@ describe("list components use the divider shadow, not divide-y / border-b", () =
   });
 
   it("rows carry the shared utility", () => {
-    for (const f of ["src/components/mobile/inset-row.tsx", "src/components/mobile/detail-list.tsx", "src/components/ui/overlay.tsx", "src/components/mobile/section-card.tsx"]) {
+    for (const f of ["src/components/mobile/inset-row.tsx", "src/components/mobile/detail-list.tsx", "src/components/ui/overlay.tsx", "src/components/ui/card.tsx"]) {
       expect(read(f)).toContain("shadow-[var(--list-divider)]");
     }
   });
