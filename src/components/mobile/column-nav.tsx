@@ -141,21 +141,21 @@ export function ColumnShell({ children, instanceAdminEnabled = false, categories
         className="wide:-mx-8 wide:-mb-8 wide:flex wide:items-start"
       >
         {level === 1 ? (
-          <Pane id="col1" remember className="wide:w-[280px] wide:shrink-0 wide:border-r wide:border-border wide:px-4">
+          <Pane id="col1" remember className="wide:w-1/3 wide:shrink-0 wide:border-r wide:border-border wide:px-4">
             {children}
           </Pane>
         ) : ancestors ? (
-          <Pane id="col1" remember className="hidden wide:block wide:w-[280px] wide:shrink-0 wide:border-r wide:border-border wide:px-4">
+          <Pane id="col1" remember className="hidden wide:block wide:w-1/3 wide:shrink-0 wide:border-r wide:border-border wide:px-4">
             <MoreMenu instanceAdminEnabled={instanceAdminEnabled} categoriesMerged={categoriesMerged} />
           </Pane>
         ) : null}
 
         {level === 2 ? (
-          <Pane id="col2" remember className="wide:w-[320px] wide:shrink-0 wide:border-r wide:border-border wide:px-4">
+          <Pane id="col2" remember className="wide:w-1/3 wide:shrink-0 wide:border-r wide:border-border wide:px-4">
             {children}
           </Pane>
         ) : level === 3 && ancestors ? (
-          <Pane id="col2" remember className="hidden wide:block wide:w-[320px] wide:shrink-0 wide:border-r wide:border-border wide:px-4">
+          <Pane id="col2" remember className="hidden wide:block wide:w-1/3 wide:shrink-0 wide:border-r wide:border-border wide:px-4">
             <SettingsHub />
           </Pane>
         ) : null}
