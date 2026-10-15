@@ -682,7 +682,7 @@ function CategoriesOverview() {
         overflow={isIncome && !twoCol ? undefined : overflow}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
-      {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 2/3, the pane is the right 1/3 at full page height. */}
+      {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 3/4, the pane is the right 1/4 at full page height. */}
       <ListDetailLayout entity="category" newLabel="Add" enabled={twoCol} pane={paneBody}>
         {toolbar}
         {actionError && <p className="text-sm text-destructive">{actionError}</p>}

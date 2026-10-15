@@ -17,8 +17,9 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/adaptive/size-class-context", () => ({ useAppSizeClass: () => H.size }));
 
-import { ListDetailLayout, ListDetailNewButton } from "@/components/mobile/list-detail-layout";
-import { PANE_CLASS, SPLIT_GRID_CLASS, parseSel, withSel } from "@/lib/list-detail/selection";
+import * as fs from "node:fs";
+import { ListDetailLayout, ListDetailNewButton, usePaneTitle } from "@/components/mobile/list-detail-layout";
+import { PANE_CLASS, SPLIT_GRID_CLASS, parseMode, parseSel, withMode, withSel } from "@/lib/list-detail/selection";
 
 beforeEach(() => {
   H.push.mockReset();
@@ -66,8 +67,8 @@ describe("parseSel / withSel", () => {
 });
 
 describe("pane geometry", () => {
-  it("grid is list 2fr | pane 1fr", () => {
-    expect(SPLIT_GRID_CLASS).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+  it("grid is list 3fr | pane 1fr", () => {
+    expect(SPLIT_GRID_CLASS).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(SPLIT_GRID_CLASS).toContain("items-start");
   });
   it("the pane sticks below the top bar: header height + safe area + 1rem, is viewport-tall minus that offset, and scrolls inside", () => {
@@ -85,7 +86,7 @@ describe("ListDetailLayout", () => {
     const pane = screen.getByTestId("list-detail-pane");
     expect(pane.className).toContain("sticky");
     expect(pane.className).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
-    expect(pane.closest("[data-slot=list-detail]")!.className).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
+    expect(pane.closest("[data-slot=list-detail]")!.className).toContain("grid-cols-[minmax(0,3fr)_minmax(0,1fr)]");
     expect(screen.getByTestId("the-list")).toBeTruthy();
   });
 
@@ -201,5 +202,191 @@ describe("ListRow selected", () => {
     expect(a.getAttribute("aria-current")).toBe("true");
     expect(a.className).toContain("bg-muted");
     expect(b.getAttribute("data-selected")).toBeNull();
+  });
+});
+
+describe("parseMode / withMode (?mode=edit)", () => {
+  it("parses edit only for the exact value; everything else is the detail view", () => {
+    expect(parseMode("edit")).toBe("edit");
+    expect(parseMode(null)).toBe("view");
+    expect(parseMode("")).toBe("view");
+    expect(parseMode("EDIT")).toBe("view");
+    expect(parseMode("view")).toBe("view");
+  });
+  it("sets and removes mode while keeping other params; withSel always resets it", () => {
+    expect(withMode("sel=7", "edit")).toBe("?sel=7&mode=edit");
+    expect(withMode("sel=7&mode=edit", "view")).toBe("?sel=7");
+    expect(withMode("month=2026-10&sel=7&mode=edit", "view")).toBe("?month=2026-10&sel=7");
+    expect(withMode(new URLSearchParams("sel=7"), "edit")).toBe("?sel=7&mode=edit");
+    expect(withMode("", "view")).toBe("");
+    // edit-scoped params (tab): set through `extra`, cleared on every mode change
+    expect(withMode("sel=7", "edit", { tab: "import" })).toBe("?sel=7&mode=edit&tab=import");
+    expect(withMode("sel=7&mode=edit&tab=import", "view")).toBe("?sel=7");
+    expect(withMode("sel=7&mode=edit&tab=import", "edit")).toBe("?sel=7&mode=edit");
+    // selecting another row (or clearing) leaves edit mode
+    expect(withSel("sel=7&mode=edit", 9)).toBe("?sel=9");
+    expect(withSel("sel=7&mode=edit&month=1", null)).toBe("?month=1");
+  });
+});
+
+const NamedDetail = () => {
+  usePaneTitle("Checking");
+  return <span data-testid="named">named</span>;
+};
+
+describe("ListDetailLayout detail-first pane", () => {
+  const renderDetailLayout = (extra: Partial<React.ComponentProps<typeof ListDetailLayout>> = {}) =>
+    render(
+      <ListDetailLayout
+        entity="account"
+        newLabel="Add Account"
+        detailTitle="Account"
+        detailHref={(id) => `/accounts/${id}`}
+        renderDetail={(id, api) => (
+          <div data-testid="the-detail" data-id={id}>
+            <NamedDetail />
+            <button onClick={() => api.edit({ tab: "import" })}>inner-edit</button>
+          </div>
+        )}
+        renderForm={(api) => (
+          <div data-testid="the-form" data-id={api.selectedId ?? ""} data-new={String(api.isNew)}>
+            <button onClick={() => api.afterSaved(api.selectedId ?? undefined)}>saved</button>
+            <button onClick={api.cancel}>cancel</button>
+          </div>
+        )}
+        {...extra}
+      >
+        <div data-testid="the-list">rows</div>
+      </ListDetailLayout>,
+    );
+
+  it("?sel=<id> shows the DETAIL (not the form), with the pane header: title, Open page link, Edit, Close", () => {
+    H.search = "sel=7";
+    renderDetailLayout();
+    expect(screen.getByTestId("the-detail").getAttribute("data-id")).toBe("7");
+    expect(screen.queryByTestId("the-form")).toBeNull();
+    expect(screen.getByTestId("list-detail-pane").getAttribute("data-pane-view")).toBe("detail");
+    const header = document.querySelector("[data-slot=list-detail-pane-header]")!;
+    expect(header.querySelector("h2")!.textContent).toBe("Checking"); // usePaneTitle
+    expect(screen.getByRole("link", { name: /Open page/ }).getAttribute("href")).toBe("/accounts/7");
+    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+  });
+
+  it("the header title falls back to detailTitle until the detail sets one", () => {
+    H.search = "sel=7";
+    render(
+      <ListDetailLayout newLabel="x" detailTitle="Account" renderDetail={() => <div data-testid="the-detail" />} renderForm={() => <div />}>
+        <div />
+      </ListDetailLayout>,
+    );
+    expect(document.querySelector("[data-slot=list-detail-pane-header] h2")!.textContent).toBe("Account");
+  });
+
+  it("Edit sets ?mode=edit (pushed); Close clears the selection", () => {
+    H.search = "month=2026-10&sel=7";
+    renderDetailLayout();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(H.push).toHaveBeenCalledWith("/goals?month=2026-10&sel=7&mode=edit", { scroll: false });
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(H.replace).toHaveBeenCalledWith("/goals?month=2026-10", { scroll: false });
+  });
+
+  it("api.edit(params) adds edit-scoped params such as the initial tab", () => {
+    H.search = "sel=7";
+    renderDetailLayout();
+    fireEvent.click(screen.getByText("inner-edit"));
+    expect(H.push).toHaveBeenCalledWith("/goals?sel=7&mode=edit&tab=import", { scroll: false });
+  });
+
+  it("?sel=<id>&mode=edit shows the form (no detail header)", () => {
+    H.search = "sel=7&mode=edit";
+    renderDetailLayout();
+    expect(screen.getByTestId("the-form").getAttribute("data-id")).toBe("7");
+    expect(screen.queryByTestId("the-detail")).toBeNull();
+    expect(document.querySelector("[data-slot=list-detail-pane-header]")).toBeNull();
+    expect(screen.getByTestId("list-detail-pane").getAttribute("data-pane-view")).toBe("form");
+  });
+
+  it("?sel=new shows the create form even with renderDetail; mode is ignored", () => {
+    H.search = "sel=new&mode=edit";
+    renderDetailLayout();
+    expect(screen.getByTestId("the-form").getAttribute("data-new")).toBe("true");
+    expect(screen.queryByTestId("the-detail")).toBeNull();
+  });
+
+  it("edit Save and Cancel go back to the detail view (mode removed, history replaced)", () => {
+    H.search = "sel=7&mode=edit";
+    renderDetailLayout();
+    fireEvent.click(screen.getByText("saved"));
+    expect(H.replace).toHaveBeenLastCalledWith("/goals?sel=7", { scroll: false });
+    H.replace.mockReset();
+    fireEvent.click(screen.getByText("cancel"));
+    expect(H.replace).toHaveBeenLastCalledWith("/goals?sel=7", { scroll: false });
+  });
+
+  it("create Save without an id and create Cancel close the pane", () => {
+    H.search = "sel=new";
+    renderDetailLayout();
+    fireEvent.click(screen.getByText("saved"));
+    expect(H.replace).toHaveBeenLastCalledWith("/goals", { scroll: false });
+    H.replace.mockReset();
+    fireEvent.click(screen.getByText("cancel"));
+    expect(H.replace).toHaveBeenLastCalledWith("/goals", { scroll: false });
+  });
+
+  it("without renderDetail (no detail route): ?sel=<id> shows the form as before; cancel closes the pane", () => {
+    H.search = "sel=7";
+    renderDetailLayout({ renderDetail: undefined });
+    expect(screen.getByTestId("the-form").getAttribute("data-id")).toBe("7");
+    expect(document.querySelector("[data-slot=list-detail-pane-header]")).toBeNull();
+    fireEvent.click(screen.getByText("cancel"));
+    expect(H.replace).toHaveBeenCalledWith("/goals", { scroll: false });
+  });
+
+  it("the older `pane` prop still renders the form; renderForm wins when both are given", () => {
+    H.search = "sel=7";
+    render(
+      <ListDetailLayout newLabel="x" pane={() => <div data-testid="old-pane" />}>
+        <div />
+      </ListDetailLayout>,
+    );
+    expect(screen.getByTestId("old-pane")).toBeTruthy();
+    cleanup();
+    render(
+      <ListDetailLayout newLabel="x" pane={() => <div data-testid="old-pane" />} renderForm={() => <div data-testid="new-form" />}>
+        <div />
+      </ListDetailLayout>,
+    );
+    expect(screen.getByTestId("new-form")).toBeTruthy();
+    expect(screen.queryByTestId("old-pane")).toBeNull();
+  });
+
+  it("below wide: no pane and no detail, ?sel / ?mode ignored", () => {
+    H.size = "regular";
+    H.search = "sel=7&mode=edit";
+    renderDetailLayout();
+    expect(screen.queryByTestId("list-detail-pane")).toBeNull();
+    expect(screen.queryByTestId("the-detail")).toBeNull();
+    expect(screen.getByTestId("the-list")).toBeTruthy();
+  });
+
+  it("usePaneTitle outside a pane is a no-op", () => {
+    render(<NamedDetail />);
+    expect(screen.getByTestId("named")).toBeTruthy();
+  });
+});
+
+describe("accounts wiring: one detail component for the route and the pane", () => {
+  it("/accounts/[id] and the /accounts pane render AccountDetail; the pane is detail-first with Edit to the form", () => {
+    const read = (p: string) => fs.readFileSync(p, "utf8");
+    const route = read("src/app/(app)/accounts/[id]/page.tsx");
+    expect(route).toMatch(/<AccountDetail\b/);
+    expect(route).not.toContain("MetricCard");
+    const list = read("src/app/(app)/accounts/page.tsx");
+    expect(list).toMatch(/renderDetail=\{/);
+    expect(list).toMatch(/<AccountDetail\b[\s\S]*embedded=\{\{[^}]*onEdit: \(tab\) => api\.edit\(/);
+    expect(list).toMatch(/onCancel=\{api\.cancel\}/);
+    expect(read("src/app/(app)/accounts/_components/account-detail.tsx")).toMatch(/export function AccountDetail\b/);
   });
 });

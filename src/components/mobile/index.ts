@@ -17,4 +17,4 @@ export { CustomizeDashboardSheet, type DashboardCard } from "./customize-dashboa
 export { CustomizeCardsSheet } from "./customize-cards-sheet";
 export { useCardLayout } from "./use-card-layout";
 export { usePageCustomize, usePageCustomizeRegistration, type PageCustomizeRegistration } from "./page-customize";
-export { ListDetailLayout, ListDetailNewButton, ListDetailEmptyPane, useListDetail, type ListDetailApi, type ListDetailPaneApi, type ListDetailLayoutProps } from "./list-detail-layout";
+export { ListDetailLayout, ListDetailNewButton, ListDetailEmptyPane, useListDetail, usePaneTitle, type ListDetailApi, type ListDetailPaneApi, type ListDetailLayoutProps } from "./list-detail-layout";
