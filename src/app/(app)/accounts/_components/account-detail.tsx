@@ -96,8 +96,8 @@ const ACCOUNT_DETAIL_CARDS: readonly PageCard[] = [
 
 /** Split-view pane mode: the pane header owns the title, Edit and close, so the page chrome is left out and these replace navigation. */
 export interface AccountDetailEmbedded {
-  /** Edit (header Edit, Information pencil, More sheet): the pane switches to the edit form. */
-  onEdit: () => void;
+  /** Edit (Information pencil, More sheet): the pane switches to the edit form, on `tab` when given. */
+  onEdit: (tab?: "details" | "reconciliation" | "import") => void;
   /** The account was deleted: close the pane. */
   onDeleted?: () => void;
   /** The account changed (archive, invisible): reload the list. */
@@ -204,7 +204,7 @@ export function AccountDetail({ id: idProp, embedded }: { id: string | number; e
   // Edit account is a full page now (Details / Reconciliation / Import / Cash sleeves tabs).
   function openEdit(tab: "details" | "reconciliation" | "import" = "details") {
     if (!account) return;
-    if (embedded) return embedded.onEdit();
+    if (embedded) return embedded.onEdit(tab);
     router.push(`/accounts/${account.id}/edit?tab=${tab}`);
   }
 

@@ -41,11 +41,20 @@ export function parseMode(raw: string | null | undefined): PaneMode {
   return raw === MODE_EDIT ? "edit" : "view";
 }
 
-/** The query string for `search` with `mode` set ("view" removes the param). Other params are kept. */
-export function withMode(search: string | URLSearchParams, mode: PaneMode): string {
+/** Params that only make sense inside the edit form (e.g. the initial tab); removed whenever the mode is set. */
+export const EDIT_SCOPED_PARAMS = ["tab"] as const;
+
+/**
+ * The query string for `search` with `mode` set ("view" removes the param). Other params are kept, except the edit-scoped
+ * ones (EDIT_SCOPED_PARAMS), which are cleared; `extra` (edit only) sets them, e.g. `{ tab: "reconciliation" }`.
+ */
+export function withMode(search: string | URLSearchParams, mode: PaneMode, extra?: Record<string, string>): string {
   const p = new URLSearchParams(typeof search === "string" ? search : search.toString());
-  if (mode === "edit") p.set(MODE_PARAM, MODE_EDIT);
-  else p.delete(MODE_PARAM);
+  for (const k of EDIT_SCOPED_PARAMS) p.delete(k);
+  if (mode === "edit") {
+    p.set(MODE_PARAM, MODE_EDIT);
+    for (const [k, v] of Object.entries(extra ?? {})) p.set(k, v);
+  } else p.delete(MODE_PARAM);
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }

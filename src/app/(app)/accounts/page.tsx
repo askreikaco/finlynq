@@ -397,7 +397,7 @@ function AccountsPage() {
         renderDetail={(id, api) => (
           <AccountDetail
             id={id}
-            embedded={{ onEdit: api.edit, onDeleted: () => { loadAccounts(); api.afterDeleted(); }, onChanged: loadAccounts }}
+            embedded={{ onEdit: (tab) => api.edit(tab && tab !== "details" ? { tab } : undefined), onDeleted: () => { loadAccounts(); api.afterDeleted(); }, onChanged: loadAccounts }}
           />
         )}
         renderForm={(api) => (

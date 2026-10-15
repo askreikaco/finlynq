@@ -219,6 +219,10 @@ describe("parseMode / withMode (?mode=edit)", () => {
     expect(withMode("month=2026-10&sel=7&mode=edit", "view")).toBe("?month=2026-10&sel=7");
     expect(withMode(new URLSearchParams("sel=7"), "edit")).toBe("?sel=7&mode=edit");
     expect(withMode("", "view")).toBe("");
+    // edit-scoped params (tab): set through `extra`, cleared on every mode change
+    expect(withMode("sel=7", "edit", { tab: "import" })).toBe("?sel=7&mode=edit&tab=import");
+    expect(withMode("sel=7&mode=edit&tab=import", "view")).toBe("?sel=7");
+    expect(withMode("sel=7&mode=edit&tab=import", "edit")).toBe("?sel=7&mode=edit");
     // selecting another row (or clearing) leaves edit mode
     expect(withSel("sel=7&mode=edit", 9)).toBe("?sel=9");
     expect(withSel("sel=7&mode=edit&month=1", null)).toBe("?month=1");
@@ -241,7 +245,7 @@ describe("ListDetailLayout detail-first pane", () => {
         renderDetail={(id, api) => (
           <div data-testid="the-detail" data-id={id}>
             <NamedDetail />
-            <button onClick={api.edit}>inner-edit</button>
+            <button onClick={() => api.edit({ tab: "import" })}>inner-edit</button>
           </div>
         )}
         renderForm={(api) => (
@@ -286,6 +290,13 @@ describe("ListDetailLayout detail-first pane", () => {
     expect(H.push).toHaveBeenCalledWith("/goals?month=2026-10&sel=7&mode=edit", { scroll: false });
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(H.replace).toHaveBeenCalledWith("/goals?month=2026-10", { scroll: false });
+  });
+
+  it("api.edit(params) adds edit-scoped params such as the initial tab", () => {
+    H.search = "sel=7";
+    renderDetailLayout();
+    fireEvent.click(screen.getByText("inner-edit"));
+    expect(H.push).toHaveBeenCalledWith("/goals?sel=7&mode=edit&tab=import", { scroll: false });
   });
 
   it("?sel=<id>&mode=edit shows the form (no detail header)", () => {
@@ -374,7 +385,7 @@ describe("accounts wiring: one detail component for the route and the pane", () 
     expect(route).not.toContain("MetricCard");
     const list = read("src/app/(app)/accounts/page.tsx");
     expect(list).toMatch(/renderDetail=\{/);
-    expect(list).toMatch(/<AccountDetail\b[\s\S]*embedded=\{\{[^}]*onEdit: api\.edit/);
+    expect(list).toMatch(/<AccountDetail\b[\s\S]*embedded=\{\{[^}]*onEdit: \(tab\) => api\.edit\(/);
     expect(list).toMatch(/onCancel=\{api\.cancel\}/);
     expect(read("src/app/(app)/accounts/_components/account-detail.tsx")).toMatch(/export function AccountDetail\b/);
   });

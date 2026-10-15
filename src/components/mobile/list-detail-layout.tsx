@@ -44,8 +44,8 @@ export interface ListDetailApi {
   selectNew: () => void;
   /** "edit" when the selected item's edit form is open (?mode=edit), else "view" (its detail page). Always "view" without an item. */
   mode: PaneMode;
-  /** Open the selected item's edit form (adds a history entry). */
-  edit: () => void;
+  /** Open the selected item's edit form (adds a history entry). `params` are edit-scoped extras, e.g. `{ tab: "import" }`. */
+  edit: (params?: Record<string, string>) => void;
   /** Back to the selected item's detail view (history entry replaced). */
   view: () => void;
   /** Clear the selection (history entry replaced, so Back does not re-open a deleted item). */
@@ -86,7 +86,7 @@ export function useListDetail(): ListDetailApi {
     select: (id) => go(id, false),
     selectNew: () => go("new", false),
     mode,
-    edit: () => router.push(`${pathname}${withMode(search, "edit")}`, { scroll: false }),
+    edit: (params) => router.push(`${pathname}${withMode(search, "edit", params)}`, { scroll: false }),
     view: () => router.replace(`${pathname}${withMode(search, "view")}`, { scroll: false }),
     clear: () => go(null, true),
     replaceWith: (id) => go(id, true),
@@ -255,7 +255,7 @@ export function ListDetailLayout({
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <RoundIconButton aria-label="Edit" title="Edit" data-slot="list-detail-edit" onClick={api.edit}>
+                <RoundIconButton aria-label="Edit" title="Edit" data-slot="list-detail-edit" onClick={() => api.edit()}>
                   <Pencil className="size-4" />
                 </RoundIconButton>
                 <RoundIconButton aria-label="Close" title="Close" data-slot="list-detail-close" onClick={api.clear}>
