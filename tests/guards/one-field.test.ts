@@ -65,7 +65,7 @@ describe("one Field: public surface", () => {
   });
 
   /** ui/switch.tsx is the Switch base of the Field switch; only the sibling-owned InsetRow toggle still imports it. */
-  const SWITCH_IMPORTERS = new Set(["src/components/mobile/inset-group.tsx"]);
+  const SWITCH_IMPORTERS = new Set(["src/components/mobile/inset-row.tsx"]);
   it("the Switch base is imported only by Field and the allow-listed sibling", () => {
     const importers = FILES.filter(({ file, text }) => !file.startsWith(FIELD_DIR) && /from ["'][^"']*ui\/switch["']/.test(text)).map((f) => f.file);
     expect(importers.filter((f) => !SWITCH_IMPORTERS.has(f))).toEqual([]);
@@ -90,7 +90,7 @@ const PATTERNS: Pattern[] = [
 
 /** file -> pattern ids still allowed there, with the reason. */
 const RAW_ALLOWLIST: Record<string, { ids: string[]; reason: string }> = {
-  "src/components/mobile/inset-group.tsx": { ids: ['role="radio"'], reason: "ThemePicker: preview thumbnails as a radiogroup (sibling-owned list family)." },
+  "src/components/mobile/inset-row.tsx": { ids: ['role="radio"'], reason: "ThemePicker: preview thumbnails as a radiogroup (sibling-owned list family)." },
   "src/components/filter-sort-page.tsx": { ids: ['role="radio"'], reason: "Sort list: radio rows that each carry a direction button." },
   "src/components/settings/sections/data-section.tsx": { ids: ["<label"], reason: "A <label> that is a file-chooser tile around a hidden file input." },
   "src/components/settings/account-content.tsx": { ids: ["<label"], reason: "A <label> that is a file-chooser button around a hidden file input." },

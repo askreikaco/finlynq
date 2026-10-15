@@ -135,10 +135,7 @@ function MetricPlayground() {
     <div className="grid gap-4 regular:grid-cols-[14rem_minmax(0,1fr)]" data-testid="metric-playground">
       <div className="space-y-2 rounded-xl border border-border/50 p-3">
         {METRIC_PARTS.map(([k, name]) => (
-          <label key={k} className="flex items-center justify-between gap-2 text-sm">
-            {name}
-            <Field control="switch" checked={parts[k]} onCheckedChange={() => toggle(k)} aria-label={name} />
-          </label>
+          <Field key={k} control="switch" label={name} checked={parts[k]} onCheckedChange={() => toggle(k)} />
         ))}
       </div>
       <div className="min-w-0 self-start">
