@@ -119,4 +119,4 @@ Spec: `e2e/visual/size-classes.spec.ts`; config: `playwright.visual.config.ts`; 
 
 ## Global export (@reika/ui)
 
-The stable, app-agnostic part of this design system is exported to reika-ai `shared/ds/` (tokens, plain CSS, web components, React package `@reika/ui` with adapters). Source of truth stays here: `design-system/export.manifest.json` lists the files and rewrite rules; run `npm run ds:export -- --out ../reika-ai/shared/ds`; guard `tests/guards/design-system-export.test.ts`. Add a component to the export by adding its path to the manifest.
+The stable, app-agnostic part of this design system is exported to reika-ai `shared/ds-money/` (tokens, plain CSS, web components, React package `@reika/ui` with adapters). Source of truth stays here: `design-system/export.manifest.json` lists the files and rewrite rules; run `npm run ds:export -- --out ../reika-ai/shared/ds-money`; guard `tests/guards/design-system-export.test.ts`. Add a component to the export by adding its path to the manifest.
