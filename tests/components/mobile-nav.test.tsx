@@ -112,15 +112,15 @@ describe("mobile bottom bar", () => {
     expect(links.find((l) => l.textContent === "Accounts")!.getAttribute("aria-current")).toBeNull();
   });
 
-  it("fits 5 tabs: equal-width flex items; the link stays a flex item and its label span truncates", () => {
+  it("fits 5 tabs: equal-width flex items; the link stays a flex item and its label is screen-reader only (icon-only nav)", () => {
     render(<AppTabs />);
     for (const l of within(bar()).getAllByRole("link")) {
       expect(l.className).toContain("flex-1");
       expect(l.className).toContain("min-w-0");
       expect(l.className).not.toContain("truncate");
       const label = l.querySelector("span.mobile-tab-label")!;
-      expect(label.className).toContain("truncate");
-      expect(label.className).toContain("max-w-full");
+      expect(label.className).toContain("sr-only");
+      expect(label.className).not.toContain("truncate");
       // The label size is the single --tab-label-size token (globals.css .mobile-tab-label), not a text-xs step.
       expect(label.className).toContain("mobile-tab-label");
       expect(l.className).not.toMatch(/\btext-(xs|sm|base|\[)/);
