@@ -158,7 +158,7 @@ describe("3. one tab-label size token, iOS tab bar geometry", () => {
   });
 
   it("the tab bar code uses the label class and no arbitrary or text-xs size", () => {
-    expect(navBar).toContain('"mobile-tab-label block max-w-full truncate"');
+    expect(navBar).toContain('"mobile-tab-label sr-only"');
     expect(navBar).not.toMatch(/\btext-xs\b/);
     expect(navBar).not.toMatch(/text-\[\d/);
   });

@@ -54,13 +54,16 @@ describe("2. MFA 6-digit input keeps wide digit spacing", () => {
   });
 });
 
-describe("3. mobile bottom bar labels truncate at 320-390px", () => {
+describe("3. nav is icon only: labels stay for screen readers", () => {
   const src = read("src/components/nav.tsx");
   const bar = src.slice(src.indexOf("export const AppTabs"));
 
-  it("each tab label is wrapped in a truncating span (one per layout: bar and rail)", () => {
-    const spans = bar.match(/<span className="[^"]*truncate[^"]*">\{item\.label\}<\/span>/g) ?? [];
+  it("each tab label is a screen-reader-only span (one per layout: bar and rail), never visible", () => {
+    const spans = bar.match(/<span className="[^"]*sr-only[^"]*">\{item\.label\}<\/span>/g) ?? [];
     expect(spans.length).toBe(2);
+    expect(bar).not.toMatch(/<span className="[^"]*truncate[^"]*">\{item\.label\}<\/span>/);
+    // Icon-only nav: each link also carries the label as a tooltip (title).
+    expect((bar.match(/title=\{item\.label\}/g) ?? []).length).toBe(2);
     expect(src).toContain('{ href: "/more", label: "More", icon: MoreHorizontal, ariaLabel: "More" }');
   });
 

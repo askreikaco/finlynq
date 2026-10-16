@@ -193,8 +193,9 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
       data-testid={testId}
       aria-current={active ? "page" : undefined}
       href={item.href}
+      title={item.label}
       className={cn(
-        "flex aspect-square w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring",
+        "flex aspect-square w-full min-w-0 items-center justify-center rounded-2xl px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring",
         active ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
       )}
     >
@@ -202,7 +203,7 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
         <item.icon className={cn("size-6", active && item.color)} />
         {moreDot(item.href)}
       </span>
-      <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
+      <span className="mobile-tab-label sr-only">{item.label}</span>{moreSrText(item.href)}
     </Link>
   );
 
@@ -219,8 +220,9 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
                   aria-label={item.href === "/more" && moreUnread > 0 ? "More, has unread items" : item.ariaLabel}
                   aria-current={isActive ? "page" : undefined}
                   href={item.href}
+                  title={item.label}
                   className={cn(
-                    "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                    "flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                     isActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
                   )}
                 >
@@ -228,7 +230,7 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
                     <item.icon className={cn("size-6", isActive && item.color)} />
                     {moreDot(item.href)}
                   </span>
-                  <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
+                  <span className="mobile-tab-label sr-only">{item.label}</span>{moreSrText(item.href)}
                 </Link>
               );
             })}
