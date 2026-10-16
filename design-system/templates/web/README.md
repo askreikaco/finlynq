@@ -3,9 +3,9 @@
 Vanilla custom elements in light DOM. Tokens + primitives + one script. Server-rendered markup works without JS.
 
 ```html
-<link rel="stylesheet" href="/shared/ds/tokens/tokens.css">
-<link rel="stylesheet" href="/shared/ds/css/reika.css">
-<script src="/shared/ds/web/reika-ds.js" defer></script>
+<link rel="stylesheet" href="/shared/ds-money/tokens/tokens.css">
+<link rel="stylesheet" href="/shared/ds-money/css/reika.css">
+<script src="/shared/ds-money/web/reika-ds.js" defer></script>
 ```
 
 Dark mode: add class `dark` to `<html>`. Only global: `window.ReikaDS` (`formatAmount`, `define`, `elements`).
@@ -28,7 +28,7 @@ CSS-only (no JS, native inputs stay native): `.r-field` and the classes in `css/
 
 ## WordPress / Bricks
 
-Copy `shared/ds/` to the theme or `wp-content/uploads/reika-ds/`, then enqueue:
+Copy `shared/ds-money/` to the theme or `wp-content/uploads/reika-ds/`, then enqueue:
 
 ```php
 add_action('wp_enqueue_scripts', function () {
